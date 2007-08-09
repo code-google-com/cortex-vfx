@@ -1,5 +1,8 @@
 #summary Progress status
+#labels Featured
 
 Image Engine will shortly commit the IECore library to form the basis of the project.
+
 Andrew is working on an autoconf based build setup.
+
 Image Engine are working on the IECoreGL, IECoreRI and IECoreMaya libraries with a view to committing them in the near future.
