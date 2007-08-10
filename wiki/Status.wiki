@@ -5,4 +5,4 @@
 
   * Image Engine are working on the IECoreGL, IECoreRI and IECoreMaya libraries with a view to committing them in the near future.
 
-* We still need to set up a referring page on opensource.image-engine.com and make an announcement.
+  * We still need to set up a referring page on opensource.image-engine.com and make an announcement.
