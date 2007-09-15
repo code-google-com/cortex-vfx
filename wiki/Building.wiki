@@ -2,12 +2,18 @@
 
 = Overview =
 
-Internal Image Engine builds of IECore are made using a customised build system unsuitable for external use. This page describes how IECore can be built outside Image Engine. The external build process has yet to stabilise, so in the case of encountering problems please raise them on the [http://groups.google.com/group/cortexdev cortex developers list].
+Internal Image Engine builds of IECore are made using a customised build system unsuitable for external use. This page describes how IECore can be built outside Image Engine. The external build process has yet to stabilise, so if you encounter problems please raise them on the [http://groups.google.com/group/cortexdev cortex developers list].
 
 = Prerequisites =
  
+IECore is built using the SCons built tool, which is not installed as standard on many systems. It should be downloaded and installed from http://www.scons.org/. You will need at least version 0.97.
+
+IECore also has compulsory dependencies on the [http://www.openexr.org OpenEXR] and [http://www.boost.org boost] libraries, so you will need to download and install those.
+
+= Optional Prerequisites =
 
 = Building =
+ 
  
  
  
