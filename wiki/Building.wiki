@@ -1,0 +1,11 @@
+#Instructions for building IECore
+
+= Overview =
+
+Internal Image Engine builds of IECore are made using a customised build system unsuitable for external use. This page describes how IECore can be built outside Image Engine. The external build process has yet to stabilise, so in the case of encountering problems please raise them on the cortex developers list.
+
+= Prerequisites =
+ 
+
+= Building =
+ 
