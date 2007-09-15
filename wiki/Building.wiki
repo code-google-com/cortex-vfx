@@ -1,4 +1,4 @@
-#Instructions for building IECore
+# Instructions for building IECore
 
 = Overview =
 
@@ -8,5 +8,6 @@ Internal Image Engine builds of IECore are made using a customised build system 
  
 
 = Building =
+ 
  
  
