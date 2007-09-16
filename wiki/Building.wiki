@@ -34,7 +34,7 @@ For example on my mac I install libraries to /opt/local, and therefore need some
 
 *scons BOOST_INCLUDE_PATH=/opt/local/include/boost-1_34_1 OPENEXR_INCLUDE_PATH=/opt/local/include/OpenEXR LIBPATH=/opt/local/lib*
 
-= Testing =
+= Testing and documentation =
 
 The following command runs the unit tests :
 
@@ -43,6 +43,11 @@ The following command runs the unit tests :
 Note that if you used any extra command line options in the building phase you will need to add them here too.
 The test results will be logged in test/results.txt.
 
+To build the documentation the following should suffice, regardless of whether you used additional flags to build and test :
+
+*scons doc*
+
 = Installing =
 
 Installation is not yet implemented. Headers are in include/IECore, the python module is in python/IECore, and the library is in the lib directory.
+ 
