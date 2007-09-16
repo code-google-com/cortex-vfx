@@ -24,8 +24,25 @@ Currently there are no packages for download, so you'll need to check out the so
 
 Assuming vanilla installs of all the dependencies in the default locations, you should simply be able to issue the following command to build the library and python module : 
  
- *scons*
+*scons*
  
- If your libraries are installed in nonstandard locations you may need to add a few command line options to specify those locations. A list of available options with help is obtained with the following command :
+If your libraries are installed in nonstandard locations you may need to add a few command line options to specify those locations. A list of available options with help is obtained with the following command :
 
 *scons --help*
+
+For example on my mac I install libraries to /opt/local, and therefore need something like the following :
+
+*scons BOOST_INCLUDE_PATH=/opt/local/include/boost-1_34_1 OPENEXR_INCLUDE_PATH=/opt/local/include/OpenEXR LIBPATH=/opt/local/lib*
+
+= Testing =
+
+The following command runs the unit tests :
+
+*scons test*
+
+Note that if you used any extra command line options in the building phase you will need to add them here too.
+The test results will be logged in test/results.txt.
+
+= Installing =
+
+Installation is not yet implemented. Headers are in include/IECore, the python module is in python/IECore, and the library is in the lib directory.
