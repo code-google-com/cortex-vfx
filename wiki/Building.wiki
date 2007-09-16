@@ -20,10 +20,12 @@ To generate the documentation you'll also need a recent version of [http://www.d
 
 = Building =
  
+Currently there are no packages for download, so you'll need to check out the source code from [http://code.google.com/p/cortex-vfx/source subversion].
+
+Assuming vanilla installs of all the dependencies in the default locations, you should simply be able to issue the following command to build the library and python module : 
  
+ *scons*
  
- 
- 
- 
- 
- 
+ If your libraries are installed in nonstandard locations you may need to add a few command line options to specify those locations. A list of available options with help is obtained with the following command :
+
+*scons --help*
