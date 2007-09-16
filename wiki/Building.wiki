@@ -14,9 +14,12 @@ Finally, you'll need at least Python version 2.4. This is preinstalled on many s
 
 = Optional Prerequisites =
 
-You may also wish to install libtiff and libjpeg....... 
+If you don't already have them, you may wish to download and install the [http://www.ijg.org/ JPEG] and [http://www.libtiff.org/ TIFF] libraries, to add further image format support.
+
+To generate the documentation you'll also need a recent version of [http://www.doxygen.org Doxygen].
 
 = Building =
+ 
  
  
  
