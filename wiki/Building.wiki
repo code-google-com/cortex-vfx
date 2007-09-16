@@ -1,3 +1,5 @@
+#summary Build instructions
+
 = Overview =
 
 Internal Image Engine builds of IECore are made using a customised build system unsuitable for external use. This page describes how IECore can be built outside Image Engine. The external build process has yet to stabilise, so if you encounter problems please raise them on the [http://groups.google.com/group/cortexdev cortex developers list].
@@ -15,6 +17,7 @@ Finally, you'll need at least Python version 2.4. This is preinstalled on many s
 You may also wish to install libtiff and libjpeg....... 
 
 = Building =
+ 
  
  
  
