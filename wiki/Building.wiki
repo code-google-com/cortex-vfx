@@ -1,5 +1,5 @@
+#summary Build instructions
 #labels Featured
-F#summary Build instructions
 
 = Overview =
 
