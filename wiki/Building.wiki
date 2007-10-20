@@ -42,7 +42,7 @@ Obviously it's painful to specify these options every time you run a build, so t
 
 And loaded again with the following option :
 
-OPTIONS=optionsFileName
+*OPTIONS=optionsFileName*
 
 In this latter case you can still specify further options on the command line in order to override the file contents. Furthermore, the options file can contain any executable python code, so you could edit it to import site specific modules that automatically obtain information about software installation locations etc.
 
