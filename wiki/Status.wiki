@@ -1,8 +1,6 @@
 #labels Featured
-  * The IECore library is now in the repository. All internal Image Engine development will be committed to the trunk.
+  * The IECore and IECoreRI libraries are now in the repository. All internal Image Engine development will be committed to the trunk.
 
-  * Andrew is working on an autoconf based build setup.
+  * A basic SCons based build setup is in place, Image Engine will switch their builds to use that shortly.
 
-  * Image Engine are working on the IECoreGL, IECoreRI and IECoreMaya libraries with a view to committing them in the near future.
-
-  * We still need to set up a referring page on opensource.image-engine.com and make an announcement.
+  * Image Engine are still working on the IECoreGL, IECoreMaya libraries with a view to committing them in the near future.
