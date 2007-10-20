@@ -2,13 +2,15 @@
 
 = Overview =
 
-Internal Image Engine builds of IECore are made using a customised build system unsuitable for external use. This page describes how IECore can be built outside Image Engine. The external build process has yet to stabilise, so if you encounter problems please raise them on the [http://groups.google.com/group/cortexdev cortex developers list].
+Internal Image Engine builds of IECore are made using a customised build system unsuitable for external use. This page describes how IECore can be built outside Image Engine. We've intentionally not used the common autotools standard as in our experience it doesn't work well for building software in a vfx facility, where software must often be installed centrally and with specific naming conventions. We aim to make this build process flexible enough to work in most contexts with some tweaking, and intend to migrate our own internal builds to use it shortly.
+
+The build process has yet to stabilise fully, so if you encounter problems please raise them on the [http://groups.google.com/group/cortexdev cortex developers list].
 
 = Prerequisites =
  
 IECore is built using the SCons built tool, which is not installed as standard on many systems. It should be downloaded and installed from http://www.scons.org. You will need at least version 0.97.
 
-You will also need the [http://www.openexr.org OpenEXR] and [http://www.boost.org boost] libraries. Internally at Image Engine we currently use OpenEXR 1.4.0 and boost 1.33.1, but builds with the latest versions (1.6.0 and 1.34.1 respectively) are known to work.
+You will also need the [http://www.openexr.org OpenEXR] and [http://www.boost.org boost] libraries. Internally at Image Engine we currently use OpenEXR 1.4.0 and boost 1.33.1, but builds with the current latest versions (1.6.0 and 1.34.1 respectively) are known to work.
 
 Finally, you'll need at least Python version 2.4. This is preinstalled on many systems, but current Apple systems ship with only version 2.3, so you may need to download and install a later version from http://www.python.org/download.
 
@@ -34,20 +36,34 @@ For example on my mac I install libraries to /opt/local, and therefore need some
 
 *scons BOOST_INCLUDE_PATH=/opt/local/include/boost-1_34_1 OPENEXR_INCLUDE_PATH=/opt/local/include/OpenEXR LIBPATH=/opt/local/lib*
 
+Obviously it's painful to specify these options every time you run a build, so they can be saved to file using with an extra option :
+
+*SAVE_OPTIONS=optionsFileName*
+
+And loaded again with the following option :
+
+OPTIONS=optionsFileName
+
+In this latter case you can still specify further options on the command line in order to override the file contents. Furthermore, the options file can contain any executable python code, so you could edit it to import site specific modules that automatically obtain information about software installation locations etc.
+
 = Testing and documentation =
 
 The following command runs the unit tests :
 
 *scons test*
 
-Note that if you used any extra command line options in the building phase you will need to add them here too.
-The test results will be logged in test/results.txt.
+Note that if you used any extra command line options in the building phase you will need to add them here too - this is where the options save/load described above comes in handy.
 
-To build the documentation the following should suffice, regardless of whether you used additional flags to build and test :
+The test results will be logged in test/$MODULENAME/results.txt.
+
+To build the documentation the following should suffice, regardless of whether you used additional flags to build and test or not :
 
 *scons doc*
 
 = Installing =
 
-Installation is not yet implemented. Headers are in include/IECore, the python module is in python/IECore, and the library is in the lib directory.
- 
+Installation is simply a case of issuing the following command :
+
+*scons install*
+
+For peace of mind the -n command line flag can be used to display the install actions without actually executing them. This comes in handy when figuring out the command line options to specify the installation names and locations.
