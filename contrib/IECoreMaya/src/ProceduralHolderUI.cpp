@@ -257,7 +257,9 @@ void ProceduralHolderUI::draw( const MDrawRequest &request, M3dView &view ) cons
 							material.applyTexture( view, drawData );
 						}
 					}
+						cerr << "DRAW SCENE " << request.displayStyle() << endl << endl;
 						scene->render( baseState( (M3dView::DisplayStyle)request.displayStyle() ) );
+						cerr << "SCENE DRAWN" << endl << endl;
 					if( popTexture )
 					{
 						glPopAttrib();
