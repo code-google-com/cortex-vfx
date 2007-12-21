@@ -1,6 +1,4 @@
 #labels Featured
-  * The IECore and IECoreRI libraries are now in the repository. All internal Image Engine development will be committed to the trunk.
+  * The IECore, IECoreRI, IECoreGL, and IECoreMaya libraries are now in the repository. All internal Image Engine development will be committed to the trunk.
 
   * A basic SCons based build setup is in place, Image Engine will switch their builds to use that shortly.
-
-  * Image Engine are still working on the IECoreGL, IECoreMaya libraries with a view to committing them in the near future.
