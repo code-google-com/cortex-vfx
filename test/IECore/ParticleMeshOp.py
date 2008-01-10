@@ -47,23 +47,22 @@ class TestParticleMeshOp( unittest.TestCase ) :
 		strength = DoubleVectorData()
 		
 		bound = Box3d( V3d( -5, -7, -2 ), V3d( 3, 3, 3 ) )
-		resolution = V3i( 80, 80, 80 )				
+		resolution = V3i( 50, 150, 50 )				
 		
 		m = o(
 			filename = "test/IECore/data/pdcFiles/particleMesh.pdc",
 			
 			useRadiusAttribute = False,
-			radius = 0.25,
+			radius = 1.0,
 			
-			threshold = 1,
+			threshold = 5.0,
 			bound = bound,
 			resolution = resolution
 		)
 		
 		# Verified by eye
-		self.assert_( len(m.vertexIds) > 43000)
-		self.assert_( len(m.vertexIds) < 45000)		
-			
+		self.assertEqual( len(m.vertexIds), 59436)
+	
 if __name__ == "__main__":
 	unittest.main()
 	
