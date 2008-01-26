@@ -81,27 +81,7 @@ class BakeTransform( IECore.Op ) :
 				),	
 			]
 		)
-	
-	@staticmethod
-	def transferTransform( src, dst, setKey=True ) :
-				
-		worldMatrixPlug = src.plug( "worldMatrix" )[0]
-		worldMatrix = worldMatrixPlug.convert().value
-			
-		e = IECore.Eulerf()
-		e.extract( worldMatrix.rotate )
-
-		maya.cmds.xform( dst, translation=tuple( worldMatrix.translate ), rotation=[math.degrees(x) for x in e], scale=tuple( worldMatrix.scale ) )
-		maya.cmds.setKeyframe( dst, attribute=["translate", "rotate", "scale"] )
 		
-	@staticmethod
-	def lockTransform( transform ) :
-		
-		maya.cmds.setAttr( str( transform.plug( "translate" ) ), lock=True )
-		maya.cmds.setAttr( str( transform.plug( "rotate" ) ), lock=True )
-		maya.cmds.setAttr( str( transform.plug( "scale" ) ), lock=True )
-		maya.cmds.setAttr( str( transform.plug( "shear" ) ), lock=True )
-			
 	def doOperation( self, operands ) :
 
 		if maya.cmds.objExists( operands.dst.value ) :
@@ -110,17 +90,27 @@ class BakeTransform( IECore.Op ) :
 			dst = maya.cmds.createNode( "transform", name=operands.dst.value, skipSelect=True )
 			dst = IECoreMaya.DagNode( str(dst) )
 
-		src = self.src.getDAGPathValue()
+		worldMatrixPlug = self.src.getDAGPathValue().plug( "worldMatrix" )[0]
 
 		for f in self.frames.getFrameListValue().asList() :
 
 			maya.cmds.currentTime( float( f ) )
-			self.transferTransform( src, dst, True )
+
+			worldMatrix = worldMatrixPlug.convert().value
+			
+			e = IECore.Eulerf()
+			e.extract( worldMatrix.rotate )
+
+			maya.cmds.xform( dst, translation=tuple( worldMatrix.translate ), rotation=[math.degrees(x) for x in e], scale=tuple( worldMatrix.scale ) )
+			maya.cmds.setKeyframe( dst, attribute=["translate", "rotate", "scale"] )
 			
 		# fix discontinuous rotations
 		maya.cmds.filterCurve( str( dst.plug( "rotateX" ) ), str( dst.plug( "rotateY" ) ), str( dst.plug( "rotateZ" ) ) )	
 
 		if operands.lock.value :
-			self.lockTransform( dst )
+			maya.cmds.setAttr( str( dst.plug( "translate" ) ), lock=True )
+			maya.cmds.setAttr( str( dst.plug( "rotate" ) ), lock=True )
+			maya.cmds.setAttr( str( dst.plug( "scale" ) ), lock=True )
+			maya.cmds.setAttr( str( dst.plug( "shear" ) ), lock=True )
 
 		return IECore.StringData( str( dst ) )
