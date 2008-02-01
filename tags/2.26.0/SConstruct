@@ -1053,6 +1053,7 @@ if env["WITH_MAYA"] :
 
 nukeEnv = env.Copy( IECORE_NAME = "IECoreNuke" )
 nukeEnv.Append( CPPPATH = [ "$NUKE_ROOT/include" ] )
+nukeEnv.Prepend( LIBPATH = [ "./lib" ] )
 
 if doConfigure :
 
@@ -1066,6 +1067,9 @@ if doConfigure :
 	else :
 	
 		c.Finish()
+
+		# we can't add this earlier as then it's built during the configure stage, and that's no good
+		nukeEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
 
 		nukeHeaders = glob.glob( "include/IECoreNuke/*.h" ) + glob.glob( "include/IECoreNuke/*.inl" )
 		nukeSources = glob.glob( "src/IECoreNuke/*.cpp" )
