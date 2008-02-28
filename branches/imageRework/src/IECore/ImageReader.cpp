@@ -56,7 +56,6 @@ using namespace Imath;
 ImageReader::ImageReader( const std::string name, const std::string description ) :
 		Reader( name, description, new ObjectParameter( "result", "The loaded object", new NullObject, ImagePrimitive::staticTypeId() ) )
 {
-	/// \todo Determine and document appropriate behaviour for occasions when requested dataWindow is outside dataWindow of the file.
 	m_dataWindowParameter = new Box2iParameter(
 		"dataWindow",
 		"The area for which data should be loaded. The default value (an empty box) "
