@@ -39,6 +39,7 @@ from IECore import *
 class TestImagePrimitive( unittest.TestCase ) :
 
 	def testConstructor( self ) :
+		""" Test ImagePrimitive constructor """
 	
 		windowMin = V2i( 0, 0 )
 		windowMax = V2i( 100, 100 )
@@ -57,7 +58,9 @@ class TestImagePrimitive( unittest.TestCase ) :
 		i.displayWindow = Box2i( windowMin, V2i( 10, 10 ) )
 		self.assertEqual( i.displayWindow, Box2i( windowMin, V2i( 10, 10 ) ) )
 					
-	def testDataWindow( self ) :			
+	def testDataWindow( self ) :
+	
+		""" Test ImagePrimitive data window """			
 	
 		displayWindow = Box2i( V2i( 0, 0 ), V2i( 99, 99 ) )
 		dataWindow = Box2i( V2i( 50, 50), V2i( 99, 99 ) )

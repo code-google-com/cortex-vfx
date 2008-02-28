@@ -190,7 +190,8 @@ class TestImagePrimitiveEvaluator( unittest.TestCase ) :
 			else :
 				lastG = r.floatPrimVar( ipe.G() )
 				
-	def testDataWindow( self ) :			
+	def testDataWindow( self ) :		
+		""" Test ImagePrimitiveEvaluator with a data window """		
 	
 		displayWindow = Box2i( V2i( 0, 0 ), V2i( 99, 99 ) )
 		dataWindow = Box2i( V2i( 50, 50), V2i( 99, 99 ) )
