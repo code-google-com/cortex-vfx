@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -60,7 +60,7 @@ ImageReader::ImageReader( const std::string name, const std::string description 
 		"dataWindow",
 		"The area for which data should be loaded. The default value (an empty box) "
 		"is used to specify that the full data window should be loaded. Other values may be specified "
-		"to load just a section of the image.",
+		"to load just a section of the image."
 	);
 	
 	
