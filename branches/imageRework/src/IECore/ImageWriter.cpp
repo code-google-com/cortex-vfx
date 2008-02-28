@@ -42,7 +42,6 @@
 
 using namespace std;
 using namespace IECore;
-using namespace boost;
 using namespace Imath;
 
 ImageWriter::ImageWriter( const std::string name, const std::string description ) : 
@@ -68,7 +67,8 @@ void ImageWriter::imageChannels(vector<string> & names)
 	const vector<string> &d = m_channelsParameter->getTypedValue();
 	
 	// give all channels when no list is provided
-	if(!d.size()) {
+	if(!d.size())
+	{
 		names = allNames;
 		return;
 	}
@@ -76,8 +76,10 @@ void ImageWriter::imageChannels(vector<string> & names)
 	// otherwise, copy in the requested names from the parameter set.  
 	// this is intersection(A, D), possibly with duplicates
 	names.clear();
-	for(vector<string>::const_iterator it = d.begin(); it != d.end(); it++) {
-		if(find(allNames.begin(), allNames.end(), *it) != allNames.end()) {
+	for(vector<string>::const_iterator it = d.begin(); it != d.end(); it++)
+	{
+		if(find(allNames.begin(), allNames.end(), *it) != allNames.end())
+		{
 			names.push_back(*it);
 		}
 	}
@@ -86,7 +88,7 @@ void ImageWriter::imageChannels(vector<string> & names)
 ConstImagePrimitivePtr ImageWriter::getImage()
 {
 	/// \todo This case isn't good until we're making the input parameter accept only ImagePrimitive instances
-	return static_pointer_cast<const ImagePrimitive>(object());
+	return boost::static_pointer_cast<const ImagePrimitive>(object());
 }
 
 void ImageWriter::doWrite()
@@ -96,6 +98,7 @@ void ImageWriter::doWrite()
 	imageChannels(channels);
 	
 	ConstImagePrimitivePtr image = getImage();
+	assert( image );
 	Box2i dw = image->getDataWindow();
 	
 	writeImage(channels, image, dw);
