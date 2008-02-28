@@ -55,11 +55,28 @@ using namespace Imath;
 ImageReader::ImageReader( const std::string name, const std::string description ) :
 		Reader( name, description, new ObjectParameter( "result", "The loaded object", new NullObject, ImagePrimitive::staticTypeId() ) )
 {
-	m_dataWindowParameter = new Box2iParameter("dataWindow",    "image extents to read");
-	m_displayWindowParameter = new Box2iParameter("displayWindow", "image extents to view");
+	/// \todo Determine and document appropriate behaviour for occasions when requested dataWindow is outside dataWindow of the file.
+	m_dataWindowParameter = new Box2iParameter(
+		"dataWindow",
+		"The area for which data should be loaded. The default value (an empty box) "
+		"is used to specify that the full data window should be loaded. Other values may be specified "
+		"to load just a section of the image.",
+	);
+	
+	
+	m_displayWindowParameter = new Box2iParameter(
+		"displayWindow",
+		"The displayWindow for the ImagePrimitive created during loading. The default value (an empty box) "
+		"is used to specify that the displayWindow should be inferred from the file itself. On rare occasions "
+		"it may be useful to specify an alternative using this parameter. Note that this parameter is completely "
+		"independent of the dataWindow parameter."
+	);
 
-	m_channelNamesParameter = new StringVectorParameter("channels",
-	                "The list of channels to load.  No list causes all channels to be loaded.");
+	m_channelNamesParameter = new StringVectorParameter( 
+		"channels",
+		"The names of all channels to load from the file. If the list is empty (the default value) "
+		"then all channels are loaded."
+	);
 
 	parameters()->addParameter( m_dataWindowParameter );
 	parameters()->addParameter( m_displayWindowParameter );
