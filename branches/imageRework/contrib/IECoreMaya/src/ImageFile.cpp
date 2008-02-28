@@ -132,17 +132,13 @@ MStatus ImageFile::open( MString pathName, MImageFileInfo* info )
 		{
 			return MS::kFailure;
 		}
-		
-		if (!reader->isComplete())
-		{
-			return MS::kFailure;
-		}				
 	}
 	catch ( std::exception &e )
 	{		
 		return MS::kFailure;
 	}
-				
+	
+	/// \todo Remove use of deprecated functions.			
 	m_width = image->width();
 	m_height = image->height();
 	
