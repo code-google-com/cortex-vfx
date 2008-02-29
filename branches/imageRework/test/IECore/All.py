@@ -133,6 +133,7 @@ if IECore.withTIFF() :
 
 if IECore.withJPEG() :
 	from JPEGReader import *
+	from JPEGImageWriter import *
 
 if IECore.withSQLite() :
 	from SQLiteIndexedIO import *
