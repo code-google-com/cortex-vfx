@@ -34,6 +34,8 @@
 
 #include <cassert>
 
+#include "boost/format.hpp"
+
 #include "OpenEXR/ImathBoxAlgo.h"
 #include "OpenEXR/ImathLineAlgo.h"
 
@@ -185,7 +187,7 @@ T ImagePrimitiveEvaluator::Result::getPrimVar( const PrimitiveVariable &pv ) con
 
 	if (!data)
 	{
-		throw InvalidArgumentException( "Could not retrieve primvar data for ImagePrimitiveEvaluator" );
+		throw InvalidArgumentException( ( boost::format("ImagePrimitiveEvaluator: Could not retrieve primvar data of type %s or %s " ) % TypedData<T>::staticTypeName() % VectorData::staticTypeName() ).str() );
 	}
 	
 	switch ( pv.interpolation )
