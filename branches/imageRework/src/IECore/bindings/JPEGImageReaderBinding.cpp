@@ -50,6 +50,7 @@ void bindJPEGImageReader()
 
 	JPEGImageReaderPyClass("JPEGImageReader", init<>())
 		.def( init<const std::string &>() )
+		.def( "canRead", &JPEGImageReader::canRead).staticmethod( "canRead" )
 		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( JPEGImageReader )
 	;
 
