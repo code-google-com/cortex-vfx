@@ -231,7 +231,7 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindDPXImageWriter();
 
 #ifdef IECORE_WITH_JPEG
-	//bindJPEGImageReader();
+	bindJPEGImageReader();
 	bindJPEGImageWriter();
 #endif
 
