@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -77,7 +77,7 @@ class ImageReader : public Reader
 		///////////////////////////////////////////////////////////////
 		//@{	
 		/// Fills the passed vector with the names of all channels within the file.
-		virtual void channelNames(std::vector<std::string> & names) = 0;
+		virtual void channelNames( std::vector<std::string> &names ) = 0;
 		/// Returns true if the file is complete. Implementations of this function should
 		/// be quick - it's intended as a cheaper alternative to loading the
 		/// whole file to determine completeness.
