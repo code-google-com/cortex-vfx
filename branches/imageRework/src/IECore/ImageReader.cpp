@@ -33,11 +33,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "IECore/ImageReader.h"
-#include "IECore/CompoundData.h"
-#include "IECore/SimpleTypedData.h"
 #include "IECore/VectorTypedData.h"
-#include "IECore/MessageHandler.h"
-#include "IECore/NumericParameter.h"
 #include "IECore/TypedParameter.h"
 #include "IECore/ImagePrimitive.h"
 #include "IECore/CompoundParameter.h"
@@ -45,8 +41,6 @@
 #include "IECore/ObjectParameter.h"
 #include "IECore/NullObject.h"
 #include "IECore/BoxOps.h"
-
-#include <algorithm>
 
 using namespace std;
 using namespace IECore;
