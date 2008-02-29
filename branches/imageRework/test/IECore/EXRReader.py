@@ -34,7 +34,7 @@
 
 import unittest
 import sys
-import IECore
+from IECore import *
 import os
 
 class TestEXRReader(unittest.TestCase):
@@ -45,22 +45,22 @@ class TestEXRReader(unittest.TestCase):
 
 	def testConstruction(self):
 
-		r = IECore.Reader.create(self.testfile)
-		self.assertEqual(type(r), IECore.EXRImageReader)
+		r = Reader.create(self.testfile)
+		self.assertEqual(type(r), EXRImageReader)
 
 
 	def testRead(self) :
 
-		r = IECore.Reader.create(self.testfile)
-		self.assertEqual(type(r), IECore.EXRImageReader)
+		r = Reader.create(self.testfile)
+		self.assertEqual(type(r), EXRImageReader)
 
 		img = r.read()
 
-		self.assertEqual(type(img), type(IECore.ImagePrimitive() ))
+		self.assertEqual(type(img), type(ImagePrimitive() ))
 
 		# write test
-		w = IECore.Writer.create(img, self.testoutfile)
-		self.assertEqual(type(w), IECore.EXRImageWriter)
+		w = Writer.create(img, self.testoutfile)
+		self.assertEqual(type(w), EXRImageWriter)
 
 		w.write()
 		## \todo here we might complete the test by comparing against verified output
@@ -69,34 +69,57 @@ class TestEXRReader(unittest.TestCase):
 
 		testfile = "test/IECore/data/exrFiles/redgreen_gradient_piz_256x256.exr"
 
-		r = IECore.Reader.create(testfile)
-		self.assertEqual(type(r), IECore.EXRImageReader)
+		r = Reader.create(testfile)
+		self.assertEqual(type(r), EXRImageReader)
 
 		img = r.read()
-		self.assertEqual(type(img), IECore.ImagePrimitive)
+		self.assertEqual(type(img), ImagePrimitive)
 
 	def testWindowedRead(self):
 
 		# create a reader, read a sub-image
-		r = IECore.Reader.create(self.testfile)
-		self.assertEqual(type(r), IECore.EXRImageReader)
-		box = IECore.Box2i(IECore.V2i(-100, -100), IECore.V2i(199, 199))
-		r.parameters().dataWindow.setValue(IECore.Box2iData(box))
+		r = Reader.create(self.testfile)
+		self.assertEqual(type(r), EXRImageReader)
+		box = Box2i(V2i(-100, -100), V2i(199, 199))
+		r.parameters().dataWindow.setValue(Box2iData(box))
 
 		# read, verify
 		img = r.read()
-		self.assertEqual(type(img), IECore.ImagePrimitive)
+		self.assertEqual(type(img), ImagePrimitive)
 
 		img.displayWindow = box
 
 		# write back the sub-image
-		IECore.Writer.create(img, self.testwindowoutfile).write()
+		Writer.create(img, self.testwindowoutfile).write()
 		
 	def testWindowReading( self ):
 	
-		img = IECore.Reader.create( "test/IECore/data/exrFiles/uvMapWithDataWindow.100x100.exr" ).read()
-		self.assertEqual( img.displayWindow, IECore.Box2i( IECore.V2i( 0, 0 ), IECore.V2i( 99, 99 ) ) )		
-		self.assertEqual( img.dataWindow, IECore.Box2i( IECore.V2i( 25, 25 ), IECore.V2i( 49, 49 ) ) )		
+		img = Reader.create( "test/IECore/data/exrFiles/uvMapWithDataWindow.100x100.exr" ).read()
+		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0 ), V2i( 99, 99 ) ) )		
+		self.assertEqual( img.dataWindow, Box2i( V2i( 25, 25 ), V2i( 49, 49 ) ) )	
+		
+		
+	def testOrientation( self ) :
+	
+		img = Reader.create( "test/IECore/data/exrFiles/uvMap.512x256.exr" ).read()
+		ipe = PrimitiveEvaluator.create( img )
+		r = ipe.createResult()
+		
+		pointColors = {
+			V2i(0, 0) : V3f( 0, 0, 0 ),
+			V2i(511, 0) : V3f( 1, 0, 0 ),
+			V2i(0, 255) : V3f( 0, 1, 0 ),
+			V2i(511, 255) : V3f( 1, 1, 0 ),
+		}
+		
+		for point, expectedColor in pointColors.items() :
+		
+			ipe.pointAtPixel( point, r )
+			
+			color = V3f( r.floatPrimVar( ipe.R() ), r.floatPrimVar( ipe.G() ), r.floatPrimVar( ipe.B() ) )
+			
+			self.assert_( ( color - expectedColor).length() < 1.e-6 )
+		
 
 	def tearDown(self):
 			
