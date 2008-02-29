@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -31,6 +31,8 @@
 //  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 //////////////////////////////////////////////////////////////////////////
+
+#include <setjmp.h>
 
 #include "IECore/JPEGImageReader.h"
 #include "IECore/SimpleTypedData.h"
@@ -146,26 +148,26 @@ DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2
 	{
 		throw IOException( ( boost::format( "JPEGImageReader: Could not find channel \"%s\" while reading %s" ) % name % m_bufferFileName ).str() );
 	}
-	
+
 	Box2i subRegion(
-		V2i(
-			max( dataWindow.min.x, 0 ),
-			max( dataWindow.min.y, 0 )
-		),
-		V2i(
-			min( dataWindow.max.x, m_bufferWidth  - 1 ),
-			min( dataWindow.max.y, m_bufferHeight - 1 )
-		)
+	        V2i(
+	                max( dataWindow.min.x, 0 ),
+	                max( dataWindow.min.y, 0 )
+	        ),
+	        V2i(
+	                min( dataWindow.max.x, m_bufferWidth  - 1 ),
+	                min( dataWindow.max.y, m_bufferHeight - 1 )
+	        )
 	);
-			
+
 	int cl = subRegion.min.y - dataWindow.min.y;
 	assert( cl >= 0 );
 	int dx = subRegion.min.x - dataWindow.min.x;
-	assert( dx >= 0 );	
+	assert( dx >= 0 );
 
 	HalfVectorDataPtr dataContainer = new HalfVectorData();
 	HalfVectorData::ValueType &data = dataContainer->writable();
-	int area = ( subRegion.size().x + 1 ) * ( subRegion.size().y + 1 );	
+	int area = ( subRegion.size().x + 1 ) * ( subRegion.size().y + 1 );
 	data.resize( area );
 
 	HalfVectorData::ValueType::size_type dataOffset = 0;
@@ -186,6 +188,32 @@ DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2
 	return dataContainer;
 }
 
+struct JPEGErrorHandler : public jpeg_error_mgr
+{
+	jmp_buf m_jmpBuffer;
+	char m_errorMessage[JMSG_LENGTH_MAX];
+	
+	static void errorExit ( j_common_ptr cinfo )
+	{	
+		assert( cinfo );
+		assert( cinfo->err );
+		
+		JPEGErrorHandler* errorHandler = ( JPEGErrorHandler* ) cinfo->err;
+		( *cinfo->err->format_message )( cinfo, errorHandler->m_errorMessage );
+		longjmp( errorHandler->m_jmpBuffer, 1 );
+	}
+	
+	static void outputMessage( j_common_ptr cinfo )
+	{
+		assert( cinfo );
+		assert( cinfo->err );
+		
+		char warning[JMSG_LENGTH_MAX];		
+		( *cinfo->err->format_message )( cinfo, warning );		
+		MessageHandler::output( MessageHandler::Warning, "JPEGImageReader", warning );
+	}
+};
+
 void JPEGImageReader::open()
 {
 	if ( fileName() != m_bufferFileName )
@@ -197,45 +225,66 @@ void JPEGImageReader::open()
 
 		// open the file
 		FILE *inFile = fopen( m_bufferFileName.c_str(), "rb" );
-		if (!inFile)
+		if ( !inFile )
 		{
 			throw IOException( ( boost::format( "JPEGImageReader: Could not open file %s" ) % m_bufferFileName ).str() );
 		}
 
-		// open the image
-		/// \todo Catch errors from JPEG library.
 		struct jpeg_decompress_struct cinfo;
-		struct jpeg_error_mgr jerr;
 
-		cinfo.err = jpeg_std_error(&jerr);
+		try
+		{			
+			struct JPEGErrorHandler errorHandler;
 
-		// initialize decompressor
-		jpeg_create_decompress(&cinfo);
-		jpeg_stdio_src(&cinfo, inFile);
-		jpeg_read_header(&cinfo, TRUE);
+			/// Setup error handler
+			cinfo.err = jpeg_std_error( &errorHandler );
+			
+			/// Override fatal error and warning handlers
+			errorHandler.error_exit = JPEGErrorHandler::errorExit;
+			errorHandler.output_message = JPEGErrorHandler::outputMessage;			
+			
+			/// If we reach here then libjpeg has called our error handler, in which we've saved a copy of the
+			/// error such that we might throw it as an exception.
+			if ( setjmp( errorHandler.m_jmpBuffer ) )
+			{				
+				throw IOException( std::string( "JPEGImageReader: " ) + errorHandler.m_errorMessage );
+			}
 
-		// start decompression
-		jpeg_start_decompress(&cinfo);
+			/// Initialize decompressor to read from "inFile"
+			jpeg_create_decompress( &cinfo );
+			jpeg_stdio_src( &cinfo, inFile );
+			jpeg_read_header( &cinfo, TRUE );
 
-		// create buffer
-		int row_stride = cinfo.output_width * cinfo.output_components;
-		m_buffer = new unsigned char[row_stride * cinfo.output_height]();
-		unsigned char *row_pointer[1];
-		m_bufferWidth = cinfo.output_width;
-		m_bufferHeight = cinfo.output_height;
+			/// Start decompression
+			jpeg_start_decompress( &cinfo );
 
-		// read scanlines one at a time.
-		// \todo: optimize this, probably based on image dimensions
-		while (cinfo.output_scanline < cinfo.output_height)
+			/// Create buffer
+			int row_stride = cinfo.output_width * cinfo.output_components;
+			m_buffer = new unsigned char[row_stride * cinfo.output_height]();
+			unsigned char *row_pointer[1];
+			m_bufferWidth = cinfo.output_width;
+			m_bufferHeight = cinfo.output_height;
+
+			/// Read scanlines one at a time.
+			// \todo: optimize this, probably based on image dimensions
+			while (cinfo.output_scanline < cinfo.output_height)
+			{
+				row_pointer[0] = m_buffer + row_stride * cinfo.output_scanline;
+				jpeg_read_scanlines( &cinfo, row_pointer, 1 );
+			}
+
+			/// Finish decompression
+			jpeg_finish_decompress(&cinfo);
+			jpeg_destroy_decompress(&cinfo);
+		}
+		catch ( std::exception &e )
 		{
-			row_pointer[0] = m_buffer + row_stride * cinfo.output_scanline;
-			jpeg_read_scanlines( &cinfo, row_pointer, 1 );
+			jpeg_destroy_decompress(&cinfo);
+			fclose( inFile );
+			
+			throw;
 		}
 
-		// finish decompression
-		jpeg_finish_decompress(&cinfo);
-		jpeg_destroy_decompress(&cinfo);
-
-		fclose(inFile);
+		fclose( inFile );
 	}
 }

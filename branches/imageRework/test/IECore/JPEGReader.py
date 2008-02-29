@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -33,6 +33,7 @@
 ##########################################################################
 
 import unittest
+import glob
 import sys
 from IECore import *
 
@@ -76,17 +77,22 @@ class TestJPEGReader(unittest.TestCase):
 
 		self.assertEqual( type(img), ImagePrimitive )
 		
-		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0), V2i( 511, 255) ) )
-		self.assertEqual( img.dataWindow, Box2i( V2i( 0, 0), V2i( 511, 255) ) )
+		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
+		self.assertEqual( img.dataWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
 		
 	def testReadChannel( self ):
 	
 		r = Reader.create( "test/IECore/data/jpg/uvMap.512x256.jpg" )
 		self.assertEqual( type(r), JPEGImageReader )
 		
-		red =   r.readChannel( "R" )
+		red = r.readChannel( "R" )
+		self.assert_( red )
+				
 		green = r.readChannel( "G" )
-		blue =  r.readChannel( "B" )
+		self.assert_( green )
+		
+		blue = r.readChannel( "B" )
+		self.assert_( blue )				
 		
 		self.assertRaises( RuntimeError, r.readChannel, "NonExistantChannel" )
 		
@@ -111,7 +117,7 @@ class TestJPEGReader(unittest.TestCase):
 		self.assertEqual( type(img), ImagePrimitive )
 		
 		self.assertEqual( img.dataWindow, dataWindow )
-		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0), V2i( 511, 255) ) )
+		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
 		
 		self.assertEqual( len(img["R"].data), 40 * 40 )
 			
@@ -124,16 +130,16 @@ class TestJPEGReader(unittest.TestCase):
 		self.assert_( ipe.R() )
 		self.assert_( ipe.G() )
 		self.assert_( ipe.B() )
-		self.failIf( ipe.A() )
+		self.failIf ( ipe.A() )
 		
 		result = ipe.createResult()
 		
 		# Floating point differences due to compression (?)
 		# \todo Double check this.
 		colorMap = {
-			V2i( 0  , 0 ) :    V3f( 0, 0.00392151, 0 ),
-			V2i( 511, 0 ) :    V3f( 0.984375, 0.00784302, 0 ),
-			V2i( 0  , 255 ) :  V3f( 0.00784302, 0.992188, 0 ),
+			V2i( 0 ,    0 ) :  V3f( 0, 0.00392151, 0 ),
+			V2i( 511,   0 ) :  V3f( 0.984375, 0.00784302, 0 ),
+			V2i( 0,   255 ) :  V3f( 0.00784302, 0.992188, 0 ),
 			V2i( 511, 255 ) :  V3f( 1, 1, 0 ),
 		}
 		
@@ -154,11 +160,33 @@ class TestJPEGReader(unittest.TestCase):
 	
 		r = JPEGImageReader()
 		self.assertRaises( RuntimeError, r.read )
-		
-		# \todo We need to install a JPEG error handler!
-		return	
+			
 		r = JPEGImageReader( "test/IECore/data/tiff/uvMap.512x256.8bit.tif" )
-		img = r.read()
+		self.assertRaises( RuntimeError, r.read )
+		
+	def testAll( self ):
+		
+		fileNames = glob.glob( "test/IECore/data/jpg/*.jpg" ) + glob.glob( "test/IECore/data/jpg/*.jpeg" )
+		
+		# Silence any warnings while the tests run
+		MessageHandler.pushHandler( NullMessageHandler() )
+		
+		try:
+		
+			for f in fileNames:
+
+				r = JPEGImageReader( f ) 
+				img = r.read()
+				self.assertEqual( type(img), ImagePrimitive )	
+				
+		except:
+		
+			raise	
+			
+		finally:
+			
+			MessageHandler.popHandler()	
+	
 		
 if __name__ == "__main__":
 	unittest.main()   
