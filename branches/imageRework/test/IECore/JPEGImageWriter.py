@@ -129,6 +129,33 @@ class TestJPEGImageWriter(unittest.TestCase):
 		self.assert_( os.path.exists( "test/IECore/data/jpg/output.jpg" ) )
 		self.assertEqual( os.path.getsize( "test/IECore/data/jpg/output.jpg" ), 4559 )
 		
+	def testWriteIncomplete( self ) :	
+	
+		displayWindow = Box2i(
+			V2i( 0, 0 ),
+			V2i( 99, 99)
+		)
+		
+		dataWindow = displayWindow
+		
+		img = self.__makeImage( dataWindow, displayWindow )
+		
+		# We don't have enough data to fill this dataWindow
+		img.dataWindow = Box2i(
+			V2i( 0, 0 ),
+			V2i( 199, 199)
+		)
+		
+		self.failIf( img.arePrimitiveVariablesValid() )
+		
+		w = Writer.create( img, "test/IECore/data/jpg/output.jpg" )
+		self.assertEqual( type(w), JPEGImageWriter )
+		
+		w.write()
+		
+		# \todo The writer surely shouldn't have given some sort of error by now!
+		self.failIf( os.path.exists( "test/IECore/data/jpg/output.jpg" ) )
+		
 	def testWindowWrite( self ) :	
 	
 		dataWindow = Box2i(
