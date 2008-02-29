@@ -152,6 +152,8 @@ class TestJPEGImageWriter(unittest.TestCase):
 		r = Reader.create( "test/IECore/data/jpg/output.jpg" )
 		img2 = r.read()
 		
+		# \todo This test is failing because the JPEG writer is outputting the data window only,
+		# without filling it with black up to the display window
 		self.assertEqual( img.displayWindow, img2.displayWindow )	
 		
 		
