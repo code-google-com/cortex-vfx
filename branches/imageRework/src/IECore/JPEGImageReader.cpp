@@ -61,15 +61,15 @@ using namespace std;
 const Reader::ReaderDescription <JPEGImageReader>
 JPEGImageReader::m_readerDescription ("jpeg jpg");
 
-JPEGImageReader::JPEGImageReader() : 
-	ImageReader( "JPEGImageReader", "Reads Joint Photographic Experts Group (JPEG) files" ),
-	m_buffer(0)
+JPEGImageReader::JPEGImageReader() :
+		ImageReader( "JPEGImageReader", "Reads Joint Photographic Experts Group (JPEG) files" ),
+		m_buffer(0)
 {
 }
 
-JPEGImageReader::JPEGImageReader(const string & fileName) : 
-	ImageReader( "JPEGImageReader", "Reads Joint Photographic Experts Group (JPEG) files" ),
-	m_buffer(0)
+JPEGImageReader::JPEGImageReader(const string & fileName) :
+		ImageReader( "JPEGImageReader", "Reads Joint Photographic Experts Group (JPEG) files" ),
+		m_buffer(0)
 {
 	m_fileNameParameter->setTypedValue( fileName );
 }
@@ -83,7 +83,7 @@ bool JPEGImageReader::canRead(const string & fileName)
 {
 	// attempt to open the file
 	ifstream in(fileName.c_str());
-	if(!in.is_open())
+	if (!in.is_open())
 	{
 		return false;
 	}
@@ -96,105 +96,124 @@ bool JPEGImageReader::canRead(const string & fileName)
 	return magic == 0xe0ffd8ff || magic == 0xffd8ffe0;
 }
 
-void JPEGImageReader::channelNames(vector<string> & names)
+void JPEGImageReader::channelNames( vector<string> &names )
 {
 	names.clear();
-	
-	// form channel names - hardcoded for now 'til i learn more about JPEG
+
+	/// \todo Does a JPEG only ever contain these channels?
 	names.push_back("R");
 	names.push_back("G");
 	names.push_back("B");
 }
 
-void JPEGImageReader::readChannel(string name, ImagePrimitivePtr image,
-											 const Box2i & dataWindow)
+bool JPEGImageReader::isComplete()
 {
-	
-	if(!open())
+	return true;
+}
+
+Imath::Box2i JPEGImageReader::dataWindow()
+{
+	open();
+
+	return Box2i( V2i( 0, 0 ), V2i( m_bufferWidth - 1, m_bufferHeight - 1 ) );
+}
+
+Imath::Box2i JPEGImageReader::displayWindow()
+{
+	return dataWindow();
+}
+
+DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2i &dataWindow )
+{
+	open();
+
+	int numChannels = 3;
+
+	int channelOffset = 0;
+	if ( name == "R" )
 	{
-		return;
+		channelOffset = 0;
 	}
-
-	int width = m_bufferWidth;
-	int datawidth = m_bufferWidth;
-	int height = m_bufferHeight;
-
-	// compute the data window
-	Box2i dw;
-	if(dataWindow.isEmpty())
+	else if ( name == "G" )
 	{
-		// compute image box
-		dw.min.x = 0;
-		dw.min.y = 0;
-		dw.max.x = width - 1;
-		dw.max.y = height - 1;
+		channelOffset = 1;
+	}
+	else if ( name == "B" )
+	{
+		channelOffset = 2;
 	}
 	else
 	{
-		dw = dataWindow;
+		throw IOException( ( boost::format( "JPEGImageReader: Could not find channel \"%s\" while reading %s" ) % name % m_bufferFileName ).str() );
 	}
-
-	image->setDataWindow(dw);
-	image->setDisplayWindow(dw);
 	
-	int boffset = name == "R" ? 0 : name == "G" ? 1 : 2;
+	Box2i subRegion(
+		V2i(
+			max( dataWindow.min.x, 0 ),
+			max( dataWindow.min.y, 0 )
+		),
+		V2i(
+			min( dataWindow.max.x, m_bufferWidth  - 1 ),
+			min( dataWindow.max.y, m_bufferHeight - 1 )
+		)
+	);
+			
+	int cl = subRegion.min.y - dataWindow.min.y;
+	assert( cl >= 0 );
+	int dx = subRegion.min.x - dataWindow.min.x;
+	assert( dx >= 0 );	
 
-	// copy in the corresponding channel
-	vector<half> &ic = image->createChannel<half>(name)->writable();
+	HalfVectorDataPtr dataContainer = new HalfVectorData();
+	HalfVectorData::ValueType &data = dataContainer->writable();
+	int area = ( subRegion.size().x + 1 ) * ( subRegion.size().y + 1 );	
+	data.resize( area );
 
-	int low_x = max(dw.min.x, 0);
-	int high_x = min(dw.max.x, width-1);
+	HalfVectorData::ValueType::size_type dataOffset = 0;
 
-	width = 1 + dw.max.x - dw.min.x;
-	
-	// adjust height bounds so that they intersect the image's data window
-	int low_y = max(dw.min.y, 0);
-	int high_y = min(dw.max.y, height-1);
+	int width = 1 + dataWindow.size().x;
 
-	// adjust cl for the difference between min.y, low_y
-	int cl = low_y - dw.min.y;
-	int dx = low_x - dw.min.x;
-	
-	unsigned int ini = 0;
-	
-  	for(int sl = low_y; sl <= high_y; ++sl, ++cl) {
+	for (int y = subRegion.min.y; y <= subRegion.max.y; ++y, ++cl)
+	{
+		dataOffset = cl * width + dx;
+		for (int x = subRegion.min.x; x <= subRegion.max.x; ++x, ++dataOffset)
+		{
+			assert( dataOffset < data.size() );
 
-		ini = cl * width + dx;
-		for(int i = low_x; i <= high_x; ++i, ++ini)
- 		{
-			ic[ini] = m_buffer[3*(sl*datawidth + i) + boffset] / 255.0f;
+			data[dataOffset] = m_buffer[numChannels*(y*m_bufferWidth + x) + channelOffset] / 255.0f;
 		}
 	}
-		
+
+	return dataContainer;
 }
 
-bool JPEGImageReader::open()
+void JPEGImageReader::open()
 {
-	if(fileName() != m_bufferFileName)
+	if ( fileName() != m_bufferFileName )
 	{
 		m_bufferFileName = fileName();
-	
+
 		delete [] m_buffer;
 		m_buffer = 0;
-		
+
 		// open the file
-		FILE *inFile = fopen(fileName().c_str(), "rb");
-		if(!inFile)
+		FILE *inFile = fopen( m_bufferFileName.c_str(), "rb" );
+		if (!inFile)
 		{
-			return false;
+			throw IOException( ( boost::format( "JPEGImageReader: Could not open file %s" ) % m_bufferFileName ).str() );
 		}
 
 		// open the image
+		/// \todo Catch errors from JPEG library.
 		struct jpeg_decompress_struct cinfo;
 		struct jpeg_error_mgr jerr;
-		
+
 		cinfo.err = jpeg_std_error(&jerr);
 
 		// initialize decompressor
 		jpeg_create_decompress(&cinfo);
 		jpeg_stdio_src(&cinfo, inFile);
 		jpeg_read_header(&cinfo, TRUE);
-		
+
 		// start decompression
 		jpeg_start_decompress(&cinfo);
 
@@ -210,15 +229,13 @@ bool JPEGImageReader::open()
 		while (cinfo.output_scanline < cinfo.output_height)
 		{
 			row_pointer[0] = m_buffer + row_stride * cinfo.output_scanline;
-			jpeg_read_scanlines(&cinfo, row_pointer, 1);
+			jpeg_read_scanlines( &cinfo, row_pointer, 1 );
 		}
 
 		// finish decompression
 		jpeg_finish_decompress(&cinfo);
 		jpeg_destroy_decompress(&cinfo);
 
-		fclose(inFile);		
+		fclose(inFile);
 	}
-	
-	return m_buffer;
 }

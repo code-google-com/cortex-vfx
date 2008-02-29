@@ -36,51 +36,65 @@
 #define IE_CORE_JPEGIMAGEREADER_H
 
 #include "IECore/ImageReader.h"
-#include "IECore/VectorTypedData.h"
-
-#include <stdio.h>
 
 namespace IECore
 {
-  
+
 /// The JPEGImageReader reads Joint Photographic Experts Group (JPEG) files
 class JPEGImageReader : public ImageReader
 {
-	
+
 	public:
-	
+
 		IE_CORE_DECLARERUNTIMETYPED( JPEGImageReader, ImageReader );
 
 		JPEGImageReader();
-		JPEGImageReader(const std::string & filename);
+		JPEGImageReader( const std::string & filename );
 		virtual ~JPEGImageReader();
-	
-		static bool canRead(const std::string & filename);
+
+		static bool canRead( const std::string &filename );
+
+		//! @name Image specific reading functions
+		///////////////////////////////////////////////////////////////
+		//@{	
+		/// Fills the passed vector with the names of all channels within the file.
+		virtual void channelNames( std::vector<std::string> &names );
 		
-		/// give the channel names into the vector
-		virtual void channelNames(std::vector<std::string> & names);
-	
+		/// Returns true if the file is complete. This intended as a cheaper alternative to loading the
+		/// whole file to determine completeness.
+		virtual bool isComplete();
+		
+		/// Returns the dataWindow contained in the file. This is the dataWindow that
+		/// will be loaded if the dataWindowParameter() is left at its default value.
+		virtual Imath::Box2i dataWindow();
+		
+		/// Returns the displayWindow contained in the file. This is the displayWindow
+		/// that will be loaded if the displayWindowParameter() is left at its default value.
+		virtual Imath::Box2i displayWindow();
+		//@}
+
 	private:
-	
-		virtual void readChannel(std::string name, ImagePrimitivePtr image, const Imath::Box2i & dataWindow);
-	
-		// filename associator
+
+		virtual DataPtr readChannel( const std::string &name, const Imath::Box2i &dataWindow );
+
+		/// Registers this reader with system
 		static const ReaderDescription<JPEGImageReader> m_readerDescription;
 
-		// opens the file and fills the buffer, returning true on success and false on failure
-		bool open();
+		/// Opens the file, if necessary, and fills the buffer. Throws an IOException if an error occurs.
+		void open();
 
 		// interlaced data buffer
+		/// \todo Make this into a std::vector to remove any potential for leaks
 		unsigned char *m_buffer;
 		int m_bufferWidth;
 		int m_bufferHeight;
 
-		// the filename we filled the buffer from
+		/// The filename we filled the buffer from
 		std::string m_bufferFileName;
 };
-	
-IE_CORE_DECLAREPTR(JPEGImageReader);
-	
+
+IE_CORE_DECLAREPTR( JPEGImageReader );
+
 } // namespace IECore
 
 #endif // IE_CORE_JPEGIMAGEREADER_H
