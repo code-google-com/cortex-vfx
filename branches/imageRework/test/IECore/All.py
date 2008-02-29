@@ -63,7 +63,6 @@ from VectorData import *
 from FileSequence import *
 from EXRReader import *
 from PointsPrimitive import *
-from EXRReader import *
 from ImagePrimitive import *
 from PerlinNoise import *
 from Turbulence import *
