@@ -646,12 +646,10 @@ if doConfigure :
 	
 	coreSources.remove( "src/IECore/CINImageReader.cpp" )
 	coreSources.remove( "src/IECore/DPXImageReader.cpp" )
-	coreSources.remove( "src/IECore/EXRImageReader.cpp" )
 	coreSources.remove( "src/IECore/TIFFImageReader.cpp" )
 	
 	corePythonSources.remove( "src/IECore/bindings/CINImageReaderBinding.cpp" )
 	corePythonSources.remove( "src/IECore/bindings/DPXImageReaderBinding.cpp" )
-	corePythonSources.remove( "src/IECore/bindings/EXRImageReaderBinding.cpp" )
 	corePythonSources.remove( "src/IECore/bindings/TIFFImageReaderBinding.cpp" )
 		
 	if coreEnv["WITH_SQLITE"] and c.CheckLibWithHeader( "sqlite3", "sqlite/sqlite3.h", "CXX" ) :

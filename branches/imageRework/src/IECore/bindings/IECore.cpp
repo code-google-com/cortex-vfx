@@ -217,7 +217,7 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindImagePrimitive();
 	bindImageReader();
 	bindImageWriter();
-	//bindEXRImageReader();
+	bindEXRImageReader();
 	bindEXRImageWriter();
 	
 #ifdef IECORE_WITH_TIFF	

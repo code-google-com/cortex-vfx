@@ -39,66 +39,170 @@ import os
 
 class TestEXRReader(unittest.TestCase):
 
-	testfile = "test/IECore/data/exrFiles/redgreen_gradient_piz_256x256.exr"
-	testoutfile = "test/IECore/data/exrFiles/redgreen_gradient_piz_256x256.testoutput.exr"
-	testwindowoutfile = "test/IECore/data/exrFiles/redgreen.window.exr"
+	testFile = "test/IECore/data/exrFiles/redgreen_gradient_piz_256x256.exr"
+	testOutFile = "test/IECore/data/exrFiles/redgreen_gradient_piz_256x256.testoutput.exr"
+	testWindowOutFile = "test/IECore/data/exrFiles/redgreen.window.exr"
 
-	def testConstruction(self):
+	def testFactoryConstruction( self ) :
 
-		r = Reader.create(self.testfile)
-		self.assertEqual(type(r), EXRImageReader)
+		r = Reader.create( self.testFile )
+		self.assertEqual( type( r ), EXRImageReader )
 
-
-	def testRead(self) :
-
-		r = Reader.create(self.testfile)
-		self.assertEqual(type(r), EXRImageReader)
-
-		img = r.read()
-
-		self.assertEqual(type(img), type(ImagePrimitive() ))
-
-		# write test
-		w = Writer.create(img, self.testoutfile)
-		self.assertEqual(type(w), EXRImageWriter)
-
-		w.write()
-		## \todo here we might complete the test by comparing against verified output
-
-	def testHalf(self):
-
-		testfile = "test/IECore/data/exrFiles/redgreen_gradient_piz_256x256.exr"
-
-		r = Reader.create(testfile)
-		self.assertEqual(type(r), EXRImageReader)
-
-		img = r.read()
-		self.assertEqual(type(img), ImagePrimitive)
-
-	def testWindowedRead(self):
-
-		# create a reader, read a sub-image
-		r = Reader.create(self.testfile)
-		self.assertEqual(type(r), EXRImageReader)
-		box = Box2i(V2i(-100, -100), V2i(199, 199))
-		r.parameters().dataWindow.setValue(Box2iData(box))
-
-		# read, verify
-		img = r.read()
-		self.assertEqual(type(img), ImagePrimitive)
-
-		img.displayWindow = box
-
-		# write back the sub-image
-		Writer.create(img, self.testwindowoutfile).write()
+	def testCanReadAndIsComplete( self ) :
 		
-	def testWindowReading( self ):
+		self.assert_( EXRImageReader.canRead( "test/IECore/data/exrFiles/AllHalfValues.exr" ) )
+		self.assert_( not EXRImageReader.canRead( "thisFileDoesntExist.exr" ) )
+		
+		r = EXRImageReader( "test/IECore/data/exrFiles/AllHalfValues.exr" )
+		self.assert_( r.isComplete() )
+		
+		r = EXRImageReader( "test/IECore/data/exrFiles/incomplete.exr" )
+		self.assert_( not r.isComplete() )
+		
+		r = EXRImageReader( "thisFileDoesntExist.exr" )
+		self.assert_( not r.isComplete() )
+		
+	def testChannelNames( self ) :
 	
-		img = Reader.create( "test/IECore/data/exrFiles/uvMapWithDataWindow.100x100.exr" ).read()
-		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0 ), V2i( 99, 99 ) ) )		
-		self.assertEqual( img.dataWindow, Box2i( V2i( 25, 25 ), V2i( 49, 49 ) ) )	
+		r = EXRImageReader( "test/IECore/data/exrFiles/AllHalfValues.exr" )
+		c = r.channelNames()
+		self.assert_( c.staticTypeId()==StringVectorData.staticTypeId() )
+		self.assert_( len( c ), 3 )
+		self.assert_( "R" in c )
+		self.assert_( "G" in c )
+		self.assert_( "B" in c )
 		
+		r = EXRImageReader( "test/IECore/data/exrFiles/manyChannels.exr" )
+		c = r.channelNames()
+		self.assert_( c.staticTypeId()==StringVectorData.staticTypeId() )
+		self.assert_( len( c ), 7 )
+		self.assert_( "R" in c )
+		self.assert_( "G" in c )
+		self.assert_( "B" in c )
+		self.assert_( "A" in c )
+		self.assert_( "diffuse.red" in c )
+		self.assert_( "diffuse.green" in c )
+		self.assert_( "diffuse.blue" in c )
 		
+		r = EXRImageReader( "thisFileDoesntExist.exr" )
+		self.assertRaises( Exception, r.channelNames )
+	
+	def testDataAndDisplayWindows( self ) :
+	
+		r = EXRImageReader( "test/IECore/data/exrFiles/AllHalfValues.exr" )
+		self.assertEqual( r.dataWindow(), Box2i( V2i( 0 ), V2i( 255 ) ) )
+		self.assertEqual( r.displayWindow(), Box2i( V2i( 0 ), V2i( 255 ) ) )
+		
+		r = EXRImageReader( "test/IECore/data/exrFiles/uvMapWithDataWindow.100x100.exr" )
+		self.assertEqual( r.dataWindow(), Box2i( V2i( 25 ), V2i( 49 ) ) )
+		self.assertEqual( r.displayWindow(), Box2i( V2i( 0 ), V2i( 99 ) ) )
+		
+		r = EXRImageReader( "thisFileDoesntExist.exr" )
+		self.assertRaises( Exception, r.dataWindow )
+		self.assertRaises( Exception, r.displayWindow )
+	
+	def testReadImage( self ) :
+	
+		r = EXRImageReader( "test/IECore/data/exrFiles/uvMap.256x256.exr" )
+		
+		i = r.read()
+		self.assertEqual( i.typeId(), ImagePrimitive.staticTypeId() )
+				
+		self.assertEqual( i.dataWindow, Box2i( V2i( 0 ), V2i( 255 ) ) )
+		self.assertEqual( i.displayWindow, Box2i( V2i( 0 ), V2i( 255 ) ) )
+		
+		self.assert_( i.arePrimitiveVariablesValid() )
+		
+		self.assertEqual( len( i ), 3 )
+		for c in ["R", "G", "B"] :
+			self.assertEqual( i[c].data.typeId(), FloatVectorData.staticTypeId() )
+			
+		r = i["R"].data
+		self.assertEqual( r[0], 0 )
+		self.assertEqual( r[-1], 1 )
+		g = i["G"].data
+		self.assertEqual( r[0], 0 )
+		self.assertEqual( r[-1], 1 )
+		for b in i["B"].data :
+			self.assertEqual( b, 0 )
+			
+	def testReadIndividualChannels( self ) :
+	
+		r = EXRImageReader( "test/IECore/data/exrFiles/uvMap.256x256.exr" )
+		i = r.read()
+		
+		for c in ["R", "G", "B"] :
+		
+			cd = r.readChannel( c )
+			self.assertEqual( i[c].data, cd )
+	
+	def testReadWithChangedDisplayWindow( self ) :
+	
+		r = EXRImageReader( "test/IECore/data/exrFiles/uvMap.256x256.exr" )
+		i1 = r.read()
+		
+		r.parameters().displayWindow.setTypedValue( Box2i( V2i( -1000, -10 ), V2i( 1000, 10 ) ) ) 
+		i2 = r.read()
+		
+		self.assertEqual( i2.displayWindow, Box2i( V2i( -1000, -10 ), V2i( 1000, 10 ) ) )
+		self.assertEqual( i2.dataWindow, Box2i( V2i( 0 ), V2i( 255 ) ) )
+		
+		i2.displayWindow = i1.displayWindow
+		self.assertEqual( i1, i2 )
+	
+	def testReadInvalidDataWindow( self ) :
+	
+		r = EXRImageReader( "test/IECore/data/exrFiles/uvMap.512x256.exr" )
+		r.parameters().dataWindow.setTypedValue( Box2i( V2i( -1 ), V2i( 511, 255 ) ) )
+
+		self.assertRaises( Exception, r.read )
+		
+	def testReadHorizontalSlices( self ) :
+	
+		r = EXRImageReader( "test/IECore/data/exrFiles/uvMap.512x256.exr" )
+		iWhole = r.read()
+		
+		# read and test a horizontal slice starting at y==0
+		r.parameters().dataWindow.setTypedValue( Box2i( V2i( 0, 0 ), V2i( 511, 100 ) ) )
+		
+		iSliced = r.read()
+		self.assertEqual( iSliced.dataWindow, Box2i( V2i( 0, 0 ), V2i( 511, 100 ) ) )
+		self.assertEqual( iSliced.displayWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
+		
+		self.assert_( iSliced.arePrimitiveVariablesValid() )
+		
+		for i in range( 0, len( iSliced["R"].data ) ) :
+		
+			self.assertEqual( iSliced["R"].data[i], iWhole["R"].data[i] )
+			self.assertEqual( iSliced["G"].data[i], iWhole["G"].data[i] )
+			self.assertEqual( iSliced["B"].data[i], iWhole["B"].data[i] )
+		
+		# read and test a horizontal slice ending at the end of the image
+		r.parameters().dataWindow.setTypedValue( Box2i( V2i( 0, 200 ), V2i( 511, 255 ) ) )
+		
+		iSliced = r.read()
+		self.assertEqual( iSliced.dataWindow, Box2i( V2i( 0, 200 ), V2i( 511, 255 ) ) )
+		self.assertEqual( iSliced.displayWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
+		
+		for i in range( -1, -len( iSliced["R"].data ) ) :
+			self.assertEqual( iSliced["R"].data[i], iWhole["R"].data[i] )
+			self.assertEqual( iSliced["G"].data[i], iWhole["G"].data[i] )
+			self.assertEqual( iSliced["B"].data[i], iWhole["B"].data[i] )
+	
+	def testReadArbitrarySlice( self ) :
+	
+		r = EXRImageReader( "test/IECore/data/exrFiles/uvMap.512x256.exr" )
+		iWhole = r.read()
+		
+		r.parameters().dataWindow.setTypedValue( Box2i( V2i( 10, 10 ), V2i( 100, 100 ) ) )
+		
+		iSliced = r.read()
+		self.assertEqual( iSliced.dataWindow, Box2i( V2i( 0, 200 ), V2i( 511, 255 ) ) )
+		self.assertEqual( iSliced.displayWindow, Box2i( V2i( 10, 10 ), V2i( 100, 100 ) ) )
+
+		youHaveTestedTheData = False
+		self.assert_( youHaveTestedTheData )
+	
 	def testOrientation( self ) :
 	
 		img = Reader.create( "test/IECore/data/exrFiles/uvMap.512x256.exr" ).read()
@@ -119,11 +223,10 @@ class TestEXRReader(unittest.TestCase):
 			color = V3f( r.floatPrimVar( ipe.R() ), r.floatPrimVar( ipe.G() ), r.floatPrimVar( ipe.B() ) )
 			
 			self.assert_( ( color - expectedColor).length() < 1.e-6 )
-		
 
 	def tearDown(self):
 			
-		for f in [ self.testoutfile, self.testwindowoutfile ] :
+		for f in [ self.testOutFile, self.testWindowOutFile ] :
 			if os.path.isfile( f ) :	
 				os.remove( f )				
 				
