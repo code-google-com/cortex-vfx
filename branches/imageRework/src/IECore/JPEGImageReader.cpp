@@ -32,6 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include <algorithm>
+#include <cassert>
+#include <stdio.h>
+#include <iostream>
+#include <fstream>
 #include <setjmp.h>
 
 #include "IECore/JPEGImageReader.h"
@@ -41,6 +46,7 @@
 #include "IECore/MessageHandler.h"
 #include "IECore/ImagePrimitive.h"
 #include "IECore/FileNameParameter.h"
+#include "IECore/BoxOps.h"
 
 #include "boost/format.hpp"
 
@@ -48,12 +54,6 @@ extern "C"
 {
 #include "jpeglib.h"
 }
-
-#include <algorithm>
-#include <cassert>
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
 
 using namespace IECore;
 using namespace boost;
@@ -149,16 +149,12 @@ DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2
 		throw IOException( ( boost::format( "JPEGImageReader: Could not find channel \"%s\" while reading %s" ) % name % m_bufferFileName ).str() );
 	}
 
-	Box2i subRegion(
-	        V2i(
-	                max( dataWindow.min.x, 0 ),
-	                max( dataWindow.min.y, 0 )
-	        ),
-	        V2i(
-	                min( dataWindow.max.x, m_bufferWidth  - 1 ),
-	                min( dataWindow.max.y, m_bufferHeight - 1 )
-	        )
-	);
+	Box2i subRegion = boxIntersection( dataWindow, this->dataWindow() );
+	
+	if ( subRegion.isEmpty() )
+	{
+		throw IOException( "JPEGImageReader: Data window for read is empty" );
+	}
 
 	int cl = subRegion.min.y - dataWindow.min.y;
 	assert( cl >= 0 );
@@ -168,6 +164,7 @@ DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2
 	HalfVectorDataPtr dataContainer = new HalfVectorData();
 	HalfVectorData::ValueType &data = dataContainer->writable();
 	int area = ( subRegion.size().x + 1 ) * ( subRegion.size().y + 1 );
+	assert( area >= 0 );
 	data.resize( area );
 
 	HalfVectorData::ValueType::size_type dataOffset = 0;
@@ -188,7 +185,7 @@ DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2
 	return dataContainer;
 }
 
-struct JPEGErrorHandler : public jpeg_error_mgr
+struct JPEGReaderErrorHandler : public jpeg_error_mgr
 {
 	jmp_buf m_jmpBuffer;
 	char m_errorMessage[JMSG_LENGTH_MAX];
@@ -198,8 +195,8 @@ struct JPEGErrorHandler : public jpeg_error_mgr
 		assert( cinfo );
 		assert( cinfo->err );
 		
-		JPEGErrorHandler* errorHandler = ( JPEGErrorHandler* ) cinfo->err;
-		( *cinfo->err->format_message )( cinfo, errorHandler->m_errorMessage );
+		JPEGReaderErrorHandler* errorHandler = static_cast< JPEGReaderErrorHandler* >( cinfo->err );
+		( *cinfo->err->format_message )( cinfo, errorHandler->m_errorMessage ); 
 		longjmp( errorHandler->m_jmpBuffer, 1 );
 	}
 	
@@ -210,7 +207,7 @@ struct JPEGErrorHandler : public jpeg_error_mgr
 		
 		char warning[JMSG_LENGTH_MAX];		
 		( *cinfo->err->format_message )( cinfo, warning );		
-		MessageHandler::output( MessageHandler::Warning, "JPEGImageReader", warning );
+		msg( Msg::Warning, "JPEGImageReader", warning );
 	}
 };
 
@@ -234,14 +231,14 @@ void JPEGImageReader::open()
 
 		try
 		{			
-			struct JPEGErrorHandler errorHandler;
+			JPEGReaderErrorHandler errorHandler;
 
 			/// Setup error handler
 			cinfo.err = jpeg_std_error( &errorHandler );
 			
 			/// Override fatal error and warning handlers
-			errorHandler.error_exit = JPEGErrorHandler::errorExit;
-			errorHandler.output_message = JPEGErrorHandler::outputMessage;			
+			errorHandler.error_exit = JPEGReaderErrorHandler::errorExit;
+			errorHandler.output_message = JPEGReaderErrorHandler::outputMessage;			
 			
 			/// If we reach here then libjpeg has called our error handler, in which we've saved a copy of the
 			/// error such that we might throw it as an exception.
@@ -259,9 +256,9 @@ void JPEGImageReader::open()
 			jpeg_start_decompress( &cinfo );
 
 			/// Create buffer
-			int row_stride = cinfo.output_width * cinfo.output_components;
-			m_buffer = new unsigned char[row_stride * cinfo.output_height]();
-			unsigned char *row_pointer[1];
+			int rowStride = cinfo.output_width * cinfo.output_components;
+			m_buffer = new unsigned char[rowStride * cinfo.output_height]();
+			unsigned char *rowPointer[1];
 			m_bufferWidth = cinfo.output_width;
 			m_bufferHeight = cinfo.output_height;
 
@@ -269,20 +266,31 @@ void JPEGImageReader::open()
 			// \todo: optimize this, probably based on image dimensions
 			while (cinfo.output_scanline < cinfo.output_height)
 			{
-				row_pointer[0] = m_buffer + row_stride * cinfo.output_scanline;
-				jpeg_read_scanlines( &cinfo, row_pointer, 1 );
+				rowPointer[0] = m_buffer + rowStride * cinfo.output_scanline;
+				jpeg_read_scanlines( &cinfo, rowPointer, 1 );
 			}
 
 			/// Finish decompression
-			jpeg_finish_decompress(&cinfo);
-			jpeg_destroy_decompress(&cinfo);
+			jpeg_finish_decompress( &cinfo );
+			jpeg_destroy_decompress( &cinfo );
 		}
-		catch ( std::exception &e )
+		catch ( Exception &e )
 		{
-			jpeg_destroy_decompress(&cinfo);
+			jpeg_destroy_decompress( &cinfo );
 			fclose( inFile );
 			
 			throw;
+		}
+		catch ( std::exception &e )
+		{
+			throw IOException( ( boost::format( "JPEGImageReader : %s" ) % e.what() ).str() );
+		}
+		catch ( ... )
+		{
+			jpeg_destroy_decompress( &cinfo );
+			fclose( inFile );
+			
+			throw IOException( "JPEGImageReader: Unexpected error" );
 		}
 
 		fclose( inFile );

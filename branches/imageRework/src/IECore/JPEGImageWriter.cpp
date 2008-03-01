@@ -32,6 +32,9 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include <setjmp.h>
+#include <stdio.h>
+
 #include "IECore/JPEGImageWriter.h"
 #include "IECore/MessageHandler.h"
 #include "IECore/VectorTypedData.h"
@@ -49,7 +52,6 @@ extern "C"
 {
 #include "jpeglib.h"
 }
-#include <stdio.h>
 
 using namespace IECore;
 using namespace std;
@@ -101,6 +103,7 @@ void JPEGImageWriter::constructParameters()
 
 JPEGImageWriter::~JPEGImageWriter()
 {
+	g_classData.erase( this );
 }
 
 IntParameterPtr JPEGImageWriter::qualityParameter()
@@ -119,134 +122,217 @@ ConstIntParameterPtr JPEGImageWriter::qualityParameter() const
 	return extraData->m_qualityParameter;
 }
 
-void JPEGImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dw)
-{
 
-	// open the output file
-	FILE *outfile;
-	if ((outfile = fopen(fileName().c_str(), "wb")) == NULL)
+struct JPEGWriterErrorHandler : public jpeg_error_mgr
+{
+	jmp_buf m_jmpBuffer;
+	char m_errorMessage[JMSG_LENGTH_MAX];
+
+	static void errorExit ( j_common_ptr cinfo )
+	{
+		assert( cinfo );
+		assert( cinfo->err );
+
+		JPEGWriterErrorHandler* errorHandler = static_cast< JPEGWriterErrorHandler* >( cinfo->err );
+		( *cinfo->err->format_message )( cinfo, errorHandler->m_errorMessage );
+		longjmp( errorHandler->m_jmpBuffer, 1 );
+	}
+
+	static void outputMessage( j_common_ptr cinfo )
+	{
+		assert( cinfo );
+		assert( cinfo->err );
+
+		char warning[JMSG_LENGTH_MAX];
+		( *cinfo->err->format_message )( cinfo, warning );
+		msg( Msg::Warning, "JPEGImageWriter", warning );
+	}
+};
+
+void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow )
+{
+	if ( names.size() < 3 )
+	{
+		throw IOException( "JPEGImageWriter: Cannot write image with less than 3 channels to JPEG" );
+	}
+
+	// assume an 8-bit RGB image
+
+	const char *rgbChannels[3] = { "R", "G", "B" };
+	for ( int i = 0; i < 3; i++ )
+	{
+		vector<string>::const_iterator it = find( names.begin(), names.end(), rgbChannels[i] );
+		if ( it == names.end() )
+		{
+			throw IOException( ( boost::format("JPEGImageWriter: Cannot write image without \"%s\" channel to JPEG") % rgbChannels[i]).str() );
+		}
+	}
+
+	FILE *outFile = 0;
+	if ((outFile = fopen(fileName().c_str(), "wb")) == NULL)
 	{
 		throw IOException("Could not open '" + fileName() + "' for writing.");
 	}
+	assert( outFile );
 
-	/// \todo libjpeg error handling
-
-	// assume an 8-bit RGB image
-	int width  = 1 + dw.max.x - dw.min.x;
-	int height = 1 + dw.max.y - dw.min.y;
-	int spp = 3;
-
-	// build the buffer
-	std::vector<unsigned char> image_buffer( width*height*spp, 0 );
-	unsigned char *row_pointer[1];
-	int row_stride;
+	int width  = 1 + dataWindow.max.x - dataWindow.min.x;
+	int height = 1 + dataWindow.max.y - dataWindow.min.y;
+	int numChannels = 3;
 
 	// compression info
 	struct jpeg_compress_struct cinfo;
 
-	struct jpeg_error_mgr jerr;
-	cinfo.err = jpeg_std_error(&jerr);
-
-	jpeg_create_compress(&cinfo);
-
-	jpeg_stdio_dest(&cinfo, outfile);
-
-	cinfo.image_width = width;
-	cinfo.image_height = height;
-	cinfo.input_components = spp;
-	cinfo.in_color_space = JCS_RGB;
-
-	jpeg_set_defaults(&cinfo);
-
-	int quality = qualityParameter()->getNumericValue();
-
-	// force baseline-JPEG (8bit) values with TRUE
-	jpeg_set_quality(&cinfo, quality, TRUE);
-
-	row_stride = width * spp;
-
-	// add the channels into the header with the appropriate types
-	// channel data is RGB interlaced
-	vector<string>::const_iterator i = names.begin();
-	while (i != names.end())
+	try
 	{
+		JPEGWriterErrorHandler errorHandler;
 
-		if (!(*i == "R" || *i == "G" || *i == "B"))
+		/// Setup error handler
+		cinfo.err = jpeg_std_error( &errorHandler );
+
+		/// Override fatal error and warning handlers
+		errorHandler.error_exit = JPEGWriterErrorHandler::errorExit;
+		errorHandler.output_message = JPEGWriterErrorHandler::outputMessage;
+
+		/// If we reach here then libjpeg has called our error handler, in which we've saved a copy of the
+		/// error such that we might throw it as an exception.
+		if ( setjmp( errorHandler.m_jmpBuffer ) )
 		{
-			msg( Msg::Warning, "JPEGImageWriter", format( "Channel \"%s\" was not encoded." ) % *i );
-			++i;
-			continue;
-			//throw Exception("invalid channel for JPEG writer, channel name is: " + *i);
+			throw IOException( std::string( "JPEGImageWriter: " ) + errorHandler.m_errorMessage );
 		}
 
-		int offset = *i == "R" ? 0 : *i == "G" ? 1 : 2;
+		jpeg_create_compress( &cinfo );
 
-		// get the image channel
-		DataPtr channelp = image->variables.find( *i )->second.data;
-		assert( channelp );
+		jpeg_stdio_dest(&cinfo, outFile);
 
-		switch (channelp->typeId())
+		cinfo.image_width = width;
+		cinfo.image_height = height;
+		cinfo.input_components = numChannels;
+		cinfo.in_color_space = JCS_RGB;
+
+		jpeg_set_defaults( &cinfo );
+
+		int quality = qualityParameter()->getNumericValue();
+
+		// force baseline-JPEG (8bit) values with TRUE
+		jpeg_set_quality(&cinfo, quality, TRUE);
+
+		int rowStride = width * numChannels;
+
+		// build the buffer
+		std::vector<unsigned char> imageBuffer( width*height*numChannels, 0 );
+
+		// add the channels into the header with the appropriate types
+		// channel data is RGB interlaced
+		for ( vector<string>::const_iterator it = names.begin(); it != names.end(); it++ )
 		{
+			const string &name = *it;
 
-		case FloatVectorDataTypeId:
-		{
-			const vector<float> &channel = static_pointer_cast<FloatVectorData>(channelp)->readable();
-
-			// convert to 8-bit integer
-			for (int i = 0; i < width*height; ++i)
+			if (!(name == "R" || name == "G" || name == "B"))
 			{
-				image_buffer[spp*i + offset] = (unsigned char) (max(0.0, min(255.0, 255.0 * channel[i] + 0.5)));
+				msg( Msg::Warning, "JPEGImageWriter", format( "Channel \"%s\" was not encoded." ) % name );
+				continue;
+			}
+
+			int channelOffset = 0;
+			if ( name == "R" )
+			{
+				channelOffset = 0;
+			}
+			else if ( name == "G" )
+			{
+				channelOffset = 1;
+			}
+			else
+			{
+				assert( name == "B" );
+				channelOffset = 2;
+			}
+
+			// get the image channel
+			assert( image->variables.find( name ) != image->variables.end() );			
+			DataPtr dataContainer = image->variables.find( name )->second.data;
+			assert( dataContainer );
+
+			switch ( dataContainer->typeId() )
+			{
+
+			case FloatVectorDataTypeId:
+			{
+				const FloatVectorData::ValueType &data = static_pointer_cast<FloatVectorData>( dataContainer )->readable();
+
+				// convert to 8-bit integer
+				for (int i = 0; i < width*height; ++i)
+				{
+					imageBuffer[numChannels*i + channelOffset] = (unsigned char) (max(0.0, min(255.0, 255.0 * data[i] + 0.5)));
+				}
+			}
+			break;
+
+			case UIntVectorDataTypeId:
+			{
+				const UIntVectorData::ValueType &data = static_pointer_cast<UIntVectorData>( dataContainer )->readable();
+
+				// convert to 8-bit integer
+				for (int i = 0; i < width*height; ++i)
+				{
+					// \todo: round here
+					BOOST_STATIC_ASSERT( sizeof( unsigned int ) == 4 );
+					imageBuffer[numChannels*i + channelOffset] = (unsigned char) (data[i] >> 24);
+				}
+			}
+			break;
+
+			case HalfVectorDataTypeId:
+			{
+				const HalfVectorData::ValueType &data = static_pointer_cast<HalfVectorData>( dataContainer )->readable();
+
+				// convert to 8-bit linear integer
+				for (int i = 0; i < width*height; ++i)
+				{
+					imageBuffer[numChannels*i + channelOffset] = (unsigned char) (max(0.0, min(255.0, 255.0 * data[i] + 0.5)));
+				}
+			}
+			break;
+
+			/// \todo Deal with other channel types, preferably using templates!
+
+			default:
+				throw InvalidArgumentException( (format( "JPEGImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId(dataContainer->typeId()) % name).str() );
 			}
 		}
-		break;
 
-		case UIntVectorDataTypeId:
+		// start the compressor
+		jpeg_start_compress(&cinfo, TRUE);
+
+		// pass one scanline at a time
+		unsigned char *rowPointer[1];
+		while (cinfo.next_scanline < cinfo.image_height)
 		{
-			const vector<unsigned int> &channel = static_pointer_cast<UIntVectorData>(channelp)->readable();
-
-			// convert to 8-bit integer
-			for (int i = 0; i < width*height; ++i)
-			{
-				// \todo: round here
-				BOOST_STATIC_ASSERT( sizeof( unsigned int ) == 4 );
-				image_buffer[spp*i + offset] = (unsigned char) (channel[i] >> 24);
-			}
-		}
-		break;
-
-		case HalfVectorDataTypeId:
-		{
-			const vector<half> &channel = static_pointer_cast<HalfVectorData>(channelp)->readable();
-
-			// convert to 8-bit linear integer
-			for (int i = 0; i < width*height; ++i)
-			{
-				image_buffer[spp*i + offset] = (unsigned char) (max(0.0, min(255.0, 255.0 * channel[i] + 0.5)));
-			}
-		}
-		break;
-
-		/// \todo Deal with other channel types, preferably using templates!
-
-		default:
-			throw InvalidArgumentException( (format( "JPEGImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId(channelp->typeId()) % *i).str() );
+			rowPointer[0] = &imageBuffer[cinfo.next_scanline * rowStride];
+			jpeg_write_scanlines(&cinfo, rowPointer, 1);
 		}
 
-		++i;
+		jpeg_finish_compress( &cinfo );
+		jpeg_destroy_compress( &cinfo );
+		fclose( outFile );
+
 	}
-
-	// start the compressor
-	jpeg_start_compress(&cinfo, TRUE);
-
-	// pass one scanline at a time
-	while (cinfo.next_scanline < cinfo.image_height)
+	catch ( Exception &e )
 	{
-		row_pointer[0] = &image_buffer[cinfo.next_scanline * row_stride];
-		jpeg_write_scanlines(&cinfo, row_pointer, 1);
-	}
+		jpeg_destroy_compress( &cinfo );
+		fclose( outFile );
 
-	jpeg_finish_compress(&cinfo);
-	jpeg_destroy_compress(&cinfo);
-	fclose(outfile);
-	outfile = 0;
+		throw;
+	}
+	catch ( std::exception &e )
+	{
+		throw IOException( ( boost::format( "JPEGImageReader : %s" ) % e.what() ).str() );
+	}
+	catch ( ... )
+	{
+		jpeg_destroy_compress( &cinfo );
+		fclose( outFile );
+
+		throw IOException( "JPEGImageReader: Unexpected error" );
+	}
 }

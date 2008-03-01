@@ -156,6 +156,26 @@ class TestJPEGImageWriter(unittest.TestCase):
 		# \todo The writer surely shouldn't have given some sort of error by now!
 		self.failIf( os.path.exists( "test/IECore/data/jpg/output.jpg" ) )
 		
+	def testErrors( self ) :
+	
+		displayWindow = Box2i(
+			V2i( 0, 0 ),
+			V2i( 99, 99)
+		)
+		
+		dataWindow = displayWindow
+		
+		
+		# Try and write an image with the "R" channel of an unsupported type
+		img = self.__makeImage( dataWindow, displayWindow )	
+		img[ "R" ] = PrimitiveVariable( PrimitiveVariable.Interpolation.Constant, StringData( "hello") )
+		
+		w = Writer.create( img, "test/IECore/data/jpg/output.jpg" )
+		self.assertEqual( type(w), JPEGImageWriter )
+		
+		self.assertRaises( RuntimeError, w.write )
+		
+		
 	def testWindowWrite( self ) :	
 	
 		dataWindow = Box2i(
