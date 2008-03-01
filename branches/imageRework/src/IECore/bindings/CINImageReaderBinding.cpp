@@ -1,3 +1,4 @@
+#if 0
 //////////////////////////////////////////////////////////////////////////
 //
 //  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
@@ -59,3 +60,4 @@ namespace IECore {
   
 } // namespace IECore
 
+#endif

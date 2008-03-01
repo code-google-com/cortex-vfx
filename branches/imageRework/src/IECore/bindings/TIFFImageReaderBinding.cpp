@@ -1,3 +1,4 @@
+#if 0
 //////////////////////////////////////////////////////////////////////////
 //
 //  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
@@ -42,18 +43,22 @@ using std::string;
 using namespace boost;
 using namespace boost::python;
 
-namespace IECore {
+namespace IECore
+{
 
-  void bindTIFFImageReader() {
-    typedef class_<TIFFImageReader, TIFFImageReaderPtr, boost::noncopyable, bases<ImageReader> > TIFFImageReaderPyClass;
+void bindTIFFImageReader()
+{
+	typedef class_<TIFFImageReader, TIFFImageReaderPtr, boost::noncopyable, bases<ImageReader> > TIFFImageReaderPyClass;
 	TIFFImageReaderPyClass("TIFFImageReader", init<>())
 		.def( init<const std::string &>() )
-		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(TIFFImageReader)
+		.def( "canRead", &TIFFImageReader::canRead).staticmethod( "canRead" )
+	.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(TIFFImageReader)
 	;
-    
+
 	INTRUSIVE_PTR_PATCH( TIFFImageReader, TIFFImageReaderPyClass );
-    implicitly_convertible<TIFFImageReaderPtr, ImageReaderPtr>();
-  }
-  
+	implicitly_convertible<TIFFImageReaderPtr, ImageReaderPtr>();
+}
+
 } // namespace IECore
 
+#endif
