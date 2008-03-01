@@ -132,7 +132,7 @@ DataPtr EXRImageReader::readTypedChannel( const std::string &name, const Imath::
 		// the width we want to read matches the width in the file, so we can read straight
 		// into the result buffer
 		FrameBuffer frameBuffer;
-		T *buffer00 = data->baseWritable() - dataWindow.min.y * pixelDimensions.x;
+		T *buffer00 = data->baseWritable() - dataWindow.min.y * pixelDimensions.x - fullDataWindow.min.x;
 		Slice slice( channel->type, (char *)buffer00, sizeof(T), sizeof(T) * pixelDimensions.x );
 		frameBuffer.insert( name.c_str(), slice );
 		m_inputFile->setFrameBuffer( frameBuffer );

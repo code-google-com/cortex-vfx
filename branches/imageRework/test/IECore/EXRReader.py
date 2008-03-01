@@ -39,13 +39,9 @@ import os
 
 class TestEXRReader(unittest.TestCase):
 
-	testFile = "test/IECore/data/exrFiles/redgreen_gradient_piz_256x256.exr"
-	testOutFile = "test/IECore/data/exrFiles/redgreen_gradient_piz_256x256.testoutput.exr"
-	testWindowOutFile = "test/IECore/data/exrFiles/redgreen.window.exr"
-
 	def testFactoryConstruction( self ) :
 
-		r = Reader.create( self.testFile )
+		r = Reader.create( "test/IECore/data/exrFiles/AllHalfValues.exr" )
 		self.assertEqual( type( r ), EXRImageReader )
 
 	def testCanReadAndIsComplete( self ) :
@@ -225,8 +221,41 @@ class TestEXRReader(unittest.TestCase):
 	
 	def testNonZeroDataWindowOrigin( self ) :
 	
-		raise NotImplementedError
+		r = EXRImageReader( "test/IECore/data/exrFiles/uvMapWithDataWindow.100x100.exr" )
+		i = r.read()
 		
+		self.assertEqual( i.dataWindow, Box2i( V2i( 25 ), V2i( 49 ) ) )
+		self.assertEqual( i.displayWindow, Box2i( V2i( 0 ), V2i( 99 ) ) )
+
+		self.assert_( i.arePrimitiveVariablesValid() )
+		
+		r.parameters().dataWindow.setTypedValue( Box2i( V2i( 30 ), V2i( 40 ) ) )
+		iSliced = r.read()
+		
+		self.assertEqual( iSliced.dataWindow, Box2i( V2i( 30 ), V2i( 40 ) ) )
+		self.assertEqual( iSliced.displayWindow, Box2i( V2i( 0 ), V2i( 99 ) ) )
+		
+		wholeEvaluator = PrimitiveEvaluator.create( i )
+		slicedEvaluator = PrimitiveEvaluator.create( iSliced )
+		wholeResult = wholeEvaluator.createResult()
+		slicedResult = slicedEvaluator.createResult()
+		wholeR = wholeEvaluator.R()
+		wholeG = wholeEvaluator.G()
+		wholeB = wholeEvaluator.B()
+		slicedR = slicedEvaluator.R()
+		slicedG = slicedEvaluator.G()
+		slicedB = slicedEvaluator.B()
+				
+		for x in range( 30, 41 ) :
+			for y in range( 30, 41 ) :
+				
+				wholeEvaluator.pointAtPixel( V2i( x, y ), wholeResult )
+				slicedEvaluator.pointAtPixel( V2i( x, y ), slicedResult )
+				
+				self.assertEqual( wholeResult.floatPrimVar( wholeR ), slicedResult.floatPrimVar( slicedR ) )
+				self.assertEqual( wholeResult.floatPrimVar( wholeG ), slicedResult.floatPrimVar( slicedG ) )
+				self.assertEqual( wholeResult.floatPrimVar( wholeB ), slicedResult.floatPrimVar( slicedB ) )
+				
 	def testOrientation( self ) :
 	
 		img = Reader.create( "test/IECore/data/exrFiles/uvMap.512x256.exr" ).read()
@@ -248,12 +277,6 @@ class TestEXRReader(unittest.TestCase):
 			
 			self.assert_( ( color - expectedColor).length() < 1.e-6 )
 
-	def tearDown(self):
-			
-		for f in [ self.testOutFile, self.testWindowOutFile ] :
-			if os.path.isfile( f ) :	
-				os.remove( f )				
-				
 if __name__ == "__main__":
 	unittest.main()   
 
