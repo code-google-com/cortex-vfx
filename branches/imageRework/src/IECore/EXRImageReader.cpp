@@ -143,9 +143,28 @@ DataPtr EXRImageReader::readTypedChannel( const std::string &name, const Imath::
 	{
 		// widths don't match, we need to read into a temporary buffer and then transfer just
 		// the bits we need into the result buffer.
-		assert( 0 );
+		int numTmpPixels = fullDataWindow.size().x + 1;
+		vector<T> tmpBuffer( numTmpPixels );
+		T *tmpBufferTransferStart = &(tmpBuffer[0]) + dataWindow.min.x - fullDataWindow.min.x;
+		size_t tmpBufferTransferLength = pixelDimensions.x * sizeof( T );
+		T *transferDestination = &(data->writable()[0]);
+		
+		// slice has yStride of 0 so each successive scanline just overwrites the previous one		
+		Slice slice( channel->type, (char *)(&(tmpBuffer[0]) - fullDataWindow.min.x), sizeof(T), 0 );
+		FrameBuffer frameBuffer;
+		frameBuffer.insert( name.c_str(), slice );
+		m_inputFile->setFrameBuffer( frameBuffer );
+		
+		int yStart = dataWindow.min.y;
+		int yEnd = dataWindow.max.y;
+		int yStep = 1;
+		for( int y=yStart; y!=(yEnd+yStep); y+=yStep )
+		{
+			m_inputFile->readPixels( y );
+			memcpy( (char *)transferDestination, (const char *)tmpBufferTransferStart, tmpBufferTransferLength );
+			transferDestination += pixelDimensions.x;
+		}
 	}
-
 	return data;
 }
 

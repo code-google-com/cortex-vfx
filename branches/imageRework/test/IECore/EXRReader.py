@@ -194,15 +194,39 @@ class TestEXRReader(unittest.TestCase):
 		r = EXRImageReader( "test/IECore/data/exrFiles/uvMap.512x256.exr" )
 		iWhole = r.read()
 		
-		r.parameters().dataWindow.setTypedValue( Box2i( V2i( 10, 10 ), V2i( 100, 100 ) ) )
+		r.parameters().dataWindow.setTypedValue( Box2i( V2i( 10, 10 ), V2i( 100, 150 ) ) )
 		
 		iSliced = r.read()
-		self.assertEqual( iSliced.dataWindow, Box2i( V2i( 0, 200 ), V2i( 511, 255 ) ) )
-		self.assertEqual( iSliced.displayWindow, Box2i( V2i( 10, 10 ), V2i( 100, 100 ) ) )
+		self.assertEqual( iSliced.displayWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
+		self.assertEqual( iSliced.dataWindow, Box2i( V2i( 10, 10 ), V2i( 100, 150 ) ) )
 
-		youHaveTestedTheData = False
-		self.assert_( youHaveTestedTheData )
+		self.assert_( iSliced.arePrimitiveVariablesValid() )
+		
+		wholeEvaluator = PrimitiveEvaluator.create( iWhole )
+		slicedEvaluator = PrimitiveEvaluator.create( iSliced )
+		wholeResult = wholeEvaluator.createResult()
+		slicedResult = slicedEvaluator.createResult()
+		wholeR = wholeEvaluator.R()
+		wholeG = wholeEvaluator.G()
+		wholeB = wholeEvaluator.B()
+		slicedR = slicedEvaluator.R()
+		slicedG = slicedEvaluator.G()
+		slicedB = slicedEvaluator.B()
+				
+		for x in range( 10, 101 ) :
+			for y in range( 10, 151 ) :
+				
+				wholeEvaluator.pointAtPixel( V2i( x, y ), wholeResult )
+				slicedEvaluator.pointAtPixel( V2i( x, y ), slicedResult )
+				
+				self.assertEqual( wholeResult.floatPrimVar( wholeR ), slicedResult.floatPrimVar( slicedR ) )
+				self.assertEqual( wholeResult.floatPrimVar( wholeG ), slicedResult.floatPrimVar( slicedG ) )
+				self.assertEqual( wholeResult.floatPrimVar( wholeB ), slicedResult.floatPrimVar( slicedB ) )
 	
+	def testNonZeroDataWindowOrigin( self ) :
+	
+		raise NotImplementedError
+		
 	def testOrientation( self ) :
 	
 		img = Reader.create( "test/IECore/data/exrFiles/uvMap.512x256.exr" ).read()
