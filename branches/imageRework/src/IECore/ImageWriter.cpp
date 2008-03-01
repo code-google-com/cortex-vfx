@@ -99,6 +99,9 @@ void ImageWriter::doWrite()
 	
 	ConstImagePrimitivePtr image = getImage();
 	assert( image );
+	
+	/// \todo Throw an exception if !image->arePrimitiveVariablesValid()
+	
 	Box2i dw = image->getDataWindow();
 	
 	writeImage(channels, image, dw);
