@@ -1,4 +1,3 @@
-#if 0
 //////////////////////////////////////////////////////////////////////////
 //
 //  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
@@ -52,7 +51,7 @@ void bindTIFFImageReader()
 	TIFFImageReaderPyClass("TIFFImageReader", init<>())
 		.def( init<const std::string &>() )
 		.def( "canRead", &TIFFImageReader::canRead).staticmethod( "canRead" )
-	.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(TIFFImageReader)
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(TIFFImageReader)
 	;
 
 	INTRUSIVE_PTR_PATCH( TIFFImageReader, TIFFImageReaderPyClass );
@@ -60,5 +59,3 @@ void bindTIFFImageReader()
 }
 
 } // namespace IECore
-
-#endif
