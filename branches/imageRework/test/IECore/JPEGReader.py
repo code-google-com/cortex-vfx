@@ -106,8 +106,8 @@ class TestJPEGReader(unittest.TestCase):
 		self.assertEqual( type(r), JPEGImageReader )
 		
 		dataWindow = Box2i(
-			V2i(60, 60), 
-			V2i(99, 99)
+			V2i(360, 160), 
+			V2i(399, 199)
 		)
 		
 		r.parameters().dataWindow.setValue( Box2iData( dataWindow ) )
@@ -120,7 +120,39 @@ class TestJPEGReader(unittest.TestCase):
 		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
 		
 		self.assertEqual( len(img["R"].data), 40 * 40 )
+		
+		ipe = PrimitiveEvaluator.create( img )
+		self.assert_( ipe.R() )
+		self.assert_( ipe.G() )
+		self.assert_( ipe.B() )
+		self.failIf ( ipe.A() )
+		
+		result = ipe.createResult()
+				
+		# Check that the color at the bottom-right of the image is black - ordinarialy it would
+		# be yellow, but we're deliberately not reading the entire image
+		found = ipe.pointAtPixel( V2i( 511, 255 ), result )
+		self.assert_( found )		
+		color = V3f(
+				result.halfPrimVar( ipe.R() ),
+				result.halfPrimVar( ipe.G() ), 
+				result.halfPrimVar( ipe.B() )
+			)		
+		expectedColor = V3f( 0, 0, 0 )
+		self.assert_( ( color - expectedColor).length() < 1.e-3 )
+		
+		found = ipe.pointAtPixel( V2i( 380, 180 ), result )
+		self.assert_( found )
+		
+		color = V3f(
+				result.halfPrimVar( ipe.R() ),
+				result.halfPrimVar( ipe.G() ), 
+				result.halfPrimVar( ipe.B() )
+			)
 			
+		expectedColor = V3f( 0.8745, 0.85887, 0 )			
+		self.assert_( ( color - expectedColor).length() < 1.e-3 )
+					
 	def testOrientation( self ) :
 		""" Test orientation of JPEG files """
 	

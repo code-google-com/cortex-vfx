@@ -149,36 +149,26 @@ DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2
 		throw IOException( ( boost::format( "JPEGImageReader: Could not find channel \"%s\" while reading %s" ) % name % m_bufferFileName ).str() );
 	}
 
-	Box2i subRegion = boxIntersection( dataWindow, this->dataWindow() );
-	
-	if ( subRegion.isEmpty() )
-	{
-		throw IOException( "JPEGImageReader: Data window for read is empty" );
-	}
-
-	int cl = subRegion.min.y - dataWindow.min.y;
-	assert( cl >= 0 );
-	int dx = subRegion.min.x - dataWindow.min.x;
-	assert( dx >= 0 );
-
 	HalfVectorDataPtr dataContainer = new HalfVectorData();
 	HalfVectorData::ValueType &data = dataContainer->writable();
-	int area = ( subRegion.size().x + 1 ) * ( subRegion.size().y + 1 );
+	int area = ( dataWindow.size().x + 1 ) * ( dataWindow.size().y + 1 );
 	assert( area >= 0 );
 	data.resize( area );
 
-	HalfVectorData::ValueType::size_type dataOffset = 0;
+	int dataWidth = 1 + dataWindow.size().x;
+	
+	int dataY = 0; 
+	int dataX = 0;
 
-	int width = 1 + dataWindow.size().x;
-
-	for (int y = subRegion.min.y; y <= subRegion.max.y; ++y, ++cl)
+	for ( int y = dataWindow.min.y; y <= dataWindow.max.y; ++y, ++dataY )
 	{
-		dataOffset = cl * width + dx;
-		for (int x = subRegion.min.x; x <= subRegion.max.x; ++x, ++dataOffset)
+		HalfVectorData::ValueType::size_type dataOffset = dataY * dataWidth + dataX;
+		
+		for ( int x = dataWindow.min.x; x <= dataWindow.max.x; ++x, ++dataOffset )
 		{
 			assert( dataOffset < data.size() );
 
-			data[dataOffset] = m_buffer[numChannels*(y*m_bufferWidth + x) + channelOffset] / 255.0f;
+			data[dataOffset] = m_buffer[numChannels*( y * m_bufferWidth + x ) + channelOffset] / 255.0f;
 		}
 	}
 

@@ -151,23 +151,6 @@ struct JPEGWriterErrorHandler : public jpeg_error_mgr
 
 void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow )
 {
-	if ( names.size() < 3 )
-	{
-		throw IOException( "JPEGImageWriter: Cannot write image with less than 3 channels to JPEG" );
-	}
-
-	// assume an 8-bit RGB image
-
-	const char *rgbChannels[3] = { "R", "G", "B" };
-	for ( int i = 0; i < 3; i++ )
-	{
-		vector<string>::const_iterator it = find( names.begin(), names.end(), rgbChannels[i] );
-		if ( it == names.end() )
-		{
-			throw IOException( ( boost::format("JPEGImageWriter: Cannot write image without \"%s\" channel to JPEG") % rgbChannels[i]).str() );
-		}
-	}
-
 	FILE *outFile = 0;
 	if ((outFile = fopen(fileName().c_str(), "wb")) == NULL)
 	{
