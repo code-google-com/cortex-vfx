@@ -69,13 +69,13 @@ class TestJPEGImageWriter(unittest.TestCase):
 		return img
 
 	def testConstruction( self ):
-	
+		
 		img = ImagePrimitive()			
 		w = Writer.create( img, "test/IECore/data/jpg/output.jpg" )
 		self.assertEqual( type(w), JPEGImageWriter )
 		
 	def testQuality ( self ) :
-	
+		
 		w = Box2i(
 			V2i( 0, 0 ),
 			V2i( 99, 99)
@@ -111,10 +111,10 @@ class TestJPEGImageWriter(unittest.TestCase):
 			
 		
 	def testWrite( self ) :	
-	
+		
 		displayWindow = Box2i(
 			V2i( 0, 0 ),
-			V2i( 99, 99)
+			V2i( 99, 99 )
 		)
 		
 		dataWindow = displayWindow
@@ -129,11 +129,11 @@ class TestJPEGImageWriter(unittest.TestCase):
 		self.assert_( os.path.exists( "test/IECore/data/jpg/output.jpg" ) )
 		self.assertEqual( os.path.getsize( "test/IECore/data/jpg/output.jpg" ), 4559 )
 		
-	def testWriteIncomplete( self ) :	
+	def testWriteIncomplete( self ) :
 	
 		displayWindow = Box2i(
 			V2i( 0, 0 ),
-			V2i( 99, 99)
+			V2i( 99, 99 )
 		)
 		
 		dataWindow = displayWindow
@@ -143,7 +143,7 @@ class TestJPEGImageWriter(unittest.TestCase):
 		# We don't have enough data to fill this dataWindow
 		img.dataWindow = Box2i(
 			V2i( 0, 0 ),
-			V2i( 199, 199)
+			V2i( 199, 199 )
 		)
 		
 		self.failIf( img.arePrimitiveVariablesValid() )
@@ -151,16 +151,18 @@ class TestJPEGImageWriter(unittest.TestCase):
 		w = Writer.create( img, "test/IECore/data/jpg/output.jpg" )
 		self.assertEqual( type(w), JPEGImageWriter )
 		
+		# \todo The writer should give us some sort of error, but doesn't. It crashes.
+		self.failIf( True )		
 		w.write()
 		
-		# \todo The writer surely shouldn't have given some sort of error by now!
+		
 		self.failIf( os.path.exists( "test/IECore/data/jpg/output.jpg" ) )
 		
 	def testErrors( self ) :
-	
+		
 		displayWindow = Box2i(
 			V2i( 0, 0 ),
-			V2i( 99, 99)
+			V2i( 99, 99 )
 		)
 		
 		dataWindow = displayWindow
@@ -180,17 +182,21 @@ class TestJPEGImageWriter(unittest.TestCase):
 	
 		dataWindow = Box2i(
 			V2i( 0, 0 ),
-			V2i( 99, 99)
+			V2i( 99, 99 )
 		)
 
 		img = self.__makeImage( dataWindow, dataWindow )
 		
 		img.displayWindow = Box2i(
-			V2i( 0, 0 ),
-			V2i( 199, 199)
+			V2i( -20, -20 ),
+			V2i( 199, 199 )
 		)
 		
 		w = Writer.create( img, "test/IECore/data/jpg/output.jpg" )
+		self.assertEqual( type(w), JPEGImageWriter )		
+		w.write()
+		
+		w = Writer.create( img, "test/IECore/data/jpg/output2.jpg" )
 		self.assertEqual( type(w), JPEGImageWriter )		
 		w.write()
 		
@@ -199,9 +205,37 @@ class TestJPEGImageWriter(unittest.TestCase):
 		r = Reader.create( "test/IECore/data/jpg/output.jpg" )
 		img2 = r.read()
 		
-		# \todo This test is failing because the JPEG writer is outputting the data window only,
-		# without filling it with black up to the display window
-		self.assertEqual( img.displayWindow, img2.displayWindow )	
+		self.assertEqual( img2.displayWindow.min, V2i( 0, 0 ) )			
+		self.assertEqual( img2.displayWindow.max, V2i( 219, 219 ) )
+		
+		ipe = PrimitiveEvaluator.create( img2 )
+		self.assert_( ipe.R() )
+		self.assert_( ipe.G() )
+		self.assert_( ipe.B() )
+		self.failIf ( ipe.A() )
+		
+		result = ipe.createResult()
+				
+		# Check that image has been written correctly, accounting for the change in display window
+		found = ipe.pointAtPixel( V2i( 19, 19 ), result )
+		self.assert_( found )		
+		color = V3f(
+				result.halfPrimVar( ipe.R() ),
+				result.halfPrimVar( ipe.G() ), 
+				result.halfPrimVar( ipe.B() )
+			)		
+		expectedColor = V3f( 0, 0, 0 )
+		self.assert_( ( color - expectedColor).length() < 1.e-3 )
+		
+		found = ipe.pointAtPixel( V2i( 110, 110 ), result )
+		self.assert_( found )		
+		color = V3f(
+				result.halfPrimVar( ipe.R() ),
+				result.halfPrimVar( ipe.G() ), 
+				result.halfPrimVar( ipe.B() )
+			)		
+		expectedColor = V3f( 0.913574, 0.909668, 0 )
+		self.assert_( ( color - expectedColor).length() < 1.e-3 )	
 		
 		
 	def setUp( self ) :

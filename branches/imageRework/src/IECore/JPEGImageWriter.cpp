@@ -35,6 +35,7 @@
 #include <setjmp.h>
 #include <stdio.h>
 
+#include "IECore/BoxOps.h"
 #include "IECore/JPEGImageWriter.h"
 #include "IECore/MessageHandler.h"
 #include "IECore/VectorTypedData.h"
@@ -149,6 +150,57 @@ struct JPEGWriterErrorHandler : public jpeg_error_mgr
 	}
 };
 
+template<typename T>
+unsigned char toUnsignedChar( const T& v )
+{
+	return static_cast< unsigned char >( v );
+}
+
+template<>
+unsigned char toUnsignedChar( const float &v )
+{
+	return (unsigned char) ( max(0.0, min(255.0, 255.0 * v + 0.5)));
+}
+
+template<>
+unsigned char toUnsignedChar( const half &v )
+{
+	return (unsigned char) ( max(0.0, min(255.0, 255.0 * v + 0.5)));
+}
+
+template<typename T>
+void JPEGImageWriter::convert( DataPtr dataContainer, const Box2i &displayWindow, const Box2i &dataWindow, int numChannels, int channelOffset, std::vector<unsigned char> &imageBuffer )
+{
+	assert( dataContainer );
+	assert( runTimeCast< const T >( dataContainer ) );
+	
+	const typename T::ValueType &data = static_pointer_cast<const T>( dataContainer )->readable();
+
+	int displayWidth = displayWindow.size().x + 1;
+	int dataWidth = dataWindow.size().x + 1;
+
+	int dataX = 0;
+	int dataY = 0;
+
+	for ( int y = dataWindow.min.y; y <= dataWindow.max.y; y++, dataY++ )
+	{
+		int dataOffset = dataY * dataWidth + dataX;
+		assert( dataOffset >= 0 );
+
+		for ( int x = dataWindow.min.x; x <= dataWindow.max.x; x++, dataOffset++ )
+		{		
+			int pixelIdx = ( y - displayWindow.min.y ) * displayWidth + ( x - displayWindow.min.x );
+
+			assert( pixelIdx >= 0 );
+			assert( numChannels*pixelIdx + channelOffset < (int)imageBuffer.size() );
+			assert( dataOffset < (int)data.size() );
+
+			// convert to 8-bit integer				
+			imageBuffer[ numChannels*pixelIdx + channelOffset ] = toUnsignedChar<>( data[dataOffset] );
+		}
+	}
+}
+
 void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow )
 {
 	FILE *outFile = 0;
@@ -158,8 +210,9 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 	}
 	assert( outFile );
 
-	int width  = 1 + dataWindow.max.x - dataWindow.min.x;
-	int height = 1 + dataWindow.max.y - dataWindow.min.y;
+	int displayWidth  = 1 + image->getDisplayWindow().size().x;
+	int displayHeight = 1 + image->getDisplayWindow().size().y;
+	
 	int numChannels = 3;
 
 	// compression info
@@ -187,8 +240,8 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 
 		jpeg_stdio_dest(&cinfo, outFile);
 
-		cinfo.image_width = width;
-		cinfo.image_height = height;
+		cinfo.image_width = displayWidth;
+		cinfo.image_height = displayHeight;
 		cinfo.input_components = numChannels;
 		cinfo.in_color_space = JCS_RGB;
 
@@ -199,10 +252,8 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 		// force baseline-JPEG (8bit) values with TRUE
 		jpeg_set_quality(&cinfo, quality, TRUE);
 
-		int rowStride = width * numChannels;
-
 		// build the buffer
-		std::vector<unsigned char> imageBuffer( width*height*numChannels, 0 );
+		std::vector<unsigned char> imageBuffer( displayWidth*displayHeight*numChannels, 0 );
 
 		// add the channels into the header with the appropriate types
 		// channel data is RGB interlaced
@@ -238,46 +289,28 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 
 			switch ( dataContainer->typeId() )
 			{
+			
+			case DoubleVectorDataTypeId:
+				convert<DoubleVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				break;
 
 			case FloatVectorDataTypeId:
-			{
-				const FloatVectorData::ValueType &data = static_pointer_cast<FloatVectorData>( dataContainer )->readable();
-
-				// convert to 8-bit integer
-				for (int i = 0; i < width*height; ++i)
-				{
-					imageBuffer[numChannels*i + channelOffset] = (unsigned char) (max(0.0, min(255.0, 255.0 * data[i] + 0.5)));
-				}
-			}
-			break;
+				convert<FloatVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				break;
+				
+			case IntVectorDataTypeId:
+				convert<IntVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				break;					
 
 			case UIntVectorDataTypeId:
-			{
-				const UIntVectorData::ValueType &data = static_pointer_cast<UIntVectorData>( dataContainer )->readable();
-
-				// convert to 8-bit integer
-				for (int i = 0; i < width*height; ++i)
-				{
-					// \todo: round here
-					BOOST_STATIC_ASSERT( sizeof( unsigned int ) == 4 );
-					imageBuffer[numChannels*i + channelOffset] = (unsigned char) (data[i] >> 24);
-				}
-			}
-			break;
+				convert<UIntVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				break;
 
 			case HalfVectorDataTypeId:
-			{
-				const HalfVectorData::ValueType &data = static_pointer_cast<HalfVectorData>( dataContainer )->readable();
+				convert<HalfVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				break;
 
-				// convert to 8-bit linear integer
-				for (int i = 0; i < width*height; ++i)
-				{
-					imageBuffer[numChannels*i + channelOffset] = (unsigned char) (max(0.0, min(255.0, 255.0 * data[i] + 0.5)));
-				}
-			}
-			break;
-
-			/// \todo Deal with other channel types, preferably using templates!
+			/// \todo Deal with other channel types
 
 			default:
 				throw InvalidArgumentException( (format( "JPEGImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId(dataContainer->typeId()) % name).str() );
@@ -288,6 +321,7 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 		jpeg_start_compress(&cinfo, TRUE);
 
 		// pass one scanline at a time
+		int rowStride = displayWidth * numChannels;
 		unsigned char *rowPointer[1];
 		while (cinfo.next_scanline < cinfo.image_height)
 		{

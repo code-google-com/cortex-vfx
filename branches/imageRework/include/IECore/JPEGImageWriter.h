@@ -72,6 +72,9 @@ class JPEGImageWriter : public ImageWriter
 		);
 
 		void constructParameters();
+		
+		template<typename T>
+		void convert( DataPtr dataContainer, const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, int numChannels, int channelOffset, std::vector<unsigned char> &imageBuffer );
 
 	public:
 
