@@ -84,6 +84,7 @@ from MenuItemDefinition import MenuItemDefinition
 from MenuDefinition import MenuDefinition
 from ParameterParser import *
 from SearchReplaceOp import SearchReplaceOp
+from CapturingMessageHandler import CapturingMessageHandler
 
 # importing internal utility modules and class overwrites
 from ObjectOverwriting import *
