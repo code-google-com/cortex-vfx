@@ -38,6 +38,7 @@ from IECore import MessageHandler, Struct
 # in an attribute called messages. It's useful for verifying expected
 # message output during testing. Each message in the messages list is a Struct
 # with "level", "context" and "message" attributes.
+# \ingroup python
 class CapturingMessageHandler( MessageHandler ) :
 
 	def __init__( self ) :
