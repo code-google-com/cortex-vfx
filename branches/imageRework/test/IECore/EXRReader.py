@@ -276,6 +276,29 @@ class TestEXRReader(unittest.TestCase):
 			color = V3f( r.floatPrimVar( ipe.R() ), r.floatPrimVar( ipe.G() ), r.floatPrimVar( ipe.B() ) )
 			
 			self.assert_( ( color - expectedColor).length() < 1.e-6 )
+			
+	def testReadIncompleteImage( self ) :
+	
+		m = CapturingMessageHandler() 
+		s = ScopedMessageHandler( m )
+	
+		r = EXRImageReader( "test/IECore/data/exrFiles/incomplete.exr" )
+		i = r.read()
+		
+		# check image is valid even if not all data is present
+		self.assertEqual( len( i ), 3 )
+		self.assert_( "R" in i )
+		self.assert_( "G" in i )
+		self.assert_( "B" in i )
+		
+		self.assert_( i.arePrimitiveVariablesValid() )
+		
+		# check a warning message has been output for each channel
+		self.assertEqual( len( m.messages ), 3 )
+		self.assertEqual( m.messages[0].level, Msg.Level.Warning )
+		self.assertEqual( m.messages[1].level, Msg.Level.Warning )
+		self.assertEqual( m.messages[2].level, Msg.Level.Warning )
+		
 
 if __name__ == "__main__":
 	unittest.main()   

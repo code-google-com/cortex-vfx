@@ -38,6 +38,7 @@
 #include "IECore/ImagePrimitive.h"
 #include "IECore/FileNameParameter.h"
 #include "IECore/BoxOps.h"
+#include "IECore/MessageHandler.h"
 
 #include "boost/format.hpp"
 
@@ -137,7 +138,15 @@ DataPtr EXRImageReader::readTypedChannel( const std::string &name, const Imath::
 		frameBuffer.insert( name.c_str(), slice );
 		m_inputFile->setFrameBuffer( frameBuffer );
 		// exr library will choose the best order to read scanlines automatically (increasing or decreasing)
-		m_inputFile->readPixels( dataWindow.min.y, dataWindow.max.y );
+		try
+		{
+			m_inputFile->readPixels( dataWindow.min.y, dataWindow.max.y );
+		}
+		catch( Iex::InputExc &e )
+		{
+			// so we can read incomplete files
+			msg( Msg::Warning, "EXRImageReader::readChannel", e.what() );
+		}
 	}
 	else
 	{
@@ -158,12 +167,21 @@ DataPtr EXRImageReader::readTypedChannel( const std::string &name, const Imath::
 		int yStart = dataWindow.min.y;
 		int yEnd = dataWindow.max.y;
 		int yStep = 1;
-		for( int y=yStart; y!=(yEnd+yStep); y+=yStep )
+		try
 		{
-			m_inputFile->readPixels( y );
-			memcpy( (char *)transferDestination, (const char *)tmpBufferTransferStart, tmpBufferTransferLength );
-			transferDestination += pixelDimensions.x;
+			for( int y=yStart; y!=(yEnd+yStep); y+=yStep )
+			{
+
+					m_inputFile->readPixels( y );
+					memcpy( (char *)transferDestination, (const char *)tmpBufferTransferStart, tmpBufferTransferLength );
+					transferDestination += pixelDimensions.x;
+			}
 		}
+		catch( Iex::InputExc &e )
+		{
+			// so we can read incomplete files
+			msg( Msg::Warning, "EXRImageReader::readChannel", e.what() );
+		}	
 	}
 	return data;
 }
@@ -203,6 +221,12 @@ DataPtr EXRImageReader::readChannel( const string &name, const Imath::Box2i &dat
 	catch ( Exception &e )
 	{
 		throw;
+	}
+	catch( Iex::BaseExc &e )
+	{
+		std::string s = ( boost::format( "EXRImageReader : %s" ) % e.what() ).str();
+		e.assign( s.c_str() );
+		throw e;
 	}
 	catch ( std::exception &e )
 	{
