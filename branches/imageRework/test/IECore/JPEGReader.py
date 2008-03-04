@@ -47,6 +47,7 @@ class TestJPEGReader(unittest.TestCase):
 	def testCanRead( self ):
 	
 		self.assert_( JPEGImageReader.canRead( "test/IECore/data/jpg/uvMap.512x256.jpg" ) )
+		self.assert_( JPEGImageReader.canRead( "test/IECore/data/jpg/uvMap.512x256.truncated.jpg" ) )
 		
 	def testIsComplete( self ):	
 	
@@ -54,6 +55,10 @@ class TestJPEGReader(unittest.TestCase):
 		self.assertEqual( type(r), JPEGImageReader )
 		
 		self.assert_( r.isComplete() )
+		
+		r = Reader.create( "test/IECore/data/jpg/uvMap.512x256.truncated.jpg" )
+		self.assertEqual( type(r), JPEGImageReader )
+		self.assert_( not r.isComplete() )
 		
 	def testChannelNames( self ):	
 	
