@@ -64,21 +64,18 @@ const Reader::ReaderDescription <JPEGImageReader>
 JPEGImageReader::m_readerDescription ("jpeg jpg");
 
 JPEGImageReader::JPEGImageReader() :
-		ImageReader( "JPEGImageReader", "Reads Joint Photographic Experts Group (JPEG) files" ),
-		m_buffer(0)
+		ImageReader( "JPEGImageReader", "Reads Joint Photographic Experts Group (JPEG) files" )
 {
 }
 
 JPEGImageReader::JPEGImageReader(const string & fileName) :
-		ImageReader( "JPEGImageReader", "Reads Joint Photographic Experts Group (JPEG) files" ),
-		m_buffer(0)
+		ImageReader( "JPEGImageReader", "Reads Joint Photographic Experts Group (JPEG) files" )
 {
 	m_fileNameParameter->setTypedValue( fileName );
 }
 
 JPEGImageReader::~JPEGImageReader()
 {
-	delete [] m_buffer;
 }
 
 bool JPEGImageReader::canRead(const string & fileName)
@@ -95,27 +92,36 @@ bool JPEGImageReader::canRead(const string & fileName)
 	unsigned int magic;
 	in.seekg(0, ios_base::beg);
 	in.read((char *) &magic, sizeof(unsigned int));
+
 	return magic == 0xe0ffd8ff || magic == 0xffd8ffe0;
 }
 
 void JPEGImageReader::channelNames( vector<string> &names )
 {
+	open( true );
 	names.clear();
 
-	/// \todo Does a JPEG only ever contain these channels?
-	names.push_back("R");
-	names.push_back("G");
-	names.push_back("B");
+	if ( m_numChannels == 3 )
+	{
+		names.push_back("R");
+		names.push_back("G");
+		names.push_back("B");
+	}
+	else
+	{
+		assert ( m_numChannels == 1 );
+		names.push_back("Y");
+	}
 }
 
 bool JPEGImageReader::isComplete()
 {
-	return true;
+	return open( false );
 }
 
 Imath::Box2i JPEGImageReader::dataWindow()
 {
-	open();
+	open( true );
 
 	return Box2i( V2i( 0, 0 ), V2i( m_bufferWidth - 1, m_bufferHeight - 1 ) );
 }
@@ -127,9 +133,7 @@ Imath::Box2i JPEGImageReader::displayWindow()
 
 DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2i &dataWindow )
 {
-	open();
-
-	int numChannels = 3;
+	open( true );
 
 	int channelOffset = 0;
 	if ( name == "R" )
@@ -144,10 +148,16 @@ DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2
 	{
 		channelOffset = 2;
 	}
+	else if ( name == "Y" )
+	{
+		channelOffset = 0;
+	}
 	else
 	{
 		throw IOException( ( boost::format( "JPEGImageReader: Could not find channel \"%s\" while reading %s" ) % name % m_bufferFileName ).str() );
 	}
+
+	assert( channelOffset < m_numChannels );
 
 	HalfVectorDataPtr dataContainer = new HalfVectorData();
 	HalfVectorData::ValueType &data = dataContainer->writable();
@@ -156,19 +166,18 @@ DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2
 	data.resize( area );
 
 	int dataWidth = 1 + dataWindow.size().x;
-	
-	int dataY = 0; 
-	int dataX = 0;
+
+	int dataY = 0;
 
 	for ( int y = dataWindow.min.y; y <= dataWindow.max.y; ++y, ++dataY )
 	{
-		HalfVectorData::ValueType::size_type dataOffset = dataY * dataWidth + dataX;
-		
+		HalfVectorData::ValueType::size_type dataOffset = dataY * dataWidth;
+
 		for ( int x = dataWindow.min.x; x <= dataWindow.max.x; ++x, ++dataOffset )
 		{
 			assert( dataOffset < data.size() );
 
-			data[dataOffset] = m_buffer[numChannels*( y * m_bufferWidth + x ) + channelOffset] / 255.0f;
+			data[dataOffset] = m_buffer[ m_numChannels * ( y * m_bufferWidth + x ) + channelOffset ] / 255.0f;
 		}
 	}
 
@@ -179,39 +188,43 @@ struct JPEGReaderErrorHandler : public jpeg_error_mgr
 {
 	jmp_buf m_jmpBuffer;
 	char m_errorMessage[JMSG_LENGTH_MAX];
-	
+
 	static void errorExit ( j_common_ptr cinfo )
-	{	
+	{
 		assert( cinfo );
 		assert( cinfo->err );
-		
+
 		JPEGReaderErrorHandler* errorHandler = static_cast< JPEGReaderErrorHandler* >( cinfo->err );
-		( *cinfo->err->format_message )( cinfo, errorHandler->m_errorMessage ); 
+		( *cinfo->err->format_message )( cinfo, errorHandler->m_errorMessage );
 		longjmp( errorHandler->m_jmpBuffer, 1 );
 	}
-	
+
 	static void outputMessage( j_common_ptr cinfo )
 	{
 		assert( cinfo );
 		assert( cinfo->err );
-		
-		char warning[JMSG_LENGTH_MAX];		
-		( *cinfo->err->format_message )( cinfo, warning );		
+
+		char warning[JMSG_LENGTH_MAX];
+		( *cinfo->err->format_message )( cinfo, warning );
 		msg( Msg::Warning, "JPEGImageReader", warning );
 	}
 };
 
-void JPEGImageReader::open()
+bool JPEGImageReader::open( bool throwOnFailure )
 {
-	if ( fileName() != m_bufferFileName )
+	if ( fileName() == m_bufferFileName )
 	{
-		m_bufferFileName = fileName();
+		return true;
+	}
 
-		delete [] m_buffer;
-		m_buffer = 0;
+	m_bufferFileName = fileName();
+	m_buffer.clear();
 
+	FILE *inFile = 0;
+	try
+	{
 		// open the file
-		FILE *inFile = fopen( m_bufferFileName.c_str(), "rb" );
+		inFile = fopen( m_bufferFileName.c_str(), "rb" );
 		if ( !inFile )
 		{
 			throw IOException( ( boost::format( "JPEGImageReader: Could not open file %s" ) % m_bufferFileName ).str() );
@@ -220,20 +233,20 @@ void JPEGImageReader::open()
 		struct jpeg_decompress_struct cinfo;
 
 		try
-		{			
+		{
 			JPEGReaderErrorHandler errorHandler;
 
 			/// Setup error handler
 			cinfo.err = jpeg_std_error( &errorHandler );
-			
+
 			/// Override fatal error and warning handlers
 			errorHandler.error_exit = JPEGReaderErrorHandler::errorExit;
-			errorHandler.output_message = JPEGReaderErrorHandler::outputMessage;			
-			
+			errorHandler.output_message = JPEGReaderErrorHandler::outputMessage;
+
 			/// If we reach here then libjpeg has called our error handler, in which we've saved a copy of the
 			/// error such that we might throw it as an exception.
 			if ( setjmp( errorHandler.m_jmpBuffer ) )
-			{				
+			{
 				throw IOException( std::string( "JPEGImageReader: " ) + errorHandler.m_errorMessage );
 			}
 
@@ -245,18 +258,33 @@ void JPEGImageReader::open()
 			/// Start decompression
 			jpeg_start_decompress( &cinfo );
 
+			m_numChannels = cinfo.output_components;
+
+			if ( m_numChannels != 1 && m_numChannels != 3 )
+			{
+				throw IOException( ( boost::format( "JPEGImageReader: Unsupported number of channels (%d) while opening file %s" ) % m_numChannels % m_bufferFileName ).str() );
+			}
+
+			if ( cinfo.out_color_space == JCS_GRAYSCALE )
+			{
+				assert( m_numChannels == 1 );
+			}
+			else if ( cinfo.out_color_space != JCS_RGB )
+			{
+				throw IOException( ( boost::format( "JPEGImageReader: Unsupported colorspace (%d) while opening file %s" ) % cinfo.out_color_space % m_bufferFileName ).str() );
+			}
+
 			/// Create buffer
 			int rowStride = cinfo.output_width * cinfo.output_components;
-			m_buffer = new unsigned char[rowStride * cinfo.output_height]();
-			unsigned char *rowPointer[1];
+			m_buffer.resize( rowStride * cinfo.output_height, 0 );
+			;
 			m_bufferWidth = cinfo.output_width;
 			m_bufferHeight = cinfo.output_height;
 
 			/// Read scanlines one at a time.
-			// \todo: optimize this, probably based on image dimensions
 			while (cinfo.output_scanline < cinfo.output_height)
 			{
-				rowPointer[0] = m_buffer + rowStride * cinfo.output_scanline;
+				unsigned char *rowPointer[1] = { &m_buffer[0] + rowStride * cinfo.output_scanline };
 				jpeg_read_scanlines( &cinfo, rowPointer, 1 );
 			}
 
@@ -267,22 +295,40 @@ void JPEGImageReader::open()
 		catch ( Exception &e )
 		{
 			jpeg_destroy_decompress( &cinfo );
-			fclose( inFile );
-			
+
 			throw;
 		}
 		catch ( std::exception &e )
 		{
+			jpeg_destroy_decompress( &cinfo );
+
 			throw IOException( ( boost::format( "JPEGImageReader : %s" ) % e.what() ).str() );
 		}
 		catch ( ... )
 		{
 			jpeg_destroy_decompress( &cinfo );
-			fclose( inFile );
-			
+
 			throw IOException( "JPEGImageReader: Unexpected error" );
 		}
 
 		fclose( inFile );
 	}
+	catch (...)
+	{
+		if ( inFile )
+		{
+			fclose( inFile );
+		}
+
+		if ( throwOnFailure )
+		{
+			throw;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	return true;
 }

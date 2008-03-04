@@ -67,6 +67,28 @@ class TestJPEGImageWriter(unittest.TestCase):
 		img["B"] = PrimitiveVariable( PrimitiveVariable.Interpolation.Vertex, B )
 		
 		return img
+		
+	def __makeGreyscaleImage( self, dataWindow, displayWindow ) :
+	
+		img = ImagePrimitive( dataWindow, displayWindow )
+		
+		w = dataWindow.max.x - dataWindow.min.x + 1
+		h = dataWindow.max.y - dataWindow.min.y + 1
+		
+		area = w * h
+		Y = FloatVectorData( area )
+		
+		offset = 0
+		for y in range( 0, h ) :
+			for x in range( 0, w ) :
+			
+				Y[offset] = float(x) / (w - 1)	* float(y) / (h - 1)			
+				
+				offset = offset + 1				
+		
+		img["Y"] = PrimitiveVariable( PrimitiveVariable.Interpolation.Vertex, Y )
+		
+		return img	
 
 	def testConstruction( self ):
 		
@@ -128,6 +150,30 @@ class TestJPEGImageWriter(unittest.TestCase):
 		
 		self.assert_( os.path.exists( "test/IECore/data/jpg/output.jpg" ) )
 		self.assertEqual( os.path.getsize( "test/IECore/data/jpg/output.jpg" ), 4559 )
+		
+	def testGreyscaleWrite( self ) :
+	
+		displayWindow = Box2i(
+			V2i( 0, 0 ),
+			V2i( 199, 99 )
+		)
+		
+		dataWindow = displayWindow	
+		
+		img = self.__makeGreyscaleImage( dataWindow, displayWindow )
+		
+		w = Writer.create( img, "test/IECore/data/jpg/output.jpg" )
+		self.assertEqual( type(w), JPEGImageWriter )
+		
+		w.write()
+		
+		self.assert_( os.path.exists( "test/IECore/data/jpg/output.jpg" ) )
+		
+		r = Reader.create( "test/IECore/data/jpg/output.jpg" )
+		img2 = r.read()
+		
+		channelNames = r.channelNames()
+		self.assertEqual( len(channelNames), 1 )
 		
 	def testWriteIncomplete( self ) :
 	

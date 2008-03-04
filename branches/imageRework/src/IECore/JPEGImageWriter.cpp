@@ -153,7 +153,15 @@ struct JPEGWriterErrorHandler : public jpeg_error_mgr
 template<typename T>
 unsigned char toUnsignedChar( const T& v )
 {
-	return static_cast< unsigned char >( v );
+	static const double normalizer = 1.0 / Imath::limits<T>::max();
+	
+	return (unsigned char) ( max(0.0, min(255.0, 255.0 * normalizer * v + 0.5)));
+}
+
+template<>
+unsigned char toUnsignedChar( const unsigned char &v )
+{
+	return v;
 }
 
 template<>
@@ -203,6 +211,33 @@ void JPEGImageWriter::convert( DataPtr dataContainer, const Box2i &displayWindow
 
 void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow )
 {
+	vector<string>::const_iterator rIt = std::find( names.begin(), names.end(), "R" );
+	vector<string>::const_iterator gIt = std::find( names.begin(), names.end(), "G" );	
+	vector<string>::const_iterator bIt = std::find( names.begin(), names.end(), "B" );
+	vector<string>::const_iterator yIt = std::find( names.begin(), names.end(), "Y" );		
+	
+	int numChannels = 3;
+	J_COLOR_SPACE colorSpace = JCS_RGB;
+	if ( rIt != names.end() && gIt != names.end() && bIt != names.end() )
+	{
+		if ( yIt != names.end() )
+		{
+			throw IOException("JPEGImageWriter: Unsupported channel names specified");
+		}
+	} 
+	else if ( yIt != names.end() ) 
+	{
+		if ( rIt != names.end() || gIt != names.end() || bIt != names.end() )
+		{
+			throw IOException("JPEGImageWriter: Unsupported channel names specified");
+		}
+		
+		colorSpace = JCS_GRAYSCALE;
+		numChannels = 1;
+	}
+	
+	assert( numChannels == 1 || numChannels == 3 );
+
 	FILE *outFile = 0;
 	if ((outFile = fopen(fileName().c_str(), "wb")) == NULL)
 	{
@@ -212,8 +247,6 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 
 	int displayWidth  = 1 + image->getDisplayWindow().size().x;
 	int displayHeight = 1 + image->getDisplayWindow().size().y;
-	
-	int numChannels = 3;
 
 	// compression info
 	struct jpeg_compress_struct cinfo;
@@ -243,11 +276,13 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 		cinfo.image_width = displayWidth;
 		cinfo.image_height = displayHeight;
 		cinfo.input_components = numChannels;
-		cinfo.in_color_space = JCS_RGB;
+		cinfo.in_color_space = colorSpace;
 
 		jpeg_set_defaults( &cinfo );
 
 		int quality = qualityParameter()->getNumericValue();
+		assert( quality >= 0 );
+		assert( quality <= 100 );		
 
 		// force baseline-JPEG (8bit) values with TRUE
 		jpeg_set_quality(&cinfo, quality, TRUE);
@@ -261,7 +296,7 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 		{
 			const string &name = *it;
 
-			if (!(name == "R" || name == "G" || name == "B"))
+			if (!( name == "R" || name == "G" || name == "B" || name == "Y" ))
 			{
 				msg( Msg::Warning, "JPEGImageWriter", format( "Channel \"%s\" was not encoded." ) % name );
 				continue;
@@ -270,16 +305,24 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 			int channelOffset = 0;
 			if ( name == "R" )
 			{
+				assert( colorSpace == JCS_RGB );
 				channelOffset = 0;
 			}
 			else if ( name == "G" )
 			{
+				assert( colorSpace == JCS_RGB );			
 				channelOffset = 1;
+			}
+			else if ( name == "B" )
+			{
+				assert( colorSpace == JCS_RGB );			
+				channelOffset = 2;
 			}
 			else
 			{
-				assert( name == "B" );
-				channelOffset = 2;
+				assert( name == "Y" );
+				assert( colorSpace == JCS_GRAYSCALE );
+				channelOffset = 0;
 			}
 
 			// get the image channel
@@ -300,17 +343,27 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 				
 			case IntVectorDataTypeId:
 				convert<IntVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
-				break;					
+				break;	
+				
+			case LongVectorDataTypeId:
+				convert<LongVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				break;						
 
 			case UIntVectorDataTypeId:
 				convert<UIntVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
 				break;
+				
+			case UCharVectorDataTypeId:
+				convert<UCharVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				break;	
+				
+			case CharVectorDataTypeId:
+				convert<CharVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				break;	
 
 			case HalfVectorDataTypeId:
 				convert<HalfVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
 				break;
-
-			/// \todo Deal with other channel types
 
 			default:
 				throw InvalidArgumentException( (format( "JPEGImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId(dataContainer->typeId()) % name).str() );
@@ -325,7 +378,7 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 		unsigned char *rowPointer[1];
 		while (cinfo.next_scanline < cinfo.image_height)
 		{
-			rowPointer[0] = &imageBuffer[cinfo.next_scanline * rowStride];
+			unsigned char *rowPointer[1] = { &imageBuffer[cinfo.next_scanline * rowStride] };
 			jpeg_write_scanlines(&cinfo, rowPointer, 1);
 		}
 

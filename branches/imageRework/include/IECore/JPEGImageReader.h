@@ -81,16 +81,21 @@ class JPEGImageReader : public ImageReader
 		static const ReaderDescription<JPEGImageReader> m_readerDescription;
 
 		/// Opens the file, if necessary, and fills the buffer. Throws an IOException if an error occurs.
-		void open();
-
-		// interlaced data buffer
-		/// \todo Make this into a std::vector to remove any potential for leaks
-		unsigned char *m_buffer;
-		int m_bufferWidth;
-		int m_bufferHeight;
+		/// Tries to open the file, returning true on success and false on failure. On success,
+                /// m_buffer, m_bufferWidth, m_bufferHeight, m_bufferFileName, and m_numChannels will be valid. 
+		/// If throwOnFailure is true then a descriptive Exception is thrown rather than false being returned.
+                bool open( bool throwOnFailure = false );
 
 		/// The filename we filled the buffer from
 		std::string m_bufferFileName;
+
+		/// Decompressed image data buffer 
+		std::vector<unsigned char> m_buffer;
+		
+		/// Information gathered from header
+		int m_bufferWidth;
+		int m_bufferHeight;		
+		int m_numChannels;
 };
 
 IE_CORE_DECLAREPTR( JPEGImageReader );
