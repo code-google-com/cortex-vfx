@@ -123,14 +123,25 @@ TIFFImageWriter::~TIFFImageWriter()
 
 void TIFFImageWriter::stripEncode(tiff * tiffImage, char * imageBuffer, int imageBufferSize, int strips)
 {	
+	assert( tiffImage );
+	assert( imageBuffer );	
+	assert( imageBufferSize >= 0 );
+	assert( strips >= 0 );
+	
 	// write the information to the file
 	int offset = 0;
 
 	for(int strip = 0; strip < strips; ++strip)
 	{
 		int tss = TIFFStripSize(tiffImage);
+		assert( tss >= 0 );
+		
 		int remaining = imageBufferSize - offset;
+		assert( remaining >= 0 );
+		
 		int lc = TIFFWriteEncodedStrip(tiffImage, strip, imageBuffer + offset, tss < remaining ? tss : remaining);
+		assert( lc >= 0 );
+		
 		offset += lc;
 	}
 }

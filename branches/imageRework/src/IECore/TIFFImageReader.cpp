@@ -62,36 +62,35 @@ const Reader::ReaderDescription<TIFFImageReader> TIFFImageReader::m_readerDescri
 
 TIFFImageReader::TIFFImageReader()
 		:	ImageReader("TIFFImageReader", "Reads Tagged Image File Format (TIFF) files" ),
-		m_tiffImage(0), m_buffer(0)
+		m_tiffImage(0)
 {
 }
 
-TIFFImageReader::TIFFImageReader(const string & fileName)
+TIFFImageReader::TIFFImageReader( const string &fileName )
 		:	ImageReader("TIFFImageReader", "Reads Tagged Image File Format (TIFF) files" ),
-		m_tiffImage(0), m_buffer(0)
+		m_tiffImage(0)
 {
 	m_fileNameParameter->setTypedValue(fileName);
 }
 
 TIFFImageReader::~TIFFImageReader()
 {
-	delete [] m_buffer;
-	
-	ScopedTIFFExceptionTranslator errorHandler( );
-	
-	if (m_tiffImage)
+	ScopedTIFFExceptionTranslator errorHandler;
+
+	if ( m_tiffImage )
 	{
-		TIFFClose(m_tiffImage);
+		TIFFClose( m_tiffImage );
+		m_tiffImage = 0;
 	}
-	
+
 }
 
-bool TIFFImageReader::canRead(const string & fileName)
+bool TIFFImageReader::canRead( const string &fileName )
 {
-	ScopedTIFFExceptionTranslator errorHandler( );
-	
+	ScopedTIFFExceptionTranslator errorHandler;
+
 	// attempt to open the file
-	ifstream in(fileName.c_str());
+	ifstream in( fileName.c_str() );
 	if ( !in.is_open() || in.fail() )
 	{
 		return false;
@@ -101,7 +100,7 @@ bool TIFFImageReader::canRead(const string & fileName)
 	// a tiff should have 0x49492a00 / 0x002a4949 from offset 0
 
 	// attempt to open the file
-	in.seekg(0, ios_base::beg);
+	in.seekg( 0, ios_base::beg );
 	if ( in.fail() )
 	{
 		return false;
@@ -114,290 +113,343 @@ bool TIFFImageReader::canRead(const string & fileName)
 	{
 		return false;
 	}
-	
+
 	/// \todo Why the 3 variations here? Surely only 2 are necessary?
 	return magic == 0x002a4949 || magic == 0x49492a00 || magic == 0x2a004d4d;
 }
 
-void TIFFImageReader::channelNames(vector<string> & names)
+void TIFFImageReader::channelNames( vector<string> &names )
 {
 	names.clear();
 
-	if (!open())
-	{
-		return;
-	}
+	open( true );
 
-	uint16 spp;
-	TIFFGetField(m_tiffImage, TIFFTAG_SAMPLESPERPIXEL, &spp);
-
-	/// \todo
-	// form channel names - hardcoded for now 'til i learn more about TIFF
-	names.push_back("R");
-	names.push_back("G");
-	names.push_back("B");
-	if (spp == 4)
+	/// \todo Derive channel names from header
+	if ( m_samplesPerPixel >= 3 )
 	{
-		names.push_back("A");
+		names.push_back("R");
+		names.push_back("G");
+		names.push_back("B");
+
+		if ( m_samplesPerPixel >= 4 )
+		{
+			names.push_back("A");
+		}
 	}
 }
 
-void TIFFImageReader::readChannel(string name, ImagePrimitivePtr image, const Box2i & dataWindow)
+bool TIFFImageReader::isComplete()
 {
-	assert( open() );
-	ScopedTIFFExceptionTranslator errorHandler( );
-		
-	if (!open())
-	{
-		return;
-	}
+	return open( false );
+}
 
-	// get the TIFF fields
-	uint16 photo, bps, spp, fillorder, sampleformat;
-	uint32 width, height;
+Imath::Box2i TIFFImageReader::dataWindow()
+{
+	open( true );
 
-	TIFFGetField(m_tiffImage, TIFFTAG_BITSPERSAMPLE, &bps);
-	TIFFGetFieldDefaulted(m_tiffImage, TIFFTAG_PHOTOMETRIC, &photo);
-	if (! (	photo == PHOTOMETRIC_MINISWHITE ||
-	        photo == PHOTOMETRIC_MINISBLACK ||
-	        photo == PHOTOMETRIC_RGB ||
-	        photo == PHOTOMETRIC_PALETTE ||
-		photo == PHOTOMETRIC_MASK ||
-		photo == PHOTOMETRIC_SEPARATED ||
-		photo == PHOTOMETRIC_YCBCR ||
-		photo == PHOTOMETRIC_CIELAB ||
-		photo == PHOTOMETRIC_ICCLAB ||
-		photo == PHOTOMETRIC_ITULAB ||
-		photo == PHOTOMETRIC_LOGL ||
-		photo == PHOTOMETRIC_LOGLUV
-		 ))
-	{
-		throw IOException( ( boost::format("TiffImageReader: Invalid value (%d) for TIFFTAG_PHOTOMETRIC") % photo ).str() );
-	}	
-			
-	TIFFGetField(m_tiffImage, TIFFTAG_SAMPLESPERPIXEL, &spp);
-	if ( spp == 0 )
-	{
-		throw IOException( ( boost::format("TiffImageReader: Invalid value (%d) for TIFFTAG_SAMPLESPERPIXEL") % spp ).str() );
-	}
-	
-	
-	TIFFGetFieldDefaulted(m_tiffImage, TIFFTAG_FILLORDER, &fillorder);
-	if (!( fillorder == FILLORDER_MSB2LSB || fillorder == FILLORDER_LSB2MSB) )
-	{
-		throw IOException( ( boost::format("TiffImageReader: Invalid value (%d) for TIFFTAG_FILLORDER") % fillorder ).str() );
-	}
-	assert( (bool)( TIFFIsMSB2LSB( m_tiffImage) ) == (bool)( fillorder == FILLORDER_MSB2LSB ));
-	
-		
-	TIFFGetFieldDefaulted(m_tiffImage, TIFFTAG_SAMPLEFORMAT, &sampleformat);
-	if (! (	sampleformat == SAMPLEFORMAT_UINT ||
-	        sampleformat == SAMPLEFORMAT_INT ||
-	        sampleformat == SAMPLEFORMAT_IEEEFP ||
-	        sampleformat == SAMPLEFORMAT_VOID ||
-		sampleformat == SAMPLEFORMAT_COMPLEXINT ||
-		sampleformat == SAMPLEFORMAT_COMPLEXIEEEFP ))
-	{
-		throw IOException( ( boost::format("TiffImageReader: Invalid value (%d) for TIFFTAG_SAMPLEFORMAT") % sampleformat ).str() );
-	}
-		
-	// we handle here 8, 16, and 32 bpp with RGB channels in unsigned integer and float space
-	/// \todo Other formats!
-	
-	TIFFGetField(m_tiffImage, TIFFTAG_IMAGEWIDTH, &width);
-	if ( width == 0 )
-	{
-		throw IOException( ( boost::format("TiffImageReader: Invalid value (%d) for TIFFTAG_IMAGEWIDTH") % spp ).str() );
-	}
-	
-	TIFFGetField(m_tiffImage, TIFFTAG_IMAGELENGTH, &height);
-	if ( height == 0 )
-	{
-		throw IOException( ( boost::format("TiffImageReader: Invalid value (%d) for TIFFTAG_IMAGELENGTH") % spp ).str() );
-	}
+	return m_dataWindow;
+}
 
-	// compute the data window
-	Box2i dw;
-	dw.min.x = 0;
-	dw.min.y = 0;
-	dw.max.x = width - 1;
-	dw.max.y = height - 1;
+Imath::Box2i TIFFImageReader::displayWindow()
+{
+	open( true );
 
-	// determine the image data window
-	Box2i idw = dataWindow.isEmpty() ? dw : dataWindow;
-	image->setDataWindow(idw);
-	image->setDisplayWindow(idw);
+	return m_displayWindow;
+}
 
-	// compute read box
-	Box2i readbox = boxIntersection(dw, idw);
+template<typename T>
+T TIFFImageReader::tiffField( unsigned int t )
+{
+	BOOST_STATIC_ASSERT( sizeof( unsigned int ) >= sizeof( ttag_t ) );
+	assert( m_tiffImage );
 
-	if (!m_buffer)
-	{
-		read_buffer();
-	}
+	T tmp;
+	TIFFGetField( m_tiffImage, (ttag_t)t, &tmp );
+	return tmp;
+}
 
+template<typename T>
+T TIFFImageReader::tiffFieldDefaulted( unsigned int t )
+{
+	BOOST_STATIC_ASSERT( sizeof( unsigned int ) >= sizeof( ttag_t ) );
+	assert( m_tiffImage );
+
+	T tmp;
+	TIFFGetFieldDefaulted( m_tiffImage, (ttag_t)t, &tmp );
+	return tmp;
+}
+
+template<typename T>
+float toFloat( T t )
+{
+	static const double normalizer = 1.0 / Imath::limits<T>::max();
+
+	return normalizer * t;
+}
+
+template<>
+float toFloat( float t )
+{
+	return t;
+}
+
+template<>
+float toFloat( double t )
+{
+	return static_cast<float>( t );
+}
+
+template<typename T>
+DataPtr TIFFImageReader::readTypedChannel( const std::string &name, const Box2i &dataWindow )
+{
+	FloatVectorDataPtr dataContainer = new FloatVectorData();
+
+	typename FloatVectorData::ValueType &data = dataContainer->writable();
+
+	/// \todo
 	// compute offset to image
-	int boffset = name == "R" ? 0 : name == "G" ? 1 : name == "B" ? 2 : 3;
-	
-	if ( boffset >= spp )
+	int channelOffset = 0;
+	if ( name == "R" )
 	{
-		throw IOException( (boost::format( "TiffImageReader: Insufficient samples-per-pixel (%d) for reading channel \"%s\"") % spp % name).str() );
+		channelOffset = 0;
 	}
-
-	// we form 32 bit float image channel by normalizing the input integer range to [0.0, 1.0]
-	double normalizer = 1.0 / ((1 << bps) - 1);
-
-	// copy in the corresponding channel
-	// ugg, perhaps we should move/duplicate the loop inside the switch cases for speed
-	vector<float> & ic = image->createChannel<float>(name)->writable();
-
-	// check for empty box
-	if (readbox.isEmpty())
+	else if ( name == "G" )
 	{
-		return;
+		channelOffset = 1;
 	}
-
-	// compute distance from the read box origin
-	V2i d = readbox.min - dw.min;
-
-	if (sampleformat == SAMPLEFORMAT_IEEEFP)
+	else if ( name == "B" )
 	{
-		// read in the buffer
-		for (int y = readbox.min.y; y <= readbox.max.y; ++y)
-		{
-			for (int x = readbox.min.x; x <= readbox.max.x; ++x)
-			{
-				// i is the index of the pixel on the output image channel
-				int i = (y - idw.min.y) * ( 1 + boxSize( idw ).x ) + (x - idw.min.x);
-
-				// di is the index of the pixel in the input image buffer
-				int di = (y - d.y) * ( 1 + boxSize( dw ).x ) + (x - d.x);
-
-				ic[i] = (reinterpret_cast<float *>(m_buffer))[spp * di + boffset];
-			}
-		}
+		channelOffset = 2;
 	}
-	else if ( sampleformat == SAMPLEFORMAT_UINT )
+	else if ( name == "A" )
 	{
-		for (int y = readbox.min.y; y <= readbox.max.y; ++y)
-		{
-			for (int x = readbox.min.x; x <= readbox.max.x; ++x)
-			{
-				// i is the index of the pixel on the output image channel
-				int i = (y - idw.min.y) * ( 1 + boxSize( idw ).x ) + (x - idw.min.x);
-
-				// di is the index of the pixel in the input image buffer
-				int di = (y - d.y) * ( 1 + boxSize( dw ).x ) + (x - d.x);
-
-				switch (bps)
-				{
-
-				case 8:
-				{
-					/// \todo May need to reverseBytes(), depending on fillOrder and endianness
-					// cast to unsigned byte, divide
-					ic[i] = normalizer * m_buffer[spp * di + boffset];
-				}
-				break;
-
-				case 16:
-				{
-					/// \todo May need to reverseBytes(), depending on fillOrder and endianness
-					//// \todo should probably be using uint16_t here instead
-					BOOST_STATIC_ASSERT( sizeof( unsigned short ) == 2 );
-					// cast to short, divide
-					unsigned short v = *((unsigned short *) m_buffer + spp * di + boffset);
-					ic[i] = normalizer * v;
-				}
-				break;
-
-				case 32:
-				{
-					/// \todo May need to reverseBytes(), depending on fillOrder and endianness
-					//// \todo should probably be using uint32_t here instead
-					BOOST_STATIC_ASSERT( sizeof( unsigned int ) == 4 );
-					// cast to int, divide
-					unsigned int v = *((unsigned int *) m_buffer + spp * di + boffset);
-					ic[i] = normalizer * v;
-				}
-				break;
-
-				default:
-					throw IOException( (boost::format( "TiffImageReader: Unhandled bit-depth: %d") % bps).str() );
-
-				}
-			}
-		}
+		channelOffset = 3;
 	}
 	else
 	{
-		throw IOException( (boost::format( "TiffImageReader: Unhandled sample format: %d") % sampleformat).str() );
+		throw IOException( ( boost::format( "TiffImageReader: Could not find channel \"%s\" while reading %s" ) % name % m_tiffImageFileName ).str() );
+	}
+
+	if ( channelOffset >= m_samplesPerPixel )
+	{
+		throw IOException( (boost::format( "TiffImageReader: Insufficient samples-per-pixel (%d) for reading channel \"%s\"") % m_samplesPerPixel % name).str() );
+	}
+
+	int area = ( dataWindow.size().x + 1 ) * ( dataWindow.size().y + 1 );
+	assert( area >= 0 );
+	data.resize( area );
+
+	int dataWidth = 1 + dataWindow.size().x;
+	int bufferDataWidth = 1 + m_dataWindow.size().x;
+
+	int dataY = 0;
+
+	for ( int y = dataWindow.min.y; y <= dataWindow.max.y; ++y, ++dataY )
+	{
+		typename FloatVectorData::ValueType::size_type dataOffset = dataY * dataWidth ;
+
+		for ( int x = dataWindow.min.x; x <= dataWindow.max.x; ++x, ++dataOffset )
+		{
+			assert( dataOffset < data.size() );
+
+			const T* buf = reinterpret_cast< T* >( & m_buffer[0] );
+			assert( buf );
+
+			// \todo Currently, we only support PLANARCONFIG_CONTIG for TIFFTAG_PLANARCONFIG.
+			data[dataOffset] = toFloat<T>( buf[ m_samplesPerPixel * ( y * bufferDataWidth + x ) + channelOffset ] );
+		}
+	}
+
+	return dataContainer;
+}
+
+DataPtr TIFFImageReader::readChannel( const std::string &name, const Imath::Box2i &dataWindow )
+{
+	ScopedTIFFExceptionTranslator errorHandler;
+
+	open( true );
+
+	if ( m_buffer.size() == 0 )
+	{
+		readBuffer();
+	}
+
+	if ( m_sampleFormat == SAMPLEFORMAT_IEEEFP )
+	{
+		return readTypedChannel<float>( name, dataWindow );
+	}
+	else
+	{
+		assert( m_sampleFormat == SAMPLEFORMAT_UINT ) ;
+
+		switch ( m_bitsPerSample )
+		{
+		case 8:
+			return readTypedChannel<unsigned char>( name, dataWindow );
+
+		case 16:
+			return readTypedChannel<uint16>( name, dataWindow );
+
+		case 32:
+			return readTypedChannel<uint32>( name, dataWindow );
+
+		default:
+			assert( false );
+			return 0;
+		}
 	}
 }
 
-/// read in the data to a buffer
-void TIFFImageReader::read_buffer()
+void TIFFImageReader::readBuffer()
 {
-	ScopedTIFFExceptionTranslator errorHandler( );
-	
-	uint16 spp, bps;
-	uint32 width, height;
-	tsize_t stripSize;
-	long imageOffset, result;
-	int stripMax, stripCount;
+	ScopedTIFFExceptionTranslator errorHandler;
 
-	TIFFGetField(m_tiffImage, TIFFTAG_BITSPERSAMPLE, &bps);
-	TIFFGetField(m_tiffImage, TIFFTAG_SAMPLESPERPIXEL, &spp);
-	TIFFGetField(m_tiffImage, TIFFTAG_IMAGEWIDTH, &width);
-	TIFFGetField(m_tiffImage, TIFFTAG_IMAGELENGTH, &height);
-	
+	/// readChannel should already have opened the image by now
+	assert( m_tiffImage );
+
 	/// \todo Support tiled images!
 	if ( TIFFIsTiled( m_tiffImage ) )
 	{
 		throw IOException( "TiffImageReader: Tiled images unsupported" );
 	}
 
-	// get strip size
-	stripSize = TIFFStripSize(m_tiffImage);
-	stripMax = TIFFNumberOfStrips(m_tiffImage);
-	imageOffset = 0;
+	int width = boxSize( m_dataWindow ).x + 1;
+	int height = boxSize( m_dataWindow ).y + 1;
 
-	/// \todo Is this assumption sound?
-	// assume data is interlaced, just read the whole thing,
-	// then stripe off the channel
-	
-	size_t bufSize = (size_t)( (float)bps / 8 * spp * width * height );
+	tsize_t stripSize = TIFFStripSize(m_tiffImage);
+
+	// \todo Currently, we only support PLANARCONFIG_CONTIG for TIFFTAG_PLANARCONFIG.
+	std::vector<unsigned char>::size_type bufSize = (size_t)( (float)m_bitsPerSample / 8 * m_samplesPerPixel * width * height );
 	assert( bufSize );
-	m_buffer = new unsigned char[ bufSize ]();
+	m_buffer.resize( bufSize, 0 );
 
 	// read the image
-	for (stripCount = 0; stripCount < stripMax; stripCount++)
+	tsize_t imageOffset = 0;
+	tstrip_t numStrips = TIFFNumberOfStrips( m_tiffImage );
+	for ( tstrip_t strip = 0; strip < numStrips; strip++ )
 	{
-		if ((result = TIFFReadEncodedStrip( m_tiffImage, stripCount, m_buffer + imageOffset, stripSize)) == -1)
+		tsize_t result = TIFFReadEncodedStrip( m_tiffImage, strip, &m_buffer[0] + imageOffset, stripSize);
+
+		if ( result == -1 )
 		{
-			throw IOException( (boost::format( "TiffImageReader: Read error on strip number %d") % stripCount).str() );
+			throw IOException( (boost::format( "TiffImageReader: Read error on strip number %d") % strip).str() );
 		}
 
 		imageOffset += result;
 	}
 }
 
-bool TIFFImageReader::open()
+bool TIFFImageReader::open( bool throwOnFailure )
 {
-	ScopedTIFFExceptionTranslator errorHandler( );
+	ScopedTIFFExceptionTranslator errorHandler;
 
-	if (!m_tiffImage || m_tiffImageFileName != fileName())
+	if ( m_tiffImage )
+
 	{
-		if (m_tiffImage)
+		if ( m_tiffImageFileName == fileName() )
 		{
-			TIFFClose(m_tiffImage);
-			m_tiffImage = 0;
+			return true;
 		}
-		m_tiffImage = TIFFOpen(fileName().c_str(), "r");
-		m_tiffImageFileName = fileName();
-		delete [] m_buffer;
-		m_buffer = 0;
+		else
+		{
+			TIFFClose( m_tiffImage );
+			m_tiffImage = 0;
+			m_buffer.clear();
+		}
 	}
 
-	return m_tiffImage;
+	assert( m_tiffImage == 0 );
+	assert( m_buffer.size() == 0 );
+
+	try
+	{
+		m_tiffImage = TIFFOpen( fileName().c_str(), "r" );
+
+		if (! m_tiffImage )
+		{
+			throw IOException( ( boost::format("TiffImageReader: Could not open %s ") % fileName() ).str() );
+		}
+
+		int width = tiffField<uint32>( TIFFTAG_IMAGEWIDTH );
+		if ( width == 0 )
+		{
+			throw IOException( ( boost::format("TiffImageReader: Unsupported value (%d) for TIFFTAG_IMAGEWIDTH while reading %s") % width % fileName() ).str() );
+		}
+
+		int height = tiffField<uint32>( TIFFTAG_IMAGELENGTH );
+		if ( height == 0 )
+		{
+			throw IOException( ( boost::format("TiffImageReader: Unsupported value (%d) for TIFFTAG_IMAGELENGTH while reading %s") % height % fileName() ).str() );
+		}
+
+		m_samplesPerPixel = tiffField<uint32>( TIFFTAG_SAMPLESPERPIXEL );
+		if ( ! ( m_samplesPerPixel == 3 )
+		   )
+		{
+			throw IOException( ( boost::format("TiffImageReader: Unsupported value (%d) for TIFFTAG_SAMPLESPERPIXEL") % m_samplesPerPixel ).str() );
+		}
+
+		m_bitsPerSample = tiffField<uint16>( TIFFTAG_BITSPERSAMPLE );
+		if (! (	m_bitsPerSample == 8 ||
+		                m_bitsPerSample == 16 ||
+		                m_bitsPerSample == 32
+		      ) )
+		{
+			throw IOException( ( boost::format("TiffImageReader: Unsupported value (%d) for TIFFTAG_BITSPERSAMPLE") % m_bitsPerSample ).str() );
+		}
+
+		m_photometricInterpretation = tiffFieldDefaulted<uint16>( TIFFTAG_PHOTOMETRIC );
+		if (! ( m_photometricInterpretation == PHOTOMETRIC_MINISBLACK ||
+		                m_photometricInterpretation == PHOTOMETRIC_RGB
+		      ))
+		{
+			throw IOException( ( boost::format("TiffImageReader: Unsupported value (%d) for TIFFTAG_PHOTOMETRIC") % m_photometricInterpretation ).str() );
+		}
+
+		m_fillOrder = tiffFieldDefaulted<uint16>( TIFFTAG_FILLORDER );
+		if (!( m_fillOrder == FILLORDER_MSB2LSB || m_fillOrder == FILLORDER_LSB2MSB) )
+		{
+			throw IOException( ( boost::format("TiffImageReader: Invalid value (%d) for TIFFTAG_FILLORDER") % m_fillOrder ).str() );
+		}
+		assert( (bool)( TIFFIsMSB2LSB( m_tiffImage) ) == (bool)( m_fillOrder == FILLORDER_MSB2LSB ));
+
+		m_sampleFormat = tiffFieldDefaulted<uint16>( TIFFTAG_SAMPLEFORMAT );
+		if (! ( m_sampleFormat == SAMPLEFORMAT_UINT ||
+		                m_sampleFormat == SAMPLEFORMAT_IEEEFP
+		      ))
+		{
+			throw IOException( ( boost::format("TiffImageReader: Unsupported value (%d) for TIFFTAG_SAMPLEFORMAT") % m_sampleFormat ).str() );
+		}
+
+		m_orientation = tiffFieldDefaulted<uint16>( TIFFTAG_ORIENTATION );
+		if ( m_orientation != ORIENTATION_TOPLEFT )
+		{
+			throw IOException( ( boost::format("TiffImageReader: Unsupported value (%d) for TIFFTAG_ORIENTATION") % m_orientation ).str() );
+		}
+
+		m_planarConfig = tiffFieldDefaulted<uint16>( TIFFTAG_PLANARCONFIG );
+		if ( m_planarConfig !=  PLANARCONFIG_CONTIG )
+		{
+			throw IOException( ( boost::format("TiffImageReader: Unsupported value (%d) for TIFFTAG_PLANARCONFIG") % m_orientation ).str() );
+		}
+
+		m_displayWindow = Box2i( V2i( 0, 0 ), V2i( width - 1, height - 1 ) );
+		m_dataWindow = m_displayWindow;
+
+		m_tiffImageFileName = fileName();
+	}
+	catch ( ... )
+	{
+		if ( throwOnFailure )
+		{
+			throw;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	return m_tiffImage != 0;
 }
+

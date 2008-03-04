@@ -32,6 +32,8 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include <iostream>
+
 #include "boost/format.hpp"
 
 #include "IECore/ScopedTIFFExceptionTranslator.h"
@@ -65,5 +67,5 @@ void ScopedTIFFExceptionTranslator::output(const char* module, const char* fmt, 
 		context = *module;
 	}
 	
-	throw IOException( ( boost::format( "%s : %s" ) % context % buf ).str() );
+	//throw IOException( ( boost::format( "%s : %s" ) % context % buf ).str() );
 }

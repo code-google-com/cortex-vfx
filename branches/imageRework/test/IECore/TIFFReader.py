@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,83 +32,220 @@
 #
 ##########################################################################
 
-import os
-import os.path
 import unittest
+import glob
 import sys
-import IECore
-
+from IECore import *
 
 class TestTIFFReader(unittest.TestCase):
 
-	testoutfile = "test/IECore/data/tiff/testoutput.tif"
-
-	def testConstruction(self):
-                
-		r = IECore.Reader.create( "test/IECore/data/tiff/rgb_black_circle.256x256.tiff" )
-		self.assertEqual(type(r), IECore.TIFFImageReader)
-		
-	def testRead1(self):
-		
-		r = IECore.Reader.create( "test/IECore/data/tiff/rgb_black_circle.256x256.tiff" )
-		self.assertEqual(type(r), IECore.TIFFImageReader)
-		
-		r.parameters().dataWindow.setValue(IECore.Box2iData(IECore.Box2i(IECore.V2i(0, 0), IECore.V2i(100, 100))))
-		
-		self.assertRaises( RuntimeError, r.read )
-		
-
-	def testRead2(self):
+	def testConstruction( self ):
 	
-		for f in [ "bluegreen_noise.400x300.tif", "maya.tiff" ] :
-										
-			r = IECore.Reader.create( os.path.join( "test/IECore/data/tiff",  f) )
-			self.assertEqual(type(r), IECore.TIFFImageReader)
+		r = Reader.create( "test/IECore/data/tiff/uvMap.512x256.8bit.tif" )
+		self.assertEqual( type(r), TIFFImageReader )
 		
-			img = r.read()
-			self.assertEqual(type(img), IECore.ImagePrimitive)
-		
-			# write test (TIFF -> TIFF)
-			w = IECore.Writer.create(img, self.testoutfile)
-			self.assertEqual(type(w), IECore.TIFFImageWriter)
-		
-			w.write()
-		
-	def testErrors(self):	
+	def testCanRead( self ):
 	
-		# We don't currently handle 1-bit, 2-bit, or 4-bit tiffs	
+		self.assert_( TIFFImageReader.canRead( "test/IECore/data/tiff/uvMap.512x256.8bit.tif" ) )
 		
-		for bitDepth in [ 1, 2, 4 ]:
+	def testIsComplete( self ):
+	
+		r = Reader.create( "test/IECore/data/tiff/uvMap.512x256.8bit.tif" )
+		self.assertEqual( type(r), TIFFImageReader )
 		
-			r = IECore.Reader.create( "test/IECore/data/tiff/rgb_black_circle.256x256.%dbit.tiff" % ( bitDepth ) )
-			self.assertEqual(type(r), IECore.TIFFImageReader)
+		self.assert_( r.isComplete() )
 		
-			self.assertRaises( RuntimeError, r.read )
+	def testChannelNames( self ):	
+	
+		r = Reader.create( "test/IECore/data/tiff/uvMap.512x256.8bit.tif" )
+		self.assertEqual( type(r), TIFFImageReader )
 		
-	def testCompressionWrite(self):
+		channelNames = r.channelNames()
 		
-		r = IECore.Reader.create( "test/IECore/data/tiff/bluegreen_noise.400x300.tif" )
-		self.assertEqual(type(r), IECore.TIFFImageReader)
+		self.assertEqual( len( channelNames ), 3 )
 		
+		self.assert_( "R" in channelNames )
+		self.assert_( "G" in channelNames )
+		self.assert_( "B" in channelNames )				
+		
+	def testRead( self ):
+	
+		r = Reader.create( "test/IECore/data/tiff/uvMap.512x256.8bit.tif" )
+		self.assertEqual( type(r), TIFFImageReader )
+
 		img = r.read()
-		self.assertEqual(type(img), IECore.ImagePrimitive)
+
+		self.assertEqual( type(img), ImagePrimitive )
 		
-		w = IECore.Writer.create( img, self.testoutfile )
-		compressions = w.parameters()['compression'].presets()
-		self.assertEqual( type(w), IECore.TIFFImageWriter )
+		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
+		self.assertEqual( img.dataWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
 		
-		for compression in compressions.keys():
-			cw = IECore.Writer.create(img, '.'.join([self.testoutfile, compression, 'tif']))
-			cw.parameters().compression.setValue(compressions[compression])
-			cw.write()
-			
-	def tearDown(self):
-		
-		# cleanup
+	def testReadChannel( self ):
 	
-		if os.path.isfile( self.testoutfile ) :	
-			os.remove( self.testoutfile )				
-                			
+		r = Reader.create( "test/IECore/data/tiff/uvMap.512x256.8bit.tif" )
+		self.assertEqual( type(r), TIFFImageReader )
+		
+		red = r.readChannel( "R" )
+		self.assert_( red )
+				
+		green = r.readChannel( "G" )
+		self.assert_( green )
+		
+		blue = r.readChannel( "B" )
+		self.assert_( blue )				
+		
+		self.assertRaises( RuntimeError, r.readChannel, "NonExistantChannel" )
+		
+		self.assertEqual( len(red), len(green) )	
+		self.assertEqual( len(red), len(blue) )		
+		self.assertEqual( len(red), 512 * 256 )			
+
+	def testDataWindowRead( self ):
+	
+		r = Reader.create( "test/IECore/data/tiff/uvMap.512x256.8bit.tif" )
+		self.assertEqual( type(r), TIFFImageReader )
+		
+		dataWindow = Box2i(
+			V2i(360, 160), 
+			V2i(399, 199)
+		)
+		
+		dataWindow = Box2i(
+			V2i(50, 50), 
+			V2i(450, 200)
+		)
+		
+		r.parameters().dataWindow.setValue( Box2iData( dataWindow ) )
+
+		img = r.read()
+
+		self.assertEqual( type(img), ImagePrimitive )
+		
+		self.assertEqual( img.dataWindow, dataWindow )
+		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
+		
+		Writer.create( img, '/tmp/cak.exr').write()
+		
+		#self.assertEqual( len(img["R"].data), 40 * 40 )
+		
+		ipe = PrimitiveEvaluator.create( img )
+		self.assert_( ipe.R() )
+		self.assert_( ipe.G() )
+		self.assert_( ipe.B() )
+		self.failIf ( ipe.A() )
+		
+		result = ipe.createResult()
+				
+		# Check that the color at the bottom-right of the image is black - ordinarialy it would
+		# be yellow, but we're deliberately not reading the entire image
+		found = ipe.pointAtPixel( V2i( 511, 255 ), result )
+		self.assert_( found )		
+		color = V3f(
+				result.floatPrimVar( ipe.R() ),
+				result.floatPrimVar( ipe.G() ), 
+				result.floatPrimVar( ipe.B() )
+			)		
+		expectedColor = V3f( 0, 0, 0 )
+		self.assert_( ( color - expectedColor).length() < 1.e-3 )
+		
+		found = ipe.pointAtPixel( V2i( 380, 180 ), result )
+		self.assert_( found )
+		
+		
+		
+		
+		color = V3f(
+				result.floatPrimVar( ipe.R() ),
+				result.floatPrimVar( ipe.G() ), 
+				result.floatPrimVar( ipe.B() )
+			)
+			
+		expectedColor = V3f( 0.8745, 0.85887, 0 )
+		self.assert_( ( color - expectedColor).length() < 1.e-3 )
+					
+	def testOrientation( self ) :
+	
+		""" Test orientation of TIFF files """
+	
+		img = Reader.create( "test/IECore/data/tiff/uvMap.512x256.8bit.tif" ).read()
+		
+		ipe = PrimitiveEvaluator.create( img )
+		self.assert_( ipe.R() )
+		self.assert_( ipe.G() )
+		self.assert_( ipe.B() )
+		self.failIf ( ipe.A() )
+		
+		result = ipe.createResult()
+		
+		# Floating point differences due to compression (?)
+		# \todo Double check this.
+		colorMap = {
+			V2i( 0 ,    0 ) :  V3f( 0, 0, 0 ),
+			V2i( 511,   0 ) :  V3f( 1, 0, 0 ),
+			V2i( 0,   255 ) :  V3f( 0, 1, 0 ),
+			V2i( 511, 255 ) :  V3f( 1, 1, 0 ),
+		}
+		
+		for point, expectedColor in colorMap.items() :
+		
+			found = ipe.pointAtPixel( point, result )
+			self.assert_( found )
+			
+			color = V3f(
+				result.floatPrimVar( ipe.R() ),
+				result.floatPrimVar( ipe.G() ), 
+				result.floatPrimVar( ipe.B() )
+			)
+		
+			self.assert_( ( color - expectedColor).length() < 1.e-6 )
+			
+	def testErrors( self ):			
+	
+		r = TIFFImageReader()
+		self.assertRaises( RuntimeError, r.read )
+		self.assertRaises( RuntimeError, r.readChannel, "R" )
+			
+		#r = TIFFImageReader( "test/IECore/data/jpg/uvMap.512x256.jpg" )
+		#self.assertRaises( RuntimeError, r.read )
+		
+	def testAll( self ):
+	
+		fileNames = glob.glob( "test/IECore/data/tiff/*.tif" ) + glob.glob( "test/IECore/data/tiff/*.tiff" )
+		
+		# Silence any warnings while the tests run
+		MessageHandler.pushHandler( NullMessageHandler() )
+		
+		expectedFailures = [  
+			"test/IECore/data/tiff/rgb_black_circle.256x256.4bit.tiff",
+			"test/IECore/data/tiff/rgb_black_circle.256x256.2bit.tiff",
+			"test/IECore/data/tiff/rgb_black_circle.256x256.1bit.tiff", 
+			"test/IECore/data/tiff/rgb_black_circle.256x256.tiff",
+		]
+		
+		try:
+		
+			for f in fileNames:
+
+				try:
+					r = TIFFImageReader( f ) 
+					img = r.read()
+					self.assertEqual( type(img), ImagePrimitive )
+					self.assert_( img.arePrimitiveVariablesValid() )	
+				except:
+					
+					if not f in expectedFailures:
+						print f
+						raise
+				
+		except:
+		
+			raise	
+			
+		finally:
+			
+			MessageHandler.popHandler()	
+	
+		
 if __name__ == "__main__":
 	unittest.main()   
 	

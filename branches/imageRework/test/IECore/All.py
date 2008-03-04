@@ -61,7 +61,7 @@ from SimpleTypedData import *
 from TypedDataAsObject import *
 from VectorData import *
 from FileSequence import *
-from EXRReader import *
+#from EXRReader import *
 from PointsPrimitive import *
 from ImagePrimitive import *
 from PerlinNoise import *

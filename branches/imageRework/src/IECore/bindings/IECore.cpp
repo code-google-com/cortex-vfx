@@ -222,7 +222,7 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindEXRImageWriter();
 	
 #ifdef IECORE_WITH_TIFF	
-	//bindTIFFImageReader();
+	bindTIFFImageReader();
 	bindTIFFImageWriter();
 #endif
 	
