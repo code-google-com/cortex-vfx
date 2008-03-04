@@ -50,10 +50,16 @@ namespace IECore
 /// ImagePrimitive represents a 2D bitmap in the form of individual channels, which are stored as primitive variables.
 /// A channel may contain data of half (16-bit float), unsigned int (32-bit integer),
 /// or float (32-bit float) type. The interpretation of these channels broadly matches the EXR
-/// specification. Channels named "R", "G", "B", and "A" have the special meaning of Red, Green,
-/// Blue, and Alpha respectively, but arbitrary channel names are permitted and their interpretation
-/// is left to the application.
-
+/// specification - the following channel names have the specified special meanings, but arbitrary channel names
+/// are permitted and their interpretation is left to the application :
+///
+/// 	"R"			Red<br>
+///		"G"			Green<br>
+///		"B"			Blue<br>
+///		"A"			Alpha<br>
+///		"Y"			Luminance for greyscale or luminance/chroma images<br>
+///		"RY" "BY"	Chroma for luminance/chroma images<br>
+///
 /// Within the channel's data buffers themselves the pixel values are stored in row major order,
 /// that is to say pixels which are adjacent in X (which runs along the "width" of the image) are also
 /// adjacent in memory.
