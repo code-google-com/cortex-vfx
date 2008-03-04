@@ -66,12 +66,15 @@ class TestJPEGReader(unittest.TestCase):
 		self.assertEqual( type(r), JPEGImageReader )
 		
 		channelNames = r.channelNames()
-		
 		self.assertEqual( len( channelNames ), 3 )
-		
 		self.assert_( "R" in channelNames )
 		self.assert_( "G" in channelNames )
-		self.assert_( "B" in channelNames )				
+		self.assert_( "B" in channelNames )
+		
+		r = Reader.create( "test/IECore/data/jpg/greyscaleCheckerBoard.jpg" )
+		self.assertEqual( type(r), JPEGImageReader )
+		self.assertEqual( len( channelNames ), 1 )
+		self.assert_( channelNames[0]=="Y" )
 		
 	def testRead( self ):
 
