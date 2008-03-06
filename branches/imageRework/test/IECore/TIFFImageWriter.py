@@ -40,6 +40,33 @@ from IECore import *
 
 class TestTIFFImageWriter(unittest.TestCase):
 
+	# Make sure that the image corners match our "uvMap" which runs from bacl to red along increasing X, and bacl to green along increasing Y
+	def __verifyImageRGB( self, img ):
+	
+		topLeft = img.displayWindow.min
+		bottomRight = img.displayWindow.max
+	
+		pixelColorMap = {
+			topLeft : V3f( 0, 0, 0 ),
+			bottomRight : V3f( 1, 1, 0 ),
+		}
+	
+		ipe = PrimitiveEvaluator.create( img )
+		result = ipe.createResult()	
+		
+		for pixelColor in pixelColorMap.items() :
+
+			found = ipe.pointAtPixel( pixelColor[0], result )
+			self.assert_( found )		
+			color = V3f(
+				result.floatPrimVar( ipe.R() ),
+				result.floatPrimVar( ipe.G() ), 
+				result.floatPrimVar( ipe.B() )
+			)	
+			self.assert_( ( color - pixelColor[1]).length() < 1.e-3 )	
+	
+	
+
 	def __makeFloatImage( self, dataWindow, displayWindow, withAlpha = False, dataType = FloatVectorData ) :
 	
 		img = ImagePrimitive( dataWindow, displayWindow )
@@ -185,13 +212,20 @@ class TestTIFFImageWriter(unittest.TestCase):
 		
 		for b in [ 8, 16, 32 ]:
 		
-			w = Writer.create( img, "test/IECore/data/tiff/output" + str(b) + ".tif" )
+			self.setUp()
+		
+			w = Writer.create( img, "test/IECore/data/tiff/output.tif" )
 			self.assertEqual( type(w), TIFFImageWriter )
 		
 			w.parameters().bitdepth = b
 			w.write()
 		
-			#self.assert_( os.path.exists( "test/IECore/data/tiff/output.tif" ) )
+			self.assert_( os.path.exists( "test/IECore/data/tiff/output.tif" ) )
+			
+			img2 = Reader.create( "test/IECore/data/tiff/output.tif" ).read()
+			self.__verifyImageRGB( img2 )
+			
+			self.tearDown()
 			
 
 	def testWrite( self ) :	
@@ -205,43 +239,82 @@ class TestTIFFImageWriter(unittest.TestCase):
 		
 		for dataType in [ FloatVectorData, HalfVectorData, DoubleVectorData ] :
 		
+			self.setUp()
+		
 			img = self.__makeFloatImage( dataWindow, displayWindow, dataType = dataType )
-		
-			w = Writer.create( img, "test/IECore/data/tiff/output" + dataType.staticTypeName() + ".tif" )
+			w = Writer.create( img, "test/IECore/data/tiff/output.tif" )
 			self.assertEqual( type(w), TIFFImageWriter )
-		
 			w.write()
 		
-#			self.assert_( os.path.exists( "test/IECore/data/tiff/output.tif" ) )
+			self.assert_( os.path.exists( "test/IECore/data/tiff/output.tif" ) )
 			
-#			if dataType == FloatVectorData:
+			# Now we've written the image, verify the rgb
 			
-#				self.assertEqual( os.path.getsize( "test/IECore/data/tiff/output.tif" ), 28104 )
+			img2 = Reader.create( "test/IECore/data/tiff/output.tif" ).read()
+			self.__verifyImageRGB( img2 )
+			
+			self.tearDown()
 				
 		for dataType in [ ( UIntVectorData, 2**32-1), (UCharVectorData, 2**8-1 ),  (UShortVectorData, 2**16-1 ) ] :
 		
+			self.setUp()
+		
 			img = self.__makeIntImage( dataWindow, displayWindow, dataType = dataType[0], maxInt = dataType[1] )
-		
-			w = Writer.create( img, "test/IECore/data/tiff/output" + dataType[0].staticTypeName() + ".tif" )
+			w = Writer.create( img, "test/IECore/data/tiff/output.tif" )
 			self.assertEqual( type(w), TIFFImageWriter )
-		
 			w.write()
 		
-			#self.assert_( os.path.exists( "test/IECore/data/tiff/output.tif" ) )
+			self.assert_( os.path.exists( "test/IECore/data/tiff/output.tif" ) )
+			
+			# Now we've written the image, verify the rgb		
+			img2 = Reader.create( "test/IECore/data/tiff/output.tif" ).read()			
+			#self.__verifyImageRGB( img2 )
+			
+			self.tearDown()
+			
+	def testWriteAlpha( self ) :
+	
+		displayWindow = Box2i(
+			V2i( 0, 0 ),
+			V2i( 99, 99 )
+		)
+		
+		dataWindow = displayWindow	
 			
 		img = self.__makeFloatImage( dataWindow, displayWindow, withAlpha = True )
 		
-		w = Writer.create( img, "test/IECore/data/tiff/outputAlpha.tif" )
+		w = Writer.create( img, "test/IECore/data/tiff/output.tif" )
 		self.assertEqual( type(w), TIFFImageWriter )
-		
-		w.write()			
-		
-		img = self.__makeComplexImage( dataWindow, displayWindow )
-		
-		w = Writer.create( img, "test/IECore/data/tiff/outputComplex.tif" )
-		self.assertEqual( type(w), TIFFImageWriter )
-		
 		w.write()
+		self.assert_( os.path.exists( "test/IECore/data/tiff/output.tif" ) )
+		
+		# Now we've written the image, verify the rgb		
+		img2 = Reader.create( "test/IECore/data/tiff/output.tif" ).read()			
+		self.__verifyImageRGB( img2 )
+		
+		self.assert_( "A" in img2 )
+							
+	def testWriteComplex( self ) :
+	
+		displayWindow = Box2i(
+			V2i( 0, 0 ),
+			V2i( 99, 99 )
+		)
+		
+		dataWindow = displayWindow
+			
+		img = self.__makeComplexImage( dataWindow, displayWindow )		
+		w = Writer.create( img, "test/IECore/data/tiff/output.tif" )
+		self.assertEqual( type(w), TIFFImageWriter )		
+		w.write()
+		
+		# Now we've written the image, verify the rgb		
+		img2 = Reader.create( "test/IECore/data/tiff/output.tif" ).read()			
+		self.__verifyImageRGB( img2 )
+		
+		self.assert_( "A" in img2 )
+		self.assert_( "Data1" in img2 )
+		self.assert_( "Data2" in img2 )
 		
 	def testGreyscaleWrite( self ) :
 	
