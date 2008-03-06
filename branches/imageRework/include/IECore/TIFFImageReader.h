@@ -72,7 +72,7 @@ class TIFFImageReader : public ImageReader
 
 		/// Opens the file, if necessary, and fills the buffer. Throws an IOException if an error occurs.
 		/// Tries to open the file, returning true on success and false on failure. On success,
-		/// **************************************** will be valid.
+		/// the member data derived from the TIFF's "header" will be valid.
 		/// If throwOnFailure is true then a descriptive Exception is thrown rather than false being returned.
 		bool open( bool throwOnFailure = false );
 
@@ -94,6 +94,7 @@ class TIFFImageReader : public ImageReader
 		int m_sampleFormat;
 		int m_orientation;
 		int m_planarConfig;
+		std::vector<int> m_extraSamples;
 
 		template<typename T>
 		T tiffField( unsigned int t );
