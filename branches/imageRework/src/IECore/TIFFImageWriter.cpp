@@ -32,16 +32,13 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/type_traits/is_integral.hpp"
-#include "boost/type_traits/is_signed.hpp"
-#include "boost/type_traits/is_unsigned.hpp"
-#include "boost/type_traits/is_floating_point.hpp"
+
 #include "boost/static_assert.hpp"
 #include "boost/format.hpp"
 #include "boost/mpl/eval_if.hpp"
-#include "boost/mpl/or.hpp"
+
 #include "boost/type_traits/is_same.hpp"
-#include "boost/utility/enable_if.hpp"
+
 
 #include "OpenEXR/half.h"
 #include "OpenEXR/ImathLimits.h"
@@ -55,19 +52,12 @@
 #include "IECore/Parameter.h"
 #include "IECore/NumericParameter.h"
 #include "IECore/ScopedTIFFExceptionTranslator.h"
+#include "IECore/DataConvert.h"
+#include "IECore/ScaledDataConversion.h"
 
 #include "IECore/BoxOperators.h"
 
 #include "tiffio.h"
-
-#include "boost/type_traits/detail/bool_trait_def.hpp"
-namespace boost
-{
-BOOST_TT_AUX_BOOL_TRAIT_CV_SPEC1(is_floating_point,half,true)
-BOOST_TT_AUX_BOOL_TRAIT_CV_SPEC1(is_signed,half,true)
-BOOST_TT_AUX_BOOL_TRAIT_CV_SPEC1(is_unsigned,half,false)
-}
-#include "boost/type_traits/detail/bool_trait_undef.hpp"
 
 using namespace IECore;
 using namespace std;
@@ -142,115 +132,6 @@ TIFFImageWriter::~TIFFImageWriter()
 {
 }
 
-/// \todo Move all these conversions elsewhere!
-/// \todo Verify that we can round trip data where possible
-template<typename F, typename T, typename Enable = void>
-struct ScaledDataConversion
-{
-	T operator()( F f )
-	{
-		BOOST_STATIC_ASSERT( sizeof(T) == 0 );
-	}
-};
-
-template<typename F, typename T>
-struct ScaledDataConversion< F, T, typename enable_if< boost::mpl::and_< boost::mpl::and_< is_integral<F>, is_integral<T> >, is_signed<T> > >::type >
-{
-	T operator()( F f )
-	{
-		BOOST_STATIC_ASSERT( is_signed< T >::value );	
-		float result = static_cast<float>(f) / Imath::limits<F>::max() * Imath::limits<T>::max();
-		return static_cast<T>( result + 0.5f );
-	}
-};
-
-template<typename F, typename T>
-struct ScaledDataConversion< F, T, typename enable_if< boost::mpl::and_< is_integral<F>, is_integral<T> > >::type >
-{
-	T operator()( F f )
-	{
-		BOOST_STATIC_ASSERT( is_unsigned< T >::value );
-		f = std::max<F>( f, (F)(Imath::limits<T>::min() ) );
-		float result = static_cast<float>(f) / Imath::limits<F>::max() * Imath::limits<T>::max();
-		return static_cast<T>( result + 0.5f );
-	}
-};
-
-template<typename F, typename T>
-struct ScaledDataConversion< F, T, typename enable_if< boost::mpl::and_< boost::mpl::and_< is_floating_point<F>, is_integral<T> >, is_signed<T> > >::type >
-{
-	T operator()( F f )
-	{
-		BOOST_STATIC_ASSERT( is_signed< T >::value );		
-		float result = static_cast<float>(f) * Imath::limits<T>::max();
-		return static_cast<T>( result + 0.5f );
-	}
-};
-
-template<typename F, typename T>
-struct ScaledDataConversion< F, T, typename enable_if< boost::mpl::and_< is_floating_point<F>, is_integral<T> > >::type >
-{
-	T operator()( F f )
-	{		
-		BOOST_STATIC_ASSERT( is_unsigned< T >::value );
-		f = std::max<F>( f, (F)(Imath::limits<T>::min() ) );	
-		float result = static_cast<float>(f) * Imath::limits<T>::max();
-		return static_cast<T>( result + 0.5f );
-	}
-};
-
-template<typename F, typename T>
-struct ScaledDataConversion< F, T, typename enable_if< boost::mpl::and_< is_integral<F>, is_floating_point<T> > >::type >
-{
-	T operator()( F f )
-	{
-		float result = static_cast<float>(f) / Imath::limits<F>::max();
-		return static_cast<T>( result );
-	}
-};
-
-template<typename F, typename T>
-struct ScaledDataConversion< F, T, typename enable_if< boost::mpl::and_< is_floating_point<F>, is_floating_point<T> > >::type >
-{
-	T operator()( F f )
-	{
-		return static_cast<T>( f );
-	}
-};
-
-
-/*
-template<typename F, typename T>
-struct TruncatedConversion
-{
-
-	T operator( F f );
-
-};
-
-template<typename F, typename T>
-struct LogLinConversion
-{
-
-
-};
-*/
-
-template<typename F, typename T, typename C>
-typename T::Ptr dataConvert( typename F::ConstPtr f )
-{
-	assert( f );
-
-	typename T::Ptr result = new T();
-	assert( result );
-	result->writable().resize( f->readable().size() );
-
-	assert( result->readable().size() == f->readable().size() );
-	std::transform( f->readable().begin(),  f->readable().end(), result->writable().begin(), C() );
-	
-	return result;
-};
-
 template<typename T>
 void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector<string> &names, const Imath::Box2i &dataWindow, tiff *tiffImage, size_t bufSize, unsigned int numStrips )
 {
@@ -281,61 +162,63 @@ void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector
 		{
 
 		case FloatVectorDataTypeId:
-			channelData = dataConvert< FloatVectorData, ChannelData, ScaledDataConversion<float, T> >( 
-				boost::static_pointer_cast<const FloatVectorData>( dataContainer ) 
+					
+			channelData = VectorDataConvert < FloatVectorData, ChannelData, ScaledDataConversion<float, T> >()( 
+				boost::static_pointer_cast<const FloatVectorData>( dataContainer )  
 			);
+			
 			break;
-
+		
 		case LongVectorDataTypeId:
-			channelData = dataConvert< LongVectorData, ChannelData, ScaledDataConversion<long, T> >( 
+			channelData = VectorDataConvert< LongVectorData, ChannelData, ScaledDataConversion<long, T> >()( 
 				boost::static_pointer_cast<const LongVectorData>( dataContainer ) 
 			);
 			break;
-			
+		
 		case CharVectorDataTypeId:
-			channelData = dataConvert< CharVectorData, ChannelData, ScaledDataConversion<char, T> >( 
+			channelData = VectorDataConvert< CharVectorData, ChannelData, ScaledDataConversion<char, T> >()(
 				boost::static_pointer_cast<const CharVectorData>( dataContainer ) 
 			);
 			break;
 
 		case UCharVectorDataTypeId:
-			channelData = dataConvert< UCharVectorData, ChannelData, ScaledDataConversion<unsigned char, T> >( 
+			channelData = VectorDataConvert< UCharVectorData, ChannelData, ScaledDataConversion<unsigned char, T> >()(
 				boost::static_pointer_cast<const UCharVectorData>( dataContainer ) 
 			);
 			break;
 
 		case DoubleVectorDataTypeId:
-			channelData = dataConvert< DoubleVectorData, ChannelData, ScaledDataConversion<double, T> >( 
+			channelData = VectorDataConvert< DoubleVectorData, ChannelData, ScaledDataConversion<double, T> >()(
 				boost::static_pointer_cast<const DoubleVectorData>( dataContainer ) 
 			);
 			break;
 
 		case HalfVectorDataTypeId:
-			channelData = dataConvert< HalfVectorData, ChannelData, ScaledDataConversion<half, T> >( 
+			channelData = VectorDataConvert< HalfVectorData, ChannelData, ScaledDataConversion<half, T> >()(
 				boost::static_pointer_cast<const HalfVectorData>( dataContainer ) 
 			);
 			break;
 			
 		case IntVectorDataTypeId:
-			channelData = dataConvert< IntVectorData, ChannelData, ScaledDataConversion<int, T> >( 
+			channelData = VectorDataConvert< IntVectorData, ChannelData, ScaledDataConversion<int, T> >()(
 				boost::static_pointer_cast<const IntVectorData>( dataContainer ) 
 			);
 			break;
 
 		case UIntVectorDataTypeId:
-			channelData = dataConvert< UIntVectorData, ChannelData, ScaledDataConversion<unsigned int, T> >( 
+			channelData = VectorDataConvert< UIntVectorData, ChannelData, ScaledDataConversion<unsigned int, T> >()(
 				boost::static_pointer_cast<const UIntVectorData>( dataContainer ) 
 			);
 			break;
 			
 		case ShortVectorDataTypeId:
-			channelData = dataConvert< ShortVectorData, ChannelData, ScaledDataConversion<short, T> >( 
+			channelData = VectorDataConvert< ShortVectorData, ChannelData, ScaledDataConversion<short, T> >()(
 				boost::static_pointer_cast<const ShortVectorData>( dataContainer ) 
 			);
 			break;
 
 		case UShortVectorDataTypeId:
-			channelData = dataConvert< UShortVectorData, ChannelData, ScaledDataConversion<unsigned short, T> >( 
+			channelData = VectorDataConvert< UShortVectorData, ChannelData, ScaledDataConversion<unsigned short, T> >()(
 				boost::static_pointer_cast<const UShortVectorData>( dataContainer ) 
 			);
 			break;
