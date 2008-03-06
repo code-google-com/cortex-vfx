@@ -134,6 +134,11 @@ int ImagePrimitiveEvaluator::Result::intPrimVar( const PrimitiveVariable &pv ) c
 	return getPrimVar< int >( pv );
 }
 
+unsigned int ImagePrimitiveEvaluator::Result::uintPrimVar( const PrimitiveVariable &pv ) const
+{
+	return getPrimVar< unsigned int >( pv );
+}
+
 const std::string &ImagePrimitiveEvaluator::Result::stringPrimVar( const PrimitiveVariable &pv ) const
 {
 	StringDataPtr data = runTimeCast< StringData >( pv.data );
@@ -163,6 +168,26 @@ Color3f ImagePrimitiveEvaluator::Result::colorPrimVar( const PrimitiveVariable &
 half ImagePrimitiveEvaluator::Result::halfPrimVar( const PrimitiveVariable &pv ) const
 {
 	return getPrimVar< half >( pv );
+}
+
+short ImagePrimitiveEvaluator::Result::shortPrimVar ( const PrimitiveVariable &pv ) const
+{
+	return getPrimVar< short >( pv );
+}
+
+unsigned short ImagePrimitiveEvaluator::Result::ushortPrimVar( const PrimitiveVariable &pv ) const
+{
+	return getPrimVar< unsigned short >( pv );
+}
+
+char ImagePrimitiveEvaluator::Result::charPrimVar ( const PrimitiveVariable &pv ) const
+{
+	return getPrimVar< char >( pv );
+}
+
+unsigned char ImagePrimitiveEvaluator::Result::ucharPrimVar( const PrimitiveVariable &pv ) const
+{
+	return getPrimVar< unsigned char >( pv );
 }
 
 template<typename T>

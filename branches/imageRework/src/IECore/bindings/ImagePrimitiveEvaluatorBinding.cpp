@@ -180,6 +180,12 @@ void bindImagePrimitiveEvaluator()
 		
 		ResultPyClass( "Result", no_init )
 			.def( "pixel", &ImagePrimitiveEvaluator::Result::pixel )
+			.def( "uintPrimVar", &ImagePrimitiveEvaluator::Result::uintPrimVar )
+			.def( "shortPrimVar", &ImagePrimitiveEvaluator::Result::shortPrimVar )
+			.def( "ushortPrimVar", &ImagePrimitiveEvaluator::Result::ushortPrimVar )
+			.def( "charPrimVar", &ImagePrimitiveEvaluator::Result::charPrimVar )
+			.def( "ucharPrimVar", &ImagePrimitiveEvaluator::Result::ucharPrimVar )
+			
 		;
 	
 		INTRUSIVE_PTR_PATCH( ImagePrimitiveEvaluator::Result, ResultPyClass );

@@ -73,6 +73,11 @@ class ImagePrimitiveEvaluator : public PrimitiveEvaluator
 				Imath::V3f          vectorPrimVar( const PrimitiveVariable &pv ) const;
 				float               floatPrimVar ( const PrimitiveVariable &pv ) const;
 				int                 intPrimVar   ( const PrimitiveVariable &pv ) const;
+				unsigned int        uintPrimVar  ( const PrimitiveVariable &pv ) const;
+				short               shortPrimVar ( const PrimitiveVariable &pv ) const;
+				unsigned short      ushortPrimVar( const PrimitiveVariable &pv ) const;
+				char                charPrimVar  ( const PrimitiveVariable &pv ) const;
+				unsigned char       ucharPrimVar ( const PrimitiveVariable &pv ) const;
 				const std::string  &stringPrimVar( const PrimitiveVariable &pv ) const;
 				Imath::Color3f      colorPrimVar ( const PrimitiveVariable &pv ) const;
 				half                halfPrimVar  ( const PrimitiveVariable &pv ) const;
