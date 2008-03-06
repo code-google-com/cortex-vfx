@@ -66,7 +66,28 @@ class TestTIFFReader(unittest.TestCase):
 		
 		self.assert_( "R" in channelNames )
 		self.assert_( "G" in channelNames )
-		self.assert_( "B" in channelNames )				
+		self.assert_( "B" in channelNames )
+		
+	def testManyChannels( self ):
+	
+		r = Reader.create( "test/IECore/data/tiff/uvMap.100x100.manyChannels.16bit.tif" )
+		self.assertEqual( type(r), TIFFImageReader )
+
+		img = r.read()
+
+		self.assertEqual( type(img), ImagePrimitive )
+		
+		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0 ), V2i( 99, 99 ) ) )
+		self.assertEqual( img.dataWindow, Box2i( V2i( 0, 0 ), V2i( 99, 99 ) ) )	
+		
+		ipe = PrimitiveEvaluator.create( img )
+		self.assert_( ipe.R() )
+		self.assert_( ipe.G() )
+		self.assert_( ipe.B() )
+		self.assert_( ipe.A() )
+		
+		self.assert_( "Data1" in img )
+		self.assert_( "Data2" in img )	
 		
 	def testRead( self ):
 	
@@ -205,8 +226,8 @@ class TestTIFFReader(unittest.TestCase):
 		self.assertRaises( RuntimeError, r.read )
 		self.assertRaises( RuntimeError, r.readChannel, "R" )
 			
-		#r = TIFFImageReader( "test/IECore/data/jpg/uvMap.512x256.jpg" )
-		#self.assertRaises( RuntimeError, r.read )
+		r = TIFFImageReader( "test/IECore/data/jpg/uvMap.512x256.jpg" )
+		self.assertRaises( RuntimeError, r.read )
 		
 	def testAll( self ):
 	
@@ -225,7 +246,7 @@ class TestTIFFReader(unittest.TestCase):
 		try:
 		
 			for f in fileNames:
-
+			
 				try:
 					r = TIFFImageReader( f ) 
 					img = r.read()
