@@ -241,6 +241,10 @@ enum TypeId
 	ImageCropOpTypeId = 198,
 	MeshPrimitiveShrinkWrapOpTypeId = 199,
 	ImagePrimitiveEvaluatorTypeId = 200,
+	ShortDataTypeId = 201,
+	UShortDataTypeId = 202,
+	ShortVectorDataTypeId = 203,
+	UShortVectorDataTypeId = 204,
 	
 	// Remember to update TypeIdBinding.cpp !!!
 	
