@@ -130,6 +130,7 @@ from CapturingMessageHandler import *
 
 if IECore.withTIFF() :
 	from TIFFReader import *
+	from TIFFImageWriter import *
 
 if IECore.withJPEG() :
 	from JPEGReader import *

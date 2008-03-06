@@ -35,6 +35,8 @@
 #ifndef IE_CORE_TIFFIMAGEWRITER_H
 #define IE_CORE_TIFFIMAGEWRITER_H
 
+#include <vector>
+
 #include "IECore/ImageWriter.h"
 #include "IECore/VectorTypedData.h"
 #include "IECore/NumericParameter.h"
@@ -55,7 +57,7 @@ class TIFFImageWriter : public ImageWriter
 		TIFFImageWriter();
 
 		/// construct an TIFFImageWriter for the given image and output filename
-		TIFFImageWriter(ObjectPtr object, const std::string & fileName);
+		TIFFImageWriter( ObjectPtr object, const std::string &fileName );
 
 		virtual ~TIFFImageWriter();
 	
@@ -63,21 +65,16 @@ class TIFFImageWriter : public ImageWriter
 	
 		static const WriterDescription<TIFFImageWriter> m_writerDescription;
 	
-		virtual void writeImage(std::vector<std::string> & names, ConstImagePrimitivePtr image,
-		                       const Imath::Box2i & dw);
+		virtual void writeImage( std::vector<std::string> &names, ConstImagePrimitivePtr image,
+		                       const Imath::Box2i &dataWindow);
 
 		/// encode channel data to RGB
-		/// \todo Replace use of array here, to prevent memory leaks when exception is thrown
 		template<typename T>
-		T * encodeChannels(ConstImagePrimitivePtr image, std::vector<std::string> & names,
-		                   const Imath::Box2i &dw);
+		void encodeChannels( ConstImagePrimitivePtr image, const std::vector<std::string> &names,
+		                   const Imath::Box2i &dw, tiff *tiffImage, size_t bufSize, unsigned int numStrips );				   		
 	
-		/// encode the given buffer using the TIFF strip method
-		void stripEncode(tiff * tiffImage, char * imageBuffer, int imageBufferSize, int strips);
-	
-		/// output bitdepth parameter
-		IntParameterPtr m_bitdepthParameter;
 		IntParameterPtr m_compressionParameter;
+		IntParameterPtr m_bitDepthParameter;
 
 		void constructParameters();
 };
@@ -85,7 +82,5 @@ class TIFFImageWriter : public ImageWriter
 IE_CORE_DECLAREPTR(TIFFImageWriter);
   
 } // namespace IECore
-
-#include "IECore/TIFFImageWriter.inl"
 
 #endif // IE_CORE_TIFFIMAGEWRITER_H
