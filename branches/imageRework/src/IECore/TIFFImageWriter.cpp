@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,13 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-
 #include "boost/static_assert.hpp"
 #include "boost/format.hpp"
 #include "boost/mpl/eval_if.hpp"
 
 #include "boost/type_traits/is_same.hpp"
-
 
 #include "OpenEXR/half.h"
 #include "OpenEXR/ImathLimits.h"
@@ -145,7 +143,7 @@ void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector
 
 	// Build a vector in which we place all the image channels
 	
-	typedef TypedData< std::vector<T> > ChannelData;
+	typedef TypedData< vector<T> > ChannelData;
 	
 	typename ChannelData::Ptr channelData = 0;
 	
@@ -161,12 +159,10 @@ void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector
 		switch (dataContainer->typeId())
 		{
 
-		case FloatVectorDataTypeId:
-					
+		case FloatVectorDataTypeId:				
 			channelData = VectorDataConvert < FloatVectorData, ChannelData, ScaledDataConversion<float, T> >()( 
 				boost::static_pointer_cast<const FloatVectorData>( dataContainer )  
 			);
-			
 			break;
 		
 		case LongVectorDataTypeId:
@@ -260,7 +256,7 @@ void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector
 
 void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow )
 {
-	ScopedTIFFExceptionTranslator errorHandler( );
+	ScopedTIFFExceptionTranslator errorHandler;
 
 	// create the tiff file
 	TIFF *tiffImage;
@@ -331,7 +327,7 @@ void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 		int numExtraSamples = filteredNames.size() - rgbChannelsFound;
 		assert( numExtraSamples >= 0 );
 
-		std::vector<uint16> extraSamples;
+		vector<uint16> extraSamples;
 		if ( haveAlpha )
 		{
 			extraSamples.push_back( EXTRASAMPLE_UNASSALPHA );

@@ -322,8 +322,6 @@ DataPtr TIFFImageReader::readChannel( const std::string &name, const Imath::Box2
 
 void TIFFImageReader::readBuffer()
 {
-	ScopedTIFFExceptionTranslator errorHandler;
-
 	/// readChannel should already have opened the image by now
 	assert( m_tiffImage );
 

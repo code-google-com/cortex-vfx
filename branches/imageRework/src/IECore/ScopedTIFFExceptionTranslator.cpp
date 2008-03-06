@@ -57,15 +57,13 @@ void ScopedTIFFExceptionTranslator::output(const char* module, const char* fmt, 
 	const unsigned int bufSize = 1024;
 	char buf[bufSize];
 	vsnprintf( &buf[0], bufSize-1, fmt, ap );
+	buf[ bufSize - 1 ] = '\0';
 	
-	/// Make sure string is null-terminated
-	buf[bufSize-1] = '\0';
-
 	std::string context = "libtiff";
 	if (module)
 	{
 		context = *module;
 	}
 	
-	//throw IOException( ( boost::format( "%s : %s" ) % context % buf ).str() );
+	throw IOException( ( boost::format( "%s : %s" ) % context % buf ).str() );
 }
