@@ -55,6 +55,11 @@ class TestTIFFReader(unittest.TestCase):
 		
 		self.assert_( r.isComplete() )
 		
+		r = Reader.create( "test/IECore/data/tiff/uvMap.512x256.16bit.truncated.tif" )
+		self.assertEqual( type(r), TIFFImageReader )
+		
+		self.failIf( r.isComplete() )
+		
 	def testChannelNames( self ):	
 	
 		r = Reader.create( "test/IECore/data/tiff/uvMap.512x256.8bit.tif" )
@@ -241,6 +246,7 @@ class TestTIFFReader(unittest.TestCase):
 			"test/IECore/data/tiff/rgb_black_circle.256x256.2bit.tiff",
 			"test/IECore/data/tiff/rgb_black_circle.256x256.1bit.tiff", 
 			"test/IECore/data/tiff/rgb_black_circle.256x256.tiff",
+			"test/IECore/data/tiff/uvMap.512x256.16bit.truncated.tif",
 		]
 		
 		try:

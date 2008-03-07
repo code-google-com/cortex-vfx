@@ -90,7 +90,7 @@ TIFFImageReader::~TIFFImageReader()
 bool TIFFImageReader::canRead( const string &fileName )
 {
 	ScopedTIFFExceptionTranslator errorHandler;
-	
+
 	/// \todo Why not try and use TIFFOpen here?
 
 	// attempt to open the file
@@ -127,7 +127,7 @@ void TIFFImageReader::channelNames( vector<string> &names )
 	names.clear();
 
 	open( true );
-	
+
 	if ( m_photometricInterpretation == PHOTOMETRIC_RGB )
 	{
 		if ( m_samplesPerPixel >= 3 )
@@ -135,9 +135,9 @@ void TIFFImageReader::channelNames( vector<string> &names )
 			names.push_back("R");
 			names.push_back("G");
 			names.push_back("B");
-			
+
 			bool haveAlpha = false;
-			
+
 			if ( m_extraSamples.size() )
 			{
 				if ( m_extraSamples[0] == EXTRASAMPLE_ASSOCALPHA || m_extraSamples[0] == EXTRASAMPLE_UNASSALPHA )
@@ -145,7 +145,7 @@ void TIFFImageReader::channelNames( vector<string> &names )
 					names.push_back("A");
 					haveAlpha = true;
 				}
-			} 
+			}
 			else if ( !haveAlpha && m_samplesPerPixel >= 4 )
 			{
 				names.push_back("A");
@@ -153,25 +153,43 @@ void TIFFImageReader::channelNames( vector<string> &names )
 		}
 	}
 	else
-	{	
+	{
 		assert( m_photometricInterpretation == PHOTOMETRIC_MINISBLACK );
-		
+
 		/// Interpret first channel as luminance
 		names.push_back("Y");
 	}
-	
+
 	int unknownChannelIdx = 1;
 	while ( (int)names.size() < m_samplesPerPixel )
 	{
 		names.push_back( ( boost::format( "Data%d" ) % unknownChannelIdx ).str() );
-		
+
 		unknownChannelIdx++;
 	}
 }
 
 bool TIFFImageReader::isComplete()
 {
-	return open( false );
+	if ( !open( false ) )
+	{
+		return false;
+	}
+
+	try
+	{
+		/// Ideally we'd read the last scanline here, but we're unable to do that in all cases because not all
+		/// compression methods support random access to the image data.
+		ScopedTIFFExceptionTranslator errorHandler;
+
+		readBuffer();
+		
+		return true;
+	}	
+	catch (...)
+	{
+		return false;
+	}
 }
 
 Imath::Box2i TIFFImageReader::dataWindow()
@@ -239,16 +257,16 @@ DataPtr TIFFImageReader::readTypedChannel( const std::string &name, const Box2i 
 
 	std::vector<std::string> names;
 	channelNames( names );
-	
+
 	std::vector<std::string>::iterator it = find( names.begin(), names.end(), name );
 	if ( it == names.end() )
 	{
 		throw IOException( (boost::format( "TIFFImageReader: Could not find channel \"%s\" while reading %s") % name % fileName() ).str() );
 	}
-	
+
 	int channelOffset = std::distance( names.begin(), it );
 	assert( channelOffset >= 0 );
-	assert( channelOffset < (int)names.size() );	
+	assert( channelOffset < (int)names.size() );
 
 	if ( channelOffset >= m_samplesPerPixel )
 	{
@@ -276,6 +294,7 @@ DataPtr TIFFImageReader::readTypedChannel( const std::string &name, const Box2i 
 			assert( buf );
 
 			// \todo Currently, we only support PLANARCONFIG_CONTIG for TIFFTAG_PLANARCONFIG.
+			/// \todo Use a DataConversion object instead of toFloat<>
 			data[dataOffset] = toFloat<T>( buf[ m_samplesPerPixel * ( y * bufferDataWidth + x ) + channelOffset ] );
 		}
 	}
@@ -449,10 +468,10 @@ bool TIFFImageReader::open( bool throwOnFailure )
 		{
 			throw IOException( ( boost::format("TIFFImageReader: Unsupported value (%d) for TIFFTAG_PLANARCONFIG") % m_orientation ).str() );
 		}
-		
+
 		uint16 numExtraSamples;
 		uint16 *extraSamples;
-		TIFFGetFieldDefaulted( m_tiffImage, TIFFTAG_EXTRASAMPLES, &numExtraSamples, &extraSamples); 
+		TIFFGetFieldDefaulted( m_tiffImage, TIFFTAG_EXTRASAMPLES, &numExtraSamples, &extraSamples);
 		for ( unsigned int i = 0; i < numExtraSamples; i++ )
 		{
 			m_extraSamples.push_back( extraSamples[i] );
