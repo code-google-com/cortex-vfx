@@ -124,7 +124,27 @@ class TestTIFFReader(unittest.TestCase):
 		
 		self.assertEqual( len(red), len(green) )	
 		self.assertEqual( len(red), len(blue) )		
-		self.assertEqual( len(red), 512 * 256 )			
+		self.assertEqual( len(red), 512 * 256 )	
+		
+	def testDataWindow( self ):
+		r = Reader.create( "test/IECore/data/tiff/cropWindow.640x480.16bit.tif" )
+		self.assertEqual( type(r), TIFFImageReader )
+		
+		img = r.read()
+		
+		expectedDataWindow = Box2i(
+			V2i( 320, 240 ),
+			V2i( 480, 360 ),
+		)
+		
+		expectedDisplayWindow = Box2i(
+			V2i( 0, 0 ),
+			V2i( 640,480 )
+		)
+		
+		self.assertEqual( img.dataWindow, expectedDataWindow )
+		self.assertEqual( img.displayWindow, expectedDisplayWindow )		
+				
 
 	def testDataWindowRead( self ):
 	
