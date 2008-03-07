@@ -44,7 +44,6 @@ namespace IECore
 {
 
 /// The TIFFImageReader reads Tagged Image File Format (TIFF) files
-/// \todo Support RGBA images
 class TIFFImageReader : public ImageReader
 {
 
@@ -97,7 +96,7 @@ class TIFFImageReader : public ImageReader
 		std::vector<int> m_extraSamples;
 
 		template<typename T>
-		T tiffField( unsigned int t );
+		T tiffField( unsigned int t, T def = T(0) );
 
 		template<typename T>
 		T tiffFieldDefaulted( unsigned int t );

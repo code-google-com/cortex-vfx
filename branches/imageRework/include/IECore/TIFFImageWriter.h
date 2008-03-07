@@ -68,7 +68,6 @@ class TIFFImageWriter : public ImageWriter
 		virtual void writeImage( std::vector<std::string> &names, ConstImagePrimitivePtr image,
 		                       const Imath::Box2i &dataWindow);
 
-		/// encode channel data to RGB
 		template<typename T>
 		void encodeChannels( ConstImagePrimitivePtr image, const std::vector<std::string> &names,
 		                   const Imath::Box2i &dw, tiff *tiffImage, size_t bufSize, unsigned int numStrips );				   		

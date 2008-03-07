@@ -101,16 +101,11 @@ bool TIFFImageReader::canRead( const string &fileName )
 	}
 
 	// check the magic number of the input file
-	// a tiff should have 0x49492a00 / 0x002a4949 from offset 0
-
-	// attempt to open the file
 	in.seekg( 0, ios_base::beg );
 	if ( in.fail() )
 	{
 		return false;
 	}
-
-	// check magic number
 	unsigned int magic;
 	in.read((char *) &magic, sizeof(unsigned int));
 	if ( in.fail() )
@@ -207,14 +202,20 @@ Imath::Box2i TIFFImageReader::displayWindow()
 }
 
 template<typename T>
-T TIFFImageReader::tiffField( unsigned int t )
+T TIFFImageReader::tiffField( unsigned int t, T def )
 {
 	BOOST_STATIC_ASSERT( sizeof( unsigned int ) >= sizeof( ttag_t ) );
 	assert( m_tiffImage );
 
 	T value;
-	TIFFGetField( m_tiffImage, (ttag_t)t, &value );
-	return value;
+	if ( TIFFGetField( m_tiffImage, (ttag_t)t, &value ) )
+	{
+		return value;
+	}
+	else
+	{
+		return def;
+	}
 }
 
 template<typename T>
@@ -279,26 +280,27 @@ DataPtr TIFFImageReader::readTypedChannel( const std::string &name, const Box2i 
 
 	int dataWidth = 1 + dataWindow.size().x;
 	int bufferDataWidth = 1 + m_dataWindow.size().x;
-
+	
 	int dataY = 0;
-
-	for ( int y = dataWindow.min.y; y <= dataWindow.max.y; ++y, ++dataY )
+	for ( int y = dataWindow.min.y - m_dataWindow.min.y ; y <= dataWindow.max.y - m_dataWindow.min.y ; ++y, ++dataY )
 	{
-		typename FloatVectorData::ValueType::size_type dataOffset = dataY * dataWidth ;
-
-		for ( int x = dataWindow.min.x; x <= dataWindow.max.x; ++x, ++dataOffset )
+		int dataX = 0;
+		
+		for ( int x = dataWindow.min.x - m_dataWindow.min.x;  x <= dataWindow.max.x - m_dataWindow.min.x ; ++x, ++dataX  )
 		{
-			assert( dataOffset < data.size() );
-
 			const T* buf = reinterpret_cast< T* >( & m_buffer[0] );
 			assert( buf );
 
 			// \todo Currently, we only support PLANARCONFIG_CONTIG for TIFFTAG_PLANARCONFIG.
-			/// \todo Use a DataConversion object instead of toFloat<>
+			/// \todo Use a DataConversion object instead of toFloat<> ?
+			
+			FloatVectorData::ValueType::size_type dataOffset = dataY * dataWidth + dataX;
+			assert( dataOffset < data.size() );
+			
 			data[dataOffset] = toFloat<T>( buf[ m_samplesPerPixel * ( y * bufferDataWidth + x ) + channelOffset ] );
 		}
 	}
-
+	
 	return dataContainer;
 }
 
@@ -477,9 +479,18 @@ bool TIFFImageReader::open( bool throwOnFailure )
 			m_extraSamples.push_back( extraSamples[i] );
 		}
 
-		m_displayWindow = Box2i( V2i( 0, 0 ), V2i( width - 1, height - 1 ) );
-		m_dataWindow = m_displayWindow;
+		m_dataWindow = Box2i( V2i( 0, 0 ), V2i( width - 1, height - 1 ) );
 
+		float xPosition = tiffField<float>( TIFFTAG_XPOSITION, 0.0f);
+		float yPosition = tiffField<float>( TIFFTAG_YPOSITION, 0.0f);		
+		m_dataWindow.min += V2i( (int)xPosition, (int)yPosition);
+		m_dataWindow.max += V2i( (int)xPosition, (int)yPosition );
+		
+		uint32 fullWidth = tiffField<uint32>( TIFFTAG_PIXAR_IMAGEFULLWIDTH, width );
+		uint32 fullLength = tiffField<uint32>( TIFFTAG_PIXAR_IMAGEFULLLENGTH, height );		
+				
+		m_displayWindow = Box2i( V2i( 0, 0 ), V2i( fullWidth - 1, fullLength - 1 ) );
+		
 		m_tiffImageFileName = fileName();
 	}
 	catch ( ... )

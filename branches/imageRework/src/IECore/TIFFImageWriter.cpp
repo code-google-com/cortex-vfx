@@ -387,6 +387,20 @@ void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 		// set the basic values
 		TIFFSetField( tiffImage, TIFFTAG_IMAGEWIDTH, width );
 		TIFFSetField( tiffImage, TIFFTAG_IMAGELENGTH, height );
+		
+		if ( dataWindow != image->getDisplayWindow() )
+		{
+			V2i position = dataWindow.min - image->getDisplayWindow().min;
+			
+			TIFFSetField( tiffImage, TIFFTAG_XPOSITION, (float) position.x );
+			TIFFSetField( tiffImage, TIFFTAG_YPOSITION, (float) position.y );
+			
+			int displayWidth = 1 + image->getDisplayWindow().size().x;
+			int displayHeight = 1 + image->getDisplayWindow().size().y;
+			TIFFSetField( tiffImage, TIFFTAG_PIXAR_IMAGEFULLWIDTH, (uint32)( displayWidth ) );
+			TIFFSetField( tiffImage, TIFFTAG_PIXAR_IMAGEFULLLENGTH, (uint32)( displayHeight ) );			
+		}				
+		
 		TIFFSetField( tiffImage, TIFFTAG_BITSPERSAMPLE, bitDepth );
 		TIFFSetField( tiffImage, TIFFTAG_ROWSPERSTRIP, rowsPerStrip );
 
