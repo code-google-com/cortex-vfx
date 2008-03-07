@@ -231,26 +231,22 @@ T ImagePrimitiveEvaluator::Result::getPrimVar( const PrimitiveVariable &pv ) con
 			assert( extraData );
 			
 			// \todo Use UV coord instead, and perform bilinear interpolation
-			V2i p = pixel() ;							
-			
-			if ( p.x < extraData->m_dataWindow.min.x || p.y < extraData->m_dataWindow.min.y || p.x > extraData->m_dataWindow.max.x || p.y > extraData->m_dataWindow.max.y )
-			{
-				/// \todo Perhaps use a traits class here to specify some "zero" value
-				return T();
-			}
+			V2i p = pixel() ;	
 			
 			p = p - extraData->m_dataWindow.min;
-						
-			int dataWidth = static_cast<int>( boxSize( extraData->m_dataWindow ).x + 1 );
-			int idx = ( p.y * dataWidth ) + p.x;								
-			assert( idx >= 0 );
 			
-			if ( idx >= (int)data->readable().size() )
+			int dataWidth = static_cast<int>( extraData->m_dataWindow.size().x + 1 );
+			int dataHeight = static_cast<int>( extraData->m_dataWindow.size().y + 1 );
+			
+			if ( p.x < 0 || p.y < 0 || p.x >= dataWidth || p.y >= dataHeight )
 			{
 				/// \todo Perhaps use a traits class here to specify some "zero" value
 				return T();
 			}
-			
+						
+			int idx = ( p.y * dataWidth ) + p.x;								
+			assert( idx >= 0 );
+			assert( idx < (int)data->readable().size() );
 			return data->readable()[idx];							
 		}
 			
