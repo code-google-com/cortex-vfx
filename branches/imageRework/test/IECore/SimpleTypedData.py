@@ -195,7 +195,7 @@ class SimpleTypedDataTest(unittest.TestCase):
 		self.assertEqual(int(b), 1)
 		b.value = 2
 		self.assertEqual(b.value, 2)
-		a = HalfData(2)
+		a = ShortData(2)
 		self.assert_(c < b)
 		self.assert_(not c > b)
 		self.assert_(a == b)
@@ -213,7 +213,7 @@ class SimpleTypedDataTest(unittest.TestCase):
 		self.assertEqual(int(b), 1)
 		b.value = 2
 		self.assertEqual(b.value, 2)
-		a = ShortData(2)
+		a = UShortData(2)
 		self.assert_(c < b)
 		self.assert_(not c > b)
 		self.assert_(a == b)
