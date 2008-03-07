@@ -35,6 +35,7 @@
 import unittest
 import glob
 import sys
+import random
 from IECore import *
 
 class TestTIFFReader(unittest.TestCase):
@@ -134,12 +135,12 @@ class TestTIFFReader(unittest.TestCase):
 		
 		expectedDataWindow = Box2i(
 			V2i( 320, 240 ),
-			V2i( 480, 360 ),
+			V2i( 479, 359 ),
 		)
 		
 		expectedDisplayWindow = Box2i(
 			V2i( 0, 0 ),
-			V2i( 640,480 )
+			V2i( 639,479 )
 		)
 		
 		self.assertEqual( img.dataWindow, expectedDataWindow )
@@ -152,27 +153,29 @@ class TestTIFFReader(unittest.TestCase):
 		self.assertEqual( type(r), TIFFImageReader )
 		
 		dataWindow = Box2i(
-			V2i(360, 160), 
-			V2i(399, 199)
+			V2i( 360, 160 ), 
+			V2i( 399, 199 )
 		)
 		
 		dataWindow = Box2i(
-			V2i(50, 50), 
-			V2i(450, 200)
+			V2i( 50, 50 ), 
+			V2i( 450, 200 )
 		)
 		
+		imgOriginal = r.read()
+		self.assertEqual( type(imgOriginal), ImagePrimitive )
+		
 		r.parameters().dataWindow.setValue( Box2iData( dataWindow ) )
-
+		
 		img = r.read()
-
 		self.assertEqual( type(img), ImagePrimitive )
 		
 		self.assertEqual( img.dataWindow, dataWindow )
 		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
 		
-		Writer.create( img, '/tmp/cak.exr').write()
-		
-		#self.assertEqual( len(img["R"].data), 40 * 40 )
+		self.assertEqual( len(img["R"].data), 401 * 151 )
+		self.assertEqual( len(img["G"].data), 401 * 151 )
+		self.assertEqual( len(img["B"].data), 401 * 151 )
 		
 		ipe = PrimitiveEvaluator.create( img )
 		self.assert_( ipe.R() )
@@ -181,33 +184,44 @@ class TestTIFFReader(unittest.TestCase):
 		self.failIf ( ipe.A() )
 		
 		result = ipe.createResult()
-				
-		# Check that the color at the bottom-right of the image is black - ordinarialy it would
-		# be yellow, but we're deliberately not reading the entire image
-		found = ipe.pointAtPixel( V2i( 511, 255 ), result )
-		self.assert_( found )		
-		color = V3f(
-				result.floatPrimVar( ipe.R() ),
-				result.floatPrimVar( ipe.G() ), 
-				result.floatPrimVar( ipe.B() )
-			)		
-		expectedColor = V3f( 0, 0, 0 )
-		self.assert_( ( color - expectedColor).length() < 1.e-3 )
 		
-		found = ipe.pointAtPixel( V2i( 380, 180 ), result )
-		self.assert_( found )
+		ipeOriginal = PrimitiveEvaluator.create( imgOriginal )
 		
+		resultOriginal = ipeOriginal.createResult()
+
+		random.seed( 1 )
 		
+		# Test for equivalence using 50 random pixels. Inside the data window, we expect the 
+		# pixel values to be the same. Outside the data window we expect black.
+		for i in range( 0, 50 ):
 		
-		
-		color = V3f(
+			pixel = V2i( int( random.uniform( 0, 511 ) ), int( random.uniform( 0, 255 ) ) )
+			
+			found = ipe.pointAtPixel( pixel, result )
+			self.assert_( found )
+
+			found = ipeOriginal.pointAtPixel( pixel, resultOriginal )
+			self.assert_( found )
+
+			color = V3f(
 				result.floatPrimVar( ipe.R() ),
 				result.floatPrimVar( ipe.G() ), 
 				result.floatPrimVar( ipe.B() )
 			)
+
+			if ( pixel.x >= dataWindow.min.x ) and ( pixel.x < dataWindow.max.x ) and (pixel.y >= dataWindow.min.y ) and ( pixel.y < dataWindow.max.y ) :						
+
+				expectedColor = V3f(
+						resultOriginal.floatPrimVar( ipeOriginal.R() ),
+						resultOriginal.floatPrimVar( ipeOriginal.G() ), 
+						resultOriginal.floatPrimVar( ipeOriginal.B() )
+					)
 			
-		expectedColor = V3f( 0.8745, 0.85887, 0 )
-		self.assert_( ( color - expectedColor).length() < 1.e-3 )
+			else :
+				
+				expectedColor = V3f( 0, 0, 0 )
+
+			self.assert_( ( color - expectedColor).length() < 1.e-3 )
 					
 	def testOrientation( self ) :
 	
@@ -223,8 +237,6 @@ class TestTIFFReader(unittest.TestCase):
 		
 		result = ipe.createResult()
 		
-		# Floating point differences due to compression (?)
-		# \todo Double check this.
 		colorMap = {
 			V2i( 0 ,    0 ) :  V3f( 0, 0, 0 ),
 			V2i( 511,   0 ) :  V3f( 1, 0, 0 ),
@@ -242,7 +254,7 @@ class TestTIFFReader(unittest.TestCase):
 				result.floatPrimVar( ipe.G() ), 
 				result.floatPrimVar( ipe.B() )
 			)
-		
+
 			self.assert_( ( color - expectedColor).length() < 1.e-6 )
 			
 	def testErrors( self ):			
