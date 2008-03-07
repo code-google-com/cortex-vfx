@@ -242,10 +242,6 @@ class TestJPEGImageWriter(unittest.TestCase):
 		self.assertEqual( type(w), JPEGImageWriter )		
 		w.write()
 		
-		w = Writer.create( img, "test/IECore/data/jpg/output2.jpg" )
-		self.assertEqual( type(w), JPEGImageWriter )		
-		w.write()
-		
 		self.assert_( os.path.exists( "test/IECore/data/jpg/output.jpg" ) )
 				
 		r = Reader.create( "test/IECore/data/jpg/output.jpg" )
