@@ -370,11 +370,7 @@ class TestTIFFImageWriter(unittest.TestCase):
 		w = Writer.create( img, "test/IECore/data/tiff/output.tif" )
 		self.assertEqual( type(w), TIFFImageWriter )
 		
-		# \todo The writer should give us some sort of error, but doesn't. It crashes.
-		self.failIf( True )		
-		w.write()
-		
-		
+		self.assertRaises( RuntimeError, w.write )				
 		self.failIf( os.path.exists( "test/IECore/data/tiff/output.tif" ) )
 		
 	def testErrors( self ) :
