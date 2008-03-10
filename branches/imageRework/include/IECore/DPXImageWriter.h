@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,16 +38,17 @@
 #include "IECore/ImageWriter.h"
 #include "IECore/VectorTypedData.h"
 
-namespace IECore {
+namespace IECore
+{
 
 /// The DPXImageWriter class serializes images to the Digital Picture eXchange 10-bit log image format
 class DPXImageWriter : public ImageWriter
 {
 
 	public:
-	
+
 		IE_CORE_DECLARERUNTIMETYPED( DPXImageWriter, ImageWriter )
-	
+
 		DPXImageWriter();
 
 		/// construct an DPXImageWriter for the given image and output filename
@@ -55,17 +56,17 @@ class DPXImageWriter : public ImageWriter
 
 		/// free the resources consumed in serializing the associated image
 		virtual ~DPXImageWriter();
-	
+
 	private:
-	
+
 		static const WriterDescription<DPXImageWriter> m_writerDescription;
 
 		/// write the associated image
 		virtual void writeImage(std::vector<std::string> &names, ConstImagePrimitivePtr image,
-									const Imath::Box2i &dw);
-	
+		                        const Imath::Box2i &dw);
+
 };
-	
+
 IE_CORE_DECLAREPTR(DPXImageWriter);
 
 } // namespace IECore
