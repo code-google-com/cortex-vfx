@@ -38,6 +38,7 @@
 namespace IECore
 {
 
+/// \todo C++ tests
 /// \todo Use some "DataTraits" class to automatically enable_if these for "vector" and "simple" data types
 
 template<typename From, typename To, typename Conversion>
