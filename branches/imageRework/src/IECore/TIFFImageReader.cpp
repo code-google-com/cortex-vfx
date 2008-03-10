@@ -37,6 +37,7 @@
 #include <iostream>
 #include <cassert>
 #include <iterator>
+#include <sstream>
 
 #include "IECore/TIFFImageReader.h"
 #include "IECore/SimpleTypedData.h"
@@ -89,10 +90,6 @@ TIFFImageReader::~TIFFImageReader()
 
 bool TIFFImageReader::canRead( const string &fileName )
 {
-	ScopedTIFFExceptionTranslator errorHandler;
-
-	/// \todo Why not try and use TIFFOpen here?
-
 	// attempt to open the file
 	ifstream in( fileName.c_str() );
 	if ( !in.is_open() || in.fail() )
@@ -113,8 +110,13 @@ bool TIFFImageReader::canRead( const string &fileName )
 		return false;
 	}
 
-	/// \todo Why the 3 variations here? Surely only 2 are necessary?
-	return magic == 0x002a4949 || magic == 0x49492a00 || magic == 0x2a004d4d;
+	in.seekg( 0, ios_base::beg );
+	if ( in.fail() )
+	{
+		return false;
+	}
+
+	return magic & 0x002au || reverseBytes<unsigned int>( magic ) & 0x002au;
 }
 
 void TIFFImageReader::channelNames( vector<string> &names )
@@ -178,9 +180,9 @@ bool TIFFImageReader::isComplete()
 		ScopedTIFFExceptionTranslator errorHandler;
 
 		readBuffer();
-		
+
 		return true;
-	}	
+	}
 	catch (...)
 	{
 		return false;
@@ -280,12 +282,12 @@ DataPtr TIFFImageReader::readTypedChannel( const std::string &name, const Box2i 
 
 	int dataWidth = 1 + dataWindow.size().x;
 	int bufferDataWidth = 1 + m_dataWindow.size().x;
-	
+
 	int dataY = 0;
 	for ( int y = dataWindow.min.y - m_dataWindow.min.y ; y <= dataWindow.max.y - m_dataWindow.min.y ; ++y, ++dataY )
 	{
 		int dataX = 0;
-		
+
 		for ( int x = dataWindow.min.x - m_dataWindow.min.x;  x <= dataWindow.max.x - m_dataWindow.min.x ; ++x, ++dataX  )
 		{
 			const T* buf = reinterpret_cast< T* >( & m_buffer[0] );
@@ -293,14 +295,14 @@ DataPtr TIFFImageReader::readTypedChannel( const std::string &name, const Box2i 
 
 			// \todo Currently, we only support PLANARCONFIG_CONTIG for TIFFTAG_PLANARCONFIG.
 			/// \todo Use a DataConversion object instead of toFloat<> ?
-			
+
 			FloatVectorData::ValueType::size_type dataOffset = dataY * dataWidth + dataX;
 			assert( dataOffset < data.size() );
-			
+
 			data[dataOffset] = toFloat<T>( buf[ m_samplesPerPixel * ( y * bufferDataWidth + x ) + channelOffset ] );
 		}
 	}
-	
+
 	return dataContainer;
 }
 
@@ -421,7 +423,7 @@ bool TIFFImageReader::open( bool throwOnFailure )
 			throw IOException( ( boost::format("TIFFImageReader: Unsupported value (%d) for TIFFTAG_IMAGELENGTH while reading %s") % height % fileName() ).str() );
 		}
 
-		m_samplesPerPixel = tiffField<uint32>( TIFFTAG_SAMPLESPERPIXEL );
+		m_samplesPerPixel = tiffField<uint16>( TIFFTAG_SAMPLESPERPIXEL );
 		if ( m_samplesPerPixel == 0 )
 		{
 			throw IOException( ( boost::format("TIFFImageReader: Unsupported value (%d) for TIFFTAG_SAMPLESPERPIXEL") % m_samplesPerPixel ).str() );
@@ -482,15 +484,15 @@ bool TIFFImageReader::open( bool throwOnFailure )
 		m_dataWindow = Box2i( V2i( 0, 0 ), V2i( width - 1, height - 1 ) );
 
 		float xPosition = tiffField<float>( TIFFTAG_XPOSITION, 0.0f);
-		float yPosition = tiffField<float>( TIFFTAG_YPOSITION, 0.0f);		
+		float yPosition = tiffField<float>( TIFFTAG_YPOSITION, 0.0f);
 		m_dataWindow.min += V2i( (int)xPosition, (int)yPosition);
 		m_dataWindow.max += V2i( (int)xPosition, (int)yPosition );
-		
+
 		uint32 fullWidth = tiffField<uint32>( TIFFTAG_PIXAR_IMAGEFULLWIDTH, width );
-		uint32 fullLength = tiffField<uint32>( TIFFTAG_PIXAR_IMAGEFULLLENGTH, height );		
-				
+		uint32 fullLength = tiffField<uint32>( TIFFTAG_PIXAR_IMAGEFULLLENGTH, height );
+
 		m_displayWindow = Box2i( V2i( 0, 0 ), V2i( fullWidth - 1, fullLength - 1 ) );
-		
+
 		m_tiffImageFileName = fileName();
 	}
 	catch ( ... )
