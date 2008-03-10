@@ -78,14 +78,11 @@ TIFFImageReader::TIFFImageReader( const string &fileName )
 
 TIFFImageReader::~TIFFImageReader()
 {
-	ScopedTIFFExceptionTranslator errorHandler;
-
 	if ( m_tiffImage )
 	{
 		TIFFClose( m_tiffImage );
 		m_tiffImage = 0;
 	}
-
 }
 
 bool TIFFImageReader::canRead( const string &fileName )
