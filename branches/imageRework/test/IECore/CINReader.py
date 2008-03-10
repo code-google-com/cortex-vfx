@@ -34,7 +34,7 @@
 
 import unittest
 import sys
-import IECore
+from IECore import *
 
 from math import pow
 
@@ -45,21 +45,21 @@ class TestCINReader(unittest.TestCase):
 
 	def testConstruction(self):
 
-		r = IECore.Reader.create(self.testfile)
-		self.assertEqual(type(r), IECore.CINImageReader)
+		r = Reader.create(self.testfile)
+		self.assertEqual(type(r), CINImageReader)
 
 	def testRead(self):
 
-		r = IECore.Reader.create(self.testfile)
-		self.assertEqual(type(r), IECore.CINImageReader)
+		r = Reader.create(self.testfile)
+		self.assertEqual(type(r), CINImageReader)
 
 		img = r.read()
 		
-		self.assertEqual(type(img), IECore.ImagePrimitive)
+		self.assertEqual(type(img), ImagePrimitive)
 
 		# write test (CIN -> EXR)
-		w = IECore.Writer.create(img, self.testoutfile)
-		self.assertEqual(type(w), IECore.CINImageWriter)
+		w = Writer.create(img, self.testoutfile)
+		self.assertEqual(type(w), CINImageWriter)
 
 		w.write()
 
@@ -72,17 +72,17 @@ class TestCINReader(unittest.TestCase):
 		test_outfile_path = ".".join([testfile[0], 'windowtestoutput', testfile[1]])
 
 		# create a reader, read a sub-image
-		r = IECore.Reader.create(test_file_path)
-		self.assertEqual(type(r), IECore.CINImageReader)
-		r.parameters().dataWindow.setValue(IECore.Box2iData(IECore.Box2i(IECore.V2i(100, 100), IECore.V2i(199, 199))))
+		r = Reader.create(test_file_path)
+		self.assertEqual(type(r), CINImageReader)
+		r.parameters().dataWindow.setValue(Box2iData(Box2i(V2i(100, 100), V2i(199, 199))))
 
 		# read, verify
 		img = r.read()
-		self.assertEqual(type(img), IECore.ImagePrimitive)
+		self.assertEqual(type(img), ImagePrimitive)
 
 		# write back the sub-image
-		w = IECore.Writer.create(img, test_outfile_path)
-		self.assertEqual(type(w), IECore.CINImageWriter)
+		w = Writer.create(img, test_outfile_path)
+		self.assertEqual(type(w), CINImageWriter)
 		w.write()
 
 	def testChannelRead(self):
@@ -93,19 +93,19 @@ class TestCINReader(unittest.TestCase):
 		test_outfile_path = ".".join([testfile[0], 'channeltestoutput', testfile[1]])
 
 		# create a reader, constrain to a sub-image, R (red) channel
-		r = IECore.Reader.create(test_file_path)
-		self.assertEqual(type(r), IECore.CINImageReader)
+		r = Reader.create(test_file_path)
+		self.assertEqual(type(r), CINImageReader)
 		
-		r.parameters().dataWindow.setValue(IECore.Box2iData(IECore.Box2i(IECore.V2i(100, 100), IECore.V2i(199, 199))))
-		r.parameters().channels.setValue(IECore.StringVectorData(["R", "G"]))
+		r.parameters().dataWindow.setValue(Box2iData(Box2i(V2i(100, 100), V2i(199, 199))))
+		r.parameters().channels.setValue(StringVectorData(["R", "G"]))
 
 		# read, verify
 		img = r.read()
-		self.assertEqual(type(img), IECore.ImagePrimitive)
+		self.assertEqual(type(img), ImagePrimitive)
 
 		# write back the sub-image
-		w = IECore.Writer.create(img, test_outfile_path)
-		self.assertEqual(type(w), IECore.CINImageWriter)
+		w = Writer.create(img, test_outfile_path)
+		self.assertEqual(type(w), CINImageWriter)
 		w.write()
 		
 
