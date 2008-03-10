@@ -44,12 +44,13 @@
 
 struct tiff;
 
-namespace IECore {
+namespace IECore
+{
 
 /// The TIFFImageWriter class serializes images to the Tagged Image File Format (TIFF) format
-class TIFFImageWriter : public ImageWriter 
+class TIFFImageWriter : public ImageWriter
 {
-	
+
 	public:
 
 		IE_CORE_DECLARERUNTIMETYPED( TIFFImageWriter, ImageWriter )
@@ -60,18 +61,18 @@ class TIFFImageWriter : public ImageWriter
 		TIFFImageWriter( ObjectPtr object, const std::string &fileName );
 
 		virtual ~TIFFImageWriter();
-	
+
 	private:
-	
+
 		static const WriterDescription<TIFFImageWriter> m_writerDescription;
-	
+
 		virtual void writeImage( std::vector<std::string> &names, ConstImagePrimitivePtr image,
-		                       const Imath::Box2i &dataWindow);
+		                         const Imath::Box2i &dataWindow);
 
 		template<typename T>
 		void encodeChannels( ConstImagePrimitivePtr image, const std::vector<std::string> &names,
-		                   const Imath::Box2i &dw, tiff *tiffImage, size_t bufSize, unsigned int numStrips );				   		
-	
+		                     const Imath::Box2i &dw, tiff *tiffImage, size_t bufSize, unsigned int numStrips );
+
 		IntParameterPtr m_compressionParameter;
 		IntParameterPtr m_bitDepthParameter;
 
@@ -79,7 +80,7 @@ class TIFFImageWriter : public ImageWriter
 };
 
 IE_CORE_DECLAREPTR(TIFFImageWriter);
-  
+
 } // namespace IECore
 
 #endif // IE_CORE_TIFFIMAGEWRITER_H
