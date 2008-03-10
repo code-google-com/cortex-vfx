@@ -34,7 +34,7 @@
 
 import os
 import unittest
-import IECore
+from IECore import *
 
 class TestDPXReader(unittest.TestCase):
 
@@ -43,22 +43,22 @@ class TestDPXReader(unittest.TestCase):
 
         def testConstruction(self):
                 
-		r = IECore.Reader.create(self.testfile)
-		self.assertEqual(type(r), IECore.DPXImageReader)
+		r = Reader.create(self.testfile)
+		self.assertEqual(type(r), DPXImageReader)
 
 
         def testRead(self):
 
-                r = IECore.Reader.create(self.testfile)
-		self.assertEqual(type(r), IECore.DPXImageReader)
+		r = Reader.create(self.testfile)
+		self.assertEqual(type(r), DPXImageReader)
 
 		img = r.read()
 		
-		self.assertEqual(type(img), IECore.ImagePrimitive)
+		self.assertEqual(type(img), ImagePrimitive)
 
 		# write test
-                w = IECore.Writer.create( img, self.testoutfile )
-		self.assertEqual(type(w), IECore.DPXImageWriter)
+		w = Writer.create( img, self.testoutfile )
+		self.assertEqual(type(w), DPXImageWriter)
 
 		w.write()
 		
