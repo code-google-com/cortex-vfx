@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -56,24 +56,30 @@ class CINImageReader : public ImageReader
 		virtual ~CINImageReader();
 	
 		static bool canRead(const std::string &filename);
-	
-		/// give the channel names into the vector
-		virtual void channelNames(std::vector<std::string> & names);
+		
+		virtual void channelNames( std::vector<std::string> &names );
+		virtual bool isComplete();
+		virtual Imath::Box2i dataWindow();
+		virtual Imath::Box2i displayWindow();
 	
 	private:
 	
-		virtual void readChannel(std::string name, ImagePrimitivePtr image, const Imath::Box2i &dataWindow);
+	
+		virtual DataPtr readChannel( const std::string &name, const Imath::Box2i &dataWindow );
 	
 		// filename associator
 		static const ReaderDescription<CINImageReader> m_readerDescription;
 
-		/// helper to read the image
-		bool open();
+		/// Opens the file, if necessary, and fills the buffer. Throws an IOException if an error occurs.
+		/// Tries to open the file, returning true on success and false on failure. On success,
+		/// the member data derived from the Cineons's header will be valid.
+		/// If throwOnFailure is true then a descriptive Exception is thrown rather than false being returned.
+		bool open( bool throwOnFailure = false );
 
 		/// CIN image memory buffer - cineon image data is typically found in pixel-interlaced
 		/// format, so we will make one I/O pass and cache the image in memory while striping
 		/// off channels / planes
-		unsigned int *m_buffer;
+		std::vector<unsigned int> m_buffer;
 
 		/// the filename in effect when we filled the buffer last.
 		std::string m_bufferFileName;

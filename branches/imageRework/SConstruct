@@ -546,6 +546,7 @@ else :
 testEnv.Append( LIBS=["boost_unit_test_framework"] )
 
 testEnv["ENV"]["PYTHONPATH"] = "./python"
+#testEnv["ENV"]["LD_DEBUG"] = "files"
 #testEnv["ENV"]["IEENV_DEBUG_PYTHON"] = 1
 
 ###########################################################################################
@@ -645,10 +646,8 @@ if doConfigure :
 		corePythonSources.remove( "src/IECore/bindings/JPEGImageReaderBinding.cpp" )
 		corePythonSources.remove( "src/IECore/bindings/JPEGImageWriterBinding.cpp" )
 	
-	coreSources.remove( "src/IECore/CINImageReader.cpp" )
 	coreSources.remove( "src/IECore/DPXImageReader.cpp" )
 	
-	corePythonSources.remove( "src/IECore/bindings/CINImageReaderBinding.cpp" )
 	corePythonSources.remove( "src/IECore/bindings/DPXImageReaderBinding.cpp" )
 		
 	if coreEnv["WITH_SQLITE"] and c.CheckLibWithHeader( "sqlite3", "sqlite/sqlite3.h", "CXX" ) :

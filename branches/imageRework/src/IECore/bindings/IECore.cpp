@@ -226,7 +226,7 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindTIFFImageWriter();
 #endif
 	
-	//bindCINImageReader();
+	bindCINImageReader();
 	bindCINImageWriter();
 	//bindDPXImageReader();
 	bindDPXImageWriter();
