@@ -375,7 +375,6 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 
 		// pass one scanline at a time
 		int rowStride = displayWidth * numChannels;
-		unsigned char *rowPointer[1];
 		while (cinfo.next_scanline < cinfo.image_height)
 		{
 			unsigned char *rowPointer[1] = { &imageBuffer[cinfo.next_scanline * rowStride] };
