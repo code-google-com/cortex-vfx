@@ -44,6 +44,7 @@ namespace IECore
 {
 
 /// The TIFFImageReader reads Tagged Image File Format (TIFF) files
+/// \todo Document supported tags and their interpretation
 class TIFFImageReader : public ImageReader
 {
 
