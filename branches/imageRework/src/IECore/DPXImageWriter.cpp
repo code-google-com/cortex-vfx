@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -54,12 +54,12 @@ using namespace Imath;
 
 const Writer::WriterDescription<DPXImageWriter> DPXImageWriter::m_writerDescription("dpx");
 
-DPXImageWriter::DPXImageWriter() : 
+DPXImageWriter::DPXImageWriter() :
 		ImageWriter("DPXImageWriter", "Serializes images to Digital Picture eXchange 10-bit log image format")
 {
 }
 
-DPXImageWriter::DPXImageWriter(ObjectPtr image, const string &fileName) : 
+DPXImageWriter::DPXImageWriter(ObjectPtr image, const string &fileName) :
 		ImageWriter("DPXImageWriter", "Serializes images to Digital Picture eXchange 10-bit log image format")
 {
 	m_objectParameter->setValue( image );
@@ -70,24 +70,25 @@ DPXImageWriter::~DPXImageWriter()
 {
 }
 
+/// \todo Pad area outside dataWindow but within displayWindow with black
 void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dw)
 {
 	// write the dpx in the standard 10bit log format
 	std::ofstream out;
 	out.open(fileName().c_str());
-	if(!out.is_open())
+	if (!out.is_open())
 	{
 		throw IOException("Could not open '" + fileName() + "' for writing.");
 	}
-	
+
 	// assume an 8-bit RGB image
 	int width  = 1 + dw.max.x - dw.min.x;
 	int height = 1 + dw.max.y - dw.min.y;
-	
+
 	//
 	// FileInformation
 	//
-	
+
 	// build the header
 	DPXFileInformation fi;
 	memset(&fi, 0, sizeof(fi));
@@ -119,13 +120,13 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 
 	fi.ind_hdr_size = sizeof(mpf) + sizeof(th);
 	fi.ind_hdr_size = reverseBytes(fi.ind_hdr_size);
-	
+
 	int header_size = sizeof(fi) + sizeof(ii) + sizeof(ioi) + sizeof(mpf) + sizeof(th);
 	fi.image_data_offset = header_size;
 	fi.image_data_offset = reverseBytes(fi.image_data_offset);
-	
+
 	strcpy((char *) fi.vers, "V2.0");
-	
+
 	/// \todo Establish the purpose of this
 	strcpy((char *) fi.file_name, "image-engine.dpx");
 
@@ -137,15 +138,15 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 
 	/// \todo Not necessarily PST!
 	sprintf((char *) fi.create_time, "%04d:%02d:%02d:%02d:%02d:%02d:PST",
-			  1900 + gmt.tm_year, gmt.tm_mon, gmt.tm_mday,
-			  gmt.tm_hour, gmt.tm_min, gmt.tm_sec);
-			  
-	/// \todo Change these		  
+	        1900 + gmt.tm_year, gmt.tm_mon, gmt.tm_mday,
+	        gmt.tm_hour, gmt.tm_min, gmt.tm_sec);
+
+	/// \todo Change these
 	sprintf((char *) fi.creator, "image engine vfx for film");
 	sprintf((char *) fi.project, "IECore");
 	sprintf((char *) fi.copyright, "image engine vfx for film");
-	
-	
+
+
 	//
 	// ImageInformation;
 	//
@@ -155,13 +156,14 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 	ii.lines_per_image_ele = height;
 
 	/// \todo Establish why we're not calling asLittleEndian or asBigEndian here
- 	// reverse byte ordering
- 	ii.element_number      = reverseBytes(ii.element_number);
- 	ii.pixels_per_line     = reverseBytes(ii.pixels_per_line);
- 	ii.lines_per_image_ele = reverseBytes(ii.lines_per_image_ele);
+	// reverse byte ordering
+	ii.element_number      = reverseBytes(ii.element_number);
+	ii.pixels_per_line     = reverseBytes(ii.pixels_per_line);
+	ii.lines_per_image_ele = reverseBytes(ii.lines_per_image_ele);
 
- 	for(int c = 0; c < 8; ++c) {
-		
+	for (int c = 0; c < 8; ++c)
+	{
+
 		DPXImageInformation::_image_element &ie = ii.image_element[c];
 		ie.data_sign = 0;
 
@@ -177,43 +179,43 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 		ie.ref_low_quantity = reverseBytes(ie.ref_low_quantity);
 		ie.ref_high_data = reverseBytes(ie.ref_high_data);
 		ie.ref_high_quantity = reverseBytes(ie.ref_high_quantity);
-		
-		/// \todo Dcoument these constants		
+
+		/// \todo Dcoument these constants
 		ie.transfer = 1;
 		ie.packing = 256;
 		ie.bit_size = 10;
 		ie.descriptor = 50;
 
 		ie.data_offset = fi.image_data_offset;
- 	}
-	
+	}
+
 	//
 	// ImageOrientation
 	//
 	ioi.x_offset = 0;                  // could be dataWindow min.x
 	ioi.y_offset = 0;                  // could be dataWindow min.y
-	
+
 	/// \todo What does the comment below imply we are leaving out of the header?
 	// other items left out for now
 
 	// write the header
-	
+
 	// compute total file size
 	int image_data_size = 4 * width * height;
 	fi.file_size = header_size + image_data_size;
-	
+
 	/// \todo Why is this call to reverseBytes here?
 	fi.file_size = reverseBytes(fi.file_size);
-	
+
 	out.write(reinterpret_cast<char *>(&fi),  sizeof(fi));
 	out.write(reinterpret_cast<char *>(&ii),  sizeof(ii));
 	out.write(reinterpret_cast<char *>(&ioi), sizeof(ioi));
 	out.write(reinterpret_cast<char *>(&mpf), sizeof(mpf));
 	out.write(reinterpret_cast<char *>(&th),  sizeof(th));
-	
+
 	// write the data
 	std::vector<unsigned int> image_buffer( width*height, 0 );
-	
+
 	// build a LUT
 	double film_gamma = 0.6;
 	int ref_white_val = 685;
@@ -223,40 +225,41 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 
 	// build a reverse LUT (linear to logarithmic)
 	vector<double> range(1024);
-	for(int i = 0; i < 1024; ++i) {
+	for (int i = 0; i < 1024; ++i)
+	{
 		double v = i + 0.5;
 		range[i] = (pow(10.0, (v - ref_white_val) * ref_mult) - black_offset) / (1.0 - black_offset);
 	}
 	vector<double>::iterator where;
-	
+
 	// add the channels into the header with the appropriate types
 	// channel data is RGB interlaced
 	vector<string>::const_iterator i = names.begin();
-	while(i != names.end())
-	{		
-		if(!(*i == "R" || *i == "G" || *i == "B"))
+	while (i != names.end())
+	{
+		if (!(*i == "R" || *i == "G" || *i == "B"))
 		{
 			msg( Msg::Warning, "DPXImageWriter::write", format( "Channel \"%s\" was not encoded." ) % *i );
 			++i;
 			continue;
 		}
-		
+
 		int offset = *i == "R" ? 0 : *i == "G" ? 1 : 2;
 		int bpp = 10;
 		unsigned int shift = (32 - bpp) - (offset*bpp);
-		
+
 		// get the image channel
 		DataPtr channelp = image->variables.find( *i )->second.data;
-		
-		switch(channelp->typeId())
+
+		switch (channelp->typeId())
 		{
-			
+
 		case FloatVectorDataTypeId:
 		{
 			const vector<float> &channel = static_pointer_cast<FloatVectorData>(channelp)->readable();
 
 			// convert the linear float value to 10-bit log
-			for(int i = 0; i < width*height; ++i)
+			for (int i = 0; i < width*height; ++i)
 			{
 				/// \todo Examine the performance of this!
 				where = lower_bound(range.begin(), range.end(), channel[i]);
@@ -265,13 +268,13 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 			}
 		}
 		break;
-			
+
 		case HalfVectorDataTypeId:
 		{
 			const vector<half> &channel = static_pointer_cast<HalfVectorData>(channelp)->readable();
-			
+
 			// convert the linear half value to 10-bit log
-			for(int i = 0; i < width*height; ++i)
+			for (int i = 0; i < width*height; ++i)
 			{
 				/// \todo Examine the performance of this!
 				where = lower_bound(range.begin(), range.end(), channel[i]);
@@ -280,18 +283,18 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 			}
 		}
 		break;
-		
+
 		/// \todo Deal with other channel types, preferably using templates!
-			
+
 		default:
 			throw InvalidArgumentException( (format( "DPXImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId(channelp->typeId()) % *i).str() );
 		}
-		
+
 		++i;
 	}
-	
+
 	// write the buffer
-	for(int i = 0; i < width*height; ++i)
+	for (int i = 0; i < width*height; ++i)
 	{
 		/// \todo Why is this call to reverseBytes here? If we want to write in either little endian or big endian format there
 		/// are calls specifically do this, which work regardless of which architecture the code is running on
