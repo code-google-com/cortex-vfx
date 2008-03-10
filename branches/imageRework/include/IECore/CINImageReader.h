@@ -40,7 +40,7 @@
 
 namespace IECore
 {
-  
+
 /// The CINImageReader reads Kodak Cineon (CIN) files.
 /// Currently, only the overwhelmingly popular 10-bit log-encoded pixel-interlaced
 /// 32-bit word boundary format is loaded.
@@ -48,25 +48,25 @@ class CINImageReader : public ImageReader
 {
 
 	public:
-	
+
 		IE_CORE_DECLARERUNTIMETYPED( CINImageReader, ImageReader );
 
 		CINImageReader();
 		CINImageReader(const std::string & filename);
 		virtual ~CINImageReader();
-	
+
 		static bool canRead(const std::string &filename);
-		
+
 		virtual void channelNames( std::vector<std::string> &names );
 		virtual bool isComplete();
 		virtual Imath::Box2i dataWindow();
 		virtual Imath::Box2i displayWindow();
-	
+
 	private:
-	
-	
+
+
 		virtual DataPtr readChannel( const std::string &name, const Imath::Box2i &dataWindow );
-	
+
 		// filename associator
 		static const ReaderDescription<CINImageReader> m_readerDescription;
 
@@ -84,13 +84,13 @@ class CINImageReader : public ImageReader
 		/// the filename in effect when we filled the buffer last.
 		std::string m_bufferFileName;
 		unsigned int m_bufferWidth, m_bufferHeight;
-	
+
 		/// lookup table for converting to linear cs
 		float m_LUT[1024];
 };
-	
+
 IE_CORE_DECLAREPTR(CINImageReader);
-	
+
 } // namespace IECore
 
 #endif // IE_CORE_CINIMAGEREADER_H
