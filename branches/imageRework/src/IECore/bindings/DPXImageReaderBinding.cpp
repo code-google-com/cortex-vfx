@@ -52,6 +52,7 @@ void bindDPXImageReader()
 
 	DPXImageReaderPyClass("DPXImageReader", init<>())
 		.def(  init<const std::string &>() )
+		.def( "canRead", &DPXImageReader::canRead).staticmethod( "canRead" )
 		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(DPXImageReader)
 	;
 
