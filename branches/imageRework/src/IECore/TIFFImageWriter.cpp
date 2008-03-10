@@ -142,11 +142,11 @@ void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector
 	int samplesPerPixel = names.size();
 
 	// Build a vector in which we place all the image channels
-	
+
 	typedef TypedData< vector<T> > ChannelData;
-	
+
 	typename ChannelData::Ptr channelData = 0;
-	
+
 	vector<T> imageBuffer( samplesPerPixel * area, 0 );
 
 	// Encode eaech individual channel into the buffer
@@ -159,83 +159,83 @@ void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector
 		switch (dataContainer->typeId())
 		{
 
-		case FloatVectorDataTypeId:				
-			channelData = VectorDataConvert < FloatVectorData, ChannelData, ScaledDataConversion<float, T> >()( 
-				boost::static_pointer_cast<const FloatVectorData>( dataContainer )  
-			);
+		case FloatVectorDataTypeId:
+			channelData = VectorDataConvert < FloatVectorData, ChannelData, ScaledDataConversion<float, T> >()(
+			                      boost::static_pointer_cast<const FloatVectorData>( dataContainer )
+			              );
 			break;
-		
+
 		case LongVectorDataTypeId:
-			channelData = VectorDataConvert< LongVectorData, ChannelData, ScaledDataConversion<long, T> >()( 
-				boost::static_pointer_cast<const LongVectorData>( dataContainer ) 
-			);
+			channelData = VectorDataConvert< LongVectorData, ChannelData, ScaledDataConversion<long, T> >()(
+			                      boost::static_pointer_cast<const LongVectorData>( dataContainer )
+			              );
 			break;
-		
+
 		case CharVectorDataTypeId:
 			channelData = VectorDataConvert< CharVectorData, ChannelData, ScaledDataConversion<char, T> >()(
-				boost::static_pointer_cast<const CharVectorData>( dataContainer ) 
-			);
+			                      boost::static_pointer_cast<const CharVectorData>( dataContainer )
+			              );
 			break;
 
 		case UCharVectorDataTypeId:
 			channelData = VectorDataConvert< UCharVectorData, ChannelData, ScaledDataConversion<unsigned char, T> >()(
-				boost::static_pointer_cast<const UCharVectorData>( dataContainer ) 
-			);
+			                      boost::static_pointer_cast<const UCharVectorData>( dataContainer )
+			              );
 			break;
 
 		case DoubleVectorDataTypeId:
 			channelData = VectorDataConvert< DoubleVectorData, ChannelData, ScaledDataConversion<double, T> >()(
-				boost::static_pointer_cast<const DoubleVectorData>( dataContainer ) 
-			);
+			                      boost::static_pointer_cast<const DoubleVectorData>( dataContainer )
+			              );
 			break;
 
 		case HalfVectorDataTypeId:
 			channelData = VectorDataConvert< HalfVectorData, ChannelData, ScaledDataConversion<half, T> >()(
-				boost::static_pointer_cast<const HalfVectorData>( dataContainer ) 
-			);
+			                      boost::static_pointer_cast<const HalfVectorData>( dataContainer )
+			              );
 			break;
-			
+
 		case IntVectorDataTypeId:
 			channelData = VectorDataConvert< IntVectorData, ChannelData, ScaledDataConversion<int, T> >()(
-				boost::static_pointer_cast<const IntVectorData>( dataContainer ) 
-			);
+			                      boost::static_pointer_cast<const IntVectorData>( dataContainer )
+			              );
 			break;
 
 		case UIntVectorDataTypeId:
 			channelData = VectorDataConvert< UIntVectorData, ChannelData, ScaledDataConversion<unsigned int, T> >()(
-				boost::static_pointer_cast<const UIntVectorData>( dataContainer ) 
-			);
+			                      boost::static_pointer_cast<const UIntVectorData>( dataContainer )
+			              );
 			break;
-			
+
 		case ShortVectorDataTypeId:
 			channelData = VectorDataConvert< ShortVectorData, ChannelData, ScaledDataConversion<short, T> >()(
-				boost::static_pointer_cast<const ShortVectorData>( dataContainer ) 
-			);
+			                      boost::static_pointer_cast<const ShortVectorData>( dataContainer )
+			              );
 			break;
 
 		case UShortVectorDataTypeId:
 			channelData = VectorDataConvert< UShortVectorData, ChannelData, ScaledDataConversion<unsigned short, T> >()(
-				boost::static_pointer_cast<const UShortVectorData>( dataContainer ) 
-			);
+			                      boost::static_pointer_cast<const UShortVectorData>( dataContainer )
+			              );
 			break;
 
 		default:
-			throw InvalidArgumentException( (boost::format( "Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId(dataContainer->typeId()) % *i).str() );
+			throw InvalidArgumentException( (boost::format( "TIFFImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId(dataContainer->typeId()) % *i).str() );
 		}
-		
+
 		assert( channelData );
-		
+
 		if ( channelData->readable().size() == 0)
 		{
-			throw InvalidArgumentException( (boost::format( "Invalid data size \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId(dataContainer->typeId()) % *i).str() );
+			throw InvalidArgumentException( (boost::format( "TIFFImageWriter: Invalid data size \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId(dataContainer->typeId()) % *i).str() );
 		}
-		
+
 		for ( typename ChannelData::ValueType::size_type j = 0; j < channelData->readable().size(); ++j )
 		{
 			imageBuffer[ samplesPerPixel*j + channelOffset ] = channelData->readable()[j];
 		}
 	}
-		
+
 	/// Write the image buffer to the TIFF file, strip by strip
 	int offset = 0;
 	for ( tstrip_t strip = 0; strip < numStrips; ++strip )
@@ -246,13 +246,15 @@ void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector
 		int remaining = bufSize - offset;
 		assert( remaining >= 0 );
 
-		int lc = TIFFWriteEncodedStrip( tiffImage, strip,  (char *) &imageBuffer[0] + offset, tss < remaining ? tss : remaining );
-		assert( lc >= 0 );
+		tsize_t lc = TIFFWriteEncodedStrip( tiffImage, strip,  (char *) &imageBuffer[0] + offset, tss < remaining ? tss : remaining );
+		if ( lc == -1 )
+		{
+			throw IOException( ( boost::format( "TIFFImageWriter: Error writing strip %d to %s" ) % strip % fileName() ).str() );
+		}
 
 		offset += lc;
 	}
 }
-
 
 void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow )
 {
@@ -264,7 +266,7 @@ void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 	{
 		throw IOException("TIFFImageWriter: Could not open '" + fileName() + "' for writing.");
 	}
-	
+
 	assert( tiffImage );
 
 	try
@@ -308,11 +310,11 @@ void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 
 		if ( rgbChannelsFound == 0 )
 		{
-			TIFFSetField( tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK );
+			TIFFSetField( tiffImage, TIFFTAG_PHOTOMETRIC, (uint16)PHOTOMETRIC_MINISBLACK );
 		}
 		else if ( rgbChannelsFound == 3 )
 		{
-			TIFFSetField( tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB );
+			TIFFSetField( tiffImage, TIFFTAG_PHOTOMETRIC, (uint16)PHOTOMETRIC_RGB );
 		}
 		else
 		{
@@ -322,7 +324,7 @@ void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 		// compute the number of channels
 		int samplesPerPixel = filteredNames.size();
 
-		TIFFSetField( tiffImage, TIFFTAG_SAMPLESPERPIXEL, samplesPerPixel );
+		TIFFSetField( tiffImage, TIFFTAG_SAMPLESPERPIXEL, (uint16)samplesPerPixel );
 
 		int numExtraSamples = filteredNames.size() - rgbChannelsFound;
 		assert( numExtraSamples >= 0 );
@@ -330,7 +332,7 @@ void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 		vector<uint16> extraSamples;
 		if ( haveAlpha )
 		{
-			extraSamples.push_back( EXTRASAMPLE_UNASSALPHA );
+			extraSamples.push_back( (uint16)EXTRASAMPLE_UNASSALPHA );
 		}
 
 		if ( numExtraSamples )
@@ -342,7 +344,7 @@ void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 
 			assert( (int)extraSamples.size() == numExtraSamples );
 
-			TIFFSetField( tiffImage, TIFFTAG_EXTRASAMPLES, extraSamples.size(), &extraSamples[0] );
+			TIFFSetField( tiffImage, TIFFTAG_EXTRASAMPLES, extraSamples.size(), (uint16*)&extraSamples[0] );
 		}
 
 		// compute the writebox
@@ -366,13 +368,13 @@ void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 		switch ( bitDepth )
 		{
 		case 8:
-			TIFFSetField( tiffImage, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT );
+			TIFFSetField( tiffImage, TIFFTAG_SAMPLEFORMAT, (uint16)SAMPLEFORMAT_UINT );
 			break;
 		case 16:
-			TIFFSetField( tiffImage, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT );
+			TIFFSetField( tiffImage, TIFFTAG_SAMPLEFORMAT, (uint16)SAMPLEFORMAT_UINT );
 			break;
 		case 32:
-			TIFFSetField( tiffImage, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP );
+			TIFFSetField( tiffImage, TIFFTAG_SAMPLEFORMAT, (uint16)SAMPLEFORMAT_IEEEFP );
 			break;
 		default:
 			assert( 0 );
@@ -385,32 +387,32 @@ void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 		int strips = height / rowsPerStrip + (height % rowsPerStrip > 0 ? 1 : 0);
 
 		// set the basic values
-		TIFFSetField( tiffImage, TIFFTAG_IMAGEWIDTH, width );
-		TIFFSetField( tiffImage, TIFFTAG_IMAGELENGTH, height );
-		
+		TIFFSetField( tiffImage, TIFFTAG_IMAGEWIDTH, (uint32)width );
+		TIFFSetField( tiffImage, TIFFTAG_IMAGELENGTH, (uint32)height );
+
 		if ( dataWindow != image->getDisplayWindow() )
 		{
 			V2i position = dataWindow.min - image->getDisplayWindow().min;
-			
+
 			TIFFSetField( tiffImage, TIFFTAG_XPOSITION, (float) position.x );
 			TIFFSetField( tiffImage, TIFFTAG_YPOSITION, (float) position.y );
-			
+
 			int displayWidth = 1 + image->getDisplayWindow().size().x;
 			int displayHeight = 1 + image->getDisplayWindow().size().y;
 			TIFFSetField( tiffImage, TIFFTAG_PIXAR_IMAGEFULLWIDTH, (uint32)( displayWidth ) );
-			TIFFSetField( tiffImage, TIFFTAG_PIXAR_IMAGEFULLLENGTH, (uint32)( displayHeight ) );			
-		}				
-		
-		TIFFSetField( tiffImage, TIFFTAG_BITSPERSAMPLE, bitDepth );
-		TIFFSetField( tiffImage, TIFFTAG_ROWSPERSTRIP, rowsPerStrip );
+			TIFFSetField( tiffImage, TIFFTAG_PIXAR_IMAGEFULLLENGTH, (uint32)( displayHeight ) );
+		}
+
+		TIFFSetField( tiffImage, TIFFTAG_BITSPERSAMPLE, (uint16)bitDepth );
+		TIFFSetField( tiffImage, TIFFTAG_ROWSPERSTRIP, (uint32)rowsPerStrip );
 
 		/// \todo What about files written on big endian platforms?
-		TIFFSetField( tiffImage, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB );
-		TIFFSetField( tiffImage, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG );
+		TIFFSetField( tiffImage, TIFFTAG_FILLORDER, (uint16)FILLORDER_MSB2LSB );
+		TIFFSetField( tiffImage, TIFFTAG_PLANARCONFIG, (uint16)PLANARCONFIG_CONTIG );
 
 		TIFFSetField( tiffImage, TIFFTAG_XRESOLUTION, 1 );
 		TIFFSetField( tiffImage, TIFFTAG_YRESOLUTION, 1 );
-		TIFFSetField( tiffImage, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE );
+		TIFFSetField( tiffImage, TIFFTAG_RESOLUTIONUNIT, (uint16)RESUNIT_NONE );
 
 		size_t bufSize = (size_t)( (float)bitDepth / 8 * samplesPerPixel * width * height );
 		assert( bufSize );
