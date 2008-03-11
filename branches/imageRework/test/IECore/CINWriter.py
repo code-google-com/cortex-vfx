@@ -64,9 +64,9 @@ class TestCINWriter(unittest.TestCase):
 			found = ipe.pointAtPixel( pixelColor[0], result )
 			self.assert_( found )		
 			color = V3f(
-				result.floatPrimVar( ipe.R() ),
-				result.floatPrimVar( ipe.G() ), 
-				result.floatPrimVar( ipe.B() )
+				result.halfPrimVar( ipe.R() ),
+				result.halfPrimVar( ipe.G() ), 
+				result.halfPrimVar( ipe.B() )
 			)	
 								
 			self.assert_( ( color - pixelColor[1]).length() < 1.e-3 )
@@ -122,10 +122,13 @@ class TestCINWriter(unittest.TestCase):
 		
 			img = self.__makeFloatImage( dataWindow, displayWindow, dataType = dataType )
 			w = Writer.create( img, "test/IECore/data/cinFiles/output.cin" )
-			self.assertEqual( type(w), TIFFImageWriter )
+			self.assertEqual( type(w), CINImageWriter )
 			w.write()
 		
 			self.assert_( os.path.exists( "test/IECore/data/cinFiles/output.cin" ) )
+			
+			# \todo remove this line
+			Writer.create( img, "test/IECore/data/cinFiles/output2.cin" ).write()
 			
 			# Now we've written the image, verify the rgb
 			

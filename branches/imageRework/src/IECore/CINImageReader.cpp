@@ -63,6 +63,7 @@ struct CINImageReader::Header
 	ImageDataFormatInformation m_imageDataFormatInformation;
 	ImageOriginationInformation m_imageOriginationInformation;
 	
+	/// Map from channel names to index into ImageInformation.channel_information array
 	typedef map< string, int > ChannelOffsetMap;
 	map< string, int > m_channelOffsets;
 };
@@ -194,7 +195,11 @@ DataPtr CINImageReader::readChannel( const string &name, const Imath::Box2i &dat
 			HalfVectorData::ValueType::size_type dataOffset = dataY * dataWidth + dataX;
 			assert( dataOffset < data.size() );
 
-			unsigned int cell = reverseBytes( m_buffer[( y * m_bufferWidth + x )] );
+			unsigned int cell = m_buffer[( y * m_bufferWidth + x )];
+			if ( m_reverseBytes )
+			{
+				cell = reverseBytes( cell );
+			}
 
 			// assume we have 10bit log, two wasted bits aligning to 32 longword
 			unsigned short cv = (unsigned short) ( ( mask & cell ) >> ( 2 + ( 2 - channelOffset ) * bpp ) );
@@ -236,25 +241,16 @@ bool CINImageReader::open( bool throwOnFailure )
 			throw IOException( "CINImageReader: Error reading " + fileName() );
 		}
 		
+		/// This code works correctly on both big- and little-endian platforms
 		m_reverseBytes = false;
 		if ( m_header->m_fileInformation.magic == 0xd75f2a80 )
 		{
-			if ( littleEndian() )
-			{
-				m_reverseBytes = true;
-			}
-		}
-		else if ( m_header->m_fileInformation.magic == 0x802a5fd7 )
-		{
-			if ( bigEndian() )
-			{
-				m_reverseBytes = true;
-			}
-		}
-		else
+			m_reverseBytes = true;
+		} 
+		else if ( m_header->m_fileInformation.magic != 0x802a5fd7 )
 		{		
 			throw IOException( "CINImageReader: Invalid Cineon magic number while reading " + fileName() );
-		}		
+		}
 		
 		in.read( reinterpret_cast<char*>(&m_header->m_imageInformation), sizeof(m_header->m_imageInformation) );
 		if ( in.fail() )
@@ -286,6 +282,11 @@ bool CINImageReader::open( bool throwOnFailure )
 		if ( (int)m_header->m_imageDataFormatInformation.sense != 0 )
 		{
 			throw IOException( "CINImageReader: Unsupported data sense in file " + fileName() );
+		}		
+		
+		if ( (int)m_header->m_imageDataFormatInformation.eol_padding != 0 || (int)m_header->m_imageDataFormatInformation.eoc_padding != 0 )
+		{
+			throw IOException( "CINImageReader: Unsupported data padding in file " + fileName() );
 		}				
 		
 		in.read( reinterpret_cast<char*>(&m_header->m_imageOriginationInformation), sizeof(m_header->m_imageOriginationInformation) );
@@ -328,13 +329,13 @@ bool CINImageReader::open( bool throwOnFailure )
 					throw IOException( "CINImageReader: Cannot read channels of differing dimensions in file " + fileName() );
 				}
 			}
-			
+						
 			if ( (int)channelInformation.bpp != 10 )
 			{
 				throw IOException( ( boost::format( "CINImageReader: Unsupported bits-per-pixel (%d) in file %s ") % (int)channelInformation.bpp % fileName() ).str() );
 			}
 
-			if (channelInformation.byte_0 == 1)
+			if ( channelInformation.byte_0 == 1 )
 			{
 				throw IOException( "CINImageReader: Cannot read vendor specific Cineon file " + fileName() );
 			}
@@ -392,10 +393,10 @@ bool CINImageReader::open( bool throwOnFailure )
 		}
 
 		// Read the data into the buffer - remember that we're currently packing upto 3 channels into each 32-bit "cell"
-		int bufferSize = ( std::max( 1u, m_header->m_channelOffsets.size() / 3 ) ) * m_bufferWidth * m_bufferHeight;
+		int bufferSize = ( std::max<unsigned int>( 1u, m_header->m_channelOffsets.size() / 3 ) ) * m_bufferWidth * m_bufferHeight;
 		m_buffer.resize( bufferSize, 0 );
 		
-		in.read( (char *)(&m_buffer[0]), sizeof(unsigned int) * bufferSize );
+		in.read( reinterpret_cast<char*>(&m_buffer[0]), sizeof(unsigned int) * bufferSize );
 		if ( in.fail() )
 		{
 			throw IOException( "CINImageReader: Error reading " + fileName() );

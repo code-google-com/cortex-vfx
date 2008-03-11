@@ -132,6 +132,8 @@ class TestCINReader(unittest.TestCase):
 				result.halfPrimVar( ipe.G() ), 
 				result.halfPrimVar( ipe.B() )
 			)
+			
+			print ( color, expectedColor )
 						
 			self.assert_( ( color - expectedColor).length() < 1.e-6 )	
 		
@@ -149,6 +151,8 @@ class TestCINReader(unittest.TestCase):
 			for f in fileNames:
 			
 				if not f in expectedFailures :
+				
+					print( f )
 
 					r = CINImageReader( f ) 
 					img = r.read()
