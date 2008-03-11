@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -34,6 +34,7 @@
 
 import unittest
 import sys
+import glob
 from IECore import *
 
 from math import pow
@@ -56,13 +57,6 @@ class TestCINReader(unittest.TestCase):
 		img = r.read()
 		
 		self.assertEqual(type(img), ImagePrimitive)
-
-		# write test (CIN -> EXR)
-		w = Writer.create(img, self.testoutfile)
-		self.assertEqual(type(w), CINImageWriter)
-
-		w.write()
-
 
 	def testWindowedRead(self):
 
@@ -107,6 +101,67 @@ class TestCINReader(unittest.TestCase):
 		w = Writer.create(img, test_outfile_path)
 		self.assertEqual(type(w), CINImageWriter)
 		w.write()
+		
+	def testOrientation( self ) :
+		""" Test orientation of Cineon files """
+	
+		img = Reader.create( "test/IECore/data/cinFiles/uvMap.512x256.cin" ).read()
+		
+		ipe = PrimitiveEvaluator.create( img )
+		self.assert_( ipe.R() )
+		self.assert_( ipe.G() )
+		self.assert_( ipe.B() )
+		self.failIf ( ipe.A() )
+		
+		result = ipe.createResult()
+		
+		colorMap = {
+			V2i( 0 ,    0 ) :  V3f( 0, 0, 0 ),
+			V2i( 511,   0 ) :  V3f( 1, 0, 0 ),
+			V2i( 0,   255 ) :  V3f( 0, 1, 0 ),
+			V2i( 511, 255 ) :  V3f( 1, 1, 0 ),
+		}
+		
+		for point, expectedColor in colorMap.items() :
+		
+			found = ipe.pointAtPixel( point, result )
+			self.assert_( found )
+			
+			color = V3f(
+				result.halfPrimVar( ipe.R() ),
+				result.halfPrimVar( ipe.G() ), 
+				result.halfPrimVar( ipe.B() )
+			)
+						
+			self.assert_( ( color - expectedColor).length() < 1.e-6 )	
+		
+	def testAll( self ):
+		
+		fileNames = glob.glob( "test/IECore/data/cinFiles/*.cin" )
+		expectedFailures = []
+		
+		# Silence any warnings while the tests run
+		MessageHandler.pushHandler( NullMessageHandler() )
+		
+		
+		try:
+		
+			for f in fileNames:
+			
+				if not f in expectedFailures :
+
+					r = CINImageReader( f ) 
+					img = r.read()
+					self.assertEqual( type(img), ImagePrimitive )
+					self.assert_( img.arePrimitiveVariablesValid() )	
+				
+		except:
+		
+			raise	
+			
+		finally:
+			
+			MessageHandler.popHandler()		
 		
 
                 			
