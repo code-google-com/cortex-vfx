@@ -197,11 +197,7 @@ class TestJPEGImageWriter(unittest.TestCase):
 		w = Writer.create( img, "test/IECore/data/jpg/output.jpg" )
 		self.assertEqual( type(w), JPEGImageWriter )
 		
-		# \todo The writer should give us some sort of error, but doesn't. It crashes.
-		self.failIf( True )		
-		w.write()
-		
-		
+		self.assertRaises( RuntimeError, w.write )				
 		self.failIf( os.path.exists( "test/IECore/data/jpg/output.jpg" ) )
 		
 	def testErrors( self ) :
