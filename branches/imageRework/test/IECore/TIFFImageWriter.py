@@ -43,6 +43,8 @@ class TestTIFFImageWriter(unittest.TestCase):
 	# Make sure that the image corners match our "uvMap" which runs from bacl to red along increasing X, and bacl to green along increasing Y
 	def __verifyImageRGB( self, img ):
 	
+		self.assertEqual( type(img), ImagePrimitive )	
+	
 		topLeft =  img.dataWindow.min - img.displayWindow.min
 		bottomRight = img.dataWindow.max - img.displayWindow.min
 		topRight = V2i( img.dataWindow.max.x, img.dataWindow.min.y) - img.displayWindow.min
@@ -233,8 +235,6 @@ class TestTIFFImageWriter(unittest.TestCase):
 			self.tearDown()
 
 	def testWrite( self ) :	
-	
-		return	
 		
 		displayWindow = Box2i(
 			V2i( 0, 0 ),
