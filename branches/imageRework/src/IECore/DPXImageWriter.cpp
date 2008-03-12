@@ -76,9 +76,9 @@ void DPXImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr i
 	// write the dpx in the standard 10bit log format
 	std::ofstream out;
 	out.open(fileName().c_str());
-	if (!out.is_open())
+	if ( !out.is_open() )
 	{
-		throw IOException("Could not open '" + fileName() + "' for writing.");
+		throw IOException( "DPXImageWriter: Error writing to " + fileName() );
 	}
 
 	// assume an 8-bit RGB image
@@ -201,10 +201,34 @@ void DPXImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr i
 	fi.file_size = asBigEndian<>(fi.file_size);
 
 	out.write(reinterpret_cast<char *>(&fi),  sizeof(fi));
+	if ( out.fail() )
+	{
+		throw IOException( "DPXImageWriter: Error writing to " + fileName() );
+	}
+	
 	out.write(reinterpret_cast<char *>(&ii),  sizeof(ii));
+	if ( out.fail() )
+	{
+		throw IOException( "DPXImageWriter: Error writing to " + fileName() );
+	}
+	
 	out.write(reinterpret_cast<char *>(&ioi), sizeof(ioi));
+	if ( out.fail() )
+	{
+		throw IOException( "DPXImageWriter: Error writing to " + fileName() );
+	}
+		
 	out.write(reinterpret_cast<char *>(&mpf), sizeof(mpf));
+	if ( out.fail() )
+	{
+		throw IOException( "DPXImageWriter: Error writing to " + fileName() );
+	}
+		
 	out.write(reinterpret_cast<char *>(&th),  sizeof(th));
+	if ( out.fail() )
+	{
+		throw IOException( "DPXImageWriter: Error writing to " + fileName() );
+	}	
 
 	// write the data
 	std::vector<unsigned int> image_buffer( width*height, 0 );
@@ -308,5 +332,9 @@ void DPXImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr i
 		/// are calls specifically do this, which work regardless of which architecture the code is running on
 		image_buffer[i] = asBigEndian<>(image_buffer[i]);
 		out.write((const char *) (&image_buffer[i]), sizeof(unsigned int));
+		if ( out.fail() )
+		{
+			throw IOException( "DPXImageWriter: Error writing to " + fileName() );
+		}
 	}
 }

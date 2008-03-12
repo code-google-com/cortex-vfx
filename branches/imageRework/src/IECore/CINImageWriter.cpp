@@ -71,19 +71,21 @@ CINImageWriter::~CINImageWriter()
 }
 
 /// \todo Pad area outside dataWindow but within displayWindow with black
-void CINImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dw)
+void CINImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow)
 {
 	// write the cineon in the standard 10bit log format
 	std::ofstream out;
 	out.open(fileName().c_str());//, "wb");
 	if (!out.is_open())
 	{
-		throw IOException("Could not open '" + fileName() + "' for writing.");
+		throw IOException( "CINImageWriter: Could not open " + fileName() );
 	}
 
+	/// \todo Don't assume this!
 	// assume an 8-bit RGB image
-	int width  = 1 + dw.max.x - dw.min.x;
-	int height = 1 + dw.max.y - dw.min.y;
+	
+	int width  = 1 + dataWindow.max.x - dataWindow.min.x;
+	int height = 1 + dataWindow.max.y - dataWindow.min.y;
 
 	//
 	// FileInformation
@@ -162,7 +164,7 @@ void CINImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 	idfi.data_signed = 0;              // unsigned data
 	idfi.sense = 0;                    // positive image sense
 	idfi.eol_padding = 0;              // no end-of-line padding
-	idfi.eoc_padding = 0;              // no end-of-channel padding
+	idfi.eoc_padding = 0;              // no end-of-data padding
 
 	//
 	// ImageOriginationInformation
@@ -187,9 +189,28 @@ void CINImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 	fi.total_file_size = asBigEndian<>(fi.total_file_size);
 
 	out.write(reinterpret_cast<char *>(&fi),   sizeof(fi));
+	if ( out.fail() )
+	{
+		throw IOException( "CINImageWriter: Error writing to " + fileName() );
+	}
+	
 	out.write(reinterpret_cast<char *>(&ii),   sizeof(ii));
+	if ( out.fail() )
+	{
+		throw IOException( "CINImageWriter: Error writing to " + fileName() );
+	}
+	
 	out.write(reinterpret_cast<char *>(&idfi), sizeof(idfi));
+	if ( out.fail() )
+	{
+		throw IOException( "CINImageWriter: Error writing to " + fileName() );
+	}
+	
 	out.write(reinterpret_cast<char *>(&ioi),  sizeof(ioi));
+	if ( out.fail() )
+	{
+		throw IOException( "CINImageWriter: Error writing to " + fileName() );
+	}
 
 	// write the data
 	std::vector<unsigned int> image_buffer( width*height, 0 );
@@ -208,10 +229,10 @@ void CINImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 		double v = i + 0.5;
 		range[i] = (pow(10.0, (v - ref_white_val) * ref_mult) - black_offset) / (1.0 - black_offset);
 	}
-	vector<double>::iterator where;
+	
 
-	// add the channels into the header with the appropriate types
-	// channel data is RGB interlaced
+	// add the datas into the header with the appropriate types
+	// data data is RGB interlaced
 	vector<string>::const_iterator i = names.begin();
 	while (i != names.end())
 	{
@@ -226,21 +247,22 @@ void CINImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 		int bpp = 10;
 		unsigned int shift = (32 - bpp) - (offset*bpp);
 
-		// get the image channel
-		DataPtr channelp = image->variables.find( *i )->second.data;
+		assert( image->variables.find( name ) != image->variables.end() );
+		DataPtr dataContainer = image->variables.find( *i )->second.data;
+		assert( dataContainer );
 
-		switch (channelp->typeId())
+		switch (dataContainer->typeId())
 		{
 
 		case FloatVectorDataTypeId:
 		{
-			const vector<float> &channel = static_pointer_cast<FloatVectorData>(channelp)->readable();
+			const vector<float> &data = static_pointer_cast<FloatVectorData>(dataContainer)->readable();
 
 			// convert the linear float value to 10-bit log
 			for (int i = 0; i < width*height; ++i)
 			{
 				/// \todo Examine the performance of this!
-				where = lower_bound(range.begin(), range.end(), channel[i]);
+				vector<double>::iterator where = lower_bound(range.begin(), range.end(), data[i]);
 				unsigned int log_value = distance(range.begin(), where);
 				image_buffer[i] |= log_value << shift;
 			}
@@ -249,13 +271,13 @@ void CINImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 
 		case HalfVectorDataTypeId:
 		{
-			const vector<half> &channel = static_pointer_cast<HalfVectorData>(channelp)->readable();
+			const vector<half> &data = static_pointer_cast<HalfVectorData>(dataContainer)->readable();
 
 			// convert the linear half value to 10-bit log
 			for (int i = 0; i < width*height; ++i)
 			{
 				/// \todo Examine the performance of this!
-				where = lower_bound(range.begin(), range.end(), channel[i]);
+				vector<double>::iterator where = lower_bound(range.begin(), range.end(), data[i]);
 				unsigned int log_value = distance(range.begin(), where);
 				image_buffer[i] |= log_value << shift;
 			}
@@ -264,13 +286,13 @@ void CINImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 		
 		case DoubleVectorDataTypeId:
 		{
-			const vector<double> &channel = static_pointer_cast<DoubleVectorData>(channelp)->readable();
+			const vector<double> &data = static_pointer_cast<DoubleVectorData>(dataContainer)->readable();
 
 			// convert the linear half value to 10-bit log
 			for (int i = 0; i < width*height; ++i)
 			{
 				/// \todo Examine the performance of this!
-				where = lower_bound(range.begin(), range.end(), channel[i]);
+				vector<double>::iterator where = lower_bound(range.begin(), range.end(), data[i]);
 				unsigned int log_value = distance(range.begin(), where);
 				image_buffer[i] |= log_value << shift;
 			}
@@ -280,7 +302,7 @@ void CINImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 		/// \todo Deal with other channel types, preferably using templates!
 
 		default:
-			throw InvalidArgumentException( (format( "CINImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId(channelp->typeId()) % *i).str() );
+			throw InvalidArgumentException( (format( "CINImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId(dataContainer->typeId()) % *i).str() );
 		}
 
 		++i;
@@ -291,5 +313,9 @@ void CINImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 	{
 		image_buffer[i] = asBigEndian<>(image_buffer[i]);
 		out.write((const char *) (&image_buffer[i]), sizeof(unsigned int));
+		if ( out.fail() )
+		{
+			throw IOException( "CINImageWriter: Error writing to " + fileName() );
+		}
 	}
 }
