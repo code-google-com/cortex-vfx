@@ -140,16 +140,6 @@ struct JPEGWriterErrorHandler : public jpeg_error_mgr
 		( *cinfo->err->format_message )( cinfo, errorHandler->m_errorMessage );
 		longjmp( errorHandler->m_jmpBuffer, 1 );
 	}
-
-	static void outputMessage( j_common_ptr cinfo )
-	{
-		assert( cinfo );
-		assert( cinfo->err );
-
-		char warning[JMSG_LENGTH_MAX];
-		( *cinfo->err->format_message )( cinfo, warning );
-		msg( Msg::Warning, "JPEGImageWriter", warning );
-	}
 };
 
 template<typename T>
@@ -237,7 +227,7 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 
 		/// Override fatal error and warning handlers
 		errorHandler.error_exit = JPEGWriterErrorHandler::errorExit;
-		errorHandler.output_message = JPEGWriterErrorHandler::outputMessage;
+		errorHandler.output_message = JPEGWriterErrorHandler::errorExit;
 
 		/// If we reach here then libjpeg has called our error handler, in which we've saved a copy of the
 		/// error such that we might throw it as an exception.

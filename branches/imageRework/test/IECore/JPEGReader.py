@@ -209,6 +209,8 @@ class TestJPEGReader(unittest.TestCase):
 		
 		fileNames = glob.glob( "test/IECore/data/jpg/*.jpg" ) + glob.glob( "test/IECore/data/jpg/*.jpeg" )
 		
+		expectedFailures = "test/IECore/data/jpg/uvMap.512x256.truncated.jpg"
+		
 		# Silence any warnings while the tests run
 		MessageHandler.pushHandler( NullMessageHandler() )
 		
@@ -217,9 +219,16 @@ class TestJPEGReader(unittest.TestCase):
 			for f in fileNames:
 
 				r = JPEGImageReader( f ) 
-				img = r.read()
-				self.assertEqual( type(img), ImagePrimitive )
-				self.assert_( img.arePrimitiveVariablesValid() )	
+				
+				if f in expectedFailures :
+					
+					self.assertRaises( RuntimeError, r.read )
+					
+				else:
+				
+					img = r.read()
+					self.assertEqual( type(img), ImagePrimitive )
+					self.assert_( img.arePrimitiveVariablesValid() )	
 				
 		except:
 		

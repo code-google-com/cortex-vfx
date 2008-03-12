@@ -198,16 +198,6 @@ struct JPEGReaderErrorHandler : public jpeg_error_mgr
 		( *cinfo->err->format_message )( cinfo, errorHandler->m_errorMessage );
 		longjmp( errorHandler->m_jmpBuffer, 1 );
 	}
-
-	static void outputMessage( j_common_ptr cinfo )
-	{
-		assert( cinfo );
-		assert( cinfo->err );
-
-		char warning[JMSG_LENGTH_MAX];
-		( *cinfo->err->format_message )( cinfo, warning );
-		msg( Msg::Warning, "JPEGImageReader", warning );
-	}
 };
 
 bool JPEGImageReader::open( bool throwOnFailure )
@@ -241,7 +231,7 @@ bool JPEGImageReader::open( bool throwOnFailure )
 
 			/// Override fatal error and warning handlers
 			errorHandler.error_exit = JPEGReaderErrorHandler::errorExit;
-			errorHandler.output_message = JPEGReaderErrorHandler::outputMessage;
+			errorHandler.output_message = JPEGReaderErrorHandler::errorExit;
 
 			/// If we reach here then libjpeg has called our error handler, in which we've saved a copy of the
 			/// error such that we might throw it as an exception.
