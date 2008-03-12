@@ -155,8 +155,7 @@ void CINImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr i
 
 	strcpy(fi.version, "V4.5");
 
-	/// \todo What is the purpose of this?
-	strcpy(fi.file_name, "image-engine.cin");
+	strncpy( (char *) fi.file_name, fileName().c_str(), sizeof( fi.file_name ) );
 
 	// compute the current date and time
 	time_t t;
@@ -164,8 +163,8 @@ void CINImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr i
 	struct tm gmt;
 	localtime_r(&t, &gmt);
 
-	sprintf(fi.creation_date, "%04d-%02d-%02d", 1900 + gmt.tm_year, gmt.tm_mon, gmt.tm_mday);
-	sprintf(fi.creation_time, "%02d:%02d:%02d", gmt.tm_hour, gmt.tm_min, gmt.tm_sec);
+	snprintf(fi.creation_date, sizeof( fi.creation_date ), "%04d-%02d-%02d", 1900 + gmt.tm_year, gmt.tm_mon, gmt.tm_mday);
+	snprintf(fi.creation_time, sizeof( fi.creation_time ), "%02d:%02d:%02d", gmt.tm_hour, gmt.tm_min, gmt.tm_sec);
 
 	ImageInformation ii;
 	ii.orientation = 0;
@@ -185,6 +184,7 @@ void CINImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr i
 	// write the data
 	std::vector<unsigned int> imageBuffer( displayWidth*displayHeight, 0 );
 
+	/// \todo Do we really need to do this every time?
 	// build a LUT
 	double film_gamma = 0.6;
 	int ref_white_val = 685;
@@ -192,7 +192,6 @@ void CINImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr i
 	double ref_mult = 0.002 / film_gamma;
 	double black_offset = pow(10.0, (ref_black_val - ref_white_val) * ref_mult);
 
-	// build a reverse LUT (linear to logarithmic)
 	m_LUT.resize(1024);
 	for (int i = 0; i < 1024; ++i)
 	{

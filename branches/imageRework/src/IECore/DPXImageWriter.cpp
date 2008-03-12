@@ -74,7 +74,7 @@ DPXImageWriter::~DPXImageWriter()
 
 
 template<typename T>
-void DPXImageWriter::encodeChannel( ConstDataPtr dataContainer, const Box2i &displayWindow, const Box2i &dataWindow, int bitShift, std::vector<unsigned int> &imageBuffer )
+void DPXImageWriter::encodeChannel( ConstDataPtr dataContainer, const Box2i &displayWindow, const Box2i &dataWindow, int bitShift, vector<unsigned int> &imageBuffer )
 {
 	const typename T::ValueType &data = static_pointer_cast<const T>( dataContainer )->readable();
 	ScaledDataConversion<typename T::ValueType::value_type, float> converter;
@@ -108,7 +108,7 @@ void DPXImageWriter::encodeChannel( ConstDataPtr dataContainer, const Box2i &dis
 void DPXImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow )
 {
 	// write the dpx in the standard 10bit log format
-	std::ofstream out;
+	ofstream out;
 	out.open(fileName().c_str());
 	if ( !out.is_open() )
 	{
@@ -177,24 +177,20 @@ void DPXImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr i
 
 	strcpy((char *) fi.vers, "V2.0");
 
-	/// \todo Establish the purpose of this
-	strcpy((char *) fi.file_name, "image-engine.dpx");
+	strncpy( (char *) fi.file_name, fileName().c_str(), sizeof( fi.file_name ) );
 
 	// compute the current date and time
 	time_t t;
 	time(&t);
 	struct tm gmt;
 	localtime_r(&t, &gmt);
-
-	/// \todo Not necessarily PST!
-	sprintf((char *) fi.create_time, "%04d:%02d:%02d:%02d:%02d:%02d:PST",
+	snprintf((char *) fi.create_time,  sizeof( fi.create_time ), "%04d:%02d:%02d:%02d:%02d:%02d:%s",
 	        1900 + gmt.tm_year, gmt.tm_mon, gmt.tm_mday,
-	        gmt.tm_hour, gmt.tm_min, gmt.tm_sec);
-
-	/// \todo Change these
-	sprintf((char *) fi.creator, "image engine vfx for film");
-	sprintf((char *) fi.project, "IECore");
-	sprintf((char *) fi.copyright, "image engine vfx for film");
+	        gmt.tm_hour, gmt.tm_min, gmt.tm_sec, gmt.tm_zone );
+	
+	snprintf((char *) fi.creator, sizeof( fi.creator ), "cortex");
+	snprintf((char *) fi.project, sizeof( fi.project ), "cortex");
+	snprintf((char *) fi.copyright, sizeof( fi.copyright ), "Unknown");
 
 	ii.orientation = 0;    // left-to-right, top-to-bottom
 	ii.element_number = 1;
@@ -285,7 +281,7 @@ void DPXImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr i
 	}
 	
 	// write the data
-	std::vector<unsigned int> imageBuffer( displayWidth*displayHeight, 0 );
+	vector<unsigned int> imageBuffer( displayWidth*displayHeight, 0 );
 	
 	int offset = 0;
 	vector<string>::const_iterator i = filteredNames.begin();
