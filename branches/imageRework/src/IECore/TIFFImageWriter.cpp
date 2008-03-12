@@ -434,8 +434,6 @@ void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 	}
 	catch (...)
 	{
-		/// \todo Erase the file, if it exists?
-
 		TIFFClose( tiffImage );
 		throw;
 	}
