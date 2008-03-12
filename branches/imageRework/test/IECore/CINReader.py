@@ -132,8 +132,6 @@ class TestCINReader(unittest.TestCase):
 				result.halfPrimVar( ipe.G() ), 
 				result.halfPrimVar( ipe.B() )
 			)
-			
-			print ( color, expectedColor )
 						
 			self.assert_( ( color - expectedColor).length() < 1.e-6 )	
 		
