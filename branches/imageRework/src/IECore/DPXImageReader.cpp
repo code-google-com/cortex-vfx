@@ -56,21 +56,31 @@ using namespace boost;
 using namespace Imath;
 using namespace std;
 
+struct DPXImageReader::Header
+{
+	DPXFileInformation m_fileInformation;
+	DPXImageInformation m_imageInformation;
+	DPXImageOrientation m_imageOrientation;
+};
+
 const Reader::ReaderDescription<DPXImageReader> DPXImageReader::m_readerDescription("dpx");
 
 DPXImageReader::DPXImageReader() :
-		ImageReader("DPXImageReader", "Reads Digital Picture eXchange (DPX) files.")
+		ImageReader("DPXImageReader", "Reads Digital Picture eXchange (DPX) files."),
+		m_header( 0 )
 {
 }
 
 DPXImageReader::DPXImageReader(const string & fileName) :
-		ImageReader("DPXImageReader", "Reads Digital Picture eXchange (DPX) files.")
+		ImageReader("DPXImageReader", "Reads Digital Picture eXchange (DPX) files."),
+		m_header( 0 )
 {
 	m_fileNameParameter->setTypedValue(fileName);
 }
 
 DPXImageReader::~DPXImageReader()
 {
+	delete m_header;
 }
 
 // partial validity check: assert that the file begins with the DPX magic number
@@ -105,8 +115,7 @@ void DPXImageReader::channelNames(vector<string> & names)
 
 bool DPXImageReader::isComplete()
 {
-	/// \todo
-	return true;
+	return open( false );
 }
 
 Box2i DPXImageReader::dataWindow()
@@ -134,11 +143,13 @@ DataPtr DPXImageReader::readChannel( const std::string &name, const Imath::Box2i
 		return 0;
 	}
 
+	/// \todo
 	// kinda useless here, we have implicitly assumed log 10 bit in the surrounding code
 	int bpp = 10;
 
+	/// \todo
 	// figure out the offset into the bitstream for the given channel
-	int boffset = name == "R" ? 0 : name == "G" ? 1 : 2;
+	int channelOffset = name == "R" ? 0 : name == "G" ? 1 : 2;
 
 	// form the mask for this channel
 	unsigned int mask = 0;
@@ -146,15 +157,14 @@ DataPtr DPXImageReader::readChannel( const std::string &name, const Imath::Box2i
 	{
 		mask = 1 + (mask << 1);
 	}
-	mask <<= ((32 - bpp) - boffset * bpp);
-
+	mask <<= ((32 - bpp) - channelOffset * bpp);
 
 	HalfVectorDataPtr dataContainer = new HalfVectorData();
 	HalfVectorData::ValueType &data = dataContainer->writable();
 	int area = ( dataWindow.size().x + 1 ) * ( dataWindow.size().y + 1 );
 	assert( area >= 0 );
 	data.resize( area );
-	
+
 	int dataWidth = 1 + dataWindow.size().x;
 
 	int dataY = 0;
@@ -167,16 +177,20 @@ DataPtr DPXImageReader::readChannel( const std::string &name, const Imath::Box2i
 			HalfVectorData::ValueType::size_type dataOffset = dataY * dataWidth + dataX;
 			assert( dataOffset < data.size() );
 
-			unsigned int cell = reverseBytes( m_buffer[( y * m_bufferWidth + x )] );
+			unsigned int cell = m_buffer[( y * m_bufferWidth + x )];
+			if ( m_reverseBytes )
+			{
+				cell = reverseBytes( cell );
+			}
 
 			// assume we have 10bit log, two wasted bits aligning to 32 longword
-			unsigned short cv = (unsigned short) ((mask & cell) >> (2 + (2 - boffset)*bpp));
+			unsigned short cv = (unsigned short) (( mask & cell ) >> ( 2 + ( 2 - channelOffset ) * bpp ) );
 
 			// convert to a linear floating-point value
 			data[dataOffset] = m_LUT[ cv ];
 		}
 	}
-	
+
 	return dataContainer;
 }
 
@@ -186,64 +200,75 @@ bool DPXImageReader::open( bool throwOnFailure )
 	{
 		return true;
 	}
-	
+
 	try
 	{
 		m_bufferFileName = fileName();
 		m_buffer.clear();
+		delete m_header;
+		m_header = new Header();
 
-		ifstream in(m_bufferFileName.c_str());
+		ifstream in( m_bufferFileName.c_str() );
 
-		// open the file
-		if (!in.is_open())
+		if ( !in.is_open() || in.fail() )
 		{
-			throw Exception("could not open " + fileName());
+			throw IOException( "DPXImageReader: Could not open " + fileName() );
 		}
 
-		// read the header
-		DPXFileInformation fi;
-		in.read(reinterpret_cast<char*>(&fi), sizeof(fi));
-
-		// read the image information
-		DPXImageInformation ii;
-		in.read(reinterpret_cast<char*>(&ii), sizeof(ii));
-
-		// read the data format information
-		DPXImageOrientation io;
-		in.read(reinterpret_cast<char*>(&io), sizeof(io));
-
-		// make sure we have a valid file
-		// 'proper' endianness should have 802A5FD7
-		if (fi.magic != 0x53445058 && fi.magic != 0x58504453)
+		in.read(reinterpret_cast<char*>(&m_header->m_fileInformation), sizeof(m_header->m_fileInformation));
+		if ( in.fail() )
 		{
-			throw Exception("invalid DPX magic number");
+			throw IOException( "DPXImageReader: Error reading " + fileName() );
 		}
 
-		// reverse some bytes on the pertinent fields
-		fi.image_data_offset   = reverseBytes(fi.image_data_offset);
-		ii.element_number      = reverseBytes(ii.element_number);
-		ii.pixels_per_line     = reverseBytes(ii.pixels_per_line);
-		ii.lines_per_image_ele = reverseBytes(ii.lines_per_image_ele);
+		in.read(reinterpret_cast<char*>(&m_header->m_imageInformation), sizeof(m_header->m_imageInformation));
+		if ( in.fail() )
+		{
+			throw IOException( "DPXImageReader: Error reading " + fileName() );
+		}
 
-		//
-		// image information
-		//
+		in.read(reinterpret_cast<char*>(&m_header->m_imageOrientation), sizeof(m_header->m_imageOrientation));
+		if ( in.fail() )
+		{
+			throw IOException( "DPXImageReader: Error reading " + fileName() );
+		}
 
-		m_bufferWidth = ii.pixels_per_line;
-		m_bufferHeight = ii.lines_per_image_ele;
+		m_reverseBytes = false;
+		if ( m_header->m_fileInformation.magic == 0x58504453 )
+		{
+			m_reverseBytes = true;
+		}
+		else if ( m_header->m_fileInformation.magic != 0x53445058 )
+		{
+			throw IOException( "DPXImageReader: Invalid DPX magic number while reading " + fileName() );
+		}
+
+		if ( m_reverseBytes )
+		{
+			m_header->m_fileInformation.image_data_offset   = reverseBytes(m_header->m_fileInformation.image_data_offset);
+			m_header->m_imageInformation.element_number      = reverseBytes(m_header->m_imageInformation.element_number);
+			m_header->m_imageInformation.pixels_per_line     = reverseBytes(m_header->m_imageInformation.pixels_per_line);
+			m_header->m_imageInformation.lines_per_image_ele = reverseBytes(m_header->m_imageInformation.lines_per_image_ele);
+		}
+
+		m_bufferWidth = m_header->m_imageInformation.pixels_per_line;
+		m_bufferHeight = m_header->m_imageInformation.lines_per_image_ele;
 
 		/// \todo should verify that it is a code 50 RGB single image dpx.
 
-		// seek to the image data offset
-		in.seekg(fi.image_data_offset, ios_base::beg);
+		in.seekg( m_header->m_fileInformation.image_data_offset, ios_base::beg );
+		if ( in.fail() )
+		{
+			throw IOException( "DPXImageReader: Error reading " + fileName() );
+		}
 
 		//
 		// build a LUT based on the transfer enum.  we handle only the
 		// log/printing density and linear
 		//
 
-// 		// ugg, assume that there is only one image and it is specified in ii.image_element[0]
-// 		if(ii.image_element[0].transfer == 2)
+// 		// ugg, assume that there is only one image and it is specified in m_header->m_imageInformation.image_element[0]
+// 		if(m_header->m_imageInformation.image_element[0].transfer == 2)
 // 		{
 // 			// i have noticed that our lone example of linear DPX encoded files has specified
 // 			// ref_low_data, ref_high_data points.  i am under the impression that these specify
@@ -255,8 +280,8 @@ bool DPXImageReader::open( bool throwOnFailure )
 // 			// here instead we will mimic shake and nuke and simply use a ramp over 0 to 1023
 
 // 			// build a different lut for linear transfer
-// 			int ref_black_val = 0;       // ii.image_element[0].ref_low_data;
-// 			int ref_white_val = 1023;    // ii.image_element[0].ref_high_data;
+// 			int ref_black_val = 0;       // m_header->m_imageInformation.image_element[0].ref_low_data;
+// 			int ref_white_val = 1023;    // m_header->m_imageInformation.image_element[0].ref_high_data;
 // 			float spread = ref_white_val - ref_black_val;
 // 			for(int i = 0; i < 1024; ++i)
 // 			{
@@ -286,17 +311,15 @@ bool DPXImageReader::open( bool throwOnFailure )
 			m_LUT[i] = cvf;
 		}
 
-		//
-		// read in the buffer
-		//
+		// Read the data into the buffer - remember that we're currently packing upto 3 channels into each 32-bit "cell"
+		int bufferSize = ( std::max<unsigned int>( 1u, 3 / 3 ) ) * m_bufferWidth * m_bufferHeight;
+		m_buffer.resize( bufferSize, 0 );
 
-		// determine the size
-		int buffersize = 3 * m_bufferWidth * m_bufferHeight;
-
-		m_buffer.resize( buffersize );
-
-		// read the data into the buffer
-		in.read((char *)(&m_buffer[0]), sizeof(unsigned int) * buffersize);
+		in.read( reinterpret_cast<char*>(&m_buffer[0]), sizeof(unsigned int) * bufferSize );
+		if ( in.fail() )
+		{
+			throw IOException( "DPXImageReader: Error reading " + fileName() );
+		}
 	}
 	catch (...)
 	{
