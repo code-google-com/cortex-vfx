@@ -41,7 +41,7 @@ using namespace IECore;
 using namespace Imath;
 using namespace boost;
 
-const unsigned int ImagePrimitive::m_ioVersion = 0;
+const unsigned int ImagePrimitive::m_ioVersion = 1;
 IE_CORE_DEFINEOBJECTTYPEDESCRIPTION(ImagePrimitive);
 
 ImagePrimitive::ImagePrimitive()
@@ -165,6 +165,11 @@ void ImagePrimitive::save(IECore::Object::SaveContext *context) const
 	container->write("displayWindowMinY", m_displayWindow.min.y);
 	container->write("displayWindowMaxX", m_displayWindow.max.x);
 	container->write("displayWindowMaxY", m_displayWindow.max.y);
+	
+	container->write("dataWindowMinX", m_dataWindow.min.x);
+	container->write("dataWindowMinY", m_dataWindow.min.y);
+	container->write("dataWindowMaxX", m_dataWindow.max.x);
+	container->write("dataWindowMaxY", m_dataWindow.max.y);
 }
 
 void ImagePrimitive::load(IECore::Object::LoadContextPtr context)
@@ -178,6 +183,18 @@ void ImagePrimitive::load(IECore::Object::LoadContextPtr context)
 	container->read("displayWindowMinY", m_displayWindow.min.y);
 	container->read("displayWindowMaxX", m_displayWindow.max.x);
 	container->read("displayWindowMaxY", m_displayWindow.max.y);
+	
+	if ( v < 1 )
+	{
+		m_dataWindow = m_displayWindow;
+	}
+	else
+	{
+		container->read("dataWindowMinX", m_dataWindow.min.x);
+		container->read("dataWindowMinY", m_dataWindow.min.y);
+		container->read("dataWindowMaxX", m_dataWindow.max.x);
+		container->read("dataWindowMaxY", m_dataWindow.max.y);
+	}
 }
 
 bool ImagePrimitive::isEqualTo(ConstObjectPtr rhs) const
