@@ -73,10 +73,10 @@ CINImageWriter::~CINImageWriter()
 }
 
 template<typename T>
-void CINImageWriter::encodeChannel( DataPtr dataContainer, const Box2i &displayWindow, const Box2i &dataWindow, int bitShift, std::vector<unsigned int> &imageBuffer )
+void CINImageWriter::encodeChannel( ConstDataPtr dataContainer, const Box2i &displayWindow, const Box2i &dataWindow, int bitShift, std::vector<unsigned int> &imageBuffer )
 {
-	FloatVectorDataPtr floatData = VectorDataConvert < T, FloatVectorData, ScaledDataConversion<typename T::ValueType::value_type, float> >()( static_pointer_cast<T>(dataContainer) );
-	const FloatVectorData::ValueType &data = floatData->readable();
+	const typename T::ValueType &data = static_pointer_cast<const T>( dataContainer )->readable();
+	ScaledDataConversion<typename T::ValueType::value_type, float> converter;
 
 	int displayWidth = displayWindow.size().x + 1;
 	int dataWidth = dataWindow.size().x + 1;
@@ -97,7 +97,7 @@ void CINImageWriter::encodeChannel( DataPtr dataContainer, const Box2i &displayW
 			assert( pixelIdx < (int)imageBuffer.size() );
 			assert( dataOffset < (int)data.size() );
 
-			vector<double>::iterator where = lower_bound(m_LUT.begin(), m_LUT.end(), data[dataOffset]);
+			vector<double>::iterator where = lower_bound(m_LUT.begin(), m_LUT.end(), converter( data[dataOffset] ) );
 			unsigned int logValue = distance(m_LUT.begin(), where);
 			imageBuffer[ pixelIdx ] |= logValue << bitShift;
 		}

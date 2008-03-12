@@ -67,7 +67,7 @@ class CINImageWriter : public ImageWriter
 		                        const Imath::Box2i &dw);
 					
 		template<typename T>
-		void encodeChannel( DataPtr dataContainer, const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, int bitShift, std::vector<unsigned int> &imageBuffer );
+		void encodeChannel( ConstDataPtr dataContainer, const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, int bitShift, std::vector<unsigned int> &imageBuffer );
 		
 		std::vector<double> m_LUT;		
 

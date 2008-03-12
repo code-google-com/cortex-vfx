@@ -44,6 +44,8 @@
 #include "IECore/FileNameParameter.h"
 #include "IECore/ClassData.h"
 #include "IECore/CompoundParameter.h"
+#include "IECore/DataConvert.h"
+#include "IECore/ScaledDataConversion.h"
 
 #include "boost/format.hpp"
 
@@ -151,38 +153,13 @@ struct JPEGWriterErrorHandler : public jpeg_error_mgr
 };
 
 template<typename T>
-unsigned char toUnsignedChar( const T& v )
-{
-	static const double normalizer = 1.0 / Imath::limits<T>::max();
-	
-	return (unsigned char) ( max(0.0, min(255.0, 255.0 * normalizer * v + 0.5)));
-}
-
-template<>
-unsigned char toUnsignedChar( const unsigned char &v )
-{
-	return v;
-}
-
-template<>
-unsigned char toUnsignedChar( const float &v )
-{
-	return (unsigned char) ( max(0.0, min(255.0, 255.0 * v + 0.5)));
-}
-
-template<>
-unsigned char toUnsignedChar( const half &v )
-{
-	return (unsigned char) ( max(0.0, min(255.0, 255.0 * v + 0.5)));
-}
-
-template<typename T>
-void JPEGImageWriter::convert( DataPtr dataContainer, const Box2i &displayWindow, const Box2i &dataWindow, int numChannels, int channelOffset, std::vector<unsigned char> &imageBuffer )
+void JPEGImageWriter::encodeChannel( ConstDataPtr dataContainer, const Box2i &displayWindow, const Box2i &dataWindow, int numChannels, int channelOffset, std::vector<unsigned char> &imageBuffer )
 {
 	assert( dataContainer );
 	assert( runTimeCast< const T >( dataContainer ) );
 	
 	const typename T::ValueType &data = static_pointer_cast<const T>( dataContainer )->readable();
+	ScaledDataConversion<typename T::ValueType::value_type, unsigned char> converter;
 
 	int displayWidth = displayWindow.size().x + 1;
 	int dataWidth = dataWindow.size().x + 1;
@@ -203,8 +180,8 @@ void JPEGImageWriter::convert( DataPtr dataContainer, const Box2i &displayWindow
 			assert( numChannels*pixelIdx + channelOffset < (int)imageBuffer.size() );
 			assert( dataOffset < (int)data.size() );
 
-			// convert to 8-bit integer				
-			imageBuffer[ numChannels*pixelIdx + channelOffset ] = toUnsignedChar<>( data[dataOffset] );
+			// convert to unsigned 8-bit integer				
+			imageBuffer[ numChannels*pixelIdx + channelOffset ] = converter( data[dataOffset] );
 		}
 	}
 }
@@ -334,35 +311,35 @@ void JPEGImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr 
 			{
 			
 			case DoubleVectorDataTypeId:
-				convert<DoubleVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				encodeChannel<DoubleVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
 				break;
 
 			case FloatVectorDataTypeId:
-				convert<FloatVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				encodeChannel<FloatVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
 				break;
 				
 			case IntVectorDataTypeId:
-				convert<IntVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				encodeChannel<IntVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
 				break;	
 				
 			case LongVectorDataTypeId:
-				convert<LongVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				encodeChannel<LongVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
 				break;						
 
 			case UIntVectorDataTypeId:
-				convert<UIntVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				encodeChannel<UIntVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
 				break;
 				
 			case UCharVectorDataTypeId:
-				convert<UCharVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				encodeChannel<UCharVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
 				break;	
 				
 			case CharVectorDataTypeId:
-				convert<CharVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				encodeChannel<CharVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
 				break;	
 
 			case HalfVectorDataTypeId:
-				convert<HalfVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
+				encodeChannel<HalfVectorData>( dataContainer, image->getDisplayWindow(), dataWindow, numChannels, channelOffset, imageBuffer);
 				break;
 
 			default:
