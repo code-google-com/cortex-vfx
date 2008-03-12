@@ -340,7 +340,11 @@ bool CINImageReader::open( bool throwOnFailure )
 				throw IOException( "CINImageReader: Cannot read vendor specific Cineon file " + fileName() );
 			}
 
-			if ( channelInformation.byte_1 == 1 )
+			if ( channelInformation.byte_1 == 0 )
+			{
+				m_header->m_channelOffsets["Y"] = i;
+			}
+			else if ( channelInformation.byte_1 == 1 )
 			{
 				m_header->m_channelOffsets["R"] = i;
 			}

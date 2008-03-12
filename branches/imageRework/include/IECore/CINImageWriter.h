@@ -65,6 +65,11 @@ class CINImageWriter : public ImageWriter
 		/// write the associated image
 		virtual void writeImage(std::vector<std::string> &names, ConstImagePrimitivePtr image,
 		                        const Imath::Box2i &dw);
+					
+		template<typename T>
+		void encodeChannel( DataPtr dataContainer, const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, int bitShift, std::vector<unsigned int> &imageBuffer );
+		
+		std::vector<double> m_LUT;		
 
 };
 

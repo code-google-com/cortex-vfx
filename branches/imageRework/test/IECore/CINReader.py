@@ -41,66 +41,85 @@ from math import pow
 
 class TestCINReader(unittest.TestCase):
 
-	testfile =    "test/IECore/data/cinFiles/bluegreen_noise.cin"
-	testoutfile = "test/IECore/data/cinFiles/bluegreen_noise.testoutput.cin"
-
 	def testConstruction(self):
 
-		r = Reader.create(self.testfile)
+		r = Reader.create( "test/IECore/data/cinFiles/uvMap.512x256.cin" )
 		self.assertEqual(type(r), CINImageReader)
 
 	def testRead(self):
 
-		r = Reader.create(self.testfile)
+		r = Reader.create( "test/IECore/data/cinFiles/uvMap.512x256.cin" )
 		self.assertEqual(type(r), CINImageReader)
 
 		img = r.read()
 		
 		self.assertEqual(type(img), ImagePrimitive)
 
-	def testWindowedRead(self):
+	def testDataWindowRead( self ):
 
-		testfile = ["test/IECore/data/cinFiles/bluegreen_noise", "cin"]
+		r = Reader.create( "test/IECore/data/cinFiles/uvMap.512x256.cin" )
+		self.assertEqual( type(r), CINImageReader )
+		
+		dataWindow = Box2i(
+			V2i(360, 160), 
+			V2i(399, 199)
+		)
+		
+		r.parameters().dataWindow.setValue( Box2iData( dataWindow ) )
 
-		test_file_path = ".".join(testfile)
-		test_outfile_path = ".".join([testfile[0], 'windowtestoutput', testfile[1]])
-
-		# create a reader, read a sub-image
-		r = Reader.create(test_file_path)
-		self.assertEqual(type(r), CINImageReader)
-		r.parameters().dataWindow.setValue(Box2iData(Box2i(V2i(100, 100), V2i(199, 199))))
-
-		# read, verify
 		img = r.read()
-		self.assertEqual(type(img), ImagePrimitive)
 
-		# write back the sub-image
-		w = Writer.create(img, test_outfile_path)
-		self.assertEqual(type(w), CINImageWriter)
-		w.write()
+		self.assertEqual( type(img), ImagePrimitive )
+		
+		self.assertEqual( img.dataWindow, dataWindow )
+		self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0 ), V2i( 511, 255 ) ) )
+		
+		self.assertEqual( len(img["R"].data), 40 * 40 )
+		
+		ipe = PrimitiveEvaluator.create( img )
+		self.assert_( ipe.R() )
+		self.assert_( ipe.G() )
+		self.assert_( ipe.B() )
+		self.failIf ( ipe.A() )
+		
+		result = ipe.createResult()
+				
+		# Check that the color at the bottom-right of the image is black - ordinarialy it would
+		# be yellow, but we're deliberately not reading the entire image
+		found = ipe.pointAtPixel( V2i( 511, 255 ), result )
+		self.assert_( found )		
+		color = V3f(
+				result.halfPrimVar( ipe.R() ),
+				result.halfPrimVar( ipe.G() ), 
+				result.halfPrimVar( ipe.B() )
+			)		
+		expectedColor = V3f( 0, 0, 0 )
+		self.assert_( ( color - expectedColor).length() < 1.e-3 )
+		
+		found = ipe.pointAtPixel( V2i( 380, 180 ), result )
+		self.assert_( found )
+		
+		color = V3f(
+				result.halfPrimVar( ipe.R() ),
+				result.halfPrimVar( ipe.G() ), 
+				result.halfPrimVar( ipe.B() )
+			)
+					
+		expectedColor = V3f( 0.744141, 0.70459, 0 )		
+					
+		self.assert_( ( color - expectedColor).length() < 1.e-3 )
 
 	def testChannelRead(self):
 
-		testfile = ["test/IECore/data/cinFiles/bluegreen_noise", "cin"]
-
-		test_file_path = ".".join(testfile)
-		test_outfile_path = ".".join([testfile[0], 'channeltestoutput', testfile[1]])
-
-		# create a reader, constrain to a sub-image, R (red) channel
-		r = Reader.create(test_file_path)
-		self.assertEqual(type(r), CINImageReader)
+		# create a reader, constrain to a sub-image, R and G channels
+		r = Reader.create( "test/IECore/data/cinFiles/uvMap.512x256.cin" )
+		self.assertEqual( type(r), CINImageReader )
 		
-		r.parameters().dataWindow.setValue(Box2iData(Box2i(V2i(100, 100), V2i(199, 199))))
-		r.parameters().channels.setValue(StringVectorData(["R", "G"]))
+		r.parameters().dataWindow.setValue( Box2iData( Box2i( V2i(100, 100), V2i(199, 199) ) ) )
+		r.parameters().channels.setValue( StringVectorData( ["R", "G"] ) )
 
-		# read, verify
 		img = r.read()
-		self.assertEqual(type(img), ImagePrimitive)
-
-		# write back the sub-image
-		w = Writer.create(img, test_outfile_path)
-		self.assertEqual(type(w), CINImageWriter)
-		w.write()
+		self.assertEqual( type(img), ImagePrimitive )
 		
 	def testOrientation( self ) :
 		""" Test orientation of Cineon files """
@@ -149,8 +168,6 @@ class TestCINReader(unittest.TestCase):
 			for f in fileNames:
 			
 				if not f in expectedFailures :
-				
-					print( f )
 
 					r = CINImageReader( f ) 
 					img = r.read()
