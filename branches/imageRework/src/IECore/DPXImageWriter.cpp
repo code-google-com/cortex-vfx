@@ -59,7 +59,7 @@ DPXImageWriter::DPXImageWriter() :
 {
 }
 
-DPXImageWriter::DPXImageWriter(ObjectPtr image, const string &fileName) :
+DPXImageWriter::DPXImageWriter( ObjectPtr image, const string &fileName ) :
 		ImageWriter("DPXImageWriter", "Serializes images to Digital Picture eXchange 10-bit log image format")
 {
 	m_objectParameter->setValue( image );
@@ -71,7 +71,7 @@ DPXImageWriter::~DPXImageWriter()
 }
 
 /// \todo Pad area outside dataWindow but within displayWindow with black
-void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dw)
+void DPXImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow )
 {
 	// write the dpx in the standard 10bit log format
 	std::ofstream out;
@@ -82,8 +82,8 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 	}
 
 	// assume an 8-bit RGB image
-	int width  = 1 + dw.max.x - dw.min.x;
-	int height = 1 + dw.max.y - dw.min.y;
+	int width  = 1 + dataWindow.max.x - dataWindow.min.x;
+	int height = 1 + dataWindow.max.y - dataWindow.min.y;
 
 	//
 	// FileInformation
@@ -105,25 +105,18 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 	DPXTelevisionHeader th;
 	memset(&th, 0, sizeof(th));
 
-
-	// XPDS / swap bytes.
-	// although unswapped bytes would probably be much faster, it doesn't seem to be
-	// too common and one wonders if many applications detect and use it.  our DPX reader
-	// expects to swap, so let's stay with that.
-	/// \todo generalize and handle the non-byteswap case
-	/// \todo Verify the above comments!
-	fi.magic = 0x58504453;
+	fi.magic = asBigEndian<>( 0x53445058 );
 
 	// compute data offsets
 	fi.gen_hdr_size = sizeof(fi) + sizeof(ii) + sizeof(ioi);
-	fi.gen_hdr_size = reverseBytes(fi.gen_hdr_size);
+	fi.gen_hdr_size = asBigEndian<>(fi.gen_hdr_size);
 
 	fi.ind_hdr_size = sizeof(mpf) + sizeof(th);
-	fi.ind_hdr_size = reverseBytes(fi.ind_hdr_size);
+	fi.ind_hdr_size = asBigEndian<>(fi.ind_hdr_size);
 
 	int header_size = sizeof(fi) + sizeof(ii) + sizeof(ioi) + sizeof(mpf) + sizeof(th);
 	fi.image_data_offset = header_size;
-	fi.image_data_offset = reverseBytes(fi.image_data_offset);
+	fi.image_data_offset = asBigEndian<>(fi.image_data_offset);
 
 	strcpy((char *) fi.vers, "V2.0");
 
@@ -157,9 +150,9 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 
 	/// \todo Establish why we're not calling asLittleEndian or asBigEndian here
 	// reverse byte ordering
-	ii.element_number      = reverseBytes(ii.element_number);
-	ii.pixels_per_line     = reverseBytes(ii.pixels_per_line);
-	ii.lines_per_image_ele = reverseBytes(ii.lines_per_image_ele);
+	ii.element_number      = asBigEndian<>(ii.element_number);
+	ii.pixels_per_line     = asBigEndian<>(ii.pixels_per_line);
+	ii.lines_per_image_ele = asBigEndian<>(ii.lines_per_image_ele);
 
 	for (int c = 0; c < 8; ++c)
 	{
@@ -175,10 +168,10 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 
 		/// \todo Establish why we're not calling asLittleEndian or asBigEndian here
 		// swap
-		ie.ref_low_data = reverseBytes(ie.ref_low_data);
-		ie.ref_low_quantity = reverseBytes(ie.ref_low_quantity);
-		ie.ref_high_data = reverseBytes(ie.ref_high_data);
-		ie.ref_high_quantity = reverseBytes(ie.ref_high_quantity);
+		ie.ref_low_data = asBigEndian<>(ie.ref_low_data);
+		ie.ref_low_quantity = asBigEndian<>(ie.ref_low_quantity);
+		ie.ref_high_data = asBigEndian<>(ie.ref_high_data);
+		ie.ref_high_quantity = asBigEndian<>(ie.ref_high_quantity);
 
 		/// \todo Dcoument these constants
 		ie.transfer = 1;
@@ -204,8 +197,8 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 	int image_data_size = 4 * width * height;
 	fi.file_size = header_size + image_data_size;
 
-	/// \todo Why is this call to reverseBytes here?
-	fi.file_size = reverseBytes(fi.file_size);
+	/// \todo Why is this call to asBigEndian<> here?
+	fi.file_size = asBigEndian<>(fi.file_size);
 
 	out.write(reinterpret_cast<char *>(&fi),  sizeof(fi));
 	out.write(reinterpret_cast<char *>(&ii),  sizeof(ii));
@@ -284,6 +277,21 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 		}
 		break;
 
+		case DoubleVectorDataTypeId:
+		{
+			const vector<double> &channel = static_pointer_cast<DoubleVectorData>(channelp)->readable();
+
+			// convert the linear half value to 10-bit log
+			for (int i = 0; i < width*height; ++i)
+			{
+				/// \todo Examine the performance of this!
+				where = lower_bound(range.begin(), range.end(), channel[i]);
+				unsigned int log_value = distance(range.begin(), where);
+				image_buffer[i] |= log_value << shift;
+			}
+		}
+		break;
+
 		/// \todo Deal with other channel types, preferably using templates!
 
 		default:
@@ -296,9 +304,9 @@ void DPXImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr im
 	// write the buffer
 	for (int i = 0; i < width*height; ++i)
 	{
-		/// \todo Why is this call to reverseBytes here? If we want to write in either little endian or big endian format there
+		/// \todo Why is this call to asBigEndian<> here? If we want to write in either little endian or big endian format there
 		/// are calls specifically do this, which work regardless of which architecture the code is running on
-		image_buffer[i] = reverseBytes(image_buffer[i]);
+		image_buffer[i] = asBigEndian<>(image_buffer[i]);
 		out.write((const char *) (&image_buffer[i]), sizeof(unsigned int));
 	}
 }

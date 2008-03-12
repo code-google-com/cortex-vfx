@@ -52,7 +52,7 @@ class DPXImageWriter : public ImageWriter
 		DPXImageWriter();
 
 		/// construct an DPXImageWriter for the given image and output filename
-		DPXImageWriter(ObjectPtr object, const std::string & fileName);
+		DPXImageWriter( ObjectPtr object, const std::string &fileName );
 
 		/// free the resources consumed in serializing the associated image
 		virtual ~DPXImageWriter();
@@ -62,8 +62,8 @@ class DPXImageWriter : public ImageWriter
 		static const WriterDescription<DPXImageWriter> m_writerDescription;
 
 		/// write the associated image
-		virtual void writeImage(std::vector<std::string> &names, ConstImagePrimitivePtr image,
-		                        const Imath::Box2i &dw);
+		virtual void writeImage( std::vector<std::string> &names, ConstImagePrimitivePtr image,
+		                        const Imath::Box2i &dataWindow );
 
 };
 
