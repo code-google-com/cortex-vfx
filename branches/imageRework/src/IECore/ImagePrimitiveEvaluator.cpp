@@ -431,3 +431,8 @@ PrimitiveVariableMap::const_iterator ImagePrimitiveEvaluator::A() const
 {
 	return m_image->variables.find( "A" );
 }
+
+PrimitiveVariableMap::const_iterator ImagePrimitiveEvaluator::Y() const
+{
+	return m_image->variables.find( "Y" );
+}

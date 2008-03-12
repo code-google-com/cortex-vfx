@@ -142,6 +142,9 @@ class ImagePrimitiveEvaluator : public PrimitiveEvaluator
 		
 		/// Returns the "A" (alpha) channel of the image, if available. Otherwise returns the variables' "end" iterator.		
 		PrimitiveVariableMap::const_iterator A() const;
+		
+		/// Returns the "Y" (luminance) channel of the image, if available. Otherwise returns the variables' "end" iterator.		
+		PrimitiveVariableMap::const_iterator Y() const;
 					
 	protected:
 	
