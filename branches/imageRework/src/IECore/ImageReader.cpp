@@ -116,6 +116,14 @@ ObjectPtr ImageReader::doOperation( ConstCompoundObjectPtr operands )
 
 DataPtr ImageReader::readChannel( const std::string &name )
 {
+	vector<string> allNames;
+	channelNames( allNames );
+	
+	if ( find( allNames.begin(), allNames.end(), name ) == allNames.end() )
+	{
+		throw InvalidArgumentException( "Non-existent image channel requested" );
+	}
+
 	Box2i d = dataWindowToRead();
 	return readChannel( name, d );
 }
