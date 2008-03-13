@@ -56,22 +56,22 @@ class TestImagePrimitiveEvaluator( unittest.TestCase ) :
 		
 		self.assertEqual( ipe.surfaceArea(), 2 * 100 * 100 )
 		self.assertEqual( ipe.volume(), 0.0 )
-		self.assertEqual( ipe.centerOfGravity(), V3f( 50, 50, 0 ) )
+		self.assertEqual( ipe.centerOfGravity(), V3f( 0, 0, 0 ) )
 		
 		r = ipe.createResult()
 		
 		foundClosest = ipe.closestPoint( V3f( 0, 50, 0 ), r )
 		
 		self.assert_( foundClosest )
-		self.assertEqual( r.pixel(), V2i( 0, 49 ) )
+		self.assertEqual( r.pixel(), V2i( 49, 99 ) )
 		
 		self.assert_( ( r.point() - V3f( 0, 50, 0 ) ).length() < 0.01 )
-		self.assert_( ( r.uv() - V2f( 0.0, 0.5 ) ).length() < 0.001 )
+		self.assert_( ( r.uv() - V2f( 0.5, 1.0 ) ).length() < 0.001 )
 		
 		hit = ipe.intersectionPoint( V3f( 50, 50, 100 ), V3f( 0, 0, -1 ), r )
 		self.assert_( hit )
 		self.assert_( ( r.point() - V3f( 50, 50, 0 ) ).length() < 0.01 )
-		self.assert_( ( r.uv() - V2f( 0.5, 0.5 ) ).length() < 0.001 )
+		self.assert_( ( r.uv() - V2f( 1, 1 ) ).length() < 0.001 )
 		
 		hits = ipe.intersectionPoints( V3f( 50, 50, 100 ), V3f( 0, 0, -1 ) )
 		self.assertEqual( len(hits), 1 )
@@ -116,20 +116,20 @@ class TestImagePrimitiveEvaluator( unittest.TestCase ) :
 		
 		self.assertEqual( ipe.surfaceArea(), 2 * 512 * 256 )
 		self.assertEqual( ipe.volume(), 0.0 )
-		self.assertEqual( ipe.centerOfGravity(), V3f( 256, 128, 0 ) )
+		self.assertEqual( ipe.centerOfGravity(), V3f( 0, 0, 0 ) )
 		
 		r = ipe.createResult()
 		
 		foundClosest = ipe.closestPoint( V3f( 0, 0, 0 ), r )
 		self.assert_( foundClosest )
-		self.assertEqual( r.uv(), V2f( 0.0, 0.0 ) )
+		self.assertEqual( r.uv(), V2f( 0.5, 0.5 ) )
 		self.assertEqual( r.normal(), V3f( 0.0, 0.0, -1.0 ) )
 		colorR = r.floatPrimVar( ipe.R() )
 		colorG = r.floatPrimVar( ipe.G() )
 		colorB = r.floatPrimVar( ipe.B() )		
-		self.assertEqual( Color3f( colorR, colorG, colorB ), Color3f( 0.0, 0.0, 0.0 ) ) 
+		self.assert_( ( V3f( colorR, colorG, colorB ) - V3f( 0.5 - 1./1024, 0.5 - 1./512, 0.0 ) ).length() < 1.e-3 ) 
 				
-		foundClosest = ipe.closestPoint( V3f( 0, 256, 0 ), r )		
+		foundClosest = ipe.closestPoint( V3f( -256, 128, 0 ), r )		
 		self.assert_( foundClosest )			
 		self.assertEqual( r.uv(), V2f( 0.0, 1.0 ) )
 		self.assertEqual( r.normal(), V3f( 0.0, 0.0, -1.0 ) )
@@ -138,7 +138,7 @@ class TestImagePrimitiveEvaluator( unittest.TestCase ) :
 		colorB = r.floatPrimVar( ipe.B() )		
 		self.assertEqual( Color3f( colorR, colorG, colorB ), Color3f( 0.0, 1.0, 0.0 ) ) 
 		
-		foundClosest = ipe.closestPoint( V3f( 512, 0, 0 ), r )		
+		foundClosest = ipe.closestPoint( V3f( 256, -128, 0 ), r )		
 		self.assert_( foundClosest )		
 		self.assertEqual( r.uv(), V2f( 1.0, 0.0 ) )
 		self.assertEqual( r.normal(), V3f( 0.0, 0.0, -1.0 ) )		
@@ -147,7 +147,7 @@ class TestImagePrimitiveEvaluator( unittest.TestCase ) :
 		colorB = r.floatPrimVar( ipe.B() )		
 		self.assertEqual( Color3f( colorR, colorG, colorB ), Color3f( 1.0, 0.0, 0.0 ) ) 		
 		
-		foundClosest = ipe.closestPoint( V3f( 512, 256, 0 ), r )		
+		foundClosest = ipe.closestPoint( V3f( 256, 128, 0 ), r )		
 		self.assert_( foundClosest )	
 		self.assertEqual( r.uv(), V2f( 1.0, 1.0 ) )
 		self.assertEqual( r.normal(), V3f( 0.0, 0.0, -1.0 ) )				
@@ -244,7 +244,8 @@ class TestImagePrimitiveEvaluator( unittest.TestCase ) :
 			for x in range( 0, 100 ) :			
 				found = ipe.pointAtPixel( V2i( x, y ), r )
 				self.assert_( found )
-				self.assert_( ( r.point() - V3f( x + 1, y + 1, 0 )).length() < 0.1 )
+	
+				self.assert_( ( r.point() - V3f( (x + 1 - 50) , (y + 1 - 50), 0 ) ).length() < 0.1 )
 		
 				c = V3f( r.floatPrimVar( ipe.R() ), r.floatPrimVar( ipe.G() ), r.floatPrimVar( ipe.B() ) )	
 				

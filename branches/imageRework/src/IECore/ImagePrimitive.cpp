@@ -35,6 +35,7 @@
 #include "IECore/ImagePrimitive.h"
 #include "IECore/MessageHandler.h"
 #include "IECore/Renderer.h"
+#include "IECore/TypedDataDespatch.h"
 
 using namespace std;
 using namespace IECore;
@@ -48,21 +49,24 @@ ImagePrimitive::ImagePrimitive()
 {
 }
 
-ImagePrimitive::ImagePrimitive(Box2i datawindow, Box2i displaywindow)
-		: m_dataWindow(datawindow), m_displayWindow(displaywindow)
+ImagePrimitive::ImagePrimitive( Box2i dataWindow, Box2i displayWindow )
+		: m_dataWindow( dataWindow ), m_displayWindow( displayWindow )
 {
 }
 
 Box3f ImagePrimitive::bound() const
 {
 	/// \todo We might need to include any pixel aspect ratio in this bound
-
+	
+	V3f boxMin( m_displayWindow.min.x, m_displayWindow.min.y, 0.0 );
+	
 	/// We add one here because the displayWindow is measured in pixels, and is inclusive. That is, an image
 	/// which has a displayWindow of (0,0)->(0,0) contains exactly one pixel.
-	return Box3f(
-	               V3f( m_displayWindow.min.x, m_displayWindow.min.y, 0.0 ),
-	               V3f( 1.0f + m_displayWindow.max.x, 1.0f + m_displayWindow.max.y, 0.0 )
-	       );
+	V3f boxMax( 1.0f + m_displayWindow.max.x, 1.0f + m_displayWindow.max.y, 0.0 );
+	
+	V3f center = (boxMin + boxMax) / 2.0;
+	
+	return Box3f( boxMin - center, boxMax - center );	      
 }
 
 const Box2i &ImagePrimitive::getDataWindow() const
@@ -70,9 +74,9 @@ const Box2i &ImagePrimitive::getDataWindow() const
 	return m_dataWindow;
 }
 
-void ImagePrimitive::setDataWindow(const Box2i &dw)
+void ImagePrimitive::setDataWindow( const Box2i &dataWindow )
 {
-	m_dataWindow = dw;
+	m_dataWindow = dataWindow;
 }
 
 const Box2i &ImagePrimitive::getDisplayWindow() const
@@ -80,9 +84,9 @@ const Box2i &ImagePrimitive::getDisplayWindow() const
 	return m_displayWindow;
 }
 
-void ImagePrimitive::setDisplayWindow(const Box2i &dw)
+void ImagePrimitive::setDisplayWindow( const Box2i &displayWindow )
 {
-	m_displayWindow = dw;
+	m_displayWindow = displayWindow;
 }
 
 const int ImagePrimitive::width() const
@@ -110,20 +114,45 @@ const int ImagePrimitive::y() const
 	return m_dataWindow.min.y;
 }
 
-void ImagePrimitive::channelNames(vector<string> &names) const
+void ImagePrimitive::channelNames( vector<string> &names ) const
 {
 	// copy in the names of channels from the map
 	names.clear();
-	PrimitiveVariableMap::const_iterator i = variables.begin();
-	while (i != variables.end())
-	{
-		names.push_back(i->first);
-		++i;
+	
+	for ( PrimitiveVariableMap::const_iterator i = variables.begin(); i != variables.end(); ++i )
+	{				
+		size_t size = 0;
+		
+		try
+		{
+			VectorTypedDataSizeArgs dummy;
+			
+			size = despatchVectorTypedDataFn<size_t, VectorTypedDataSize, VectorTypedDataSizeArgs>( i->second.data, dummy );
+		}
+		catch ( ... )
+		{
+			try
+			{
+				SimpleTypedDataAddressArgs dummy;
+				if ( despatchSimpleTypedDataFn< bool, SimpleTypedDataAddress, SimpleTypedDataAddressArgs>( i->second.data, dummy ) )
+				{			
+					size = 1;
+				}
+			} 
+			catch ( ... )
+			{
+			}
+		}
+		
+		if ( size == ( const_cast<ImagePrimitive *>(this) )->variableSize( i->second.interpolation ) )
+		{		
+			names.push_back( i->first );
+		}
 	}
 }
 
 // give the size of the image
-size_t ImagePrimitive::variableSize(PrimitiveVariable::Interpolation interpolation)
+size_t ImagePrimitive::variableSize( PrimitiveVariable::Interpolation interpolation )
 {
 	switch (interpolation)
 	{

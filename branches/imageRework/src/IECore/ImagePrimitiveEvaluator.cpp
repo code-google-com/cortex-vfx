@@ -402,7 +402,7 @@ float ImagePrimitiveEvaluator::volume() const
 
 V3f ImagePrimitiveEvaluator::centerOfGravity() const
 {
-	return m_image->bound().center();
+	return Imath::V3f( 0.0, 0.0, 0.0 );
 }
 
 float ImagePrimitiveEvaluator::surfaceArea() const
