@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -55,12 +55,6 @@ class Renderer : public IECore::Renderer
 		/// to RiBegin( name.c_str() ) and will subsequently always render to that
 		/// context. If the empty string is passed then RiBegin( 0 ) is called to actually
 		/// render the scene rather than create a rib.
-		/// \bug Due to an apparent bug in lib3delight, the above is not true. Instead
-		/// a new context is made with RiBegin and it is finished with RiEnd in the destructor,
-		/// but no context save/restore is made during Renderer calls - therefore it's only safe
-		/// to have one of these Renderer objects in existence at any given time.
-		/// \todo Fix the context save/restore bug - when doing this check that all appropriate
-		/// functions are actually calling contextBegin()/end(). 
 		Renderer( const std::string &name );
 		
 		virtual ~Renderer();
@@ -74,6 +68,9 @@ class Renderer : public IECore::Renderer
 		///
 		/// "ri:pixelSamples" V2iData()
 		/// Passed to an RiPixelSamples call.
+		///
+		/// "ri:*:*"
+		/// Passed to an RiOption call.
 		virtual void setOption( const std::string &name, IECore::ConstDataPtr value );
 		/// Currently supported options :
 		///
@@ -83,34 +80,33 @@ class Renderer : public IECore::Renderer
 		/// "user:*"
 		virtual IECore::ConstDataPtr getOption( const std::string &name ) const;
 
-		/// Currently supported parameters :
+		/// \par Standard parameters supported :
 		///
-		/// "transform"			M44fData()
+		/// \li <b>"resolution"</b>
+		/// \li <b>"screenWindow"</b>
+		///	\li <b>"cropWindow"</b>
+		/// \li <b>"projection"</b>
+		/// \li <b>"projection:fov"</b>
+		///	\li <b>"clippingPlanes"</b>
+		/// \li <b>"shutter"</b>
+		///
+		/// \par Implementation specific parameters supported :
+		///
+		/// \li <b>"transform" M44fData()</b><br>
 		/// This overrides the transform specified via the transform*() calls below. It's provided
 		/// to work around a bug that prevents RxTransform() from working when in RIB output mode.
+		/// \deprecated The "transform" parameter should no longer be used as the bug in 3delight
+		/// which required it has now been fixed.
 		///
-		/// "resolution"		V2iData()
-		/// Specifies the image resolution.
-		///
-		/// "screenWindow"		Box2fData()
-		///
-		///	"cropWindow"		Box2fData()
-		///
-		///	"clippingPlanes"	V2fData()
-		///
-		/// "projection"		StringData()
-		///
-		///	"projection:*"
+		///	\li <b>"projection:*"</b><br>
 		/// All parameters matching this naming convention are passed to the RiProjection call.
 		///
-		/// "hider"				StringData()
+		/// \li <b>"ri:hider" StringData()</b><br>
 		///
-		/// "hider:*"
+		/// \li <b>"ri:hider:*"</b><br>
 		/// All parameters matching this naming convention are passed to an RiHider call.
 		///
-		/// "shutter"			V2fData()
 		/// \todo Support moving cameras.
-		/// \todo Move the definitions of common parameters into the core library.
 		virtual void camera( const std::string &name, IECore::CompoundDataMap &parameters );
 		virtual void display( const std::string &name, const std::string &type, const std::string &data, IECore::CompoundDataMap &parameters );
 
@@ -128,10 +124,59 @@ class Renderer : public IECore::Renderer
 
 		virtual void attributeBegin();
 		virtual void attributeEnd();
-		virtual void setAttribute( const std::string &name, IECore::ConstDataPtr value );
-		/// Currently supported attributes :
+		/// \par Standard attributes supported :
+		////////////////////////////////////////////////////////////////////////////
 		///
-		/// "user:*"
+		/// \li <b>"color"</b><br>
+		/// Mapped to an RiColor call.
+		///
+		/// \li <b>"opacity"</b><br>
+		/// Mapped to an RiOpacity call.
+		///
+		/// \li <b>"doubleSided"</b><br>
+		/// Mapped to an RiSides call.
+		///
+		/// \li <b>"name"</b><br>
+		/// Mapped to an RiAttribute "identifier" "name" call.
+		///
+		/// \li <b>"user:*"</b><br>
+		///
+		/// \par Implementation specific attributes :
+		////////////////////////////////////////////////////////////////////////////
+		///
+		/// \li <b>"ri:*:*"</b><br>
+		/// Passed to an RiAttribute call.
+		///
+		/// \li <b>"ri:shadingRate" FloatData</b><br>
+		/// Passed to RiShadingRate.
+		///
+		/// \li <b>"ri:matte" BoolData</b><br>
+		/// Passed to RiMatte.
+		///
+		/// \li <b>"ri:color" Color3fData</b><br>
+		/// \deprecated Use "color" in preference to "ri:color"
+		///
+		/// \li <b>"ri:opacity" Color3fData</b><br>
+		/// \deprecated Use "opacity" in preference to "ri:opacity"
+		/// 
+		/// \li <b>"ri:sides" IntData</b><br>
+		/// Passed to RiSides
+		/// \deprecated Use "doubleSided" in preference to "ri:sides"
+		///
+		/// \li <b>"ri:geometricApproximation:motionFactor" and ri:geometricApproximation:focusFactor" FloatData</b><br>
+		///	Passed to RiGeometricApproximation.
+		virtual void setAttribute( const std::string &name, IECore::ConstDataPtr value );
+		/// \par Currently supported attributes :
+		///
+		/// \li <b>"doubleSided"</b>
+		/// \li <b>"name"</b>
+		/// \li <b>"user:*"</b>
+		/// \li <b>"ri:shadingRate"</b><br>
+		/// \li <b>"ri:matte"</b><br>
+		/// \li <b>"ri:*:*"</b><br>
+		/// Supports all attributes for which the RxAttribute query works.
+		/// \bug 3delight 7.0.14 seems not to be supporting the documented attributes.
+		/// \todo When 3delight is fixed reinstate the tests in Renderer.py (testAttributes).
 		virtual IECore::ConstDataPtr getAttribute( const std::string &name ) const;
 		virtual void shader( const std::string &type, const std::string &name, const IECore::CompoundDataMap &parameters );
 		virtual void light( const std::string &name, const IECore::CompoundDataMap &parameters );
@@ -175,6 +220,10 @@ class Renderer : public IECore::Renderer
 		/// "ri:objectInstance"
 		/// Calls RiObjectInstance. Expects a single StringData parameter called "name", which
 		/// refers to a name previously passed to command( "ri:objectBegin" ).
+		///
+		/// "ri:archiveRecord"
+		/// Makes a call to RiArchiveRecord(). Expects StringData parameters called "type" and
+		/// "record".
 		///
 		/// \todo Implement instancing support through specific calls we add to the IECore::Renderer
 		/// interface definition.

@@ -73,10 +73,12 @@ class RendererTest( unittest.TestCase ) :
 		r = IECoreRI.Renderer()
 		self.assertEqual( r.typeName(), "IECoreRI::Renderer" )
 
+	## \todo Make this test actually test something
 	def testNoContext( self ) :
 	
 		r = IECoreRI.Renderer()
 
+	## \todo Make this test actually test something
 	def test( self ) :
 	
 		r = IECoreRI.Renderer( "test/IECoreRI/output/test.rib" )
@@ -99,25 +101,42 @@ class RendererTest( unittest.TestCase ) :
 		r.transformEnd()
 		
 		r.worldEnd()
-	
+
 	def testAttributes( self ) :
 	
-		r = IECoreRI.Renderer( "test/IECoreRI/output/testAttributes.rib" )
+		tests = [
+			# format is : name value expectedRib getAttributeShouldWork
+			( "ri:shadingRate", FloatData( 2 ), "ShadingRate 2", True ),
+			( "ri:matte", BoolData( 0 ), "Matte 0", True ),
+			( "ri:matte", BoolData( 1 ), "Matte 1", True ),
+			( "user:whatever", StringData( "whatever" ), "Attribute \"user\" \"string whatever\" [ \"whatever\" ]", True ),
+			( "ri:color", Color3fData( Color3f( 0, 1, 1 ) ), "Color [ 0 1 1 ]", False ),
+			( "color", Color3fData( Color3f( 1, 2, 3 ) ), "Color [ 1 2 3 ]", False ),
+			( "ri:opacity", Color3fData( Color3f( 1, 1, 1 ) ), "Opacity [ 1 1 1 ]", False ),
+			( "opacity", Color3fData( Color3f( 0, 1, 0 ) ), "Opacity [ 0 1 0 ]", False ),
+			( "ri:sides", IntData( 1 ), "Sides 1", False ),
+			( "ri:geometricApproximation:motionFactor", FloatData( 1 ), "GeometricApproximation \"motionfactor\" 1", False ),
+			( "ri:geometricApproximation:focusFactor", FloatData( 1 ), "GeometricApproximation \"focusfactor\" 1", False ),
+			( "ri:cull:hidden", IntData( 0 ), "Attribute \"cull\" \"int hidden\" [ 0 ]", False ),
+			( "name", StringData( "oioi" ), "Attribute \"identifier\" \"string name\" [ \"oioi\" ]", True ),
+			( "ri:trace:bias", FloatData( 2 ), "Attribute \"trace\" \"float bias\" [ 2 ]", True ),
+		]
 		
-		r.worldBegin()
+		for t in tests :
 		
-		r.setAttribute( "ri:shadingRate", FloatData( 2 ) )
-		r.setAttribute( "ri:matte", BoolData( 0 ) )
-		r.setAttribute( "user:whatever", StringData( "whatever" ) )
-		r.setAttribute( "ri:color", Color3fData( Color3f( 0, 1, 1 ) ) )
-		r.setAttribute( "ri:opacity", Color3fData( Color3f( 0.5 ) ) )
-		r.setAttribute( "ri:sides", IntData( 1 ) )
-		r.setAttribute( "ri:geometricApproximation:motionFactor", FloatData( 1 ) )
-		r.setAttribute( "ri:geometricApproximation:focusFactor", FloatData( 1 ) )
-		r.setAttribute( "ri:cull:hidden", IntData( 0 ) )
+			r = IECoreRI.Renderer( "test/IECoreRI/output/testAttributes.rib" )
+			r.worldBegin()
+			r.setAttribute( t[0], t[1] )
+			if t[3] :
+				self.assertEqual( r.getAttribute( t[0] ), t[1] )
+			r.worldEnd()
+			
+			l = "".join( file( "test/IECoreRI/output/testAttributes.rib" ).readlines() )
+			l = " ".join( l.split() )
+			self.assert_( t[2] in l )
+
 		
-		r.worldEnd()
-		
+	## \todo Make this test actually test something
 	def testProcedural( self ) :
 	
 		r = IECoreRI.Renderer( "test/IECoreRI/output/testProcedural.rib" )
@@ -142,6 +161,7 @@ class RendererTest( unittest.TestCase ) :
 		
 		r.worldEnd()
 		
+	## \todo Make this test actually test something
 	def testDisplay( self ) :
 	
 		r = IECoreRI.Renderer( "test/IECoreRI/output/testDisplay.rib" )
@@ -151,34 +171,7 @@ class RendererTest( unittest.TestCase ) :
 		r.worldBegin()
 		r.worldEnd()
 		
-	def testCamera( self ) :
-	
-		s = M44f()
-		s.scale( V3f( 10 ) )
-	
-		r = IECoreRI.Renderer( "test/IECoreRI/output/testCamera.rib" )
-		
-		# we can't use concatTransform to position the camera until
-		# we get support for RxTransformPoints working in rib generation
-		# mode from 3delight - instead we're using the nasty transform
-		# parameter in the list below.
-		#r.concatTransform( s )
-		r.camera( "main", {
-			"resolution" : V2iData( V2i( 1024 ) ),
-			"screenWindow" : Box2fData( Box2f( V2f( -1 ), V2f( 1 ) ) ),
-			"cropWindow" : Box2fData( Box2f( V2f( 0.1, 0.1 ), V2f( 0.9, 0.9 ) ) ),
-			"clippingPlanes" : V2fData( V2f( 1, 1000 ) ),
-			"projection" : StringData( "perspective" ),
-			"projection:fov" : FloatData( 45 ),
-			"hider" : StringData( "hidden" ),
-			"hider:jitter" : IntData( 1 ),
-			"shutter" : V2fData( V2f( 0, 0.1 ) ),
-			"transform" : M44fData( s )
-		} )
-		
-		r.worldBegin()		
-		r.worldEnd()
-		
+	## \todo Make this test actually test something
 	def testSubDivs( self ) :
 	
 		r = IECoreRI.Renderer( "test/IECoreRI/output/subdiv.rib" )
@@ -195,6 +188,7 @@ class RendererTest( unittest.TestCase ) :
 		
 		r.worldEnd()
 	
+	## \todo Make this test actually test something
 	def testCommands( self ) :
 	
 		r = IECoreRI.Renderer( "test/IECoreRI/output/commands.rib" )
@@ -205,6 +199,7 @@ class RendererTest( unittest.TestCase ) :
 		
 		r.worldEnd()
 		
+	## \todo Make this test actually test something
 	def testMotion( self ) :
 	
 		r = IECoreRI.Renderer( "test/IECoreRI/output/motion.rib" )
@@ -219,6 +214,7 @@ class RendererTest( unittest.TestCase ) :
 		
 		r.worldEnd()	
 	
+	## \todo Make this test actually test something
 	def testStringPrimVars( self ) :
 	
 		r = IECoreRI.Renderer( "test/IECoreRI/output/stringPrimVars.rib" )	
@@ -259,6 +255,8 @@ class RendererTest( unittest.TestCase ) :
 		
 		r.worldEnd()
 		
+	## \todo Make this test actually work non-interactively - perhaps install a custom message handler
+	# to ensure that no messages are output during the setAttribute call, and check the rib for unwanted output.
 	def testIgnoreOtherAttributesAndOptions( self ) :
 	
 		r = IECoreRI.Renderer( "test/IECoreRI/output/transform.rib" )

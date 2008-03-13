@@ -202,7 +202,8 @@ class TestImagePrimitiveEvaluator( unittest.TestCase ) :
 		displayWindow = Box2i( V2i( 0, 0 ), V2i( 99, 99 ) )
 		dataWindow = Box2i( V2i( 50, 50), V2i( 99, 99 ) )
 		img = ImagePrimitive( dataWindow, displayWindow )
-		
+
+	
 		dataWindowArea = 50 * 50
 		R = FloatVectorData( dataWindowArea )
 		G = FloatVectorData( dataWindowArea ) 
@@ -256,8 +257,6 @@ class TestImagePrimitiveEvaluator( unittest.TestCase ) :
 					expectedColor = colorMap[ (x, y) ]
 								
 				self.assert_( ( c - expectedColor ).length() < 0.001 )
-		
-			
 		 
 					
 if __name__ == "__main__":

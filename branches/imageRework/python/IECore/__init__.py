@@ -51,6 +51,7 @@ from CompoundFrameList import CompoundFrameList
 from ReorderedFrameList import ReorderedFrameList
 from ReversedFrameList import ReversedFrameList
 from BinaryFrameList import BinaryFrameList
+from ExclusionFrameList import ExclusionFrameList
 from FileSequence import FileSequence
 from FileSequenceFunctions import *
 from EmptyFrameList import EmptyFrameList
@@ -85,6 +86,7 @@ from MenuDefinition import MenuDefinition
 from ParameterParser import *
 from SearchReplaceOp import SearchReplaceOp
 from CapturingMessageHandler import CapturingMessageHandler
+from CheckImagesOp import CheckImagesOp
 
 # importing internal utility modules and class overwrites
 from ObjectOverwriting import *

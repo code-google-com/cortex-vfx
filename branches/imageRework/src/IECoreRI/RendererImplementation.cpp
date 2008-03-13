@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,13 +36,17 @@
 #include "IECoreRI/PrimitiveVariableList.h"
 #include "IECoreRI/ParameterList.h"
 #include "IECoreRI/Convert.h"
+#include "IECoreRI/ScopedContext.h"
 
 #include "IECore/MessageHandler.h"
 #include "IECore/Shader.h"
 #include "IECore/SimpleTypedData.h"
 #include "IECore/MatrixAlgo.h"
+#include "IECore/Transform.h"
+#include "IECore/MatrixTransform.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
+#include <boost/format.hpp>
 
 #include <iostream>
 
@@ -91,7 +95,7 @@ const unsigned int IECoreRI::RendererImplementation::g_shaderCacheSize = 10 * 10
 std::vector<int> IECoreRI::RendererImplementation::g_nLoops;
 
 IECoreRI::RendererImplementation::RendererImplementation()
-	:	m_context( 0 ), m_contextValid( false )
+	:	m_context( 0 )
 {
 	constructCommon();
 }
@@ -108,11 +112,13 @@ IECoreRI::RendererImplementation::RendererImplementation( const std::string &nam
 		RiBegin( 0 );
 	}
 	m_context = RiGetContext();
-	m_contextValid = true;
 }
 
 void IECoreRI::RendererImplementation::constructCommon()
 {
+	m_camera = new Camera;
+	m_camera->addStandardParameters();
+
 	m_attributeStack.push( AttributeState() );
 	
 	const char *shaderPathE = getenv( "DL_SHADERS_PATH" );
@@ -133,8 +139,15 @@ void IECoreRI::RendererImplementation::constructCommon()
 	m_setAttributeHandlers["ri:opacity"] = &IECoreRI::RendererImplementation::setOpacityAttribute;
 	m_setAttributeHandlers["opacity"] = &IECoreRI::RendererImplementation::setOpacityAttribute;
 	m_setAttributeHandlers["ri:sides"] = &IECoreRI::RendererImplementation::setSidesAttribute;
+	m_setAttributeHandlers["doubleSided"] = &IECoreRI::RendererImplementation::setDoubleSidedAttribute;
 	m_setAttributeHandlers["ri:geometricApproximation:motionFactor"] = &IECoreRI::RendererImplementation::setGeometricApproximationAttribute;
 	m_setAttributeHandlers["ri:geometricApproximation:focusFactor"] = &IECoreRI::RendererImplementation::setGeometricApproximationAttribute;
+	m_setAttributeHandlers["name"] = &IECoreRI::RendererImplementation::setNameAttribute;
+
+	m_getAttributeHandlers["ri:shadingRate"] = &IECoreRI::RendererImplementation::getShadingRateAttribute;
+	m_getAttributeHandlers["ri:matte"] = &IECoreRI::RendererImplementation::getMatteAttribute;
+	m_getAttributeHandlers["doubleSided"] = &IECoreRI::RendererImplementation::getDoubleSidedAttribute;
+	m_getAttributeHandlers["name"] = &IECoreRI::RendererImplementation::getNameAttribute;
 
 	m_commandHandlers["ri:readArchive"] = &IECoreRI::RendererImplementation::readArchiveCommand;
 	m_commandHandlers["objectBegin"] = &IECoreRI::RendererImplementation::objectBeginCommand;
@@ -143,33 +156,20 @@ void IECoreRI::RendererImplementation::constructCommon()
 	m_commandHandlers["ri:objectEnd"] = &IECoreRI::RendererImplementation::objectEndCommand;
 	m_commandHandlers["objectInstance"] = &IECoreRI::RendererImplementation::objectInstanceCommand;
 	m_commandHandlers["ri:objectInstance"] = &IECoreRI::RendererImplementation::objectInstanceCommand;
-}
-
-void IECoreRI::RendererImplementation::contextBegin() const
-{
-	/// \todo We'd like it if this weren't commented out, but it doesn't seem to work.
-	/*if( m_contextValid )
-	{
-		m_otherContext = RiGetContext();
-		RiContext( m_context );
-	}*/
-}
-
-void IECoreRI::RendererImplementation::contextEnd() const
-{
-	/*if( m_contextValid )
-	{
-		RiContext( m_otherContext );
-	}*/
+	m_commandHandlers["ri:archiveRecord"] = &IECoreRI::RendererImplementation::archiveRecordCommand;
 }
 		
 IECoreRI::RendererImplementation::~RendererImplementation()
 {
-	if( m_contextValid )
+	if( m_context )
 	{
-		contextBegin();
-			RiEnd();
-		contextEnd();
+		RtContextHandle c = RiGetContext();
+		RiContext( m_context );
+		RiEnd();
+		if( c!=m_context )
+		{
+			RiContext( c );
+		}
 	}
 }
 
@@ -179,69 +179,68 @@ IECoreRI::RendererImplementation::~RendererImplementation()
 	
 void IECoreRI::RendererImplementation::setOption( const std::string &name, IECore::ConstDataPtr value )
 {
-	contextBegin();
-		SetOptionHandlerMap::iterator it = m_setOptionHandlers.find( name );
-		if( it!=m_setOptionHandlers.end() )
+	ScopedContext scopedContext( m_context );
+	
+	SetOptionHandlerMap::iterator it = m_setOptionHandlers.find( name );
+	if( it!=m_setOptionHandlers.end() )
+	{
+		(this->*(it->second))( name, value );
+	}
+	else if( name.compare( 0, 3, "ri:" )==0 )
+	{
+		size_t i = name.find_first_of( ":", 3 );
+		if( i==string::npos )
 		{
-			(this->*(it->second))( name, value );
-		}
-		else if( name.compare( 0, 3, "ri:" )==0 )
-		{
-			size_t i = name.find_first_of( ":", 3 );
-			if( i==string::npos )
-			{
-				msg( Msg::Warning, "IECoreRI::RendererImplementation::setOption", format( "Expected option name matching \"ri:*:*\" but got \"%s\"." ) % name );
-			}
-			else
-			{
-				string s1( name, 3, i-3 );
-				string s2( name, i+1 );
-				ParameterList pl( s2, value );
-				RiOptionV( (char *)s1.c_str(), pl.n(), pl.tokens(), pl.values() );
-			}
-		}
-		else if( name.compare( 0, 5, "user:" )==0 )
-		{
-			string s( name, 5 );
-			ParameterList pl( s, value );
-			RiOptionV( "user", pl.n(), pl.tokens(), pl.values() );
-		}
-		else if( name.find_first_of( ":" )!=string::npos )
-		{
-			// ignore options prefixed for some other RendererImplementation
-			return;
+			msg( Msg::Warning, "IECoreRI::RendererImplementation::setOption", format( "Expected option name matching \"ri:*:*\" but got \"%s\"." ) % name );
 		}
 		else
 		{
-			msg( Msg::Warning, "IECoreRI::RendererImplementation::setOption", format( "Unknown option \"%s\"." ) % name );
+			string s1( name, 3, i-3 );
+			string s2( name, i+1 );
+			ParameterList pl( s2, value );
+			RiOptionV( (char *)s1.c_str(), pl.n(), pl.tokens(), pl.values() );
 		}
-	contextEnd();
+	}
+	else if( name.compare( 0, 5, "user:" )==0 )
+	{
+		string s( name, 5 );
+		ParameterList pl( s, value );
+		RiOptionV( "user", pl.n(), pl.tokens(), pl.values() );
+	}
+	else if( name.find_first_of( ":" )!=string::npos )
+	{
+		// ignore options prefixed for some other RendererImplementation
+		return;
+	}
+	else
+	{
+		msg( Msg::Warning, "IECoreRI::RendererImplementation::setOption", format( "Unknown option \"%s\"." ) % name );
+	}
 }
 
 IECore::ConstDataPtr IECoreRI::RendererImplementation::getOption( const std::string &name ) const
 {
-	contextBegin();
-		GetOptionHandlerMap::const_iterator it = m_getOptionHandlers.find( name );
-		if( it!=m_getOptionHandlers.end() )
+	ScopedContext scopedContext( m_context );
+	GetOptionHandlerMap::const_iterator it = m_getOptionHandlers.find( name );
+	if( it!=m_getOptionHandlers.end() )
+	{
+		return (this->*(it->second))( name );
+	}
+	else if( name.compare( 0, 5, "user:" )==0 )
+	{
+		string s( name, 5 );
+		char result[16 * sizeof( RtFloat )]; // enough room for a matrix return type
+		RxInfoType_t resultType;
+		int resultCount;
+		if( 0==RxOption( (char *)name.c_str(), result, 16 * sizeof( RtFloat ), &resultType, &resultCount ) )
 		{
-			return (this->*(it->second))( name );
+			return convert( result, resultType, resultCount );
 		}
-		else if( name.compare( 0, 5, "user:" )==0 )
-		{
-			string s( name, 5 );
-			char result[16 * sizeof( RtFloat )]; // enough room for a matrix return type
-			RxInfoType_t resultType;
-			int resultCount;
-			if( 0==RxOption( (char *)name.c_str(), result, 16 * sizeof( RtFloat ), &resultType, &resultCount ) )
-			{
-				return convert( result, resultType, resultCount );
-			}
-		}
-		else
-		{
-			msg( Msg::Warning, "IECoreRI::RendererImplementation::getOption", format( "Unknown option \"%s\"." ) % name );
-		}
-	contextEnd();
+	}
+	else
+	{
+		msg( Msg::Warning, "IECoreRI::RendererImplementation::getOption", format( "Unknown option \"%s\"." ) % name );
+	}
 	return 0;
 }
 
@@ -305,45 +304,37 @@ IECore::ConstDataPtr IECoreRI::RendererImplementation::getResolutionOption( cons
 
 void IECoreRI::RendererImplementation::camera( const std::string &name, IECore::CompoundDataMap &parameters )
 {
-	contextBegin();
-		// just store the camera so we can emit it just before RiWorldBegin.
-		m_cameraParameters.clear();
-		bool foundTransformParameter = false;
-		for( CompoundDataMap::const_iterator it=parameters.begin(); it!=parameters.end(); it++ )
+	ScopedContext scopedContext( m_context );
+	// just store the camera so we can emit it just before RiWorldBegin.
+	CompoundDataPtr parameterData = (new CompoundData( parameters ))->copy();
+	m_camera = new Camera( name, 0, parameterData );
+	m_camera->addStandardParameters(); // it simplifies worldBegin() to know that the camera is complete
+	
+	CompoundDataMap::const_iterator transformIt=parameters.find( "transform" );
+	if( transformIt!=parameters.end() )
+	{
+		if( M44fDataPtr m = runTimeCast<M44fData>( transformIt->second ) )
 		{
-			if( it->first!="transform" )
-			{
-				m_cameraParameters[it->first] = it->second->copy();
-			}
-			else
-			{
-				M44fDataPtr m = runTimeCast<M44fData>( it->second );
-				if( m )
-				{
-					foundTransformParameter = true;
-					m_cameraTransform = m->readable();
-				}
-				else
-				{
-					msg( Msg::Error, "IECoreRI::RendererImplementation::camera", "\"transform\" parameter should be of type M44fData." );
-				}
-			}
+			m_camera->setTransform( new MatrixTransform( m->readable() ) );
 		}
-		if( !foundTransformParameter )
+		else
 		{
-			m_cameraTransform = getTransform();
+			msg( Msg::Error, "IECoreRI::RendererImplementation::camera", "\"transform\" parameter should be of type M44fData." );
 		}
-	contextEnd();
+	}
+	else
+	{
+		m_camera->setTransform( new MatrixTransform( getTransform() ) );
+	}
 }
 
 /// \todo This should be outputting several calls to display as a series of secondary displays, and also trying to find the best display
 /// to be used as the primary display.
 void IECoreRI::RendererImplementation::display( const std::string &name, const std::string &type, const std::string &data, IECore::CompoundDataMap &parameters )
 {
-	contextBegin();
-		ParameterList pl( parameters );
-		RiDisplayV( (char *)name.c_str(), (char *)type.c_str(), (char *)data.c_str(), pl.n(), pl.tokens(), pl.values() );
-	contextEnd();
+	ScopedContext scopedContext( m_context );
+	ParameterList pl( parameters );
+	RiDisplayV( (char *)name.c_str(), (char *)type.c_str(), (char *)data.c_str(), pl.n(), pl.tokens(), pl.values() );
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -352,125 +343,74 @@ void IECoreRI::RendererImplementation::display( const std::string &name, const s
 
 void IECoreRI::RendererImplementation::worldBegin()
 {
-	contextBegin();
-		// push out the camera we saved earlier
-		///////////////////////////////////////
-		// transform first
-		M44f cameraInverse = m_cameraTransform.inverse();
+	ScopedContext scopedContext( m_context );
+	// push out the camera we saved earlier
+	// we can assume that all the standard parameters of the camera
+	// have valid values of the right type as we called
+	// addStandardParameters() in camera().
+	/////////////////////////////////////////////////////////
+	
+	// then shutter
+	CompoundDataMap::const_iterator it = m_camera->parameters().find( "shutter" );
+	ConstV2fDataPtr shutterD = runTimeCast<const V2fData>( it->second );
+	RiShutter( shutterD->readable()[0], shutterD->readable()[1] );
+	
+	// then hider
+	it = m_camera->parameters().find( "ri:hider" );
+	if( it!=m_camera->parameters().end() )
+	{
+		ConstStringDataPtr d = runTimeCast<const StringData>( it->second );
+		if( d )
+		{
+			ParameterList p( m_camera->parameters(), "ri:hider:" );
+			RiHiderV( (char *)d->readable().c_str(), p.n(), p.tokens(), p.values() );
+		}
+		else
+		{
+			msg( Msg::Error, "IECoreRI::RendererImplementation::worldBegin", "Camera \"ri:hider\" parameter should be of type StringData." );
+		}
+	}
+	
+	// then resolution
+	it = m_camera->parameters().find( "resolution" );
+	ConstV2iDataPtr d = runTimeCast<const V2iData>( it->second );
+	RiFormat( d->readable().x, d->readable().y, 1 );
+	
+	// then screen window
+	it = m_camera->parameters().find( "screenWindow" );
+	ConstBox2fDataPtr screenWindowD = runTimeCast<const Box2fData>( it->second );
+	RiScreenWindow( screenWindowD->readable().min.x, screenWindowD->readable().max.x, screenWindowD->readable().min.y, screenWindowD->readable().max.y );
+	
+	// then crop window
+	it = m_camera->parameters().find( "cropWindow" );
+	ConstBox2fDataPtr cropWindowD = runTimeCast<const Box2fData>( it->second );
+	RiCropWindow( cropWindowD->readable().min.x, cropWindowD->readable().max.x, cropWindowD->readable().min.y, cropWindowD->readable().max.y );
+	
+	// then clipping
+	it = m_camera->parameters().find( "clippingPlanes" );
+	ConstV2fDataPtr clippingD = runTimeCast<const V2fData>( it->second );
+	RiClipping( clippingD->readable()[0], clippingD->readable()[1] );
+	
+	// then projection
+	it = m_camera->parameters().find( "projection" );
+	ConstStringDataPtr projectionD = runTimeCast<const StringData>( it->second );
+	ParameterList p( m_camera->parameters(), "projection:" );
+	RiProjectionV( (char *)projectionD->readable().c_str(), p.n(), p.tokens(), p.values() );
+
+	// transform last
+	if( m_camera->getTransform() )
+	{
+		M44f cameraInverse = m_camera->getTransform()->transform().inverse();
 		setTransform( cameraInverse );
-		// then shutter
-		CompoundDataMap::const_iterator it = m_cameraParameters.find( "shutter" );
-		if( it != m_cameraParameters.end() )
-		{
-			ConstV2fDataPtr d = runTimeCast<const V2fData>( it->second );
-			if( d )
-			{
-				RiShutter( d->readable()[0], d->readable()[1] );
-			}
-			else
-			{
-				msg( Msg::Error, "IECoreRI::RendererImplementation::worldBegin", "Camera \"shutter\" parameter should be of type V2fData." );
-			}
-		}
-		// then hider
-		it = m_cameraParameters.find( "hider" );
-		if( it!=m_cameraParameters.end() )
-		{
-			ConstStringDataPtr d = runTimeCast<const StringData>( it->second );
-			if( d )
-			{
-				ParameterList p( m_cameraParameters, "hider:" );
-				RiHiderV( (char *)d->readable().c_str(), p.n(), p.tokens(), p.values() );
-			}
-			else
-			{
-				msg( Msg::Error, "IECoreRI::RendererImplementation::worldBegin", "Camera \"hider\" parameter should be of type StringData." );
-			}
-		}
-		// then resolution
-		int xRes = 640;
-		int yRes = 480;
-		it = m_cameraParameters.find( "resolution" );
-		if( it != m_cameraParameters.end() )
-		{
-			ConstV2iDataPtr d = runTimeCast<const V2iData>( it->second );
-			if( d )
-			{
-				xRes = d->readable().x;
-				yRes = d->readable().y;
-			}
-			else
-			{
-				msg( Msg::Error, "IECoreRI::RendererImplementation::worldBegin", "Camera \"resolution\" parameter should be of type V2iData." );
-			}
-		}
-		RiFormat( xRes, yRes, 1 );
-		// then screen window
-		it = m_cameraParameters.find( "screenWindow" );
-		if( it != m_cameraParameters.end() )
-		{
-			ConstBox2fDataPtr d = runTimeCast<const Box2fData>( it->second );
-			if( d )
-			{
-				RiScreenWindow( d->readable().min.x, d->readable().max.x, d->readable().min.y, d->readable().max.y );
-			}
-			else
-			{
-				msg( Msg::Error, "IECoreRI::RendererImplementation::worldBegin", "Camera \"screenWindow\" parameter should be of type Box2fData." );
-			}
-		}
-		// then crop window
-		it = m_cameraParameters.find( "cropWindow" );
-		if( it != m_cameraParameters.end() )
-		{
-			ConstBox2fDataPtr d = runTimeCast<const Box2fData>( it->second );
-			if( d )
-			{
-				RiCropWindow( d->readable().min.x, d->readable().max.x, d->readable().min.y, d->readable().max.y );
-			}
-			else
-			{
-				msg( Msg::Error, "IECoreRI::RendererImplementation::worldBegin", "Camera \"cropWindow\" parameter should be of type Box2fData." );
-			}
-		}
-		// then clipping
-		it = m_cameraParameters.find( "clippingPlanes" );
-		if( it != m_cameraParameters.end() )
-		{
-			ConstV2fDataPtr d = runTimeCast<const V2fData>( it->second );
-			if( d )
-			{
-				RiClipping( d->readable()[0], d->readable()[1] );
-			}
-			else
-			{
-				msg( Msg::Error, "IECoreRI::RendererImplementation::worldBegin", "Camera \"clippingPlanes\" parameter should be of type V2fData." );
-			}
-		}
-		// then projection
-		it = m_cameraParameters.find( "projection" );
-		if( it!=m_cameraParameters.end() )
-		{
-			ConstStringDataPtr d = runTimeCast<const StringData>( it->second );
-			if( d )
-			{
-				ParameterList p( m_cameraParameters, "projection:" );
-				RiProjectionV( (char *)d->readable().c_str(), p.n(), p.tokens(), p.values() );
-			}
-			else
-			{
-				msg( Msg::Error, "IECoreRI::RendererImplementation::worldBegin", "Camera \"projection\" parameter should be of type StringData." );
-			}
-		}
-		RiWorldBegin();
-	contextEnd();
+	}
+	
+	RiWorldBegin();
 }
 
 void IECoreRI::RendererImplementation::worldEnd()
 {
-	contextBegin();
-		RiWorldEnd();
-	contextEnd();
+	ScopedContext scopedContext( m_context );
+	RiWorldEnd();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -479,80 +419,71 @@ void IECoreRI::RendererImplementation::worldEnd()
 
 void IECoreRI::RendererImplementation::transformBegin()
 {
-	contextBegin();
-		RiTransformBegin();
-	contextEnd();
+	ScopedContext scopedContext( m_context );
+	RiTransformBegin();
 }
 
 void IECoreRI::RendererImplementation::transformEnd()
 {
-	contextBegin();
-		RiTransformEnd();
-	contextEnd();
+	ScopedContext scopedContext( m_context );
+	RiTransformEnd();
 }
 
 void IECoreRI::RendererImplementation::setTransform( const Imath::M44f &m )
 {
-	contextBegin();
-		RtMatrix mm;
-		convertMatrix( m, mm );
-		RiTransform( mm );
-	contextEnd();
+	ScopedContext scopedContext( m_context );
+	RtMatrix mm;
+	convertMatrix( m, mm );
+	RiTransform( mm );
 }
 
 void IECoreRI::RendererImplementation::setTransform( const std::string &coordinateSystem )
 {
-	contextBegin();
-		RiCoordSysTransform( (char *)coordinateSystem.c_str() );
-	contextEnd();
+	ScopedContext scopedContext( m_context );
+	RiCoordSysTransform( (char *)coordinateSystem.c_str() );
 }
 
 Imath::M44f IECoreRI::RendererImplementation::getTransform() const
 {
-	contextBegin();
-		return getTransform( "object" );
-	contextEnd();
-	return Imath::M44f();
+	ScopedContext scopedContext( m_context );
+	return getTransform( "object" );
 }
 
 Imath::M44f IECoreRI::RendererImplementation::getTransform( const std::string &coordinateSystem ) const
 {
-	M44f result;
-	contextBegin();
+	ScopedContext scopedContext( m_context );
 	
-		RtPoint p[4] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0, 0, 0 } };
-		if( RiTransformPoints( (char *)coordinateSystem.c_str(), "world", 4, p ) )
-		{
-			V3f o = convert<Imath::V3f>( p[3] );
-			V3f x = convert<Imath::V3f>( p[0] ) - o;
-			V3f y = convert<Imath::V3f>( p[1] ) - o;
-			V3f z = convert<Imath::V3f>( p[2] ) - o;
-			
-			result = IECore::matrixFromBasis( x, y, z, o );
-		}
-		else
-		{
-			msg( Msg::Error, "IECoreRI::RendererImplementation::getTransform", boost::format( "Unable to transform to coordinate system \"%s\"." ) % coordinateSystem );
-		}
+	M44f result;
+	RtPoint p[4] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0, 0, 0 } };
+	if( RiTransformPoints( (char *)coordinateSystem.c_str(), "world", 4, p ) )
+	{
+		V3f o = convert<Imath::V3f>( p[3] );
+		V3f x = convert<Imath::V3f>( p[0] ) - o;
+		V3f y = convert<Imath::V3f>( p[1] ) - o;
+		V3f z = convert<Imath::V3f>( p[2] ) - o;
+
+		result = IECore::matrixFromBasis( x, y, z, o );
+	}
+	else
+	{
+		msg( Msg::Error, "IECoreRI::RendererImplementation::getTransform", boost::format( "Unable to transform to coordinate system \"%s\"." ) % coordinateSystem );
+	}
 		
-	contextEnd();
 	return result;
 }
 		
 void IECoreRI::RendererImplementation::concatTransform( const Imath::M44f &m )
 {
-	contextBegin();
-		RtMatrix mm;
-		convertMatrix( m, mm );
-		RiConcatTransform( mm );
-	contextEnd();
+	ScopedContext scopedContext( m_context );
+	RtMatrix mm;
+	convertMatrix( m, mm );
+	RiConcatTransform( mm );
 }
 
 void IECoreRI::RendererImplementation::coordinateSystem( const std::string &name )
 {
-	contextBegin();
-		RiCoordinateSystem( (char *)name.c_str() );
-	contextEnd();
+	ScopedContext scopedContext( m_context );
+	RiCoordinateSystem( (char *)name.c_str() );
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -561,31 +492,29 @@ void IECoreRI::RendererImplementation::coordinateSystem( const std::string &name
 
 void IECoreRI::RendererImplementation::attributeBegin()
 {
-	contextBegin();
-		m_attributeStack.push( m_attributeStack.top() );
-		RiAttributeBegin();
-	contextEnd();
+	ScopedContext scopedContext( m_context );
+	m_attributeStack.push( m_attributeStack.top() );
+	RiAttributeBegin();
 }
 
 void IECoreRI::RendererImplementation::attributeEnd()
 {
-	contextBegin();
+	ScopedContext scopedContext( m_context );
 	
-		if( m_attributeStack.size() )
-		{
-			m_attributeStack.pop();
-		}
-		else
-		{
-			msg( Msg::Warning, "IECoreRI::RendererImplementation::attributeEnd", "No matching attributeBegin call." );
-		}
-		RiAttributeEnd();
-		
-	contextEnd();
+	if( m_attributeStack.size() )
+	{
+		m_attributeStack.pop();
+	}
+	else
+	{
+		msg( Msg::Warning, "IECoreRI::RendererImplementation::attributeEnd", "No matching attributeBegin call." );
+	}
+	RiAttributeEnd();
 }
 
 void IECoreRI::RendererImplementation::setAttribute( const std::string &name, IECore::ConstDataPtr value )
 {
+	ScopedContext scopedContext( m_context );
 	SetAttributeHandlerMap::iterator it = m_setAttributeHandlers.find( name );
 	if( it!=m_setAttributeHandlers.end() )
 	{
@@ -681,6 +610,18 @@ void IECoreRI::RendererImplementation::setSidesAttribute( const std::string &nam
 	RiSides( f->readable() );
 }
 
+void IECoreRI::RendererImplementation::setDoubleSidedAttribute( const std::string &name, IECore::ConstDataPtr d )
+{
+	ConstBoolDataPtr f = runTimeCast<const BoolData>( d );
+	if( !f )
+	{
+		msg( Msg::Error, "IECoreRI::RendererImplementation::setAttribute", "doubleSided attribute expects a BoolData value." );
+		return;
+	}
+	
+	RiSides( f->readable() ? 2 : 1 );
+}
+
 void IECoreRI::RendererImplementation::setGeometricApproximationAttribute( const std::string &name, IECore::ConstDataPtr d )
 {
 	ConstFloatDataPtr f = runTimeCast<const FloatData>( d );
@@ -694,35 +635,130 @@ void IECoreRI::RendererImplementation::setGeometricApproximationAttribute( const
 	RiGeometricApproximation( (char *)s.c_str(), f->readable() );
 }
 
+void IECoreRI::RendererImplementation::setNameAttribute( const std::string &name, IECore::ConstDataPtr d )
+{
+	ConstStringDataPtr f = runTimeCast<const StringData>( d );
+	if( !f )
+	{
+		msg( Msg::Error, "IECoreRI::RendererImplementation::setAttribute", format( "%s attribute expects a StringData value." ) % name );
+		return;
+	}
+	ParameterList pl( "name", f );
+	RiAttributeV( "identifier", pl.n(), pl.tokens(), pl.values() );
+}
+
 IECore::ConstDataPtr IECoreRI::RendererImplementation::getAttribute( const std::string &name ) const
 {
-	contextBegin();
-		GetAttributeHandlerMap::const_iterator it = m_getAttributeHandlers.find( name );
-		if( it!=m_getAttributeHandlers.end() )
+	ScopedContext scopedContext( m_context );
+	GetAttributeHandlerMap::const_iterator it = m_getAttributeHandlers.find( name );
+	if( it!=m_getAttributeHandlers.end() )
+	{
+		return (this->*(it->second))( name );
+	}
+	else if( name.compare( 0, 3, "ri:" )==0 )
+	{
+		size_t i = name.find_first_of( ":", 3 );
+		if( i==string::npos )
 		{
-			return (this->*(it->second))( name );
+			msg( Msg::Warning, "IECoreRI::RendererImplementation::getAttribute", format( "Expected attribute name matching \"ri:*:*\" but got \"%s\"." ) % name );
+			return 0;
 		}
-		else if( name.compare( 0, 5, "user:" )==0 )
+		char result[16 * sizeof( RtFloat )]; // enough room for a matrix return type
+		RxInfoType_t resultType;
+		int resultCount;
+		if( 0==RxAttribute( (char *)name.c_str()+3, result, 16 * sizeof( RtFloat ), &resultType, &resultCount ) )
 		{
-			string s( name, 5 );
-			char result[16 * sizeof( RtFloat )]; // enough room for a matrix return type
-			RxInfoType_t resultType;
-			int resultCount;
-			if( 0==RxAttribute( (char *)name.c_str(), result, 16 * sizeof( RtFloat ), &resultType, &resultCount ) )
+			return convert( result, resultType, resultCount );
+		}
+	}
+	else if( name.compare( 0, 5, "user:" )==0 )
+	{
+		char result[16 * sizeof( RtFloat )]; // enough room for a matrix return type
+		RxInfoType_t resultType;
+		int resultCount;
+		if( 0==RxAttribute( (char *)name.c_str(), result, 16 * sizeof( RtFloat ), &resultType, &resultCount ) )
+		{
+			return convert( result, resultType, resultCount );
+		}
+	}
+	else
+	{
+		msg( Msg::Warning, "IECoreRI::RendererImplementation::getAttribute", format( "Unknown attribute \"%s\"." ) % name );
+	}
+	return 0;
+}
+
+IECore::ConstDataPtr IECoreRI::RendererImplementation::getShadingRateAttribute( const std::string &name ) const
+{
+	float result = 0;
+	RxInfoType_t resultType;
+	int resultCount;
+	if( 0==RxAttribute( "ShadingRate", (char *)&result, sizeof( float ), &resultType, &resultCount ) )
+	{
+		if( resultType==RxInfoFloat && resultCount==1 )
+		{
+			return new FloatData( result );
+		}
+	}
+	return 0;
+}
+
+IECore::ConstDataPtr IECoreRI::RendererImplementation::getMatteAttribute( const std::string &name ) const
+{
+	float result = 0;
+	RxInfoType_t resultType;
+	int resultCount;
+	if( 0==RxAttribute( "Matte", (char *)&result, sizeof( float ), &resultType, &resultCount ) )
+	{
+		if( resultType==RxInfoFloat && resultCount==1 )
+		{
+			return new BoolData( result > 0.0f );
+		}
+	}
+	return 0;
+}
+
+IECore::ConstDataPtr IECoreRI::RendererImplementation::getDoubleSidedAttribute( const std::string &name ) const
+{
+	float result = 2;
+	RxInfoType_t resultType;
+	int resultCount;
+	if( 0==RxAttribute( "Sides", (char *)&result, sizeof( float ), &resultType, &resultCount ) )
+	{
+		if( resultType==RxInfoFloat && resultCount==1 )
+		{
+			if( result==1 )
 			{
-				return convert( result, resultType, resultCount );
+				return new BoolData( false );
+			}
+			else
+			{
+				return new BoolData( true );
 			}
 		}
-		else
+	}
+	return 0;
+}
+
+IECore::ConstDataPtr IECoreRI::RendererImplementation::getNameAttribute( const std::string &name ) const
+{
+	char *result = 0;
+	RxInfoType_t resultType;
+	int resultCount;
+	if( 0==RxAttribute( "identifier:name", (char *)&result, sizeof( char * ), &resultType, &resultCount ) )
+	{
+		if( resultType==RxInfoStringV && resultCount==1 )
 		{
-			msg( Msg::Warning, "IECoreRI::RendererImplementation::getAttribute", format( "Unknown attribute \"%s\"." ) % name );
+			return new StringData( result );
 		}
-	contextEnd();
+	}
 	return 0;
 }
 
 void IECoreRI::RendererImplementation::shader( const std::string &type, const std::string &name, const IECore::CompoundDataMap &parameters )
 {
+	ScopedContext scopedContext( m_context );
+	
 	ConstShaderPtr s = 0;
 	try 
 	{
@@ -789,6 +825,7 @@ void IECoreRI::RendererImplementation::shader( const std::string &type, const st
 
 void IECoreRI::RendererImplementation::light( const std::string &name, const IECore::CompoundDataMap &parameters )
 {
+	ScopedContext scopedContext( m_context );
 	shader( "light", name, parameters );
 }
 
@@ -798,6 +835,7 @@ void IECoreRI::RendererImplementation::light( const std::string &name, const IEC
 
 void IECoreRI::RendererImplementation::motionBegin( const std::set<float> times )
 {
+	ScopedContext scopedContext( m_context );
 	static vector<float> t;
 	t.resize( max( t.size(), times.size() ) );
 	unsigned int i = 0;
@@ -810,6 +848,7 @@ void IECoreRI::RendererImplementation::motionBegin( const std::set<float> times 
 
 void IECoreRI::RendererImplementation::motionEnd()
 {
+	ScopedContext scopedContext( m_context );
 	RiMotionEnd();
 }
 
@@ -824,12 +863,14 @@ Imath::Box3f IECoreRI::RendererImplementation::textExtents(const std::string & t
 
 void IECoreRI::RendererImplementation::points( size_t numPoints, const IECore::PrimitiveVariableMap &primVars )
 {
+	ScopedContext scopedContext( m_context );
 	PrimitiveVariableList pv( primVars, &( m_attributeStack.top().primVarTypeHints ) );
 	RiPointsV( numPoints, pv.n(), pv.tokens(), pv.values() );
 }
 
 void IECoreRI::RendererImplementation::curves( const std::string &interpolation, bool periodic, ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars )
 {
+	ScopedContext scopedContext( m_context );
 	if( interpolation!="linear" && interpolation!="cubic" )
 	{
 		msg( Msg::Warning, "IECoreRI::RendererImplementation::curves", "Unknown interpolation type \"%s\" - should be either \"cubic\" or \"linear\"." );	
@@ -857,6 +898,7 @@ void IECoreRI::RendererImplementation::image( const Imath::Box2i &dataWindow, co
 
 void IECoreRI::RendererImplementation::mesh( IECore::ConstIntVectorDataPtr vertsPerFace, IECore::ConstIntVectorDataPtr vertIds, const std::string &interpolation, const IECore::PrimitiveVariableMap &primVars )
 {
+	ScopedContext scopedContext( m_context );
 	PrimitiveVariableList pv( primVars, &( m_attributeStack.top().primVarTypeHints ) );
 
 	if( interpolation=="catmullClark" )
@@ -891,6 +933,8 @@ void IECoreRI::RendererImplementation::mesh( IECore::ConstIntVectorDataPtr verts
 
 void IECoreRI::RendererImplementation::nurbs( int uOrder, IECore::ConstFloatVectorDataPtr uKnot, float uMin, float uMax, int vOrder, IECore::ConstFloatVectorDataPtr vKnot, float vMin, float vMax, const IECore::PrimitiveVariableMap &primVars )
 {
+	ScopedContext scopedContext( m_context );
+
 	PrimitiveVariableList pv( primVars, &( m_attributeStack.top().primVarTypeHints ) );
 	RiNuPatchV(
 		uKnot->readable().size() - uOrder, // nu
@@ -909,6 +953,8 @@ void IECoreRI::RendererImplementation::nurbs( int uOrder, IECore::ConstFloatVect
 
 void IECoreRI::RendererImplementation::geometry( const std::string &type, const CompoundDataMap &topology, const PrimitiveVariableMap &primVars )
 {
+	ScopedContext scopedContext( m_context );
+
 	if( type=="teapot" || type=="ri:teapot" )
 	{
 		RiGeometry( "teapot", 0 );
@@ -921,7 +967,9 @@ void IECoreRI::RendererImplementation::geometry( const std::string &type, const 
 		
 void IECoreRI::RendererImplementation::procedural( IECore::Renderer::ProceduralPtr proc )
 {
+	ScopedContext scopedContext( m_context );
 	Imath::Box3f bound = proc->bound();
+
 	if( bound.isEmpty() )
 	{
 		return;
@@ -957,19 +1005,21 @@ void IECoreRI::RendererImplementation::procFree( void *data )
 
 void IECoreRI::RendererImplementation::command( const std::string &name, const CompoundDataMap &parameters )
 {
+   ScopedContext scopedContext( m_context );
+
 	CommandHandlerMap::iterator it = m_commandHandlers.find( name );
 	if( it==m_commandHandlers.end() )
 	{
 		msg( Msg::Warning, "IECoreRI::RendererImplementation::command", boost::format( "Unknown command \"%s\"" ) % name );
 		return;
 	}
-	contextBegin();
-		(this->*(it->second))( name, parameters );
-	contextEnd();
+	(this->*(it->second))( name, parameters );
 }
 
 void IECoreRI::RendererImplementation::readArchiveCommand( const std::string &name, const IECore::CompoundDataMap &parameters )
 {
+	ScopedContext scopedContext( m_context );
+	
 	ConstStringDataPtr nameData;
 	CompoundDataMap::const_iterator it = parameters.find( "name" );
 	if( it!=parameters.end() )
@@ -986,6 +1036,8 @@ void IECoreRI::RendererImplementation::readArchiveCommand( const std::string &na
 
 void IECoreRI::RendererImplementation::objectBeginCommand( const std::string &name, const IECore::CompoundDataMap &parameters )
 {
+	ScopedContext scopedContext( m_context );
+
 	ConstStringDataPtr nameData;
 	CompoundDataMap::const_iterator it = parameters.find( "name" );
 	if( it!=parameters.end() )
@@ -1010,11 +1062,14 @@ void IECoreRI::RendererImplementation::objectBeginCommand( const std::string &na
 
 void IECoreRI::RendererImplementation::objectEndCommand( const std::string &name, const IECore::CompoundDataMap &parameters )
 {
+	ScopedContext scopedContext( m_context );
 	RiObjectEnd();
 }
 
 void IECoreRI::RendererImplementation::objectInstanceCommand( const std::string &name, const IECore::CompoundDataMap &parameters )
 {
+	ScopedContext scopedContext( m_context );
+
 	ConstStringDataPtr nameData;
 	CompoundDataMap::const_iterator it = parameters.find( "name" );
 	if( it!=parameters.end() )
@@ -1033,4 +1088,40 @@ void IECoreRI::RendererImplementation::objectInstanceCommand( const std::string 
 		return;
 	}
 	RiObjectInstance( const_cast<void *>( hIt->second ) );
+}
+
+void IECoreRI::RendererImplementation::archiveRecordCommand( const std::string &name, const IECore::CompoundDataMap &parameters )
+{
+	ScopedContext scopedContext( m_context );
+
+	ConstStringDataPtr typeData;
+	ConstStringDataPtr recordData;
+	CompoundDataMap::const_iterator typeIt = parameters.find( "type" );
+	CompoundDataMap::const_iterator recordIt = parameters.find( "record" );
+	if( typeIt!=parameters.end() )
+	{
+		typeData = runTimeCast<StringData>( typeIt->second );
+	}
+	if( recordIt!=parameters.end() )
+	{
+		recordData = runTimeCast<StringData>( recordIt->second );
+	}
+	
+	if( !(typeData && recordData) )
+	{
+		msg( Msg::Error, "IECoreRI::RendererImplementation::command", "ri:archiveRecord command expects StringData values called \"type\" and \"record\"." );
+		return;
+	}
+	
+	// if there are printf style format specifiers in the record then we're in trouble - we're about to pass them through a c interface which
+	// isn't type safe, and not provide any additional arguments for them. try to avoid that by using boost format to catch the problem.
+	try
+	{
+		string tested = boost::format( recordData->readable() ).str();
+		RiArchiveRecord( const_cast<char *>( typeData->readable().c_str() ), const_cast<char *>( tested.c_str() ) );
+	}
+	catch( ... )
+	{
+		msg( Msg::Error, "IECoreRI::RendererImplementation::command", "ri:archiveRecord \"record\" parameter appears to contain printf format specifiers." );
+	}
 }

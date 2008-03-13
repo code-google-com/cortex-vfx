@@ -70,6 +70,7 @@ ReaderPtr Reader::create( const std::string &fileName )
 {
 	bool knownExtension = false;
 	ExtensionsToFnsMap *m = extensionsToFns();
+	assert( m );
 	string ext = extension(boost::filesystem::path(fileName, boost::filesystem::native));
 	if( ext!="" )
 	{
@@ -106,6 +107,7 @@ ReaderPtr Reader::create( const std::string &fileName )
 void Reader::supportedExtensions( std::vector<std::string> &extensions )
 {
 	ExtensionsToFnsMap *m = extensionsToFns();
+	assert( m );	
 	for( ExtensionsToFnsMap::const_iterator it=m->begin(); it!=m->end(); it++ )
 	{
 		extensions.push_back( it->first.substr( 1 ) );
@@ -115,9 +117,12 @@ void Reader::supportedExtensions( std::vector<std::string> &extensions )
 void Reader::registerReader( const std::string &extensions, CanReadFn canRead, CreatorFn creator )
 {
 	ExtensionsToFnsMap *m = extensionsToFns();
+	assert( m );	
 	vector<string> splitExt;
 	split( splitExt, extensions, is_any_of( " " ) );
-	ReaderFns r; r.creator = creator; r.canRead = canRead;
+	ReaderFns r;
+	r.creator = creator;
+	r.canRead = canRead;
 	for( vector<string>::const_iterator it=splitExt.begin(); it!=splitExt.end(); it++ )
 	{
 		m->insert( ExtensionsToFnsMap::value_type( "." + *it, r ) );

@@ -39,6 +39,13 @@ from Renderer import *
 from Group import *
 from Texture import *
 from ImmediateRenderer import *
+from NameStateComponent import *
+from HitRecord import *
+from Selection import *
+from Camera import *
+from Image import *
+from PointsPrimitive import *
+from Orientation import *
 
 if __name__ == "__main__":
     unittest.main()   

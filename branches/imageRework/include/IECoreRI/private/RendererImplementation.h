@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,6 +37,9 @@
 
 #include "IECore/Renderer.h"
 #include "IECore/CachedReader.h"
+#include "IECore/Camera.h"
+
+#include "ri.h"
 
 #include <stack>
 
@@ -106,11 +109,7 @@ class RendererImplementation : public IECore::Renderer
 		// Does things common to both constructors
 		void constructCommon();
 	
-		void contextBegin() const;
-		void contextEnd() const;
-		void *m_context;
-		mutable void *m_otherContext;
-		bool m_contextValid;
+		RtContextHandle m_context;
 	
 		typedef void (RendererImplementation::*SetOptionHandler)( const std::string &name, IECore::ConstDataPtr d );
 		typedef IECore::ConstDataPtr (RendererImplementation::*GetOptionHandler)( const std::string &name ) const;
@@ -124,8 +123,7 @@ class RendererImplementation : public IECore::Renderer
 		IECore::ConstDataPtr getShutterOption( const std::string &name ) const;
 		IECore::ConstDataPtr getResolutionOption( const std::string &name ) const;
 		
-		Imath::M44f m_cameraTransform;
-		IECore::CompoundDataMap m_cameraParameters;
+		IECore::CameraPtr m_camera;
 		
 		struct AttributeState
 		{
@@ -149,7 +147,14 @@ class RendererImplementation : public IECore::Renderer
 		void setColorAttribute( const std::string &name, IECore::ConstDataPtr d );
 		void setOpacityAttribute( const std::string &name, IECore::ConstDataPtr d );
 		void setSidesAttribute( const std::string &name, IECore::ConstDataPtr d );
+		void setDoubleSidedAttribute( const std::string &name, IECore::ConstDataPtr d );
 		void setGeometricApproximationAttribute( const std::string &name, IECore::ConstDataPtr d );
+		void setNameAttribute( const std::string &name, IECore::ConstDataPtr d );
+
+		IECore::ConstDataPtr getShadingRateAttribute( const std::string &name ) const;
+		IECore::ConstDataPtr getMatteAttribute( const std::string &name ) const;
+		IECore::ConstDataPtr getDoubleSidedAttribute( const std::string &name ) const;
+		IECore::ConstDataPtr getNameAttribute( const std::string &name ) const;
 		
 		struct ProcData
 		{
@@ -170,6 +175,7 @@ class RendererImplementation : public IECore::Renderer
 		void objectBeginCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
 		void objectEndCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
 		void objectInstanceCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
+		void archiveRecordCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
 
 		static std::vector<int> g_nLoops;
 };

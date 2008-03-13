@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -57,6 +57,8 @@
 #include "IECoreGL/bindings/CameraControllerBinding.h"
 #include "IECoreGL/bindings/StateComponentBinding.h"
 #include "IECoreGL/bindings/TypedStateComponentBinding.h"
+#include "IECoreGL/bindings/NameStateComponentBinding.h"
+#include "IECoreGL/bindings/HitRecordBinding.h"
 
 using namespace IECoreGL;
 using namespace boost::python;
@@ -84,6 +86,8 @@ BOOST_PYTHON_MODULE( _IECoreGL )
 	bindCameraController();
 	bindStateComponent();
 	bindTypedStateComponents();
+	bindNameStateComponent();
+	bindHitRecord();
 	
 	def( "coreMajorVersion", &coreMajorVersion );
 	def( "init", &IECoreGL::init );

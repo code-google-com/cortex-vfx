@@ -87,10 +87,47 @@ class Renderer : public RunTimeTyped
 		virtual ConstDataPtr getOption( const std::string &name ) const = 0;
 		//@}
 
-		/// Creates a named camera at the position defined by the current transform.
-		/// The last camera specified before worldBegin() is considered to be the
-		/// camera for rendering through - other cameras may be used in implementation
-		/// specific ways by Renderer subclasses.
+		/// Creates a named camera at the position defined by the current transform. The camera
+		/// looks down positive Z, with screen space left to right being positive X and
+		/// screen space top to bottom being positive Y. The last camera specified before
+		/// worldBegin() is considered to be the camera for rendering through - other cameras
+		/// may be used in implementation specific ways by Renderer subclasses.
+		///
+		/// \par Standard Parameters
+		/// <br>
+		/// The following standard parameters should be supported by all implementations
+		/// wherever possible - they are largely based on the RenderMan specification :
+		///
+		///	\li <b>"resolution"	V2iData</b><br>
+		/// The resolution of any output images. Should default to 640x480 if not specified.
+		///
+		/// \li <b>"screenWindow" Box2fData</b><br>
+		/// The region in screen space which is mapped to the output resolution. If unspecified
+		/// then this should default to -1,1 in the smallest image dimension and the other
+		/// dimension should be sized appropriately to preserve pixel aspect ration.
+		///
+		/// \li <b>"cropWindow" Box2fData</b><br>
+		/// The region in raster space which should actually be rendered - this allows just
+		/// a section of the full resolution to be rendered. Note that raster space runs from
+		/// 0,0 at the top left to 1,1 at the bottom right. Defaults to 0,0 1,1 if not specified.
+		///
+		/// \li <b>"projection" StringData</b><br>
+		/// The projection that determines how camera coordinates are converted to screen space
+		/// coordinates. Implementations should support "perspective" and "orthographic", with
+		/// orthographic being the default if not specified.
+		///
+		/// \li <b>"projection:fov" FloatData</b><br>
+		/// In the case of the "projection" parameter specifying a perspective projection, this
+		/// specifies the field of view (in degrees) which is visible between -1 and 1 in screen
+		/// space. Defaults to 90 degrees if unspecified.
+		///
+		/// \li <b>"clippingPlanes" V2fData</b><br>
+		/// The near and far clipping planes. Defaults to 0.01, 100000 if unspecified.
+		///
+		/// \li <b>"shutter" V2fData</b><br>
+		/// The time interval for which the shutter is open - this is used in conjunction with the
+		/// times passed to motionBegin() to specify motion blur. Defaults to 0,0 if unspecified.
+		///
 		/// \todo The parameters argument should be a const reference.
 		virtual void camera( const std::string &name, CompoundDataMap &parameters ) = 0;
 		
@@ -152,7 +189,29 @@ class Renderer : public RunTimeTyped
 		virtual void attributeBegin() = 0;
 		/// Return to the attribute state saved by the last call to attributeBegin().
 		virtual void attributeEnd() = 0;
-		/// Set the named attribute.
+		/// Sets the named attribute to the specified value.
+		///
+		/// \par Standard Attributes
+		/// <br>
+		/// The following standard attributes should be supported by all implementations
+		/// wherever possible :
+		///
+		///	\li <b>"color"	Color3fData</b><br>
+		/// The color of primitives. Defaults to 1, 1, 1 if not specified.
+		///
+		///	\li <b>"opacity" Color3fData</b><br>
+		/// The opacity of primitives. Defaults to 1, 1, 1 if not specified.
+		///
+		/// \li <b>"doubleSided" BoolData</b><br>
+		/// When true both sides of a primitive are rendered, when false
+		/// only one side is. Defaults to true.
+		///
+		/// \li <b>"name" StringData "unnamed"\li <b>
+		/// A descriptive name for the object.
+		///
+		/// \li <b>"user:*"</b><br>
+		/// Should be stored for later query, but have no other effect upon the
+		/// rendering process.
 		virtual void setAttribute( const std::string &name, ConstDataPtr value ) = 0;
 		/// Return the value of the named attribute.
 		virtual ConstDataPtr getAttribute( const std::string &name ) const = 0;

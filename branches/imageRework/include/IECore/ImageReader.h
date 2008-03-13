@@ -43,9 +43,11 @@ namespace IECore
 
 IE_CORE_FORWARDDECLARE( ImagePrimitive );
 	
-/// The ImageReader class defines an abstract base class for reading files as ImagePrimitives.
-/// Its main purpose is to define a standard set of parameters used by all derived classes,
-/// and to define an interface which simplifies the implementation of derived classes.
+
+/// The ImageReader class defines an abstract base class for reading sampled images.
+/// ImageReader's main purpose is to define a standard set of parameters
+/// which all concrete ImageReader implementations obey.  It also defines some pure virtual functions
+/// which allow interface implementors to focus on image-specific code for loading channels.
 /// \todo Define and support a parameter for conversion of image data type during loading
 /// \todo Define and support a parameter for conversion of colourspace during loading
 class ImageReader : public Reader
@@ -56,7 +58,7 @@ class ImageReader : public Reader
 		IE_CORE_DECLARERUNTIMETYPED( ImageReader, Reader );
 
 		ImageReader( const std::string name, const std::string description );
-			
+
 		//! @name Parameter accessors
 		/// These provide convenient access to the parameters controlling
 		/// image loading.

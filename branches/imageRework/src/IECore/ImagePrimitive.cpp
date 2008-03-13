@@ -60,11 +60,12 @@ Box3f ImagePrimitive::bound() const
 	assert( ! m_displayWindow.isEmpty() );
 	
 	/// \todo We might need to include any pixel aspect ratio in this bound
-	
+
 	V3f boxMin( m_displayWindow.min.x, m_displayWindow.min.y, 0.0 );
 	
 	/// We add one here because the displayWindow is measured in pixels, and is inclusive. That is, an image
 	/// which has a displayWindow of (0,0)->(0,0) contains exactly one pixel.
+
 	V3f boxMax( 1.0f + m_displayWindow.max.x, 1.0f + m_displayWindow.max.y, 0.0 );
 	
 	V3f center = (boxMin + boxMax) / 2.0;

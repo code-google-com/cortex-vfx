@@ -56,8 +56,7 @@ ImageReader::ImageReader( const std::string name, const std::string description 
 		"is used to specify that the full data window should be loaded. Other values may be specified "
 		"to load just a section of the image."
 	);
-	
-	
+
 	m_displayWindowParameter = new Box2iParameter(
 		"displayWindow",
 		"The displayWindow for the ImagePrimitive created during loading. The default value (an empty box) "
@@ -87,11 +86,14 @@ ObjectPtr ImageReader::doOperation( ConstCompoundObjectPtr operands )
 	}
 	Box2i dataWind = dataWindowToRead();
 	
+
 	// create our ImagePrimitive
 	ImagePrimitivePtr image = new ImagePrimitive( dataWind, displayWind );
 
 	// fetch all the user-desired channels with
+
 	// the derived class' readChannel() implementation
+
 	vector<string> channelNames;
 	channelsToRead( channelNames );
 
@@ -118,7 +120,7 @@ DataPtr ImageReader::readChannel( const std::string &name )
 {
 	vector<string> allNames;
 	channelNames( allNames );
-	
+
 	if ( find( allNames.begin(), allNames.end(), name ) == allNames.end() )
 	{
 		throw InvalidArgumentException( "Non-existent image channel requested" );

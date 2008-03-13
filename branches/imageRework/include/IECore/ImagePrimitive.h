@@ -86,10 +86,12 @@ class ImagePrimitive : public Primitive
 
 		IE_CORE_DECLAREOBJECT( ImagePrimitive, Primitive );
 
+
 		/// construct an ImagePrimitive with no area consumed		
 		/// \deprecated There is no default display window which makes sense for an image primitive. We only need this so that we can
 		/// created an object during file reading
 		/// \todo Try and make this constructor protected so that only the Object loading can call it.
+
 		ImagePrimitive();
 
 		/// construct an ImagePrimitive with the given data and display window dimensions
@@ -104,6 +106,7 @@ class ImagePrimitive : public Primitive
 
 		/// Sets the data window - note that this doesn't modify the contents of primitive variables (channels)
 		/// at all - it is the callers responsibilty to keep any data valid.
+
 		void setDataWindow( const Imath::Box2i &dataWindow );
 
 		/// Returns the display window.
@@ -140,8 +143,9 @@ class ImagePrimitive : public Primitive
 		/// Returns 2-d image size for Vertex, Varying, and FaceVarying Interpolation, otherwise 1.
 		virtual size_t variableSize( PrimitiveVariable::Interpolation interpolation );
 
-		/// Renders the image.
+
 		virtual void render( RendererPtr renderer );
+
 
 		/// Places the channel names for this image into the given vector
 		/// \bug this just copies the primitive variable names - it should also check that

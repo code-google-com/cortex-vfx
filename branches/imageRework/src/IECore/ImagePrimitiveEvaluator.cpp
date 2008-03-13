@@ -253,6 +253,7 @@ T ImagePrimitiveEvaluator::Result::getPrimVar( const PrimitiveVariable &pv ) con
 			int idx = ( p.y * dataWidth ) + p.x;								
 			assert( idx >= 0 );
 			assert( idx < (int)data->readable().size() );
+
 			return data->readable()[idx];							
 		}
 			

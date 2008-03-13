@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,9 +52,8 @@ class SceneViewer : public Window
 	public :
 	
 		/// Creates a new window with a view onto the
-		/// specified scene. If no camera is specified then
-		/// a default constructed PerspectiveCamera is used.
-		SceneViewer( const std::string &title, ScenePtr scene, CameraPtr camera = 0  );
+		/// specified scene.
+		SceneViewer( const std::string &title, ScenePtr scene );
 		virtual ~SceneViewer();
 
 	protected :
@@ -71,7 +70,6 @@ class SceneViewer : public Window
 	private :
 	
 		ScenePtr m_scene;
-		CameraPtr m_camera;
 		CameraControllerPtr m_cameraController;
 
 };

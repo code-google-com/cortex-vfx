@@ -41,7 +41,15 @@
 namespace IECore
 {
 
-/// MeshPrimitive represents a collection of closed simple polygonal facets
+IE_CORE_FORWARDDECLARE( MeshPrimitive )
+
+/// The MeshPrimitive represents a collection of polygonal faces. The faces should
+/// be planar and may not have holes, but can have concavities. By default a polygon
+/// is considered frontfacing if it's vertices wind in a clockwise direction from the
+/// point of view of the camera - this can be changed at the point of rendering by
+/// setting attributes in the Renderer. This definition of winding order is the same as
+/// the RenderMan specification, but the opposite of the OpenGL and Maya conventions.
+/// \todo Verify that we're interpreting winding order correctly thoughout Cortex.
 class MeshPrimitive : public Primitive
 {	  
 	
@@ -73,7 +81,10 @@ class MeshPrimitive : public Primitive
 
 		/// Creates a custom box mesh.
 		//\todo Add subdivisions and texture coordinates.
-		static boost::intrusive_ptr< MeshPrimitive > createBox( Imath::Box3f b );
+		static MeshPrimitivePtr createBox( Imath::Box3f b );
+		/// Creates a plane at z=0.
+		//\todo Add subdivisions and texture coordinates.
+		static MeshPrimitivePtr createPlane( Imath::Box2f b );
 
 	private:
 
@@ -85,8 +96,6 @@ class MeshPrimitive : public Primitive
 		std::string m_interpolation;
 			
 };  
-	
-IE_CORE_DECLAREPTR( MeshPrimitive );
 
 }
 

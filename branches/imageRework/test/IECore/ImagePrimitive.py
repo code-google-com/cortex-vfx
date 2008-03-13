@@ -56,6 +56,12 @@ class TestImagePrimitive( unittest.TestCase ) :
 		
 		i.displayWindow = Box2i( windowMin, V2i( 10, 10 ) )
 		self.assertEqual( i.displayWindow, Box2i( windowMin, V2i( 10, 10 ) ) )
+					
+	def testDataWindow( self ) :			
+	
+		displayWindow = Box2i( V2i( 0, 0 ), V2i( 99, 99 ) )
+		dataWindow = Box2i( V2i( 50, 50), V2i( 99, 99 ) )
+		img = ImagePrimitive( dataWindow, displayWindow )
 		
 	def testBound( self ) :
 		""" Test ImagePrimitive bound """

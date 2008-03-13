@@ -39,6 +39,11 @@ from Renderer import *
 from Instancing import *
 from PTCParticleReader import *
 from PTCParticleWriter import *
+from ArchiveRecord import *
+from DoubleSided import *
+from Orientation import *
+from MultipleContextsTest import *
+from Camera import *
 
 ## \todo Should share this class with the other tests rather
 # than duplicating it
