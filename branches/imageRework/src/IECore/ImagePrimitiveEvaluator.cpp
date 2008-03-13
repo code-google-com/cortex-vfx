@@ -230,6 +230,12 @@ T ImagePrimitiveEvaluator::Result::getPrimVar( const PrimitiveVariable &pv ) con
 			ExtraData *extraData = g_resultClassData[ this ];
 			assert( extraData );
 			
+			if ( extraData->m_dataWindow.isEmpty() )
+			{
+				/// \todo Perhaps use a traits class here to specify some "zero" value
+				return T();
+			}
+			
 			// \todo Use UV coord instead, and perform bilinear interpolation
 			V2i p = pixel() ;	
 			
