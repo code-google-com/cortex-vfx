@@ -81,6 +81,7 @@ ConstObjectPtr Writer::object() const
 
 void Writer::write()
 {
+	/// \todo Perhaps we should append the fileName() to any exceptions thrown by operate() before re-raising them?
 	operate();
 }
 

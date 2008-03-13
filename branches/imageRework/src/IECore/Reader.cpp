@@ -57,6 +57,7 @@ Reader::Reader(  const std::string name, const std::string description, Paramete
 
 ObjectPtr Reader::read()
 {
+	/// \todo Perhaps we should append the fileName() to any exceptions thrown by operate() before re-raising them?
 	return operate();
 }
 
