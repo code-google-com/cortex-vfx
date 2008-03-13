@@ -144,6 +144,34 @@ class TestImagePrimitive( unittest.TestCase ) :
 		
 		self.failIf( i.arePrimitiveVariablesValid() )
 		
+	def testCreateChannel( self ):
+	
+		windowMin = V2i( 0, 0 )
+		windowMax = V2i( 99, 99 )
+		w = Box2i( windowMin, windowMax )
+		i = ImagePrimitive( w, w )
+		
+		i.createFloatChannel( "R" )
+		i.createHalfChannel( "G" )
+		i.createUIntChannel( "B" )
+		
+		self.assert_( "R" in i )
+		self.assert_( "G" in i )
+		self.assert_( "B" in i )				
+		
+	def testErrors( self ):
+	
+		windowMin = V2i( 0, 0 )
+		windowMax = V2i( 99, 99 )
+		w = Box2i( windowMin, windowMax )
+		i = ImagePrimitive( w, w )
+		
+		empty = Box2i()
+		
+		self.assertRaises( RuntimeError, setattr, i, "displayWindow", empty )
+		
+		self.assertRaises( RuntimeError, ImagePrimitive, empty, empty )	
+		
 		
 	def tearDown( self ) :
 	
