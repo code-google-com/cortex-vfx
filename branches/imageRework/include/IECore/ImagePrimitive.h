@@ -70,6 +70,9 @@ namespace IECore
 /// to be zero (i.e. black/transparent). This means that the number of data elements stored in each
 /// channel should equal to the area of the data window.
 ///
+/// In object-space, the ImagePrimitive is represented as a unit plane centered on the origin, with scale (width, height) in axes (X, Y).
+/// The normal is pointing down the negative Z-axis.
+///
 /// Pixel-space runs from the display window origin in the top-left corner, to the display window's maximum in
 /// the bottom-right corner. Pixels of ascending X coordinate therefore run left-right, and pixels of ascending
 /// Y coordinate run top-bottom.
