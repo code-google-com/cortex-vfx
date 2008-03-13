@@ -112,8 +112,9 @@ bool TIFFImageReader::canRead( const string &fileName )
 	{
 		return false;
 	}
-	
-	return magic == 0x002a4949 || magic == 0x49492a00 || magic == 0x2a004d4d;
+
+	return magic == 0x002a4949 || magic == reverseBytes<unsigned int>(0x002a4949) 		
+		|| magic == 0x4d4d002a || magic == reverseBytes<unsigned int>(0x4d4d002a) ;
 }
 
 void TIFFImageReader::channelNames( vector<string> &names )
