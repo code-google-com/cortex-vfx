@@ -50,12 +50,15 @@ ImagePrimitive::ImagePrimitive()
 }
 
 ImagePrimitive::ImagePrimitive( Box2i dataWindow, Box2i displayWindow )
-		: m_dataWindow( dataWindow ), m_displayWindow( displayWindow )
 {
+	setDataWindow( dataWindow );
+	setDisplayWindow( displayWindow );
 }
 
 Box3f ImagePrimitive::bound() const
 {
+	assert( ! m_displayWindow.isEmpty() );
+	
 	/// \todo We might need to include any pixel aspect ratio in this bound
 	
 	V3f boxMin( m_displayWindow.min.x, m_displayWindow.min.y, 0.0 );
@@ -86,6 +89,11 @@ const Box2i &ImagePrimitive::getDisplayWindow() const
 
 void ImagePrimitive::setDisplayWindow( const Box2i &displayWindow )
 {
+	if ( displayWindow.isEmpty() )
+	{
+		throw InvalidArgumentException( "ImagePrimitive: Cannot set displayWindow to the empty window" );
+	}
+
 	m_displayWindow = displayWindow;
 }
 
