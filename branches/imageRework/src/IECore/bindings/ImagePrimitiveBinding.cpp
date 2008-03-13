@@ -44,37 +44,45 @@ using namespace boost::python;
 namespace IECore
 {
 	
-	void bindImagePrimitive()
-	{
-		typedef class_<ImagePrimitive, ImagePrimitivePtr, bases<Primitive>, boost::noncopyable> ImagePrimitivePyClass;
-		ImagePrimitivePyClass("ImagePrimitive")
-			.def( init<Imath::Box2i, Imath::Box2i>() )
+static StringVectorDataPtr channelNames( ImagePrimitive &that )
+{
+	StringVectorDataPtr result( new StringVectorData );
+	that.channelNames( result->writable() );
+	
+	return result;
+}	
+	
+void bindImagePrimitive()
+{
+	typedef class_<ImagePrimitive, ImagePrimitivePtr, bases<Primitive>, boost::noncopyable> ImagePrimitivePyClass;
+	ImagePrimitivePyClass("ImagePrimitive")
+		.def( init<Imath::Box2i, Imath::Box2i>() )
 
-			// methods cast as properties
-			.add_property("x", &ImagePrimitive::x)
-			.add_property("y", &ImagePrimitive::y)
-			.add_property("width", &ImagePrimitive::width)
-			.add_property("height", &ImagePrimitive::height)
-			.add_property("area", &ImagePrimitive::area)
+		// methods cast as properties
+		.add_property("x", &ImagePrimitive::x)
+		.add_property("y", &ImagePrimitive::y)
+		.add_property("width", &ImagePrimitive::width)
+		.add_property("height", &ImagePrimitive::height)
+		.add_property("area", &ImagePrimitive::area)
 
-			// get/set access methods
-			.add_property("dataWindow", make_function( &ImagePrimitive::getDataWindow,
-			     return_value_policy<copy_const_reference>() ), &ImagePrimitive::setDataWindow )
-				 
-			.add_property("displayWindow", make_function( &ImagePrimitive::getDisplayWindow,
-			     return_value_policy<copy_const_reference>() ), &ImagePrimitive::setDisplayWindow ) 
+		// get/set access methods
+		.add_property("dataWindow", make_function( &ImagePrimitive::getDataWindow,
+		     return_value_policy<copy_const_reference>() ), &ImagePrimitive::setDataWindow )
 
-			.def("channelNames", &ImagePrimitive::channelNames)
+		.add_property("displayWindow", make_function( &ImagePrimitive::getDisplayWindow,
+		     return_value_policy<copy_const_reference>() ), &ImagePrimitive::setDisplayWindow ) 
 
-			// templated code?
-			//.def("createChannel", &ImagePrimitive::createChannel)
-			
-			.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( ImagePrimitive )
+		.def("channelNames", &channelNames)
 
-			;
-		
-		INTRUSIVE_PTR_PATCH( ImagePrimitive, ImagePrimitivePyClass );
-		implicitly_convertible<ImagePrimitivePtr, PrimitivePtr>();
-	}
+		// templated code?
+		//.def("createChannel", &ImagePrimitive::createChannel)
+
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( ImagePrimitive )
+
+		;
+
+	INTRUSIVE_PTR_PATCH( ImagePrimitive, ImagePrimitivePyClass );
+	implicitly_convertible<ImagePrimitivePtr, PrimitivePtr>();
+}
 	
 }
