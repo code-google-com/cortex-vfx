@@ -86,7 +86,10 @@ class ImagePrimitive : public Primitive
 
 		IE_CORE_DECLAREOBJECT( ImagePrimitive, Primitive );
 
-		/// construct an ImagePrimitive with no area consumed
+		/// construct an ImagePrimitive with no area consumed		
+		/// \deprecated There is no default display window which makes sense for an image primitive. We only need this so that we can
+		/// created an object during file reading
+		/// \todo Try and make this constructor protected so that only the Object loading can call it.
 		ImagePrimitive();
 
 		/// construct an ImagePrimitive with the given data and display window dimensions
@@ -101,14 +104,13 @@ class ImagePrimitive : public Primitive
 
 		/// Sets the data window - note that this doesn't modify the contents of primitive variables (channels)
 		/// at all - it is the callers responsibilty to keep any data valid.
-		void setDataWindow( const Imath::Box2i &dw );
+		void setDataWindow( const Imath::Box2i &dataWindow );
 
 		/// Returns the display window.
 		const Imath::Box2i &getDisplayWindow() const;
 
-		/// Sets the display window.
-		/// \todo Throw on empty windows
-		void setDisplayWindow( const Imath::Box2i &dw );
+		/// Sets the display window. Throws if an empty window is passed.
+		void setDisplayWindow( const Imath::Box2i &displayWindow );
 
 		/// give the data window x origin
 		/// \deprecated It's unclear whether this should reference the data window or display window.
@@ -139,18 +141,20 @@ class ImagePrimitive : public Primitive
 		virtual size_t variableSize( PrimitiveVariable::Interpolation interpolation );
 
 		/// Renders the image.
-		virtual void render(RendererPtr renderer);
+		virtual void render( RendererPtr renderer );
 
 		/// Places the channel names for this image into the given vector
 		/// \bug this just copies the primitive variable names - it should also check that
 		/// the number of elements and interpolation makes the primvars suitable for
 		/// use as channels.
-		void channelNames(std::vector<std::string> & names) const;
+		void channelNames( std::vector<std::string> &names ) const;
 
 		/// Convenience function to create a channel - this simply creates and adds a PrimitiveVariable of the appropriate
-		/// size and returns a pointer to the data within it.
+		/// size and returns a pointer to the data within it. The data is not initialized.
+		/// \todo Use typename TypedData<std::vector<T> >::Ptr as return type
+		/// \todo Make channel name a const reference
 		template<typename T>
-		boost::intrusive_ptr<TypedData<std::vector<T> > > createChannel(std::string name);
+		boost::intrusive_ptr<TypedData<std::vector<T> > > createChannel( std::string name );
 
 	private:
 
