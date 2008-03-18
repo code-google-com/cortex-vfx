@@ -89,7 +89,7 @@ V3f ImagePrimitiveEvaluator::Result::point() const
 
 V3f ImagePrimitiveEvaluator::Result::normal() const
 {
-	return V3f( 0.0f, 0.0f, -1.0f );
+	return V3f( 0.0f, 0.0f, 1.0f );
 }
 
 V2f ImagePrimitiveEvaluator::Result::uv() const
