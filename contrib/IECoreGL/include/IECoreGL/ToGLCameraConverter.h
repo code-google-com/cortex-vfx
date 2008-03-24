@@ -59,7 +59,7 @@ class ToGLCameraConverter : public ToGLConverter
 			
 };
 
-IE_CORE_DECLAREPTR( ToGLCameraConverter );
+IE_CORE_DECLAREPTR( ToGLConverter );
 
 } // namespace IECoreGL
 

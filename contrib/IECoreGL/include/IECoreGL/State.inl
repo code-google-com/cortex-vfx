@@ -16,12 +16,6 @@ typename T::ConstPtr State::get() const
 	return boost::static_pointer_cast<const T>( get( T::staticTypeId() ) );
 }
 
-template<typename T>
-void State::remove()
-{
-	remove( T::staticTypeId() );
-}
-
 } // namespace IECoreGL
 
 #endif // IECOREGL_STATE_INL

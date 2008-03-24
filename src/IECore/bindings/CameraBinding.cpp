@@ -61,7 +61,6 @@ void bindCamera()
 		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( Camera )
 	;
 	INTRUSIVE_PTR_PATCH( Camera, CameraPyClass );
-	implicitly_convertible<CameraPtr, ConstCameraPtr>();
 	implicitly_convertible<CameraPtr, PreWorldRenderablePtr>();
 }
 
