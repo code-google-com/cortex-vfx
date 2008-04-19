@@ -233,7 +233,7 @@ T ImagePrimitiveEvaluator::Result::getPrimVar( const PrimitiveVariable &pv ) con
 			if ( extraData->m_dataWindow.isEmpty() )
 			{
 				/// \todo Perhaps use a traits class here to specify some "zero" value
-				return T();
+				return T(0);
 			}
 			
 			// \todo Use UV coord instead, and perform bilinear interpolation
@@ -247,7 +247,7 @@ T ImagePrimitiveEvaluator::Result::getPrimVar( const PrimitiveVariable &pv ) con
 			if ( p.x < 0 || p.y < 0 || p.x >= dataWidth || p.y >= dataHeight )
 			{
 				/// \todo Perhaps use a traits class here to specify some "zero" value
-				return T();
+				return T(0);
 			}
 						
 			int idx = ( p.y * dataWidth ) + p.x;								
