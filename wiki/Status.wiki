@@ -1,4 +1,24 @@
 #labels Featured
   * The IECore, IECoreRI, IECoreGL, and IECoreMaya libraries are now in the repository. All internal Image Engine development will be committed to the trunk.
 
-  * A basic SCons based build setup is in place, Image Engine will switch their builds to use that shortly.
+  * Image Engine are now using the provided SCons-based build setup for all their internal builds
+  
+  * IECore has been successfully built and tested on the follow platforms:
+  
+    * Redhat Enterprise Linux 4 / ia32
+    
+      * gcc 3.3.2 / gcc 3.3.4 / gcc 3.4.6 / gcc 4.0.1 / gcc 4.0.2 / gcc 4.1.2
+      
+    * Ubuntu 8.01 / x86_64
+    
+      * gcc 3.4.6 / gcc 4.1.2 / gcc 4.3.0
+      
+    * Mac OSX 10.4 / PowerPC
+    
+      * gcc 4.0.1
+      
+    * Mac OSX 10.4 / ia32
+    
+      * gcc 4.0.1    
+            
+    NB. gcc 4.2.x exhibits buggy behaviour
