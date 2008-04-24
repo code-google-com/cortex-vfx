@@ -5,20 +5,16 @@
   
   * IECore has been successfully built and tested on the follow platforms:
   
-    * Redhat Enterprise Linux 4 / ia32
-    
+    * Redhat Enterprise Linux 4 / ia32    
       * gcc 3.3.2 / gcc 3.3.4 / gcc 3.4.6 / gcc 4.0.1 / gcc 4.0.2 / gcc 4.1.2
       
-    * Ubuntu 8.01 / x86_64
-    
+    * Ubuntu 8.01 / x86_64 :    
       * gcc 3.4.6 / gcc 4.1.2 / gcc 4.3.0
       
-    * Mac OSX 10.4 / PowerPC
-    
+    * Mac OSX 10.4 / PowerPC    
       * gcc 4.0.1
       
-    * Mac OSX 10.4 / ia32
-    
+    * Mac OSX 10.4 / ia32    
       * gcc 4.0.1    
             
     NB. gcc 4.2.x exhibits buggy behaviour
