@@ -47,6 +47,7 @@ namespace IECore
 {
 
 /// A model of ImplicitSurfaceFunction for creating a signed distance field with respect to a MeshPrimitive.
+/// \deprecated In future versions PrimitiveImplicitSurfaceFunction will be able to acheive the same functionality as this class, as it will defer all work to the PrimitiveEvaluator itself
 class MeshPrimitiveImplicitSurfaceFunction : public PrimitiveImplicitSurfaceFunction
 {
         public:
