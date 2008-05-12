@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -290,7 +290,7 @@ class FileIndexedIO::Index : public RefCounted
 		static const Imf::Int64 g_unversionedMagicNumber = 0x0B00B1E5;
 		static const Imf::Int64 g_versionedMagicNumber = 0xB00B1E50;
 		
-		static const Imf::Int64 g_currentVersion = 2;
+		static const Imf::Int64 g_currentVersion = 3;
 		
 		Imf::Int64 m_version;		
 	
@@ -960,7 +960,20 @@ void FileIndexedIO::Node::write( std::ostream &f )
 	{
 		t = m_entry.m_dataType;			
 		f.write( &t, sizeof(char) );
-		writeLittleEndian<Imf::Int64>(f, m_entry.m_arrayLength );
+		
+		if ( m_entry.m_dataType == IndexedIO::FloatArray
+		     || m_entry.m_dataType == IndexedIO::DoubleArray
+		     || m_entry.m_dataType == IndexedIO::IntArray
+		     || m_entry.m_dataType == IndexedIO::LongArray
+		     || m_entry.m_dataType == IndexedIO::StringArray
+		     || m_entry.m_dataType == IndexedIO::UIntArray
+		     || m_entry.m_dataType == IndexedIO::CharArray
+		     || m_entry.m_dataType == IndexedIO::UCharArray
+		     || m_entry.m_dataType == IndexedIO::HalfArray
+		)
+		{
+			writeLittleEndian<Imf::Int64>(f, m_entry.m_arrayLength );
+		}
 	}
 								
 	writeLittleEndian<Imf::Int64>(f, m_id);
@@ -1013,8 +1026,22 @@ void FileIndexedIO::Node::read( std::istream &f )
 		f.read( &t, sizeof(char) );		
 		m_entry.m_dataType = (IndexedIO::DataType)t;
 	
-		Imf::Int64 arrayLength;
-		readLittleEndian<Imf::Int64>( f, arrayLength );
+		Imf::Int64 arrayLength = 0;
+		
+		if ( m_idx->m_version < 3 
+		    || m_entry.m_dataType == IndexedIO::FloatArray
+		    || m_entry.m_dataType == IndexedIO::DoubleArray
+		    || m_entry.m_dataType == IndexedIO::IntArray
+		    || m_entry.m_dataType == IndexedIO::LongArray
+		    || m_entry.m_dataType == IndexedIO::StringArray
+		    || m_entry.m_dataType == IndexedIO::UIntArray
+		    || m_entry.m_dataType == IndexedIO::CharArray
+		    || m_entry.m_dataType == IndexedIO::UCharArray
+		    || m_entry.m_dataType == IndexedIO::HalfArray
+		)
+		{
+			readLittleEndian<Imf::Int64>( f, arrayLength );
+		}
 		m_entry.m_arrayLength = arrayLength;			
 	}
 	else
