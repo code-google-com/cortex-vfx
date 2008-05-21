@@ -43,8 +43,7 @@
 #include "IECore/FileNameParameter.h"
 #include "IECore/ObjectParameter.h"
 #include "IECore/NullObject.h"
-#include "IECore/DespatchTypedData.h"
-#include "IECore/TestTypedData.h"
+#include "IECore/TypedDataDespatch.h"
 
 #include <algorithm>
 
@@ -52,7 +51,7 @@ using namespace std;
 using namespace IECore;
 using namespace boost;
 
-ParticleReader::ParticleReader( const std::string &name, const std::string &description ) 
+ParticleReader::ParticleReader( const std::string name, const std::string description ) 
 		:	Reader( name, description, new ObjectParameter( "result", "The loaded object.", new NullObject, PointsPrimitive::staticTypeId() ) )
 {
 	m_percentageParameter = new FloatParameter(
@@ -148,8 +147,10 @@ ObjectPtr ParticleReader::doOperation( ConstCompoundObjectPtr operands )
 	{
 		DataPtr d = readAttribute( *it );
 		
-		if ( testTypedData<TypeTraits::IsVectorTypedData>( d ) )
+		/// \todo Remove use of exception handling as means of flow control
+		try
 		{
+			// throws if it's not vector data
 			size_t s = despatchTypedData< TypedDataSize, TypeTraits::IsVectorTypedData >( d );
 			if( !haveNumPoints )
 			{
@@ -165,9 +166,19 @@ ObjectPtr ParticleReader::doOperation( ConstCompoundObjectPtr operands )
 				msg( Msg::Warning, "ParticleReader::doOperation", format( "Ignoring attribute \"%s\" due to insufficient elements (expected %d but found %d)." ) % *it % result->getNumPoints() % s );
 			}
 		}
-		else if ( testTypedData<TypeTraits::IsSimpleTypedData>( d ) )
+		catch( ... )
 		{
-			result->variables.insert( PrimitiveVariableMap::value_type( *it, PrimitiveVariable( PrimitiveVariable::Constant, d ) ) );
+			// not vector data, maybe it's some sort of constant data
+			try
+			{
+				// throws if not simple data
+				despatchTypedData< TypedDataAddress, TypeTraits::IsSimpleTypedData >( d );
+				result->variables.insert( PrimitiveVariableMap::value_type( *it, PrimitiveVariable( PrimitiveVariable::Constant, d ) ) );
+			}
+			catch( ... )
+			{
+				msg( Msg::Warning, "ParticleReader::doOperation", format( "Ignoring attribute \"%s\" due to unsupported type \"%s\"." ) % *it % d->typeName() );
+			}
 		}
 	}
 	return result;

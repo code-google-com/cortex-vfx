@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,6 +43,7 @@
 #include "IECore/CompoundObject.h"
 #include "IECore/Object.h"
 #include "IECore/NullObject.h"
+//#include "IECore/DataTraits.h"
 
 #include <cassert>
 
@@ -243,26 +244,18 @@ ObjectPtr DataCastOp::doOperation( ConstCompoundObjectPtr operands )
 				default:	break;
 			}
 			break;	
-		case Int64DataTypeId:
-			switch ( targetType )
-			{
-				CASTDATA( Int64, UInt64 )
-				default:	break;
-			}
-			break;
-		case UInt64DataTypeId:
-			switch ( targetType )
-			{
-				CASTDATA( UInt64, Int64 )
-				default:	break;
-			}
-			break;		
 		case IntDataTypeId:
 			switch ( targetType )
 			{
 				CASTDATA( Int, UInt )
-				CASTDATA( Int, Int64 )
-				CASTDATA( Int, UInt64 )
+				CASTDATA( Int, Long )
+				default:	break;
+			}
+			break;
+		case LongDataTypeId:
+			switch ( targetType )
+			{
+				CASTDATA( Long, Int )
 				default:	break;
 			}
 			break;
@@ -270,8 +263,6 @@ ObjectPtr DataCastOp::doOperation( ConstCompoundObjectPtr operands )
 			switch ( targetType )
 			{
 				CASTDATA( UInt, Int )
-				CASTDATA( UInt, Int64 )
-				CASTDATA( UInt, UInt64 )
 				default:	break;
 			}
 			break;
@@ -571,8 +562,6 @@ ObjectPtr DataCastOp::doOperation( ConstCompoundObjectPtr operands )
 				CASTDATA( IntVector, Box2i )
 				CASTDATA( IntVector, Box3i )
 				CASTVECTORDATA( IntVector, UIntVector )
-				CASTVECTORDATA( IntVector, Int64Vector )
-				CASTVECTORDATA( IntVector, UInt64Vector )				
 				default:	break;
 			}
 			break;
@@ -581,27 +570,9 @@ ObjectPtr DataCastOp::doOperation( ConstCompoundObjectPtr operands )
 			{
 				CASTDATA( UIntVector, UInt )
 				CASTVECTORDATA( UIntVector, IntVector )
-				CASTVECTORDATA( UIntVector, Int64Vector )
-				CASTVECTORDATA( UIntVector, UInt64Vector )
 				default:	break;
 			}
 			break;
-		case Int64VectorDataTypeId:
-			switch ( targetType )
-			{
-				CASTDATA( Int64Vector, Int64 )
-				CASTVECTORDATA( Int64Vector, UInt64Vector )
-				default:	break;
-			}
-			break;
-		case UInt64VectorDataTypeId:
-			switch ( targetType )
-			{
-				CASTDATA( UInt64Vector, UInt64 )
-				CASTVECTORDATA( UInt64Vector, Int64Vector )
-				default:	break;
-			}
-			break;	
 		case V2fVectorDataTypeId:
 			switch ( targetType )
 			{

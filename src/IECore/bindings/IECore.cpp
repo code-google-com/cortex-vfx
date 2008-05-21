@@ -169,15 +169,6 @@
 #include "IECore/bindings/CurvesPrimitiveBinding.h"
 #include "IECore/bindings/ImageDiffOpBinding.h"
 #include "IECore/bindings/TriangulatorBinding.h"
-#include "IECore/bindings/BezierAlgoBinding.h"
-#include "IECore/bindings/ToCoreConverterBinding.h"
-#include "IECore/bindings/MeshNormalsOpBinding.h"
-#include "IECore/bindings/PolygonAlgoBinding.h"
-#include "IECore/bindings/MeshMergeOpBinding.h"
-#include "IECore/bindings/FontBinding.h"
-#include "IECore/bindings/UniformRandomPointDistributionOpBinding.h"
-#include "IECore/bindings/UnicodeToStringBinding.h"
-#include "IECore/bindings/MappedRandomPointDistributionOpBinding.h"
 #include "IECore/IECore.h"
 
 using namespace IECore;
@@ -326,21 +317,6 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindCurvesPrimitive();
 	bindImageDiffOp();	
 	bindTriangulator();
-	bindBezierAlgo();
-	bindToCoreConverter();
-	bindMeshNormalsOp();
-	bindPolygonAlgo();
-	bindMeshMergeOp();
-	
-#ifdef IECORE_WITH_FREETYPE
-
-	bindFont();
-
-#endif	
-
-	bindUniformRandomPointDistributionOp();
-	bindUnicodeToString();
-	bindMappedRandomPointDistributionOp();
 
 	def( "majorVersion", &IECore::majorVersion );
 	def( "minorVersion", &IECore::minorVersion );
@@ -348,6 +324,5 @@ BOOST_PYTHON_MODULE(_IECore)
 	def( "versionString", &IECore::versionString, return_value_policy<copy_const_reference>() );
 	def( "withTIFF", &IECore::withTIFF );
 	def( "withJPEG", &IECore::withJPEG );
-	def( "withFreeType", &IECore::withFreeType );
-
+	def( "withSQLite", &IECore::withSQLite );
 }

@@ -255,14 +255,12 @@ class RendererTest( unittest.TestCase ) :
 		
 		r.worldEnd()
 		
+	## \todo Make this test actually work non-interactively - perhaps install a custom message handler
+	# to ensure that no messages are output during the setAttribute call, and check the rib for unwanted output.
 	def testIgnoreOtherAttributesAndOptions( self ) :
 	
-		m = CapturingMessageHandler()
-		s = ScopedMessageHandler( m )
-		
 		r = IECoreRI.Renderer( "test/IECoreRI/output/transform.rib" )
 		
-		# this should be silently ignored
 		r.setOption( "someOthereRenderer:someOtherOption", IntData( 10 ) )
 		
 		r.worldBegin()
@@ -271,16 +269,11 @@ class RendererTest( unittest.TestCase ) :
 		r.setAttribute( "someOtherRenderer:someOtherAttribute", IntData( 10 ) )
 		
 		r.worldEnd()
-		
-		self.assertEqual( len( m.messages ), 0 )
 	
 	def testMissingShaders( self ) :
 	
 		"""Check that missing shaders don't throw an exception but print a message instead."""
 	
-		m = CapturingMessageHandler()
-		s = ScopedMessageHandler( m )
-		
 		r = IECoreRI.Renderer( "test/IECoreRI/output/missingShaders.rib" )
 		
 		r.worldBegin()
@@ -288,9 +281,6 @@ class RendererTest( unittest.TestCase ) :
 		r.shader( "surface", "aShaderWhichDoesntExist", {} )
 		
 		r.worldEnd()
-
-		self.assertEqual( len( m.messages ), 1 )
-		self.assert_( "aShaderWhichDoesntExist" in m.messages[0].message )
 		
 	def testGetUserOption( self ) :
 	

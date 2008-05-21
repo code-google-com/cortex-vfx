@@ -67,13 +67,17 @@ class JPEGImageWriter : public ImageWriter
 		struct ChannelConverter;
 
 		/// write the image
-		virtual void writeImage( const std::vector<std::string> &names,
-		                         ConstImagePrimitivePtr image,
-		                         const Imath::Box2i &dw ) const;
+		virtual void writeImage(
+		        std::vector<std::string> &names,
+		        ConstImagePrimitivePtr image,
+		        const Imath::Box2i &dw
+		);
 
 		void constructParameters();
-		
-		IntParameterPtr m_qualityParameter;
+	public:
+
+		/// \todo Move all ExtraData members to here on next major version change
+		struct ExtraData;
 
 };
 

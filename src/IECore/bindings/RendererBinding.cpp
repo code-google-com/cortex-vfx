@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -200,32 +200,11 @@ static void points( Renderer &r, size_t numPoints, const dict &primVars )
 	r.points( numPoints, p );
 }
 
-static void disk( Renderer &r, float radius, float z, float thetaMax, const dict &primVars )
+static void curves( Renderer &r, const std::string &interpolation, bool periodic, ConstIntVectorDataPtr numVertices, const dict &primVars )
 {
 	PrimitiveVariableMap p;
 	fillPrimitiveVariableMap( p, primVars );
-	r.disk( radius, z, thetaMax, p );
-}
-
-static void curves( Renderer &r, const CubicBasisf &basis, bool periodic, ConstIntVectorDataPtr numVertices, const dict &primVars )
-{
-	PrimitiveVariableMap p;
-	fillPrimitiveVariableMap( p, primVars );
-	r.curves( basis, periodic, numVertices, p );
-}
-
-static void text( Renderer &r, const std::string &font, const std::string &text, float kerning, const dict &primVars )
-{
-	PrimitiveVariableMap p;
-	fillPrimitiveVariableMap( p, primVars );
-	r.text( font, text, kerning, p );
-}
-
-static void sphere( Renderer &r, float radius, float zMin, float zMax, float thetaMax, const dict &primVars )
-{
-	PrimitiveVariableMap p;
-	fillPrimitiveVariableMap( p, primVars );
-	r.sphere( radius, zMin, zMax, thetaMax, p );
+	r.curves( interpolation, periodic, numVertices, p );
 }
 
 static void image( Renderer &r, const Imath::Box2i &dataWindow, const Imath::Box2i &displayWindow, const dict &primVars )
@@ -257,13 +236,6 @@ static void geometry( Renderer &r, const std::string &type, const dict &topology
 	PrimitiveVariableMap p;
 	fillPrimitiveVariableMap( p, primVars );
 	r.geometry( type, t, p );
-}
-
-static void instanceBegin( Renderer &r, const std::string &name, const dict &parameters )
-{
-	CompoundDataMap p;
-	fillCompoundDataMap( p, parameters );
-	r.instanceBegin( name, p );
 }
 
 static void command( Renderer &r, const std::string &name, const dict &parameters )
@@ -307,20 +279,15 @@ void bindRenderer()
 		.def("motionEnd", &Renderer::motionEnd)
 
 		.def("points", &points)
-		.def("disk", &disk)
 		.def("curves", &curves)
-		.def("text", &text)
-		.def("sphere", &Renderer::sphere)
+		.def("text", &Renderer::text)
+		.def("textExtents", &Renderer::textExtents)
 		.def("image", &image)
 		.def("mesh", &mesh)
 		.def("nurbs", &nurbs)
 		.def("geometry", &geometry)
 		
 		.def("procedural", &Renderer::procedural)
-
-		.def("instanceBegin", &instanceBegin)
-		.def("instanceEnd", &Renderer::instanceEnd)
-		.def("instance", &Renderer::instance)
 
 		.def("command", &command)
 		

@@ -65,12 +65,12 @@ enum TypeId
 	FloatDataTypeId = 22,
 	DoubleDataTypeId = 23,
 	IntDataTypeId = 24,
-	LongDataTypeId = 25, /// Obsolete: LongData has been removed. The typeId remains for compatibility with old files, which now load as IntData
+	LongDataTypeId = 25,
 	UIntDataTypeId = 26,
 	CharDataTypeId = 27,
 	UCharDataTypeId = 28,
 	StringDataTypeId = 29,
-	LongVectorDataTypeId = 30, /// Obsolete: LongVectorData has been removed. The typeId remains for compatibility with old files, which now load as IntVectorData
+	LongVectorDataTypeId = 30,
 	CompoundDataTypeId = 31,
 	V2fDataTypeId = 32,
 	V3fDataTypeId = 33,
@@ -252,15 +252,6 @@ enum TypeId
 	ImageDiffOpTypeId = 209,
 	CurvesPrimitiveTypeId = 210,
 	CoordinateSystemTypeId = 211,
-	MeshNormalsOpTypeId = 212,
-	MeshMergeOpTypeId = 213,
-	FontTypeId = 214,
-	UniformRandomPointDistributionOpTypeId = 215,
-	Int64DataTypeId = 216,
-	UInt64DataTypeId = 217,
-	Int64VectorDataTypeId = 218,
-	UInt64VectorDataTypeId = 219,
-	MappedRandomPointDistributionOpTypeId = 220,	
 	
 	// Remember to update TypeIdBinding.cpp !!!
 	
@@ -287,9 +278,6 @@ enum TypeId
 	
 	FirstCoreTruelightTypeId = 108000,
 	LastCoreTruelightTypeId = 108999,
-	
-	FirstCoreMayaTypeId = 109000,
-	LastCoreMayaTypeId = 109999,
 
 	LastExtensionTypeId = 399999,
 	// Any TypeIds beyond this point can be considered safe for private internal use.

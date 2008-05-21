@@ -65,7 +65,7 @@ class TriangulatorTest( unittest.TestCase ) :
 		
 		inMesh = MeshPrimitive( IntVectorData( [ 12 ] ), IntVectorData( range( 0, 12 ) ), "linear", p )
 		
-		builder = MeshPrimitiveBuilder()	
+		builder = MeshPrimitiveBuilderf()	
 		triangulator = V3fTriangulator( builder )
 		
 		triangulator.triangulate( p )
@@ -107,7 +107,7 @@ class TriangulatorTest( unittest.TestCase ) :
 			]
 		)		
 
-		builder = MeshPrimitiveBuilder()	
+		builder = MeshPrimitiveBuilderf()	
 		triangulator = V3fTriangulator( builder )
 		
 		triangulator.triangulate( [ outer, inner ] )
@@ -152,7 +152,7 @@ class TriangulatorTest( unittest.TestCase ) :
 			]
 		)
 		
-		builder = MeshPrimitiveBuilder()	
+		builder = MeshPrimitiveBuilderf()	
 		triangulator = V3fTriangulator( builder )
 		
 		triangulator.triangulate( [ outer, inner1, inner2 ] )
@@ -172,249 +172,10 @@ class TriangulatorTest( unittest.TestCase ) :
 			t = i * math.pi * 2 / numPoints
 			loop[i] = V3f( math.cos( t ), math.sin( t ), 0 )
 			
-		builder = MeshPrimitiveBuilder()	
+		builder = MeshPrimitiveBuilderf()	
 		triangulator = V3fTriangulator( builder )
 		
-		triangulator.triangulate( loop )
-		
-	def testMultipleCalls( self ) :
+		triangulator.triangulate( loop )	
 	
-		#  __   __
-		# |_|  |_|
-		#
-		
-		outline1 = V3fVectorData(
-			[
-				V3f( 0, 0, 0 ),
-				V3f( 1, 0, 0 ),
-				V3f( 1, 1, 0 ),
-				V3f( 0, 1, 0 ),
-			]
-		)
-		
-		outline2 = V3fVectorData(
-			[
-				V3f( 3, 0, 0 ),
-				V3f( 4, 0, 0 ),
-				V3f( 4, 1, 0 ),
-				V3f( 3, 1, 0 ),
-			]
-		)
-		
-		builder = MeshPrimitiveBuilder()	
-		triangulator = V3fTriangulator( builder )
-		
-		triangulator.triangulate( outline1 )
-		triangulator.triangulate( outline2 )
-
-		outMesh = builder.mesh()
-				
-		self.assertEqual( outMesh["P"].data.size(), 8 )
-		self.assertEqual( outMesh.verticesPerFace, IntVectorData( [ 3, 3, 3, 3 ] ) )
-		self.assertEqual( outMesh.variableSize( PrimitiveVariable.Interpolation.Vertex ), 8 )
-		self.assertEqual( outMesh.bound(), Box3f( V3f( 0 ), V3f( 4, 1, 0 ) ) )
-		
-		e = PrimitiveEvaluator.create( outMesh )
-		self.assertEqual( e.surfaceArea(), 2 )
-		
-	def testMultipleCallsWithHoles( self ) :
-	
-		#  ______   ______
-		# |  __ |  |  __ |
-		# | |_| |  | |_| |
-		# |_____|  |_____|
-		#
-		
-		outer1 = V3fVectorData(
-			[
-				V3f( 0, 0, 0 ),
-				V3f( 3, 0, 0 ),
-				V3f( 3, 3, 0 ),
-				V3f( 0, 3, 0 ),
-			]
-		)
-
-		inner1 = V3fVectorData(
-			[
-				V3f( 1, 1, 0 ),
-				V3f( 1, 2, 0 ),
-				V3f( 2, 2, 0 ),
-				V3f( 2, 1, 0 ),
-			]
-		)		
-
-		outer2 = V3fVectorData(
-			[
-				V3f( 4, 0, 0 ),
-				V3f( 7, 0, 0 ),
-				V3f( 7, 3, 0 ),
-				V3f( 4, 3, 0 ),
-			]
-		)
-
-		inner2 = V3fVectorData(
-			[
-				V3f( 5, 1, 0 ),
-				V3f( 5, 2, 0 ),
-				V3f( 6, 2, 0 ),
-				V3f( 6, 1, 0 ),
-			]
-		)		
-
-		builder = MeshPrimitiveBuilder()	
-		triangulator = V3fTriangulator( builder )
-		
-		triangulator.triangulate( [ outer1, inner1 ] )
-		triangulator.triangulate( [ outer2, inner2 ] )
-
-		outMesh = builder.mesh()
-		
-		self.assertEqual( outMesh["P"].data.size(), 16 )
-		self.assertEqual( outMesh.variableSize( PrimitiveVariable.Interpolation.Vertex ), 16 )
-		self.assertEqual( outMesh.bound(), Box3f( V3f( 0 ), V3f( 7, 3, 0 ) ) )
-		
-		e = PrimitiveEvaluator.create( outMesh )
-		self.assertEqual( e.surfaceArea(), 16 )	
-		
-	def testRightAlignedHoles( self ) :
-		
-		#  ______
-		# |  __ |
-		# | |_| |
-		# |  __ |
-		# | |_| |
-		# |_____|
-		
-		outer = V3fVectorData(
-			[
-				V3f( 0, 0, 0 ),
-				V3f( 3, 0, 0 ),
-				V3f( 3, 5, 0 ),
-				V3f( 0, 5, 0 ),
-			]
-		)
-
-		inner1 = V3fVectorData(
-			[
-				V3f( 1, 1, 0 ),
-				V3f( 1, 2, 0 ),
-				V3f( 2, 2, 0 ),
-				V3f( 2, 1, 0 ),
-			]
-		)		
-
-		inner2 = V3fVectorData(
-			[
-				V3f( 1, 3, 0 ),
-				V3f( 1, 4, 0 ),
-				V3f( 2, 4, 0 ),
-				V3f( 2, 3, 0 ),
-			]
-		)
-		
-		builder = MeshPrimitiveBuilder()	
-		triangulator = V3fTriangulator( builder )
-		
-		triangulator.triangulate( [ outer, inner1, inner2 ] )
-
-		outMesh = builder.mesh()
-				
-		e = PrimitiveEvaluator.create( outMesh )
-		self.assertEqual( e.surfaceArea(), 13 )
-
-	def testColinearities( self ) :
-		
-		#  _._
-		# |   |
-		# .   .
-		# |   |
-		# .   .
-		# |_._|
-		#
-		
-		outer = V3fVectorData(
-			[
-				V3f( 1, 1, 0 ),
-				V3f( 1, 2, 0 ),
-				V3f( 1, 3, 0 ),
-				V3f( 0.5, 3, 0 ),
-				V3f( 0, 3, 0 ),
-				V3f( 0, 2, 0 ),
-				V3f( 0, 1, 0 ),
-				V3f( 0, 0, 0 ),
-				V3f( 0.5, 0, 0 ),
-				V3f( 1, 0, 0 ),
-			]
-		)
-
-		
-		builder = MeshPrimitiveBuilder()	
-		triangulator = V3fTriangulator( builder )
-		
-		triangulator.triangulate( outer )
-
-		outMesh = builder.mesh()
-				
-		e = PrimitiveEvaluator.create( outMesh )
-		self.assertEqual( e.surfaceArea(), 3 )
-		
-		p = outMesh["P"].data
-		self.assertEqual( p.size(), 10 )
-		
-		vertexIds = outMesh.vertexIds
-		for i in range( 0, 10 ) :
-			self.assert_( i in vertexIds )	
-			
-		self.assertEqual( outMesh.verticesPerFace, IntVectorData( [ 3 ] * 8 ) )
-		
-		i = 0
-		for j in range( 0, 8 ) :
-			
-			p0 = p[vertexIds[i]]
-			p1 = p[vertexIds[i+1]]
-			p2 = p[vertexIds[i+2]]
-			
-			self.assert_( triangleArea( p0, p1, p2 ) > 0 )
-			
-	def testHoleAlignedWithVertex( self ) :
-	
-		#  ______
-		# |  __ |
-		# | |_| |
-		# |___  |
-		#    |__|
-		#
-		
-		outer = V3fVectorData(
-			[
-				V3f( 0, 0, 0 ),
-				V3f( 2, 0, 0 ),
-				V3f( 2, -1, 0 ),
-				V3f( 3, -1, 0 ),
-				V3f( 3, 3, 0 ),
-				V3f( 0, 3, 0 ),
-			]
-		)
-		
-		inner = V3fVectorData(
-			[
-				V3f( 1, 1, 0 ),
-				V3f( 1, 2, 0 ),
-				V3f( 2, 2, 0 ),
-				V3f( 2, 1, 0 ),
-			]
-		)
-
-		
-		builder = MeshPrimitiveBuilder()	
-		triangulator = V3fTriangulator( builder )
-		
-		triangulator.triangulate( [ outer, inner ] )
-
-		outMesh = builder.mesh()
-		
-		e = PrimitiveEvaluator.create( outMesh )
-		self.assertEqual( e.surfaceArea(), 9 )
-		
 if __name__ == "__main__":
     unittest.main()   

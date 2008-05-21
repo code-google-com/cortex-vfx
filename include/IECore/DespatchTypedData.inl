@@ -36,7 +36,6 @@
 #define IE_CORE_DESPATCHTYPEDDATA_INL
 
 #include "IECore/TypeTraits.h"
-#include "IECore/PrimitiveVariable.h"
 
 namespace IECore
 {
@@ -88,14 +87,6 @@ struct DespatchTypedDataExceptionError
 } // namespace Detail
 
 
-struct DespatchTypedDataIgnoreError
-{
-	template<typename T, typename F>
-	void operator()( typename T::ConstPtr data, const F& functor )
-	{
-	}
-};
-
 template< class Functor, template<typename> class Enabler, typename ErrorHandler >
 typename Functor::ReturnType despatchTypedData( const DataPtr &data, Functor &functor, ErrorHandler &errorHandler )
 {
@@ -119,6 +110,10 @@ typename Functor::ReturnType despatchTypedData( const DataPtr &data, Functor &fu
 			return
 			typename Detail::DespatchTypedData< Functor, IntData, ErrorHandler >
 			::template Func<Enabler>()( boost::static_pointer_cast<IntData>( data ), functor, errorHandler );
+		case LongDataTypeId :
+			return
+			typename Detail::DespatchTypedData< Functor, LongData, ErrorHandler >
+			::template Func<Enabler>()( boost::static_pointer_cast<LongData>( data ), functor, errorHandler );
 		case UIntDataTypeId :
 			return
 			typename Detail::DespatchTypedData< Functor, UIntData, ErrorHandler >
@@ -139,14 +134,6 @@ typename Functor::ReturnType despatchTypedData( const DataPtr &data, Functor &fu
 			return
 			typename Detail::DespatchTypedData< Functor, UShortData, ErrorHandler >
 			::template Func<Enabler>()( boost::static_pointer_cast<UShortData>( data ), functor, errorHandler );
-		case Int64DataTypeId :
-			return
-			typename Detail::DespatchTypedData< Functor, Int64Data, ErrorHandler >
-			::template Func<Enabler>()( boost::static_pointer_cast<Int64Data>( data ), functor, errorHandler );
-		case UInt64DataTypeId :
-			return
-			typename Detail::DespatchTypedData< Functor, UInt64Data, ErrorHandler >
-			::template Func<Enabler>()( boost::static_pointer_cast<UInt64Data>( data ), functor, errorHandler );	
 		case StringDataTypeId :
 			return
 			typename Detail::DespatchTypedData< Functor, StringData, ErrorHandler >
@@ -267,6 +254,10 @@ typename Functor::ReturnType despatchTypedData( const DataPtr &data, Functor &fu
 			return
 			typename Detail::DespatchTypedData< Functor, UIntVectorData, ErrorHandler >
 			::template Func<Enabler>()( boost::static_pointer_cast<UIntVectorData>( data ), functor, errorHandler );
+		case LongVectorDataTypeId :
+			return
+			typename Detail::DespatchTypedData< Functor, LongVectorData, ErrorHandler >
+			::template Func<Enabler>()( boost::static_pointer_cast<LongVectorData>( data ), functor, errorHandler );
 		case CharVectorDataTypeId :
 			return
 			typename Detail::DespatchTypedData< Functor, CharVectorData, ErrorHandler >
@@ -283,14 +274,6 @@ typename Functor::ReturnType despatchTypedData( const DataPtr &data, Functor &fu
 			return
 			typename Detail::DespatchTypedData< Functor, UShortVectorData, ErrorHandler >
 			::template Func<Enabler>()( boost::static_pointer_cast<UShortVectorData>( data ), functor, errorHandler );
-		case Int64VectorDataTypeId :
-			return
-			typename Detail::DespatchTypedData< Functor, Int64VectorData, ErrorHandler >
-			::template Func<Enabler>()( boost::static_pointer_cast<Int64VectorData>( data ), functor, errorHandler );
-		case UInt64VectorDataTypeId :
-			return
-			typename Detail::DespatchTypedData< Functor, UInt64VectorData, ErrorHandler >
-			::template Func<Enabler>()( boost::static_pointer_cast<UInt64VectorData>( data ), functor, errorHandler );	
 		case StringVectorDataTypeId :
 			return
 			typename Detail::DespatchTypedData< Functor, StringVectorData, ErrorHandler >
@@ -487,44 +470,6 @@ struct TypedDataAddress::TypedDataAddressHelper< T, typename boost::enable_if< T
 	{
 		assert( data );
 		return &*(data->readable().begin());
-	}
-};
-
-struct TypedDataInterpolation
-{
-	typedef PrimitiveVariable::Interpolation ReturnType;
-	
-	template< typename T, typename Enable = void >
-	struct TypedDataInterpolationHelper
-	{
-		ReturnType operator()( typename T::ConstPtr d ) const
-		{
-			return PrimitiveVariable::Invalid;
-		}
-	};
-	
-	template< typename T >
-	ReturnType operator()( typename T::ConstPtr d ) const
-	{
-		return TypedDataInterpolationHelper<T>()( d );
-	}
-};
-
-template< typename T >
-struct TypedDataInterpolation::TypedDataInterpolationHelper<T, typename boost::enable_if< TypeTraits::IsVectorTypedData<T> >::type >
-{
-	ReturnType operator()( typename T::ConstPtr d ) const
-	{
-		return PrimitiveVariable::Vertex;
-	}
-};
-
-template< typename T >
-struct TypedDataInterpolation::TypedDataInterpolationHelper<T, typename boost::enable_if< TypeTraits::IsSimpleTypedData<T> >::type >
-{
-	ReturnType operator()( typename T::ConstPtr d ) const
-	{
-		return PrimitiveVariable::Constant;
 	}
 };
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -546,7 +546,7 @@ void bindMatrix44(const char *bindName)
 		.def("createRotated", &createRotated<Matrix44<T>, Vec3<T> > ).staticmethod( "createRotated" )
 		.def("createAimed", &Imath::rotationMatrix<T> )
 		.def("createAimed", &Imath::rotationMatrixWithUpDir<T> ).staticmethod( "createAimed" )
-		.def("createFromBasis", &matrixFromBasis<T> ).staticmethod( "createFromBasis" )
+		.def("createFromBasis", &matrixFromBasis ).staticmethod( "createFromBasis" )
 		
 		.def("extractScaling", &extractScaling<Matrix44<T>, Vec3<T> > )
 		.def("sansScaling", &sansScaling2<Matrix44<T> > )
@@ -561,7 +561,11 @@ void bindMatrix44(const char *bindName)
 		.def("extractSHRT", &extractSHRT44<T> )
 		
 		.def("determinant", (float (*)( const Matrix44<T> & ))&IECore::determinant<T> )
-	;	
+	;
+	
+	/// \todo deprecate this form in favour of the static createFromBasis method.
+	def("matrixFromBasis", &matrixFromBasis );
+	
 }
 
 }

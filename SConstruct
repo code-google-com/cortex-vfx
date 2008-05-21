@@ -41,8 +41,8 @@ import re
 EnsureSConsVersion( 0, 97 )
 SConsignFile()
 
-ieCoreMajorVersion=3
-ieCoreMinorVersion=0
+ieCoreMajorVersion=2
+ieCoreMinorVersion=40
 ieCorePatchVersion=0
 
 ###########################################################################################
@@ -129,19 +129,24 @@ o.Add(
 	"/usr/local/lib",
 )
 
-# Freetype options
+# SQLite options
 
 o.Add(
-	"FREETYPE_INCLUDE_PATH",
-	"The path to the FreeType include directory.",
-	"/usr/local/include/freetype2",
+	BoolOption( "WITH_SQLITE", "Set this to build support for SQLiteIndexedIO.", False ),
 )
 
 o.Add(
-	"FREETYPE_LIB_PATH",
-	"The path to the FreeType lib directory.",
+	"SQLITE_INCLUDE_PATH",
+	"The path to the SQLITE include directory.",
+	"/usr/local/include/",
+)
+
+o.Add(
+	"SQLITE_LIB_PATH",
+	"The path to the SQLITE lib directory.",
 	"/usr/local/lib",
 )
+
 
 # General path options
 
@@ -232,17 +237,13 @@ o.Add(
 # Maya options
 
 o.Add(
-	"MAYA_ROOT",
-	"The path to the root of the maya installation.",
-	"/usr/aw/maya",
+	BoolOption( "WITH_MAYA", "Set this to build the coreMaya library in the contrib directory.", False ),
 )
 
 o.Add(
-	BoolOption( 
-		"WITH_MAYA_PLUGIN_LOADER", 
-		"Set this to install the Maya plugin with a stub loader.",
-		 False
-	),
+	"MAYA_ROOT",
+	"The path to the root of the maya installation.",
+	"/usr/aw/maya",
 )
 
 # Debug options
@@ -293,22 +294,6 @@ o.Add(
 )
 
 o.Add(
-	"INSTALL_MAYALIB_NAME",
-	"The name under which to install the maya libraries. This "
-	"can be used to build and install the library for multiple "
-	"Maya versions.",
-	"$INSTALL_PREFIX/lib/$IECORE_NAME",
-)
-
-o.Add(
-	"INSTALL_NUKELIB_NAME",
-	"The name under which to install the nuke libraries. This "
-	"can be used to build and install the library for multiple "
-	"Nuke versions.",
-	"$INSTALL_PREFIX/lib/$IECORE_NAME",
-)
-
-o.Add(
 	"INSTALL_PYTHON_DIR",
 	"The directory in which to install python modules.",
 	"$INSTALL_PREFIX/lib/python$PYTHON_VERSION/site-packages",
@@ -318,18 +303,6 @@ o.Add(
 	"INSTALL_GLSL_HEADER_DIR",
 	"The directory in which to install GLSL headers.",
 	"$INSTALL_PREFIX/glsl",
-)
-
-o.Add(
-	"INSTALL_MEL_DIR",
-	"The directory in which to install mel scripts.",
-	"$INSTALL_PREFIX/maya/mel/$IECORE_NAME",
-)
-
-o.Add(
-	"INSTALL_MAYAPLUGIN_NAME",
-	"The name under which to install maya plugins.",
-	"$INSTALL_PREFIX/maya/plugins/$IECORE_NAME",
 )
 
 o.Add(
@@ -421,14 +394,6 @@ o.Add(
 )
 
 o.Add(
-	"TEST_MAYA_SCRIPT",
-	"The python script to run for the renderman tests. The default will run all the tests, "
-	"but it can be useful to override this to run just the test for the functionality "
-	"you're working on.",
-	"test/IECoreMaya/All.py"
-)
-
-o.Add(
 	"TEST_LIBPATH",
 	"Additional colon separated paths to be prepended to the library path"
 	"used when running tests.",
@@ -444,14 +409,6 @@ o.Add(
 	"DYLD_LIBRARY_PATH" if Environment()["PLATFORM"]=="darwin" else "LD_LIBRARY_PATH"
 )
 
-# Documentation options
-
-o.Add(
-	"DOXYGEN",
-	"The path to the doxygen binary.",
-	"/usr/local/bin/doxygen"
-)
-
 ###########################################################################################
 # An environment for building libraries
 ###########################################################################################
@@ -459,14 +416,6 @@ o.Add(
 env = Environment(
 	options = o
 )
-
-compilerVersionString = os.popen( env.subst("$CXX --version | head -1 | cut -d ' ' -f 3") ).readline()
-m = re.compile( "^([0-9]+)\.([0-9]+)\.([0-9]+)$" ).match( compilerVersionString )
-if not m:
-	raise RuntimeError( "Cannot determine compiler version" )
-	
-compilerMajorVersion, compilerMinorVersion, compilerPatchVersion = m.group( 1, 2, 3 )
-compilerVersion = int(compilerMajorVersion) * 100 + int(compilerMinorVersion) * 10 + int(compilerPatchVersion)
 
 env["LIBPATH"] = env["LIBPATH"].split( ":" )
 
@@ -504,14 +453,14 @@ env.Prepend(
 		"$BOOST_INCLUDE_PATH",
 		"$JPEG_INCLUDE_PATH",
 		"$TIFF_INCLUDE_PATH",
-		"$FREETYPE_INCLUDE_PATH",
+		"$SQLITE_INCLUDE_PATH",
 	],
 	LIBPATH = [
 		"$BOOST_LIB_PATH",
 		"$OPENEXR_LIB_PATH",
 		"$JPEG_LIB_PATH",
 		"$TIFF_LIB_PATH",
-		"$FREETYPE_LIB_PATH",
+		"$SQLITE_LIB_PATH",
 	],
 	LIBS = [
 		"pthread",
@@ -519,6 +468,8 @@ env.Prepend(
 	CXXFLAGS = [
 		"-pipe",
 		"-Wall",
+# removing the flag below till we can fix the warnings coming from boost
+#		"-Werror",
 	],
 )
 
@@ -559,30 +510,18 @@ if doConfigure :
 		if m  :
 			boostVersion = m.group( 1 )
 		if boostVersion :
-			m = re.compile( "^([0-9]+)_([0-9]+)(?:_([0-9]+)|)$" ).match( boostVersion )
+			m = re.compile( "^([0-9]+)_([0-9]+)_([0-9]+)$" ).match( boostVersion )
 			boostMajorVersion, boostMinorVersion, boostPatchVersion = m.group( 1, 2, 3 )
 			env["BOOST_MAJOR_VERSION"] = boostMajorVersion
 			env["BOOST_MINOR_VERSION"] = boostMinorVersion
-			env["BOOST_PATCH_VERSION"] = boostPatchVersion or ""
+			env["BOOST_PATCH_VERSION"] = boostPatchVersion
 			break
 			
 	if not boostVersion :
 		sys.stderr.write( "ERROR : unable to determine boost version from \"%s\".\n" % boostVersionHeader )
 		Exit( 1 )
 
-	env.Append( LIBS = [
-			"boost_filesystem" + env["BOOST_LIB_SUFFIX"],
-			"boost_regex" + env["BOOST_LIB_SUFFIX"],
-			"boost_iostreams" + env["BOOST_LIB_SUFFIX"],
-			"boost_date_time" + env["BOOST_LIB_SUFFIX"],
-			"boost_thread" + env["BOOST_LIB_SUFFIX"],
-			"boost_wave" + env["BOOST_LIB_SUFFIX"],
-		]
-	)
-	if int( env["BOOST_MINOR_VERSION"] ) >=35 :
-		env.Append( LIBS = [ "boost_system" + env["BOOST_LIB_SUFFIX"] ] )
-		
-	if not c.CheckLibWithHeader( env.subst( "boost_iostreams" + env["BOOST_LIB_SUFFIX"] ), "boost/filesystem/path.hpp", "CXX" ) :
+	if not c.CheckLibWithHeader( env.subst( "boost_filesystem" + env["BOOST_LIB_SUFFIX"] ), "boost/filesystem/path.hpp", "CXX" ) :
 		sys.stderr.write( "ERROR : unable to find the boost libraries - check BOOST_LIB_PATH.\n" )
 		Exit( 1 )
 
@@ -593,6 +532,10 @@ if doConfigure :
 	c.Finish()
 		
 env.Append( LIBS = [
+		"boost_filesystem" + env["BOOST_LIB_SUFFIX"],
+		"boost_regex" + env["BOOST_LIB_SUFFIX"],
+		"boost_iostreams" + env["BOOST_LIB_SUFFIX"],
+		"boost_date_time" + env["BOOST_LIB_SUFFIX"],
 		"Half",
 		"Iex",
 		"Imath",
@@ -640,9 +583,9 @@ pythonEnv.Append( CPPFLAGS="$PYTHON_INCLUDE_FLAGS" )
 
 # get the python link flags
 if pythonEnv["PYTHON_LINK_FLAGS"]=="" :
-	pythonEnv["PYTHON_LINK_FLAGS"] = getPythonConfig( pythonEnv, "--ldflags" )
-
-pythonEnv.Append( SHLINKFLAGS = pythonEnv["PYTHON_LINK_FLAGS"].split() )
+	pythonEnv.Append( SHLINKFLAGS = getPythonConfig( pythonEnv, "--ldflags" ).split() )
+else :
+	pythonEnv.Append( SHLINKFLAGS = pythonEnv["PYTHON_LINK_FLAGS"].split() )
 
 pythonEnv.Append( CPPFLAGS = "-DBOOST_PYTHON_MAX_ARITY=20" )
 pythonEnv.Append( LIBS = [
@@ -675,39 +618,11 @@ if env["PLATFORM"]=="darwin" :
 	# Special workaround for suspected gcc issue - see BoostUnitTestTest for more information
 	if not testEnv["DEBUG"] :
 		testEnv.Append( CXXFLAGS = "-O0" )
-	
-	# Link to the boost unit test library	
-	if env.has_key("BOOST_MINOR_VERSION") and env["BOOST_MINOR_VERSION"] >= 35 :
-		testEnv.Append( LIBS=["boost_test_exec_monitor" + env["BOOST_LIB_SUFFIX"] ] )
-	else:
-		testEnv.Append( LIBS=["boost_unit_test_framework" + env["BOOST_LIB_SUFFIX"] ] )	
-	
-else:
-	testEnv.Append( CXXFLAGS = "-O0" )
 
-	# Link to the boost unit test library
-	testEnv.Append( LIBS=["boost_unit_test_framework" + env["BOOST_LIB_SUFFIX"] ] )	
-	
-	# Unit test library requirement of boost > 1.35.0
-	if env.has_key("BOOST_MINOR_VERSION") and env["BOOST_MINOR_VERSION"] >= 35 :
-		testEnv.Append( LIBS=["boost_test_exec_monitor" + env["BOOST_LIB_SUFFIX"] ] )
+testEnv.Append( LIBS=["boost_unit_test_framework" + env["BOOST_LIB_SUFFIX"] ] )
 
 testEnv["ENV"]["PYTHONPATH"] = "./python"
 
-###########################################################################################
-# Warning flags. We'd like to set these for all environments but boost::python and
-# boost::unit_test generate loads of warnings so we can't set it for the python bindings
-# or C++ tests. GCC 4.3.0 gives out a lot of boost warnings in general, too.
-###########################################################################################
-
-if compilerVersion < 430 :
-
-	env.Append(
-		CXXFLAGS = [
-			"-Werror",
-		],
-	)
-	
 ###########################################################################################
 # Helper functions
 ###########################################################################################
@@ -726,18 +641,10 @@ def makeSymLinks( env, target ) :
 		done = True
 		for key in links.keys() :
 		
-			keyIndex = target.find( key )
-			if keyIndex != -1 :
+			if target.find( key ) != -1 :
 			
-				nextSlashIndex = target.find( "/", keyIndex + len(key) )
-				if nextSlashIndex!=-1 :
-					# the place where we need to make the links is
-					# in the middle of the path somewhere, not in the last
-					# component. truncate the path.
-					target = target[:nextSlashIndex]
-
 				linkName = target.replace( key, links[key] )
-								
+				
 				makeSymLink( env.subst( linkName ), env.subst( target ) )
 				
 				target = linkName
@@ -746,16 +653,13 @@ def makeSymLinks( env, target ) :
 # Makes versioned symlinks for the library an environment makes.
 # This function is necessary as there's some name munging to get
 # the right prefix and suffix on the library names.
-def makeLibSymLinks( env, libNameVar="INSTALL_LIB_NAME" ) :
+def makeLibSymLinks( env ) :
 
-	p = env[libNameVar]
-	
+	p = coreEnv["INSTALL_LIB_NAME"]
 	d = os.path.dirname( p )
 	n = os.path.basename( p )
-		
 	n = "$SHLIBPREFIX" + n + "$SHLIBSUFFIX"
 	p = os.path.join( d, n )
-		
 	makeSymLinks( env, p )
 
 # Make a symlink pointing from target to source
@@ -803,7 +707,6 @@ if doConfigure :
 		sys.stderr.write( "WARNING: no TIFF library found, no TIFF support, check TIFF_INCLUDE_PATH and TIFF_LIB_PATH.\n" )
 		coreSources.remove( "src/IECore/TIFFImageWriter.cpp" )
 		coreSources.remove( "src/IECore/TIFFImageReader.cpp" )
-		coreSources.remove( "src/IECore/ScopedTIFFExceptionTranslator.cpp" )		
 		corePythonSources.remove( "src/IECore/bindings/TIFFImageReaderBinding.cpp" )
 		corePythonSources.remove( "src/IECore/bindings/TIFFImageWriterBinding.cpp" )
 		
@@ -816,27 +719,17 @@ if doConfigure :
 		coreSources.remove( "src/IECore/JPEGImageReader.cpp" )
 		corePythonSources.remove( "src/IECore/bindings/JPEGImageReaderBinding.cpp" )
 		corePythonSources.remove( "src/IECore/bindings/JPEGImageWriterBinding.cpp" )
-	
-	if c.CheckLibWithHeader( "freetype", ["ft2build.h"], "CXX" ) :
-		c.env.Append( CPPFLAGS = "-DIECORE_WITH_FREETYPE" )
-		corePythonEnv.Append( CPPFLAGS = "-DIECORE_WITH_FREETYPE" )
+			
+	if coreEnv["WITH_SQLITE"] and c.CheckLibWithHeader( "sqlite3", "sqlite/sqlite3.h", "CXX" ) :
+		c.env.Append( CPPFLAGS = "-DIECORE_WITH_SQLITE" )
+		corePythonEnv.Append( CPPFLAGS = '-DIECORE_WITH_SQLITE' )
+		coreTestEnv.Append( CPPFLAGS = '-DIECORE_WITH_SQLITE' )
 	else :
-		sys.stderr.write( "WARNING: no FreeType library found, no font support, check FREETYPE_INCLUDE_PATH and FREETYPE_LIB_PATH.\n" )
-		coreSources.remove( "src/IECore/Font.cpp" )
-		corePythonSources.remove( "src/IECore/bindings/FontBinding.cpp" )
-				
+		coreSources.remove( "src/IECore/SQLiteIndexedIO.cpp" )
+		if coreEnv["WITH_SQLITE"] :
+			sys.stderr.write( "WARNING: no SQLITE library found, no SQLITE support, check SQLITE_INCLUDE_PATH and SQLITE_LIB_PATH\n" )
+		
 	c.Finish()
-
-if compilerVersion < 350 :
-	# This is here to specifically address a problem in binutils-2.17 and later, when harmless warnings of the
-	# form "X: referenced in section '.rodata' of Y: defined in discarded section" were changed to errors
-	# We do it down here so it doesn't cause Configure tests to pass when they should really be failing.
-	# Only gcc-3.4 and earlier omits these warnings, so we don't need to do anything for later compiler
-	# versions.
-	env.Append( LINKFLAGS = "-Wl,--noinhibit-exec" )
-	corePythonEnv.Append( LINKFLAGS = "-Wl,--noinhibit-exec" )
-	coreEnv.Append( LINKFLAGS = "-Wl,--noinhibit-exec" )	
-
 
 # This is a simple mechanism to ensure that all of the installs get performed only after all of the builds
 # have been done. We make this coreInstallSync object depend on every build action, and every install action
@@ -853,7 +746,6 @@ NoCache( coreInstallSync )
 coreLibrary = coreEnv.SharedLibrary( "lib/" + os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ), coreSources )
 coreEnv.Depends( coreInstallSync, coreLibrary )
 coreLibraryInstall = coreEnv.Install( os.path.dirname( coreEnv.subst( "$INSTALL_LIB_NAME" ) ), coreLibrary )
-coreEnv.NoCache( coreLibraryInstall )
 coreEnv.Depends( coreLibraryInstall, coreInstallSync )
 coreEnv.AddPostAction( coreLibraryInstall, lambda target, source, env : makeLibSymLinks( coreEnv ) )
 coreEnv.Alias( "install", [ coreLibraryInstall ] )
@@ -911,9 +803,15 @@ coreTestEnv.Alias( "testCorePython", corePythonTest )
 # Build, install and test the coreRI library and bindings
 ###########################################################################################
 
-riEnv = coreEnv.Copy( IECORE_NAME = "IECoreRI" )
+riEnv = env.Copy( IECORE_NAME = "IECoreRI" )
 riEnv.Append( CPPPATH = [ "$RMAN_ROOT/include" ] )
 riEnv.Append( LIBPATH = [ "$RMAN_ROOT/lib" ] )
+riEnv.Append(
+	CPPFLAGS = [
+		## \todo This makes no sense now the versions for the two libraries are locked together
+    	"-DIE_CORE_MAJOR_VERSION=%d" % ieCoreMajorVersion,
+	]
+)
 riEnv.Append(
 	LIBS = [
 		"3delight",
@@ -969,7 +867,6 @@ if doConfigure :
 		riLibrary = riEnv.SharedLibrary( "lib/" + os.path.basename( riEnv.subst( "$INSTALL_LIB_NAME" ) ), riSources )
 		riEnv.Depends( coreInstallSync, riLibrary )
 		riLibraryInstall = riEnv.Install( os.path.dirname( riEnv.subst( "$INSTALL_LIB_NAME" ) ), riLibrary )
-		riEnv.NoCache( riLibraryInstall )
 		riEnv.Depends( riLibraryInstall, coreInstallSync )		
 		riEnv.AddPostAction( riLibraryInstall, lambda target, source, env : makeLibSymLinks( riEnv ) )
 		riEnv.Alias( "install", riLibraryInstall )
@@ -1005,13 +902,11 @@ if doConfigure :
 		Default( [ riLibrary, riPythonModule ] )
 		
 		riTestEnv = testEnv.Copy()
-
-		riTestEnv["ENV"][testEnv["TEST_LIBRARY_PATH_ENV_VAR"]] += ":" + riEnv.subst( ":".join( [ "./lib" ] + riPythonEnv["LIBPATH"] ) )
+		riTestEnv["ENV"][testEnv["TEST_LIBRARY_PATH_ENV_VAR"]] = riEnv.subst( ":".join( [ "./lib" ] + riPythonEnv["LIBPATH"] ) )
 		riTestEnv["ENV"]["SHADER_PATH"] = riEnv.subst( "$RMAN_ROOT/shaders" )
 		riTestEnv["ENV"]["DELIGHT"] = riEnv.subst( "$RMAN_ROOT" )
 		riTestEnv["ENV"]["DL_SHADERS_PATH"] = riEnv.subst( "$RMAN_ROOT/shaders" )
 		riTestEnv["ENV"]["DL_DISPLAYS_PATH"] = riEnv.subst( "$RMAN_ROOT/displays" )
-		
 		riTest = riTestEnv.Command( "test/IECoreRI/results.txt", riPythonModule, pythonExecutable + " $TEST_RI_SCRIPT" )
 		NoCache( riTest )
 		riTestEnv.Depends( riTest, corePythonModule )
@@ -1022,10 +917,20 @@ if doConfigure :
 # Build, install and test the optional CoreGL library and bindings
 ###########################################################################################
 
+# because coreGL isn't really stable in terms of api yet it has its own version
+# number. when it moves out of /contrib it'll use the same version number as the
+# main libraries.
+ieCoreGLMajorVersion = 0
+ieCoreGLMinorVersion = 8
+ieCoreGLPatchVersion = 0
+
 if env["WITH_GL"] and doConfigure :
 
 	glEnvSets = {
 		"IECORE_NAME" : "IECoreGL",
+		"IECORE_MAJOR_VERSION" : ieCoreGLMajorVersion,
+		"IECORE_MINOR_VERSION" : ieCoreGLMinorVersion,
+		"IECORE_PATCH_VERSION" : ieCoreGLPatchVersion,
 	}
 
 	glEnvPrepends = {
@@ -1042,12 +947,18 @@ if env["WITH_GL"] and doConfigure :
 			"contrib/IECoreGL/include",
 			"$GLEW_INCLUDE_PATH",
 		],
+		"CPPFLAGS" : [
+			"-DIE_CORE_MAJOR_VERSION=%d" % ieCoreMajorVersion,
+		],
 		"LIBPATH" : [
 			"$GLEW_LIB_PATH",
 		],
+		"LIBS" : [
+			"boost_wave",
+		],
 	}
 	
-	glEnv = coreEnv.Copy( **glEnvSets )
+	glEnv = env.Copy( **glEnvSets )
 
 	glEnv.Append( **glEnvAppends )
 	glEnv.Prepend( **glEnvPrepends )
@@ -1084,14 +995,9 @@ if env["WITH_GL"] and doConfigure :
 			)
 
 		glSources = glob.glob( "contrib/IECoreGL/src/*.cpp" )
-		if not "-DIECORE_WITH_FREETYPE" in glEnv["CPPFLAGS"] :
-			glSources.remove( "contrib/IECoreGL/src/Font.cpp" )
-			glSources.remove( "contrib/IECoreGL/src/TextPrimitive.cpp" )
-		
 		glLibrary = glEnv.SharedLibrary( "lib/" + os.path.basename( glEnv.subst( "$INSTALL_LIB_NAME" ) ), glSources )
 		glEnv.Depends( coreInstallSync, glLibrary )
 		glLibraryInstall = glEnv.Install( os.path.dirname( glEnv.subst( "$INSTALL_LIB_NAME" ) ), glLibrary )
-		glEnv.NoCache( glLibraryInstall )
 		glEnv.Depends( glLibraryInstall, coreInstallSync )
 		glEnv.AddPostAction( glLibraryInstall, lambda target, source, env : makeLibSymLinks( glEnv ) )
 		glEnv.Alias( "install", glLibraryInstall )
@@ -1111,7 +1017,6 @@ if env["WITH_GL"] and doConfigure :
 		glEnv.Alias( "install", glslHeaderInstall )
 		glEnv.Alias( "installGL", glslHeaderInstall )
 		
-		glPythonSources = glob.glob( "contrib/IECoreGL/src/bindings/*.cpp" )
 		glPythonEnv = pythonEnv.Copy( **glEnvSets )
 		glPythonEnv.Append( **glEnvAppends )
 		glPythonEnv.Prepend( **glEnvPrepends )
@@ -1121,6 +1026,7 @@ if env["WITH_GL"] and doConfigure :
 				os.path.basename( glEnv.subst( "$INSTALL_LIB_NAME" ) ),
 			]
 		)
+		glPythonSources = glob.glob( "contrib/IECoreGL/src/bindings/*.cpp" )
 		glPythonModule = glPythonEnv.SharedLibrary( "contrib/IECoreGL/python/IECoreGL/_IECoreGL", glPythonSources )
 		glPythonEnv.Depends( coreInstallSync, glPythonModule )
 		glPythonEnv.Depends( glPythonModule, glLibrary )
@@ -1151,180 +1057,114 @@ if env["WITH_GL"] and doConfigure :
 		glTestEnv.Alias( "testGL", glTest )
 		
 ###########################################################################################
-# Build, install and test the coreMaya library and bindings
+# Build, install and test the optional coreMaya library and bindings
 ###########################################################################################
 
-mayaEnvSets = {
-	"IECORE_NAME" : "IECoreMaya",
-}
+# because coreMaya isn't really stable in terms of api yet it has its own version
+# number. when it moves out of /contrib it'll use the same version number as the
+# main libraries.
+ieCoreMayaMajorVersion = 2
+ieCoreMayaMinorVersion = 13
+ieCoreMayaPatchVersion = 0
 
-mayaEnvAppends = {
-	"CPPPATH" : [
-		"$MAYA_ROOT/include",
-		"contrib/IECoreGL/include",
-		"$GLEW_INCLUDE_PATH",
-	],
-	"LIBPATH" : [ "$MAYA_ROOT/lib" ],
-	"LIBS" : [
-		"OpenMayalib",
-		"OpenMaya",
-		"OpenMayaUI",
-		"OpenMayaAnim",
-		"OpenMayaFX",
-		"boost_python" + pythonEnv["BOOST_LIB_SUFFIX"],
-	],
-	"CPPFLAGS" : [
-		"-D_BOOL",
-		"-DREQUIRE_IOSTREAM",
-		pythonEnv["PYTHON_INCLUDE_FLAGS"],
-	],
-}
+if env["WITH_MAYA"] :
 
-if env["PLATFORM"]=="posix" :
-	mayaEnvAppends["CPPFLAGS"].append( "-DLINUX" )
 
-mayaEnv = env.Copy( **mayaEnvSets )
-mayaEnv.Append( **mayaEnvAppends )
+	mayaEnvSets = {
+		"IECORE_NAME" : "IECoreMaya",
+		"IECORE_MAJOR_VERSION" : ieCoreMayaMajorVersion,
+		"IECORE_MINOR_VERSION" : ieCoreMayaMinorVersion,
+		"IECORE_PATCH_VERSION" : ieCoreMayaPatchVersion,
+	}
 
-mayaEnv.Append( SHLINKFLAGS = pythonEnv["PYTHON_LINK_FLAGS"].split() )
+	mayaEnvAppends = {
+		"CPPPATH" : [
+			"$MAYA_ROOT/include",
+			"contrib/IECoreMaya/include",
+			"contrib/IECoreGL/include",
+			"$GLEW_INCLUDE_PATH",
+		],
+		"LIBPATH" : [ "$MAYA_ROOT/lib" ],
+    	"CPPFLAGS" : [
+			## \todo The following will make no sense as soon as CoreMaya is out of contrib
+			# and synced in terms of version number
+			"-DIECORE_MAJOR_VERSION=%d" % ieCoreMajorVersion,
+			"-DIE_MAJOR_VERSION=%d" % ieCoreMayaMajorVersion,
+			"-DIE_MINOR_VERSION=%d" % ieCoreMayaMinorVersion,
+			"-DIE_PATCH_VERSION=%d" % ieCoreMayaPatchVersion,
+			## End of defines we need to remove in future
+			"-D_BOOL",
+			"-DREQUIRE_IOSTREAM",
+			pythonEnv["PYTHON_INCLUDE_FLAGS"],
+		],
+	}
 
-mayaPythonEnv = pythonEnv.Copy( **mayaEnvSets )
-mayaPythonEnv.Append( **mayaEnvAppends )
+	if env["PLATFORM"]=="posix" :
+		mayaEnvAppends["CPPFLAGS"].append( "-DLINUX" )
 
-mayaPluginEnv = mayaEnv.Copy( IECORE_NAME="ieCore" )
+	mayaEnv = env.Copy( **mayaEnvSets )
+	mayaEnv.Append( **mayaEnvAppends )
+	
+	mayaPythonEnv = pythonEnv.Copy( **mayaEnvSets )
+	riPythonEnv.Append( **mayaEnvAppends )
 
-if doConfigure :
+	if doConfigure :
 
-	c = Configure( mayaEnv )
+		c = Configure( mayaEnv )
 
-	if not c.CheckHeader( "maya/MVectorArray.h" ) :
-
-		sys.stderr.write( "WARNING : no maya devkit found, not building IECoreMaya - check MAYA_ROOT.\n" )
-		c.Finish()
-
-	else :
-
-		c.Finish()
-
-		mayaSources = glob.glob( "src/IECoreMaya/*.cpp" )
-		mayaHeaders = glob.glob( "include/IECoreMaya/bindings/*.h" ) + glob.glob( "include/IECoreMaya/*.h" ) + glob.glob( "include/IECoreMaya/*.inl" )
-		mayaBindingHeaders = glob.glob( "include/IECoreMaya/bindings/*.h" ) + glob.glob( "include/IECoreMaya/bindings/*.inl" )
-		mayaPythonSources = glob.glob( "src/IECoreMaya/bindings/*.cpp" )
-		mayaPythonScripts = glob.glob( "python/IECoreMaya/*.py" )
-		mayaMel = glob.glob( "mel/IECoreMaya/*.mel" )
-		mayaPluginSources = [ "src/IECoreMaya/plugin/Plugin.cpp" ]
-
-		# we can't append this before configuring, as then it gets built as
-		# part of the configure process
-		mayaEnv.Prepend( LIBPATH = [ "./lib" ] )
-		mayaEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
-		mayaEnv.Append( LIBS = os.path.basename( glEnv.subst( "$INSTALL_LIB_NAME" ) ) )
-
-		# maya library
-		mayaLibrary = mayaEnv.SharedLibrary( "lib/" + os.path.basename( mayaEnv.subst( "$INSTALL_MAYALIB_NAME" ) ), mayaSources )
-		mayaEnv.Depends( coreInstallSync, mayaLibrary )
-		mayaLibraryInstall = mayaEnv.Install( os.path.dirname( mayaEnv.subst( "$INSTALL_MAYALIB_NAME" ) ), mayaLibrary )
-		mayaEnv.NoCache( mayaLibraryInstall )
-		mayaEnv.Depends( mayaLibraryInstall, coreInstallSync )
-		mayaEnv.AddPostAction( mayaLibraryInstall, lambda target, source, env : makeLibSymLinks( mayaEnv, "INSTALL_MAYALIB_NAME" ) )
-		mayaEnv.Alias( "install", mayaLibraryInstall )
-		mayaEnv.Alias( "installMaya", mayaLibraryInstall )
-		mayaEnv.Alias( "installLib", [ mayaLibraryInstall ] )
-
- 		# maya headers
-		mayaHeaderInstall = mayaEnv.Install( "$INSTALL_HEADER_DIR/IECoreMaya", mayaHeaders )
-		mayaHeaderInstall += mayaEnv.Install( "$INSTALL_HEADER_DIR/IECoreMaya/bindings", mayaBindingHeaders )		
-		mayaEnv.Depends( mayaHeaderInstall, coreInstallSync )			
-		mayaEnv.AddPostAction( "$INSTALL_HEADER_DIR/IECoreMaya", lambda target, source, env : makeSymLinks( mayaEnv, mayaEnv["INSTALL_HEADER_DIR"] ) )
-		mayaEnv.Alias( "install", mayaHeaderInstall )
-		mayaEnv.Alias( "installMaya", mayaHeaderInstall )
-
-		# maya mel
-		mayaMelInstall = mayaEnv.Install( "$INSTALL_MEL_DIR", mayaMel )
-		mayaEnv.Depends( mayaMelInstall, coreInstallSync )
-		mayaEnv.AddPostAction( "$INSTALL_MEL_DIR", lambda target, source, env : makeSymLinks( mayaEnv, mayaEnv["INSTALL_MEL_DIR"] ) )
-		mayaEnv.Alias( "install", mayaMelInstall )
-		mayaEnv.Alias( "installMaya", mayaMelInstall )
+		if not c.CheckHeader( "maya/MVectorArray.h" ) :
 		
-		# maya plugin
-		mayaPluginEnv.Append(
-			LIBPATH = [ "./lib" ],
-			LIBS = [
-				os.path.basename( coreEnv.subst( "$INSTALL_MAYALIB_NAME" ) ),
-				os.path.basename( mayaEnv.subst( "$INSTALL_MAYALIB_NAME" ) ),
-			]
-		)
-		
-		mayaPluginTarget = "plugins/maya/" + os.path.basename( mayaPluginEnv.subst( "$INSTALL_MAYAPLUGIN_NAME" ) )
-		
-		if env["WITH_MAYA_PLUGIN_LOADER"] :
-		
-			mayaPluginLoaderSources = [ 'src/IECoreMaya/plugin/Loader.cpp' ]
-		
-			mayaPluginLoaderEnv = mayaPluginEnv.Copy()
-			mayaPluginLoaderEnv.Append(			
+			sys.stderr.write( "WARNING : no maya devkit found, not building IECoreMaya - check MAYA_ROOT.\n" )
+			c.Finish()
+
+		else :
+
+			c.Finish()
+			
+			mayaSources = glob.glob( "contrib/IECoreMaya/src/*.cpp" )
+			mayaHeaders = glob.glob( "contrib/IECoreMaya/include/IECoreMaya/*.h" ) + glob.glob( "contrib/IECoreMaya/include/IECoreMaya/*.inl" )
+			mayaPythonSources = glob.glob( "contrib/IECoreMaya/src/IECoreMaya/bindings/*.cpp" )
+			mayaPythonScripts = glob.glob( "contrib/IECoreMaya/python/IECoreMaya/*.py" )
+
+			# we can't append this before configuring, as then it gets built as
+			# part of the configure process
+			mayaEnv.Prepend( LIBPATH = [ "./lib" ] )
+			mayaEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
+
+			mayaLibrary = mayaEnv.SharedLibrary( "lib/" + os.path.basename( mayaEnv.subst( "$INSTALL_LIB_NAME" ) ), mayaSources )
+			mayaEnv.Depends( coreInstallSync, mayaLibrary )
+			mayaLibraryInstall = mayaEnv.Install( os.path.dirname( mayaEnv.subst( "$INSTALL_LIB_NAME" ) ), mayaLibrary )
+			mayaEnv.Depends( mayaLibraryInstall, coreInstallSync )
+			mayaEnv.AddPostAction( mayaLibraryInstall, lambda target, source, env : makeLibSymLinks( mayaEnv ) )
+			mayaEnv.Alias( "install", mayaLibraryInstall )
+			mayaEnv.Alias( "installMaya", mayaLibraryInstall )
+			mayaEnv.Alias( "installLib", [ mayaLibraryInstall ] )
+
+			mayaHeaderInstall = mayaEnv.Install( "$INSTALL_HEADER_DIR/IECoreMaya", mayaHeaders )
+			mayaEnv.Depends( mayaHeaderInstall, coreInstallSync )			
+			mayaEnv.AddPostAction( "$INSTALL_HEADER_DIR/IECoreMaya", lambda target, source, env : makeSymLinks( mayaEnv, mayaEnv["INSTALL_HEADER_DIR"] ) )
+			mayaEnv.Alias( "install", mayaHeaderInstall )
+			mayaEnv.Alias( "installMaya", mayaHeaderInstall )
+
+			mayaPythonEnv.Append(
 				LIBS = [
-					"dl"
+					os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ),
+					os.path.basename( mayaEnv.subst( "$INSTALL_LIB_NAME" ) ),
 				]
 			)
-			
-			mayaPluginLoader = mayaPluginLoaderEnv.SharedLibrary( mayaPluginTarget, mayaPluginLoaderSources, SHLIBPREFIX="" )
-			mayaPluginLoaderInstall = mayaPluginLoaderEnv.InstallAs( mayaPluginLoaderEnv.subst( "$INSTALL_MAYAPLUGIN_NAME$SHLIBSUFFIX" ), mayaPluginLoader )
-			mayaPluginLoaderEnv.Depends( mayaPluginLoaderInstall, coreInstallSync )
-			mayaPluginLoaderEnv.AddPostAction( mayaPluginLoaderInstall, lambda target, source, env : makeSymLinks( mayaPluginLoaderEnv, mayaPluginLoaderEnv["INSTALL_MAYAPLUGIN_NAME"] ) )
-			mayaPluginLoaderEnv.Alias( "install", mayaPluginLoaderInstall )
-			mayaPluginLoaderEnv.Alias( "installMaya", mayaPluginLoaderInstall )
-			
-			Default( mayaPluginLoader )
-			
-			mayaPluginEnv["INSTALL_MAYAPLUGIN_NAME"] = os.path.join( os.path.dirname( mayaPluginEnv["INSTALL_MAYAPLUGIN_NAME"] ), 'impl', os.path.basename( mayaPluginEnv["INSTALL_MAYAPLUGIN_NAME"] ) )
-			mayaPluginTarget = "plugins/maya/impl/" + os.path.basename( mayaPluginEnv.subst( "$INSTALL_MAYAPLUGIN_NAME" ) )
-		
-		mayaPlugin = mayaPluginEnv.SharedLibrary( mayaPluginTarget, mayaPluginSources, SHLIBPREFIX="" )
-		mayaPluginInstall = mayaPluginEnv.Install( os.path.dirname( mayaPluginEnv.subst( "$INSTALL_MAYAPLUGIN_NAME" ) ), mayaPlugin )
-		mayaPluginEnv.Depends( mayaPlugin, corePythonModule )
-		mayaPluginEnv.Depends( mayaPluginInstall, coreInstallSync )
-		
-		mayaPluginEnv.AddPostAction( mayaPluginInstall, lambda target, source, env : makeSymLinks( mayaPluginEnv, mayaPluginEnv["INSTALL_MAYAPLUGIN_NAME"] ) )
-		mayaPluginEnv.Alias( "install", mayaPluginInstall )
-		mayaPluginEnv.Alias( "installMaya", mayaPluginInstall )
-				
-		# maya python
-		mayaPythonEnv.Append(
-			LIBS = [
-				os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ),
-				os.path.basename( mayaEnv.subst( "$INSTALL_LIB_NAME" ) ),
-			]
-		)
-		mayaPythonModule = mayaPythonEnv.SharedLibrary( "python/IECoreMaya/_IECoreMaya", mayaPythonSources )
-		mayaPythonEnv.Depends( mayaPythonModule, mayaLibrary )
+			mayaPythonModule = mayaPythonEnv.SharedLibrary( "contrib/IECoreMaya/python/IECoreMaya/_IECoreMaya", mayaPythonSources )
+			mayaPythonEnv.Depends( mayaPythonModule, mayaLibrary )
 
-		mayaPythonModuleInstall = mayaPythonEnv.Install( "$INSTALL_PYTHON_DIR/IECoreMaya", mayaPythonScripts + mayaPythonModule )
-		mayaPythonEnv.Depends( mayaPythonModuleInstall, coreInstallSync )
-		mayaPythonEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreMaya", lambda target, source, env : makeSymLinks( mayaPythonEnv, mayaPythonEnv["INSTALL_PYTHON_DIR"] ) )
-		mayaPythonEnv.Alias( "install", mayaPythonModuleInstall )
-		mayaPythonEnv.Alias( "installMaya", mayaPythonModuleInstall )
+			mayaPythonModuleInstall = mayaPythonEnv.Install( "$INSTALL_PYTHON_DIR/IECoreMaya", mayaPythonScripts + mayaPythonModule )
+			mayaPythonEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreMaya", lambda target, source, env : makeSymLinks( mayaPythonEnv, mayaPythonEnv["INSTALL_PYTHON_DIR"] ) )
+			mayaPythonEnv.Alias( "install", mayaPythonModuleInstall )
+			mayaPythonEnv.Alias( "installMaya", mayaPythonModuleInstall )
 
-		if coreEnv["INSTALL_COREMAYA_POST_COMMAND"]!="" :
-			# this is the only way we could find to get a post action to run for an alias
-			corePythonEnv.Alias( "installMaya", mayaPythonModuleInstall, "$INSTALL_COREMAYA_POST_COMMAND" ) 
+			if coreEnv["INSTALL_COREMAYA_POST_COMMAND"]!="" :
+				# this is the only way we could find to get a post action to run for an alias
+				corePythonEnv.Alias( "installMaya", mayaPythonModuleInstall, "$INSTALL_COREMAYA_POST_COMMAND" ) 
 
-		Default( [ mayaLibrary, mayaPlugin, mayaPythonModule ] )
-		
-		mayaTestEnv = testEnv.Copy()
-		mayaTestEnv["ENV"]["LD_LIBRARY_PATH"] += ":" + mayaEnv.subst( ":".join( [ "./lib" ] + mayaPythonEnv["LIBPATH"] ) )
-		mayaTestEnv["ENV"]["PATH"] = mayaEnv.subst( "$MAYA_ROOT/bin:" ) + mayaEnv["ENV"]["PATH"]
-		mayaTestEnv["ENV"]["MAYA_PLUG_IN_PATH"] = "./plugins/maya"
-		mayaTestEnv["ENV"]["MAYA_SCRIPT_PATH"] = "./mel"
-		mayaPythonExecutable = "mayapy"
-		
-		mayaTest = mayaTestEnv.Command( "test/IECoreMaya/resultsPython.txt", mayaPythonModule, mayaPythonExecutable + " $TEST_MAYA_SCRIPT" )
-		NoCache( mayaTest )
-		mayaTestEnv.Depends( mayaTest, [ mayaPlugin, mayaPythonModule ] )
-		mayaTestEnv.Depends( mayaTest, glob.glob( "test/IECoreMaya/*.py" ) )
-		if env["WITH_MAYA_PLUGIN_LOADER"] :
-			mayaTestEnv.Depends( mayaTest, mayaPluginLoader )
-		mayaTestEnv.Alias( "testMaya", mayaTest )			
+			Default( [ mayaLibrary, mayaPythonModule ] )
 
 ###########################################################################################
 # Build and install the coreNuke library and headers
@@ -1333,6 +1173,7 @@ if doConfigure :
 nukeEnv = env.Copy( IECORE_NAME = "IECoreNuke" )
 nukeEnv.Append( CPPPATH = [ "$NUKE_ROOT/include" ] )
 nukeEnv.Prepend( LIBPATH = [ "$NUKE_ROOT", "./lib" ] )
+nukeEnv.Append( LIBS = [ "DDImage4.8" ] ) # \todo Obtain correct version somehow
 
 if doConfigure :
 
@@ -1347,62 +1188,33 @@ if doConfigure :
 	
 		c.Finish()
 
-		# figure out the nuke version from the headers
-		nukeMajorVersion = None
-		nukeMinorVersion = None
-		nukeVersionHeader = env.FindFile( "DDImage/ddImageVersionNumbers.h", nukeEnv["CPPPATH"] )
-		if nukeVersionHeader :
+		# we can't add this earlier as then it's built during the configure stage, and that's no good
+		nukeEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
 
-			for line in open( str( nukeVersionHeader ) ) :
-				w = line.split()
-				if w[0]=="#define" and w[1]=="kDDImageVersionMajorNum" :
-					nukeMajorVersion = int( w[2] )
-				elif w[0]=="#define" and w[1]=="kDDImageVersionMinorNum" :
-					nukeMinorVersion = int( w[2] )
-					
-		else :
+		nukeHeaders = glob.glob( "include/IECoreNuke/*.h" ) + glob.glob( "include/IECoreNuke/*.inl" )
+		nukeSources = glob.glob( "src/IECoreNuke/*.cpp" )
+
+		nukeLibrary = nukeEnv.SharedLibrary( "lib/" + os.path.basename( nukeEnv.subst( "$INSTALL_LIB_NAME" ) ), nukeSources )
+		nukeEnv.Depends( coreInstallSync, nukeLibrary )
+		nukeLibraryInstall = nukeEnv.Install( os.path.dirname( nukeEnv.subst( "$INSTALL_LIB_NAME" ) ), nukeLibrary )
+		nukeEnv.Depends( nukeLibraryInstall, coreInstallSync )
+		nukeEnv.AddPostAction( nukeLibraryInstall, lambda target, source, env : makeLibSymLinks( nukeEnv ) )
+		nukeEnv.Alias( "install", nukeLibraryInstall )
+		nukeEnv.Alias( "installNuke", nukeLibraryInstall )
+		nukeEnv.Alias( "installLib", [ nukeLibraryInstall ] )
+
+		nukeHeaderInstall = nukeEnv.Install( "$INSTALL_HEADER_DIR/IECoreNuke", nukeHeaders )
+		nukeEnv.Depends( nukeHeaderInstall, coreInstallSync )
+		nukeEnv.AddPostAction( "$INSTALL_HEADER_DIR/IECoreNuke", lambda target, source, env : makeSymLinks( nukeEnv, nukeEnv["INSTALL_HEADER_DIR"] ) )
+
+		nukeEnv.Alias( "installNuke", nukeHeaderInstall )
+		nukeEnv.Alias( "install", nukeHeaderInstall )
 		
-			nukeMajorVersion = 4
-			nukeMinorVersion = 8
-					
-		if nukeMajorVersion is None or nukeMinorVersion is None :
-		
-			sys.stderr.write( "ERROR : unable to determine nuke version - not building IECoreNuke.\n" )
-		
-		else :
-		
-			nukeEnv["NUKE_MAJOR_VERSION"] = nukeMajorVersion
-			nukeEnv["NUKE_MINOR_VERSION"] = nukeMinorVersion	
-		
-			# we can't add this earlier as then it's built during the configure stage, and that's no good
-			nukeEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
+		if coreEnv["INSTALL_CORENUKE_POST_COMMAND"]!="" :
+			# this is the only way we could find to get a post action to run for an alias
+			corePythonEnv.Alias( "installNuke", nukeLibraryInstall, "$INSTALL_CORENUKE_POST_COMMAND" ) 
 
-			nukeEnv.Append( LIBS = [ "DDImage%d.%d" % ( nukeMajorVersion, nukeMinorVersion ) ] )
-
-			nukeHeaders = glob.glob( "include/IECoreNuke/*.h" ) + glob.glob( "include/IECoreNuke/*.inl" )
-			nukeSources = glob.glob( "src/IECoreNuke/*.cpp" )
-
-			nukeLibrary = nukeEnv.SharedLibrary( "lib/" + os.path.basename( nukeEnv.subst( "$INSTALL_NUKELIB_NAME" ) ), nukeSources )
-			nukeEnv.Depends( coreInstallSync, nukeLibrary )
-			nukeLibraryInstall = nukeEnv.Install( os.path.dirname( nukeEnv.subst( "$INSTALL_NUKELIB_NAME" ) ), nukeLibrary )
-			nukeEnv.Depends( nukeLibraryInstall, coreInstallSync )
-			nukeEnv.AddPostAction( nukeLibraryInstall, lambda target, source, env : makeLibSymLinks( nukeEnv, "INSTALL_NUKELIB_NAME" ) )
-			nukeEnv.Alias( "install", nukeLibraryInstall )
-			nukeEnv.Alias( "installNuke", nukeLibraryInstall )
-			nukeEnv.Alias( "installLib", [ nukeLibraryInstall ] )
-
-			nukeHeaderInstall = nukeEnv.Install( "$INSTALL_HEADER_DIR/IECoreNuke", nukeHeaders )
-			nukeEnv.Depends( nukeHeaderInstall, coreInstallSync )
-			nukeEnv.AddPostAction( "$INSTALL_HEADER_DIR/IECoreNuke", lambda target, source, env : makeSymLinks( nukeEnv, nukeEnv["INSTALL_HEADER_DIR"] ) )
-
-			nukeEnv.Alias( "installNuke", nukeHeaderInstall )
-			nukeEnv.Alias( "install", nukeHeaderInstall )
-
-			if coreEnv["INSTALL_CORENUKE_POST_COMMAND"]!="" :
-				# this is the only way we could find to get a post action to run for an alias
-				corePythonEnv.Alias( "installNuke", nukeLibraryInstall, "$INSTALL_CORENUKE_POST_COMMAND" ) 
-
-			Default( [ nukeLibrary ] )
+		Default( [ nukeLibrary ] )
 
 ###########################################################################################
 # Build and install the coreTruelight library and headers
@@ -1444,7 +1256,6 @@ if doConfigure :
 		truelightLibrary = truelightEnv.SharedLibrary( "lib/" + os.path.basename( truelightEnv.subst( "$INSTALL_LIB_NAME" ) ), truelightSources )
 		truelightEnv.Depends( coreInstallSync, truelightLibrary )
 		truelightLibraryInstall = truelightEnv.Install( os.path.dirname( truelightEnv.subst( "$INSTALL_LIB_NAME" ) ), truelightLibrary )
-		truelightEnv.NoCache( truelightLibraryInstall )
 		truelightEnv.Depends( truelightLibraryInstall, coreInstallSync )
 		truelightEnv.AddPostAction( truelightLibraryInstall, lambda target, source, env : makeLibSymLinks( truelightEnv ) )
 		truelightEnv.Alias( "install", truelightLibraryInstall )
@@ -1495,52 +1306,18 @@ if doConfigure :
 # Documentation
 ###########################################################################################
 
+## \todo Have an option for people to point us to their doxygen install, and do
+# Configure checks to be sure it's there
 docEnv = env.Copy()
 docEnv["ENV"]["PATH"] = os.environ["PATH"]
+docs = docEnv.Command( "doc/html/index.html", "", "doxygen doc/config/Doxyfile" )
+docEnv.Depends( docs, glob.glob( "include/IECore*/*.h" ) )
+docEnv.Depends( docs, glob.glob( "src/IECore*/*.cpp" ) )
+docEnv.Depends( docs, glob.glob( "python/IECore*/*.py" ) )
+docEnv.Depends( docs, glob.glob( "contrib/IECoreGL/include/IECoreGL/*.h" ) )
+docEnv.Depends( docs, glob.glob( "contrib/IECoreGL/src/*.cpp" ) )
+docEnv.Depends( docs, glob.glob( "contrib/IECoreGL/python/IECoreGL/*.py" ) )
 
-if doConfigure :
-
-	sys.stdout.write( "Checking for doxygen... " )
-
-	if os.path.exists( docEnv["DOXYGEN"] ) :
-	
-		sys.stdout.write( "yes\n" )
-		
-		f = open( "doc/config/Doxyfile", "r" )
-		
-		doxyfile = {}
-		
-		for line in f.readlines() :
-		
-			m = re.compile( "^([ \t])*([A-Z_]+)([ \t])*=([ \t])*(.*)" ).match( line )
-			if m  :
-			
-				pair = m.group( 2,5 )
-				doxyfile[ pair[0] ] = pair[1]
-				
-		f.close()
-		
-		docs = docEnv.Command( "doc/html/index.html", "doc/config/Doxyfile", "$DOXYGEN $SOURCE" )
-		
-		for inputDirectory in doxyfile["INPUT"].split( ' ' ) :
-		
-			for filePattern in doxyfile["FILE_PATTERNS"].split( ' ' ) :
-			
-				docEnv.Depends( docs, glob.glob( inputDirectory + "/" + filePattern ) )
-				
-		docEnv.Depends( docs, doxyfile["HTML_HEADER"] )
-		docEnv.Depends( docs, doxyfile["HTML_FOOTER"] )
-		docEnv.Depends( docs, doxyfile["HTML_STYLESHEET"] )						
-				
-		docEnv.Alias( "doc", "doc/html/index.html" )
-
-		# \todo This won't reinstall the documentation if the directory already exists
-		installDoc = docEnv.Install( "$INSTALL_DOC_DIR", "doc/html" )
-		docEnv.Alias( "install", installDoc )
-		
-	else: 
-	
-		sys.stdout.write( "no\n" )
-		sys.stderr.write( "WARNING : no doxygen binary found, not building documentation - check DOXYGEN\n" )
-
-	
+# \todo This won't reinstall the documentation if the directory already exists
+installDoc = docEnv.Install( "$INSTALL_DOC_DIR", "doc/html" )
+docEnv.Alias( "install", installDoc )

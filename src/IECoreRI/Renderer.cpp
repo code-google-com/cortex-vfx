@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -61,12 +61,12 @@ IECore::ConstDataPtr Renderer::getOption( const std::string &name ) const
 	return m_implementation->getOption( name );
 }
 
-void Renderer::camera( const std::string &name, const IECore::CompoundDataMap &parameters )
+void Renderer::camera( const std::string &name, IECore::CompoundDataMap &parameters )
 {
 	m_implementation->camera( name, parameters );
 }
 		
-void Renderer::display( const std::string &name, const std::string &type, const std::string &data, const IECore::CompoundDataMap &parameters )
+void Renderer::display( const std::string &name, const std::string &type, const std::string &data, IECore::CompoundDataMap &parameters )
 {
 	m_implementation->display( name, type, data, parameters );
 }
@@ -166,24 +166,19 @@ void Renderer::points( size_t numPoints, const IECore::PrimitiveVariableMap &pri
 	m_implementation->points( numPoints, primVars );
 }
 
-void Renderer::disk( float radius, float z, float thetaMax, const IECore::PrimitiveVariableMap &primVars )
+void Renderer::curves( const std::string &interpolation, bool periodic, IECore::ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars )
 {
-	m_implementation->disk( radius, z, thetaMax, primVars );
+	m_implementation->curves( interpolation, periodic, numVertices, primVars );
 }
 
-void Renderer::curves( const IECore::CubicBasisf &basis, bool periodic, IECore::ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars )
+Imath::Box3f Renderer::textExtents( const std::string &t, float width )
 {
-	m_implementation->curves( basis, periodic, numVertices, primVars );
+	return m_implementation->textExtents( t, width );
 }
 
-void Renderer::text( const std::string &font, const std::string &text, float kerning, const IECore::PrimitiveVariableMap &primVars )
+void Renderer::text( const std::string &t, float width )
 {
-	m_implementation->text( font, text, kerning, primVars );
-}
-
-void Renderer::sphere( float radius, float zMin, float zMax, float thetaMax, const IECore::PrimitiveVariableMap &primVars )
-{
-	m_implementation->sphere( radius, zMin, zMax, thetaMax, primVars );
+	m_implementation->text( t, width );
 }
 
 void Renderer::image( const Imath::Box2i &dataWindow, const Imath::Box2i &displayWindow, const IECore::PrimitiveVariableMap &primVars )
@@ -211,22 +206,7 @@ void Renderer::procedural( IECore::Renderer::ProceduralPtr proc )
 	m_implementation->procedural( proc );
 }
 
-void Renderer::instanceBegin( const std::string &name, const IECore::CompoundDataMap &parameters )
+void Renderer::command( const std::string &name, const IECore::CompoundDataMap &parameters )
 {
-	m_implementation->instanceBegin( name, parameters );
-}
-
-void Renderer::instanceEnd()
-{
-	m_implementation->instanceEnd();
-}
-
-void Renderer::instance( const std::string &name )
-{
-	m_implementation->instance( name );
-}
-
-IECore::DataPtr Renderer::command( const std::string &name, const IECore::CompoundDataMap &parameters )
-{
-	return m_implementation->command( name, parameters );
+	m_implementation->command( name, parameters );
 }

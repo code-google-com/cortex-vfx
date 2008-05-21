@@ -45,11 +45,6 @@ LRUCache<Key, Data, GetterFn>::LRUCache()
 }
 
 template<typename Key, typename Data, typename GetterFn>
-LRUCache<Key, Data, GetterFn>::~LRUCache()
-{
-}
-
-template<typename Key, typename Data, typename GetterFn>
 void LRUCache<Key, Data, GetterFn>::clear()
 {
 	m_currentCost = Cost(0);
@@ -65,18 +60,6 @@ void LRUCache<Key, Data, GetterFn>::setMaxCost( Cost maxCost )
 	m_maxCost = maxCost;
 				
 	limitCost( m_maxCost );
-}
-
-template<typename Key, typename Data, typename GetterFn>
-typename LRUCache<Key, Data, GetterFn>::Cost LRUCache<Key, Data, GetterFn>::getMaxCost( ) const
-{
-	return m_maxCost;
-}
-
-template<typename Key, typename Data, typename GetterFn>
-typename LRUCache<Key, Data, GetterFn>::Cost LRUCache<Key, Data, GetterFn>::currentCost() const
-{
-	return m_currentCost;
 }
 
 template<typename Key, typename Data, typename GetterFn>

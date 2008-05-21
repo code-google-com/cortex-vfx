@@ -51,7 +51,6 @@
 #include "DataConversionTest.h"
 #include "DataConvertTest.h"
 #include "DespatchTypedDataTest.h"
-#include "CompilerTest.h"
 
 using namespace boost::unit_test;
 using boost::test_tools::output_test_stream;
@@ -59,7 +58,8 @@ using boost::test_tools::output_test_stream;
 using namespace IECore;
 
 test_suite* init_unit_test_suite( int argc, char* argv[] )
-{	
+{
+	
 	test_suite* test = BOOST_TEST_SUITE( "IECore unit test" );
 	
 	try
@@ -73,7 +73,6 @@ test_suite* init_unit_test_suite( int argc, char* argv[] )
 		addDataConversionTest(test);
 		addDataConvertTest(test);
 		addDespatchTypedDataTest(test);
-		addCompilerTest(test);
 	} 
 	catch (std::exception &ex)
 	{

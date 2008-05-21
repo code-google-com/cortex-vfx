@@ -42,7 +42,7 @@
 import sys
 
 import VersionControl 
-VersionControl.setVersion('IEBuild', '1.15.1') 
+VersionControl.setVersion('IEBuild', '1.9.1') 
 import IEBuild  
 
 ieCoreMajorVersion=ARGUMENTS['MAJOR']
@@ -70,9 +70,8 @@ coreOps = [
 	[ "SearchReplaceOp", "searchReplace", "common/fileSystem" ],
 	[ "CheckImagesOp", "checkImages", "common/fileSystem" ],
 	[ "FileSequenceGraphOp", "fileSequenceGraph", "common/fileSystem" ],
-	[ "MeshPrimitiveImplicitSurfaceOp", "implicitSurface", "common/primitive/mesh" ], 	
 ]
 
 for op in coreOps : 
 
-	IEBuild.OpWrapper( ARGUMENTS, op[0], "IECore", ieCoreVersion, op[2], op[1], ieCoreMajorVersion, useVersionControl = False ).finalize()
+	IEBuild.OpWrapper( ARGUMENTS, op[0], "IECore", ieCoreVersion, op[2], op[1], ieCoreMajorVersion ).finalize()

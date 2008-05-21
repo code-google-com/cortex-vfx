@@ -42,11 +42,6 @@ Op::Op(  const std::string name, const std::string description, ParameterPtr res
 {
 }
 
-Op::Op(  const std::string name, const std::string description, CompoundParameterPtr compoundParameter, ParameterPtr resultParameter )
-	:	Parameterised( name, description, compoundParameter ), m_resultParameter( resultParameter )
-{
-}
-
 Op::~Op()
 {
 }

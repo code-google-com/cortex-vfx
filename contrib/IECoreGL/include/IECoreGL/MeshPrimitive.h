@@ -68,9 +68,6 @@ class MeshPrimitive : public Primitive
 		IECore::ConstV3fVectorDataPtr m_points;
 		
 		Imath::Box3f m_bound;
-		
-		/// So TextPrimitive can use the render( state, style ) method.
-		friend class TextPrimitive;
 	
 };
 

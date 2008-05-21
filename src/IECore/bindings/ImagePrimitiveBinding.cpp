@@ -60,6 +60,12 @@ void bindImagePrimitive()
 	ImagePrimitivePyClass("ImagePrimitive")
 		.def( init<Imath::Box2i, Imath::Box2i>() )
 
+		.add_property( "x", &ImagePrimitive::x )
+		.add_property( "y", &ImagePrimitive::y )
+		.add_property( "width", &ImagePrimitive::width )
+		.add_property( "height", &ImagePrimitive::height )
+		.add_property( "area", &ImagePrimitive::area )
+
 		.add_property("dataWindow", make_function( &ImagePrimitive::getDataWindow,
 	                	return_value_policy<copy_const_reference>() ), &ImagePrimitive::setDataWindow )
 
@@ -72,6 +78,7 @@ void bindImagePrimitive()
 		.def( "createFloatChannel", &ImagePrimitive::createChannel<float> )
 		.def( "createHalfChannel", &ImagePrimitive::createChannel<half> )
 		.def( "createDoubleChannel", &ImagePrimitive::createChannel<double> )
+		.def( "createLongChannel", &ImagePrimitive::createChannel<long> )
 		.def( "createIntChannel", &ImagePrimitive::createChannel<int> )
 		.def( "createUIntChannel", &ImagePrimitive::createChannel<unsigned int> )
 		.def( "createShortChannel", &ImagePrimitive::createChannel<short> )

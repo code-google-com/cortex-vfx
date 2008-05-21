@@ -56,22 +56,11 @@ class TestPerlinNoise( unittest.TestCase ) :
 		
 		b = IECore.Box2i( IECore.V2i( 0, 0 ), IECore.V2i( width-1, height-1 ) )		
 		i = IECore.ImagePrimitive( b, b )
-		i["R"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
-		i["G"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
-		i["B"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
+		i["r"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
+		i["g"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
+		i["b"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
 		
-		e = IECore.Reader.create( "test/IECore/data/expectedResults/perlinff.exr" ).read()
-		
-		op = IECore.ImageDiffOp()
-
-		res = op(
-			imageA = i,
-			imageB = e,
-			maxError = 0.0005
-		)
-
-		self.failIf( res.value )
-
+		IECore.Writer.create( i, "test/perlinff.exr" ).write()
 			
 	def testV2ff( self ) :
 	
@@ -89,21 +78,11 @@ class TestPerlinNoise( unittest.TestCase ) :
 		
 		b = IECore.Box2i( IECore.V2i( 0, 0 ), IECore.V2i( width-1, height-1 ) )		
 		i = IECore.ImagePrimitive( b, b ) 
-		i["R"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
-		i["G"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
-		i["B"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
+		i["r"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
+		i["g"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
+		i["b"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
 		
-		e = IECore.Reader.create( "test/IECore/data/expectedResults/perlinV2ff.exr" ).read()
-		
-		op = IECore.ImageDiffOp()
-
-		res = op(
-			imageA = i,
-			imageB = e,
-			maxError = 0.0005
-		)
-
-		self.failIf( res.value )
+		IECore.Writer.create( i, "test/perlinV2ff.exr" ).write()
 		
 	def testV3ff( self ) :
 	
@@ -122,21 +101,11 @@ class TestPerlinNoise( unittest.TestCase ) :
 						
 			b = IECore.Box2i( IECore.V2i( 0, 0 ), IECore.V2i( width-1, height-1 ) )		
 			i = IECore.ImagePrimitive( b, b )
-			i["R"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
-			i["G"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
-			i["B"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
-			
-			e = IECore.Reader.create( "test/IECore/data/expectedResults/perlin3d.%.4d.exr" % frame ).read()
+			i["r"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
+			i["g"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
+			i["b"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, f )
 		
-			op = IECore.ImageDiffOp()
-                
-			res = op(
-				imageA = i,
-				imageB = e,
-				maxError = 0.0005
-			)
-                
-			self.failIf( res.value )
+			IECore.Writer.create( i, "test/perlin3d.%.4d.exr" % frame ).write()
 
 	def testV2fColor3f( self ) :
 	
@@ -159,21 +128,11 @@ class TestPerlinNoise( unittest.TestCase ) :
 		
 		box = IECore.Box2i( IECore.V2i( 0, 0 ), IECore.V2i( width-1, height-1 ) )		
 		i = IECore.ImagePrimitive( box, box ) 
-		i["R"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, r )
-		i["G"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, g )
-		i["B"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, b )
+		i["r"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, r )
+		i["g"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, g )
+		i["b"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, b )
 		
-		e = IECore.Reader.create( "test/IECore/data/expectedResults/perlinV2fColor3f.exr" ).read()
-		
-		op = IECore.ImageDiffOp()
-
-		res = op(
-			imageA = i,
-			imageB = e,
-			maxError = 0.0005
-		)
-
-		self.failIf( res.value )
+		IECore.Writer.create( i, "test/perlinV2fColor3f.exr" ).write()
 
 #	def testSpeed( self ) :
 #
@@ -315,7 +274,23 @@ class TestPerlinNoise( unittest.TestCase ) :
 		for i in range( 0, height ) :
 			for j in range( 0, width ) :
 				self.assertAlmostEqual( n.noise( IECore.V2f( i/50.0, j/50.0 ) ), n2.noise( IECore.V2f( i/50.0, j/50.0 ) ), 10 )
-					
+				
+	def tearDown( self ) :
+		
+		for frame in range( 0, 5 ) :
+			
+			if os.path.isfile( 'test/perlin3d.%.4d.exr' % frame ):
+				os.remove( 'test/perlin3d.%.4d.exr' % frame )
+				
+		if os.path.isfile( 'test/perlinV2fColor3f.exr' ):
+			os.remove( 'test/perlinV2fColor3f.exr' )
+			
+		if os.path.isfile( 'test/perlinV2ff.exr' ):
+			os.remove( 'test/perlinV2ff.exr' )
+				
+		if os.path.isfile( 'test/perlinff.exr' ):
+			os.remove( 'test/perlinff.exr' )
+
 							
 if __name__ == "__main__":
 	unittest.main()   

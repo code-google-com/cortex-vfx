@@ -33,7 +33,6 @@
 ##########################################################################
 
 import sys
-import IECore
 
 from SLOReader import *
 from Renderer import *
@@ -45,11 +44,6 @@ from DoubleSided import *
 from Orientation import *
 from MultipleContextsTest import *
 from Camera import *
-from CurvesTest import *
-
-if IECore.withFreeType() :
-
-	from TextTest import *
 
 ## \todo Should share this class with the other tests rather
 # than duplicating it

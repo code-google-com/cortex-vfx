@@ -46,6 +46,10 @@ namespace IECoreGL
 /// in calling it multiple times.
 void init( bool glAlreadyInitialised = false );
 
+/// Returns the major version of the IECore library this
+/// library was compiled against.
+unsigned int coreMajorVersion();
+
 } // namespace IECoreGL
 
 #endif // IECOREGL_COREGL_H

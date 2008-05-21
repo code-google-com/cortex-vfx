@@ -58,6 +58,7 @@ from EmptyFrameList import EmptyFrameList
 from FileSequenceParameter import FileSequenceParameter
 from FrameListParameter import FrameListParameter
 from ClassLoader import ClassLoader
+from RemoteOpLoader import RemoteOpLoader
 from RemovePrimitiveVariables import RemovePrimitiveVariables
 from RenamePrimitiveVariables import RenamePrimitiveVariables
 from SequenceCpOp import SequenceCpOp

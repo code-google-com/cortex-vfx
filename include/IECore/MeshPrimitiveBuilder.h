@@ -47,20 +47,23 @@ namespace IECore
 /// using this as a model. One possible client of this class is IECore::MarchingCubes.
 /// \todo This is too specific to MarchingCubes. Some algorithms want to make faces other than triangles, and
 /// some algorithms don't want to supply normals.
+template<typename T>
 class MeshPrimitiveBuilder : public RefCounted
 {
 	public:
 	
-		IE_CORE_DECLAREMEMBERPTR( MeshPrimitiveBuilder );
+		typedef T BaseType;
+	
+		typedef boost::intrusive_ptr<const MeshPrimitiveBuilder<T> > ConstPtr;
+		typedef boost::intrusive_ptr<MeshPrimitiveBuilder<T> > Ptr;
 	
 		MeshPrimitiveBuilder();
 
-		/// Add a vertex position and normal
-		template<typename T>						
+		/// Add a vertex position and normal						
 		void addVertex( const Imath::Vec3<T> &p, const Imath::Vec3<T> &n );
 
-		/// Construct a triangle from the 3 specified vertex indices. The winding order 
-		/// here matches that of IECore::MeshPrimitive
+		/// Construct a triangle from the 3 specified vertex indices
+		/// \todo Define and check winding order
 		void addTriangle( int v0, int v1, int v2 );
 				
 		/// Retrieve the resultant mesh		
@@ -72,9 +75,7 @@ class MeshPrimitiveBuilder : public RefCounted
 		V3fVectorDataPtr m_N;		
 		IntVectorDataPtr m_verticesPerFace;
 		IntVectorDataPtr m_vertexIds;
-};
-
-IE_CORE_DECLAREPTR( MeshPrimitiveBuilder );     
+};       
 
 }
 

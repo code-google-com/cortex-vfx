@@ -61,19 +61,15 @@ class Renderer : public IECore::Renderer
 		
 		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreRI::Renderer, RendererTypeId, IECore::Renderer );
 
-		/// \par Standard options supported :
+		/// Implementation specific options :
 		///
-		/// \li <b>"searchPath:font"</b>
-		///
-		/// \par Implementation specific options :
-		///
-		/// \li <b>"ri:searchpath:shader" StringData()</b><br>
+		/// "ri:searchpath:shader" StringData()
 		/// A colon separated list of paths to search for shaders on.
 		///
-		/// \li <b>"ri:pixelSamples" V2iData()</b><br>
+		/// "ri:pixelSamples" V2iData()
 		/// Passed to an RiPixelSamples call.
 		///
-		/// \li <b>"ri:*:*"</b><br>
+		/// "ri:*:*"
 		/// Passed to an RiOption call.
 		virtual void setOption( const std::string &name, IECore::ConstDataPtr value );
 		/// Currently supported options :
@@ -111,8 +107,8 @@ class Renderer : public IECore::Renderer
 		/// All parameters matching this naming convention are passed to an RiHider call.
 		///
 		/// \todo Support moving cameras.
-		virtual void camera( const std::string &name, const IECore::CompoundDataMap &parameters );
-		virtual void display( const std::string &name, const std::string &type, const std::string &data, const IECore::CompoundDataMap &parameters );
+		virtual void camera( const std::string &name, IECore::CompoundDataMap &parameters );
+		virtual void display( const std::string &name, const std::string &type, const std::string &data, IECore::CompoundDataMap &parameters );
 
 		virtual void worldBegin();
 		virtual void worldEnd();
@@ -191,12 +187,11 @@ class Renderer : public IECore::Renderer
 		virtual void motionEnd();
 
 		virtual void points( size_t numPoints, const IECore::PrimitiveVariableMap &primVars );
-		virtual void disk( float radius, float z, float thetaMax, const IECore::PrimitiveVariableMap &primVars );
 		
-		virtual void curves( const IECore::CubicBasisf &basis, bool periodic, IECore::ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars );
+		virtual void curves( const std::string &interpolation, bool periodic, IECore::ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars );
 
-		virtual void text( const std::string &font, const std::string &text, float kerning = 1.0f, const IECore::PrimitiveVariableMap &primVars=IECore::PrimitiveVariableMap() );
-		virtual void sphere( float radius, float zMin, float zMax, float thetaMax, const IECore::PrimitiveVariableMap &primVars );
+		virtual Imath::Box3f textExtents(const std::string & t, const float width = Imath::limits<float>::max() );
+		virtual void text(const std::string &t, const float width = Imath::limits<float>::max() );
 
 		virtual void image( const Imath::Box2i &dataWindow, const Imath::Box2i &displayWindow, const IECore::PrimitiveVariableMap &primVars );
 		/// Renders interpolation types of "linear" as RiPointsGeneralPolygons and "catmullClark" as RiSubdivisionMesh.
@@ -207,11 +202,6 @@ class Renderer : public IECore::Renderer
 		virtual void geometry( const std::string &type, const IECore::CompoundDataMap &topology, const IECore::PrimitiveVariableMap &primVars );
 
 		virtual void procedural( IECore::Renderer::ProceduralPtr proc );
-		
-		virtual void instanceBegin( const std::string &name, const IECore::CompoundDataMap &parameters );
-		virtual void instanceEnd();
-		virtual void instance( const std::string &name );
-
 		///
 		/// Supports the following commands :
 		///
@@ -233,12 +223,13 @@ class Renderer : public IECore::Renderer
 		/// Calls RiObjectInstance. Expects a single StringData parameter called "name", which
 		/// refers to a name previously passed to command( "ri:objectBegin" ).
 		///
-		/// \deprecated Use the dedicated instancing methods instead of the objectInstance commands
-		///
 		/// "ri:archiveRecord"
 		/// Makes a call to RiArchiveRecord(). Expects StringData parameters called "type" and
 		/// "record".
-		virtual IECore::DataPtr command( const std::string &name, const IECore::CompoundDataMap &parameters );
+		///
+		/// \todo Implement instancing support through specific calls we add to the IECore::Renderer
+		/// interface definition.
+		virtual void command( const std::string &name, const IECore::CompoundDataMap &parameters );
 		
 	private :
 	

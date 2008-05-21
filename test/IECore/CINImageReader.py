@@ -46,21 +46,6 @@ class TestCINReader(unittest.TestCase):
 		r = Reader.create( "test/IECore/data/cinFiles/uvMap.512x256.cin" )
 		self.assertEqual(type(r), CINImageReader)
 
-	def testReadHeader( self ):
-
-		r = Reader.create( "test/IECore/data/cinFiles/uvMap.512x256.cin" )
-		self.assertEqual( type(r), CINImageReader )
-		h = r.readHeader()
-
-		channelNames = h['channelNames']		
-		self.assertEqual( len( channelNames ), 3 )
-		self.assert_( "R" in channelNames )
-		self.assert_( "G" in channelNames )
-		self.assert_( "B" in channelNames )
-
-		self.assertEqual( h['displayWindow'], Box2iData( Box2i( V2i(0,0), V2i(511,255) ) ) )
-		self.assertEqual( h['dataWindow'], Box2iData( Box2i( V2i(0,0), V2i(511,255) ) ) )
-
 	def testRead(self):
 
 		r = Reader.create( "test/IECore/data/cinFiles/uvMap.512x256.cin" )
@@ -182,19 +167,9 @@ class TestCINReader(unittest.TestCase):
 		
 			for f in fileNames:
 			
-				r = CINImageReader( f ) 
-				
-				if f in expectedFailures :
-					
-					self.assertRaises( RuntimeError, r.read )
-				
-				else :
-				
-					self.assert_( CINImageReader.canRead( f ) )
-					self.failIf( JPEGImageReader.canRead( f ) )
-					self.failIf( EXRImageReader.canRead( f ) )
-					self.failIf( TIFFImageReader.canRead( f ) )					
+				if not f in expectedFailures :
 
+					r = CINImageReader( f ) 
 					img = r.read()
 					self.assertEqual( type(img), ImagePrimitive )
 					self.assert_( img.arePrimitiveVariablesValid() )	

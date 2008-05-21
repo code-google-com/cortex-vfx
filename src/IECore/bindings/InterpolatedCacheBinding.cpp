@@ -113,16 +113,6 @@ struct InterpolatedCacheHelper
 		return attributes;
 	}
 	
-	static list currentCaches(InterpolatedCachePtr cache)
-	{
-		list caches;
-		InterpolatedCache::CacheVector a = cache->currentCaches();
-		for (InterpolatedCache::CacheVector::const_iterator it = a.begin(); it != a.end(); ++it)
-		{
-			caches.append<AttributeCachePtr>(*it);
-		}
-		return caches;
-	}
 };
 
 void bindInterpolatedCache()
@@ -166,7 +156,6 @@ void bindInterpolatedCache()
 		.def("objects", &InterpolatedCacheHelper::objects)
 		.def("headers", &InterpolatedCacheHelper::headers)
 		.def("attributes", make_function( &InterpolatedCacheHelper::attributes, default_call_policies(), ( boost::python::arg_( "obj" ), boost::python::arg_( "regex" ) = object() ) ) )
-		.def("currentCaches", make_function( &InterpolatedCacheHelper::currentCaches, default_call_policies() ) )
 	;
 	INTRUSIVE_PTR_PATCH( InterpolatedCache, InterpolatedCachePyClass );
 }

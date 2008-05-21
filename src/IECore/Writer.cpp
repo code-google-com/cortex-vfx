@@ -49,13 +49,13 @@ using namespace IECore;
 using namespace boost;
 using namespace boost::filesystem;
 
-Writer::Writer( const std::string &name, const std::string &description, TypeId writableType )
+Writer::Writer( const std::string name, const std::string description, TypeId writableType )
 	:	Op( name, description, new ObjectParameter( "output", "A pass through of the input object", new NullObject, writableType ) )
 {
 	constructParameters();
 }
 
-Writer::Writer( const std::string &name, const std::string &description, const ObjectParameter::TypeIdSet &writableTypes )
+Writer::Writer( const std::string name, const std::string description, const ObjectParameter::TypeIdSet &writableTypes )
 	:	Op( name, description, new ObjectParameter( "output", "A pass through of the input object", new NullObject, writableTypes ) )
 {
 	constructParameters();
@@ -108,7 +108,7 @@ void Writer::registerWriter( const std::string &extensions, CanWriteFn canWrite,
 
 WriterPtr Writer::create( ObjectPtr object, const std::string &fileName )
 {
-	string ext = extension(boost::filesystem::path(fileName));
+	string ext = extension(boost::filesystem::path(fileName, boost::filesystem::native));
 	
 	ExtensionsToFnsMap *m = extensionsToFns();
 	assert( m );

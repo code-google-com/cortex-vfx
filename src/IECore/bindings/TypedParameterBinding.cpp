@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -53,15 +53,11 @@ namespace IECore
 template<typename T>
 class TypedParameterWrap : public TypedParameter<T>, public Wrapper< TypedParameter<T> >
 {
-	public:
-	
-		IE_CORE_DECLAREMEMBERPTR( TypedParameterWrap<T> );
-	
 	protected:
 
-		static typename TypedData<T>::Ptr makeDefault( object defaultValue )
+		static boost::intrusive_ptr<TypedData<T> > makeDefault( object defaultValue )
 		{
-			typename TypedData<T>::Ptr defaultData;
+			boost::intrusive_ptr<TypedData<T> > defaultData;
 			extract<T> de( defaultValue );
 			if( de.check() )
 			{
@@ -88,7 +84,7 @@ class TypedParameterWrap : public TypedParameter<T>, public Wrapper< TypedParame
 				}
 				else
 				{
-					p.insert( typename TypedParameter<T>::ObjectPresetsMap::value_type( extract<string>( keys[i] )(), extract< typename TypedData<T>::Ptr >( values[i] )	() ) );
+					p.insert( typename TypedParameter<T>::ObjectPresetsMap::value_type( extract<string>( keys[i] )(), extract<boost::intrusive_ptr<TypedData<T> > >( values[i] )	() ) );
 				}
 			}
 			return p;
@@ -108,7 +104,7 @@ class TypedParameterWrap : public TypedParameter<T>, public Wrapper< TypedParame
 template<typename T>
 static void bindTypedParameter( const char *name )
 {
-	typedef class_< TypedParameter<T>, typename TypedParameterWrap< T >::Ptr, boost::noncopyable, bases<Parameter> > TypedParameterPyClass;
+	typedef class_< TypedParameter<T>, intrusive_ptr< TypedParameterWrap< T > >, boost::noncopyable, bases<Parameter> > TypedParameterPyClass;
 	TypedParameterPyClass( name, no_init )
 		.def( init< const std::string &, const std::string &, object, optional<const dict &, bool, CompoundObjectPtr > >( args( "name", "description", "defaultValue", "presets", "presetsOnly", "userData") ) )
 		.def( init< const std::string &, const std::string &, object, CompoundObjectPtr >( args( "name", "description", "defaultValue", "userData") ) )
@@ -118,10 +114,10 @@ static void bindTypedParameter( const char *name )
 		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( TypedParameter<T> )
 	;
 
-	WrapperToPython< typename TypedParameter<T>::Ptr >();
+	WrapperToPython< intrusive_ptr<TypedParameter<T> > >();
 
 	INTRUSIVE_PTR_PATCH( TypedParameter<T>, typename TypedParameterPyClass );
-	implicitly_convertible<typename TypedParameter<T>::Ptr, ParameterPtr>();
+	implicitly_convertible<intrusive_ptr<TypedParameter<T> >, ParameterPtr>();
 
 }
 

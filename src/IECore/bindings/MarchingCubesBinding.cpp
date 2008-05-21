@@ -73,8 +73,8 @@ void bindMarchingCubes( const char *name )
 
 void bindMarchingCubes()
 {
-	bindMarchingCubes<MarchingCubes< ImplicitSurfaceFunctionV3ff, MeshPrimitiveBuilder > >( "MarchingCubesf" );
-	bindMarchingCubes<MarchingCubes< ImplicitSurfaceFunctionV3dd, MeshPrimitiveBuilder > >( "MarchingCubesd" );
+	bindMarchingCubes<MarchingCubes< ImplicitSurfaceFunctionV3ff, MeshPrimitiveBuilder<float> > >( "MarchingCubesf" );
+	bindMarchingCubes<MarchingCubes< ImplicitSurfaceFunctionV3dd, MeshPrimitiveBuilder<float> > >( "MarchingCubesd" );
 }
 
 } // namespace IECore

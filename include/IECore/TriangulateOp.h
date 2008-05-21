@@ -64,8 +64,6 @@ class TriangulateOp : public TypedPrimitiveOp<MeshPrimitive>
 
 	protected:
 	
-		struct TriangulateFn;
-	
 		virtual void modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands );
 		
 		BoolParameterPtr m_throwExceptionsParameter;

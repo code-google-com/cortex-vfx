@@ -111,8 +111,6 @@ class Primitive : public Renderable
 		bool depthSortRequested( ConstStatePtr state ) const;
 		
 	private :
-	
-		struct SetVertexAttribute;
 		
 		struct IntData
 		{

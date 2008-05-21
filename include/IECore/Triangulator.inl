@@ -42,7 +42,7 @@ namespace IECore
 
 template<typename PointIterator, typename MeshBuilder>
 Triangulator<PointIterator, MeshBuilder>::Triangulator( typename MeshBuilder::Ptr builder )
-	:	m_builder( builder ), m_baseVertexIndex( 0 )
+	:	m_builder( builder )
 {
 }
 
@@ -62,10 +62,8 @@ void Triangulator<PointIterator, MeshBuilder>::triangulate( PointIterator first,
 	for( PointIterator it=first; it!=last; it++ )
 	{
 		m_builder->addVertex( *it, Point( 0 ) );
-		vertices.push_back( Vertex( m_baseVertexIndex + size++, it ) );
+		vertices.push_back( Vertex( size++, it ) );
 	}
-	m_baseVertexIndex += size;
-	
 	// and triangulate 'em
 	triangulate( vertices, size );
 	
@@ -75,8 +73,6 @@ template<typename PointIterator, typename MeshBuilder>
 template<typename LoopIterator>
 void Triangulator<PointIterator, MeshBuilder>::triangulate( LoopIterator first, LoopIterator last )
 {
-	unsigned nextBaseVertexIndex = m_baseVertexIndex;
-	
 	// put all the vertices of the outer loop into the builder,
 	// and into the vertex list used for ear clipping
 	const Loop &outer = *first;
@@ -85,16 +81,14 @@ void Triangulator<PointIterator, MeshBuilder>::triangulate( LoopIterator first, 
 	for( PointIterator it=outer.first; it!=outer.second; it++ )
 	{
 		m_builder->addVertex( *it, Point( 0 ) );
-		vertices.push_back( Vertex( m_baseVertexIndex + size++, it ) );
+		vertices.push_back( Vertex( size++, it ) );
 	}
-	nextBaseVertexIndex += size;
 	
 	// sort the holes by their maximum x coordinate
 	/// \todo Need to sort by a different coordinate for polygons in yz plane
 	typedef CircularIterator<PointIterator> CircularPointIterator;
 	
-	typedef std::multimap<BaseType, CircularPointIterator, std::greater<BaseType> > HoleMap;
-	typedef typename HoleMap::value_type HoleMapValue;
+	typedef std::map<BaseType, CircularPointIterator, std::greater<BaseType> > HoleMap;
 	HoleMap holes;
 	for( LoopIterator lIt=++first; lIt!=last; lIt++ )
 	{
@@ -108,7 +102,7 @@ void Triangulator<PointIterator, MeshBuilder>::triangulate( LoopIterator first, 
 				mIt = it;
 			}
 		}
-		holes.insert( HoleMapValue( m, CircularPointIterator( lIt->first, lIt->second, mIt ) ) );
+		holes[m] = CircularPointIterator( lIt->first, lIt->second, mIt );
 	}
 	
 	// now integrate the holes into the vertex list for the outer loop
@@ -119,58 +113,57 @@ void Triangulator<PointIterator, MeshBuilder>::triangulate( LoopIterator first, 
 		// is to the right of the inner point.
 		const Point &innerPoint = *(it->second);
 		VertexIterator joinIt;
+		bool passedToRight = false;
 		for( joinIt=vertices.begin(); joinIt!=vertices.end(); joinIt++ )
 		{
 			const Point &outerPoint = *(joinIt->second);
-			if( outerPoint[0] <= innerPoint[0] )
+			if( outerPoint[0] > innerPoint[0] )
 			{
-				continue;
+				passedToRight = true;
 			}
-						
-			const Edge joinEdge( innerPoint, outerPoint );
-			// if the join edge intersects any of the existing edges then
-			// we have to reject it.
-			bool reject = false;
-			CircularVertexIterator edgeStartIt( &vertices, joinIt );
-			edgeStartIt++; // don't worry about the edge starting at the join point
-			CircularVertexIterator edgeEndIt( edgeStartIt ); edgeEndIt++;
-			do
+			
+			if( passedToRight )
 			{
-				Edge edge( *(edgeStartIt->second), *(edgeEndIt->second) );
-				// i wonder if the tolerance below shouldn't be related to the
-				// lengths of the line segments somehow.
-				if( joinEdge.distanceTo( edge ) < 1e-3 )
+				const Edge joinEdge( innerPoint, outerPoint );
+				// if the join edge intersects any of the existing edges then
+				// we have to reject it.
+				bool reject = false;
+				CircularVertexIterator edgeStartIt( &vertices, joinIt );
+				edgeStartIt++; // don't worry about the edge starting at the join point
+				CircularVertexIterator edgeEndIt( edgeStartIt ); edgeEndIt++;
+				do
 				{
-					reject = true;
+					Edge edge( *(edgeStartIt->second), *(edgeEndIt->second) );
+					if( joinEdge.distanceTo( edge ) < 1e-6 )
+					{
+						reject = true;
+						break;
+					}
+					edgeStartIt++;
+					edgeEndIt++;
+				} while( edgeEndIt!=joinIt ); // stop just before the edge ending at the join point
+
+				if( !reject )
+				{
+					// we've found our join point
 					break;
 				}
-				edgeStartIt++;
-				edgeEndIt++;
-			} while( edgeEndIt!=joinIt ); // stop just before the edge ending at the join point
-
-			if( !reject )
-			{
-				// we've found our join point
-				break;
 			}
 		}
 
 		// now integrate the hole into the outer loop
 		VertexIterator insertPos = joinIt; insertPos++;
 		CircularPointIterator holeIt = it->second;
-		unsigned firstHoleVertIndex = m_baseVertexIndex + size;
+		unsigned firstHoleVertIndex = size;
 		do {
 			m_builder->addVertex( *holeIt, Point( 0 ) );
-			vertices.insert( insertPos, Vertex( m_baseVertexIndex + size++, holeIt ) );
-			nextBaseVertexIndex++;
+			vertices.insert( insertPos, Vertex( size++, holeIt ) );
 			holeIt++;
 		} while( holeIt!=it->second );
 		vertices.insert( insertPos, Vertex( firstHoleVertIndex, it->second ) );
 		vertices.insert( insertPos, *joinIt );
 		
 	}
-	
-	m_baseVertexIndex = nextBaseVertexIndex;
 	
 	// do the ear clipping
 	triangulate( vertices, vertices.size() );
@@ -209,7 +202,7 @@ void Triangulator<PointIterator, MeshBuilder>::triangulate( VertexList &vertices
 			const Point &v1 = *(vIt->second); unsigned int i1 = vIt->first; vIt++;
 			const Point &v2 = *(vIt->second); unsigned int i2 = vIt->first; vIt++;
 		
-			if( (v0-v1).cross( v2-v1 ).z >= 0 )
+			if( (v0-v1).cross( v2-v1 ).z > 0 )
 			{
 				// it's not a convex vertex so we can't clip.
 				// this test assumes right handed winding order.

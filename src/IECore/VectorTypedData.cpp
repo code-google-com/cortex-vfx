@@ -41,8 +41,6 @@ using namespace Imath;
 using namespace std;
 using namespace IECore;
 
-LongVectorDataAlias::TypeDescription<IntVectorData> LongVectorDataAlias::m_typeDescription( LongVectorDataTypeId, "LongVectorData" );
-
 #define IE_CORE_DEFINEVECTORTYPEDDATAMEMUSAGESPECIALISATION( TNAME )										\
 	template<>																								\
 	void TNAME::memoryUsage( Object::MemoryAccumulator &accumulator ) const			\
@@ -141,10 +139,9 @@ IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( HalfVectorData, HalfVectorDat
 IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( DoubleVectorData, DoubleVectorDataTypeId )
 IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( IntVectorData, IntVectorDataTypeId )
 IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( UIntVectorData, UIntVectorDataTypeId )
+IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( LongVectorData, LongVectorDataTypeId )
 IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( CharVectorData, CharVectorDataTypeId )
 IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( UCharVectorData, UCharVectorDataTypeId )
-IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( Int64VectorData, Int64VectorDataTypeId )
-IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( UInt64VectorData, UInt64VectorDataTypeId )
 IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( V2fVectorData, V2fVectorDataTypeId, 2 )
 IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( V2dVectorData, V2dVectorDataTypeId, 2 )
 IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( V2iVectorData, V2iVectorDataTypeId, 2 )
@@ -256,8 +253,24 @@ template<>
 void ShortVectorData::save( Object::SaveContext *context ) const
 {
 	Data::save( context );
-	IndexedIOInterfacePtr container = context->container( staticTypeName(), 1 );
-	container->write( "value", baseReadable(), baseSize() );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), 0 );
+	// we can't write out the raw data from inside the vector 'cos it's specialised
+	// to optimise for space, and that means the only access to the data is through
+	// a funny proxy class. so we repack the data into something we can deal with
+	// and write that out instead. essentially i think we're making exactly the same
+	// raw data. rubbish.
+	const std::vector<short> &b = readable();
+	std::vector<int> p;
+	unsigned int s = b.size();
+	p.resize(s);
+
+	for( unsigned int i=0; i<s; i++ )
+	{
+		p[i] = b[i];
+	}
+	
+	container->write( "size", s );
+	container->write( "value", &(p[0]), p.size() );
 }
 
 template<>
@@ -267,30 +280,17 @@ void ShortVectorData::load( LoadContextPtr context )
 	unsigned int v = 0;
 	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 	
+	unsigned int s = 0;
+	container->read( "size", s );
+	std::vector<int> p;
+	p.resize( s );
+	int *value = &(p[0]);
+	container->read( "value", value, p.size() );
 	std::vector<short> &b = writable();
-	
-	if ( v == 0 )
+	b.resize( s, false );
+	for( unsigned int i=0; i<s; i++ )
 	{
-		/// Version 0 stored the array of shorts as ints
-		unsigned int s = 0;
-		container->read( "size", s );
-		std::vector<int> p;
-		p.resize( s );
-		int *value = &(p[0]);
-		container->read( "value", value, p.size() );
-		b.resize( s, false );
-		for( unsigned int i=0; i<s; i++ )
-		{
-			b[i] = static_cast< short > ( p[i] );
-		}
-	}
-	else
-	{
-		/// Version 1 stores the shorts natively
-		IndexedIO::Entry e = container->ls( "value" );												\
-		writable().resize( e.arrayLength() );													\
-		short *p = baseWritable();														\
-		container->read( "value", p, e.arrayLength() );		
+		b[i] = static_cast< short > ( p[i] );
 	}
 }
 
@@ -298,8 +298,24 @@ template<>
 void UShortVectorData::save( Object::SaveContext *context ) const
 {
 	Data::save( context );
-	IndexedIOInterfacePtr container = context->container( staticTypeName(), 1 );
-	container->write( "value", baseReadable(), baseSize() );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), 0 );
+	// we can't write out the raw data from inside the vector 'cos it's specialised
+	// to optimise for space, and that means the only access to the data is through
+	// a funny proxy class. so we repack the data into something we can deal with
+	// and write that out instead. essentially i think we're making exactly the same
+	// raw data. rubbish.
+	const std::vector<unsigned short> &b = readable();
+	std::vector<unsigned int> p;
+	unsigned int s = b.size();
+	p.resize(s);
+
+	for( unsigned int i=0; i<s; i++ )
+	{
+		p[i] = b[i];
+	}
+	
+	container->write( "size", s );
+	container->write( "value", &(p[0]), p.size() );
 }
 
 template<>
@@ -309,30 +325,17 @@ void UShortVectorData::load( LoadContextPtr context )
 	unsigned int v = 0;
 	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 	
+	unsigned int s = 0;
+	container->read( "size", s );
+	std::vector<unsigned int> p;
+	p.resize( s );
+	unsigned int *value = &(p[0]);
+	container->read( "value", value, p.size() );
 	std::vector<unsigned short> &b = writable();
-	
-	if ( v == 0 )
+	b.resize( s, false );
+	for( unsigned int i=0; i<s; i++ )
 	{
-		/// Version 0 stored the array unsigned shorts as unsigned ints
-		unsigned int s = 0;
-		container->read( "size", s );
-		std::vector<unsigned int> p;
-		p.resize( s );
-		unsigned int *value = &(p[0]);
-		container->read( "value", value, p.size() );		
-		b.resize( s, false );
-		for( unsigned int i=0; i<s; i++ )
-		{
-			b[i] = static_cast< unsigned short > ( p[i] );
-		}
-	}
-	else
-	{
-		/// Version 1 stores the unsigned shorts natively
-		IndexedIO::Entry e = container->ls( "value" );												\
-		writable().resize( e.arrayLength() );													\
-		unsigned short *p = baseWritable();														\
-		container->read( "value", p, e.arrayLength() );		
+		b[i] = static_cast< unsigned short > ( p[i] );
 	}
 }
 	
@@ -343,12 +346,11 @@ template class TypedData<vector<half> >;
 template class TypedData<vector<double> >;
 template class TypedData<vector<int> >;
 template class TypedData<vector<unsigned int> >;
+template class TypedData<vector<long> >;
 template class TypedData<vector<char> >;
 template class TypedData<vector<unsigned char> >;
 template class TypedData<vector<short> >;
 template class TypedData<vector<unsigned short> >;
-template class TypedData<vector<int64_t> >;
-template class TypedData<vector<uint64_t> >;
 template class TypedData<vector<V2f> >;
 template class TypedData<vector<V2d> >;
 template class TypedData<vector<V2i> >;

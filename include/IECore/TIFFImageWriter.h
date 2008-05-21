@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,28 +48,6 @@ namespace IECore
 {
 
 /// The TIFFImageWriter class serializes images to the Tagged Image File Format (TIFF) format
-/// 
-/// The tags which may be written into the files are:
-///
-/// TIFFTAG_PHOTOMETRIC<br>
-/// TIFFTAG_SAMPLESPERPIXEL<br>
-/// TIFFTAG_EXTRASAMPLES<br>
-/// TIFFTAG_COMPRESSION<br>
-/// TIFFTAG_SAMPLEFORMAT<br>
-/// TIFFTAG_IMAGEWIDTH<br>
-/// TIFFTAG_IMAGELENGTH<br>
-/// TIFFTAG_XPOSITION<br>
-/// TIFFTAG_YPOSITION<br>
-/// TIFFTAG_PIXAR_IMAGEFULLWIDTH<br>
-/// TIFFTAG_PIXAR_IMAGEFULLLENGTH<br>
-/// TIFFTAG_BITSPERSAMPLE<br>
-/// TIFFTAG_ROWSPERSTRIP<br>
-/// TIFFTAG_FILLORDER<br>
-/// TIFFTAG_PLANARCONFIG<br>
-/// TIFFTAG_XRESOLUTION<br>
-/// TIFFTAG_YRESOLUTION<br>
-/// TIFFTAG_RESOLUTIONUNIT<br>
-///
 class TIFFImageWriter : public ImageWriter
 {
 
@@ -88,16 +66,15 @@ class TIFFImageWriter : public ImageWriter
 
 		static const WriterDescription<TIFFImageWriter> m_writerDescription;
 
-		virtual void writeImage( const std::vector<std::string> &names,
-		                         ConstImagePrimitivePtr image,
-		                         const Imath::Box2i &dataWindow	) const;
+		virtual void writeImage( std::vector<std::string> &names, ConstImagePrimitivePtr image,
+		                         const Imath::Box2i &dataWindow);
 					 
 		template<typename ChannelData>
 		struct ChannelConverter;			 
 
 		template<typename T>
 		void encodeChannels( ConstImagePrimitivePtr image, const std::vector<std::string> &names,
-		                     const Imath::Box2i &dw, tiff *tiffImage, size_t bufSize, unsigned int numStrips ) const;
+		                     const Imath::Box2i &dw, tiff *tiffImage, size_t bufSize, unsigned int numStrips );
 
 		IntParameterPtr m_compressionParameter;
 		IntParameterPtr m_bitDepthParameter;
@@ -105,7 +82,7 @@ class TIFFImageWriter : public ImageWriter
 		void constructParameters();
 };
 
-IE_CORE_DECLAREPTR( TIFFImageWriter );
+IE_CORE_DECLAREPTR(TIFFImageWriter);
 
 } // namespace IECore
 

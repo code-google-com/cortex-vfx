@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,7 @@
 #include "IECoreRI/PrimitiveVariableList.h"
 
 #include "IECore/MessageHandler.h"
-#include "IECore/DespatchTypedData.h"
+#include "IECore/TypedDataDespatch.h"
 
 using namespace IECore;
 using namespace IECoreRI;
@@ -157,5 +157,21 @@ const void *PrimitiveVariableList::value( IECore::DataPtr d )
 		return &*(m_charPtrs.rbegin());
 	}
 	
-	return despatchTypedData< TypedDataAddress, TypeTraits::IsTypedData, DespatchTypedDataIgnoreError >( boost::const_pointer_cast<Data>( d ) );	
+	try
+	{
+		return despatchSimpleTypedDataFn<const void *, SimpleTypedDataAddress, SimpleTypedDataAddressArgs>( const_pointer_cast<Data>( d ), SimpleTypedDataAddressArgs() );
+	}
+	catch( ... )
+	{
+	}
+	
+
+	try
+	{
+		return despatchVectorTypedDataFn<const void *, VectorTypedDataAddress, VectorTypedDataAddressArgs>( const_pointer_cast<Data>( d ), VectorTypedDataAddressArgs() );
+	}
+	catch( ... )
+	{
+	}
+	return 0;
 }

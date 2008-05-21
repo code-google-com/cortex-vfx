@@ -94,8 +94,9 @@ class MeshPrimitiveShrinkWrapOp : public TypedPrimitiveOp<MeshPrimitive>
 
 	protected:
 
-		struct ShrinkWrapFn;
-		
+		template<typename T>
+		void doShrinkWrap( std::vector<T> &vertices, PrimitivePtr sourcePrimitive, ConstPrimitivePtr targetPrimitive, typename TypedData< std::vector<T> >::ConstPtr directionVerticesData, Direction direction, Method method );
+
 		virtual void modifyTypedPrimitive( MeshPrimitivePtr typedPrimitive, ConstCompoundObjectPtr operands );
 
 	private:
@@ -103,8 +104,11 @@ class MeshPrimitiveShrinkWrapOp : public TypedPrimitiveOp<MeshPrimitive>
 		MeshPrimitiveParameterPtr m_targetMeshParameter;
 		IntParameterPtr m_directionParameter;
 		IntParameterPtr m_methodParameter;
-		MeshPrimitiveParameterPtr m_directionMeshParameter;
-		FloatParameterPtr m_triangulationToleranceParameter;
+		
+	public:	
+		
+		/// \todo Move all ExtraData members to here on next major version change
+		struct ExtraData;			
 
 };
 

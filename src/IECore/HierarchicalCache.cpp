@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,24 +32,23 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <iostream>
-#include <cassert>
 #include <map>
 #include <set>
 #include <algorithm>
-
+#include <boost/filesystem/path.hpp>
 #include "OpenEXR/ImathBoxAlgo.h"
 
-#include "IECore/HierarchicalCache.h"
-#include "IECore/VectorTypedData.h"
-#include "IECore/CompoundObject.h"
-#include "IECore/Group.h"
-#include "IECore/IndexedIOInterface.h"
-#include "IECore/MessageHandler.h"
-#include "IECore/MatrixTransform.h"
-#include "IECore/HeaderGenerator.h"
+#include <IECore/HierarchicalCache.h>
+#include <IECore/VectorTypedData.h>
+#include <IECore/CompoundObject.h>
+#include <IECore/Group.h>
+#include <IECore/IndexedIOInterface.h>
+#include <IECore/MessageHandler.h>
+#include <IECore/MatrixTransform.h>
+#include <IECore/HeaderGenerator.h>
 
 using namespace IECore;
+namespace fs = boost::filesystem;
 
 void HierarchicalCache::CacheDependency::compute( const std::string &node )
 {
@@ -132,30 +131,27 @@ void HierarchicalCache::flush()
 
 HierarchicalCache::ObjectHandle HierarchicalCache::absoluteName( const ObjectHandle &relativeName, const ObjectHandle &parent )
 {
-	if ( !IndexedIOPath(parent).hasRootDirectory() )
+	fs::path parentPath( parent );
+	if ( !parentPath.has_root_directory() )
 	{
 		throw Exception( std::string( "Invalid object name ") + parent );
 	}
-
-	if ( IndexedIOPath(relativeName).hasRootDirectory() )
+	fs::path relativePath( relativeName );
+	if ( relativePath.has_root_directory() )
 	{
 		throw Exception( std::string( "Invalid relative name ") + relativeName );
 	}
-	
-	IndexedIOPath parentPath( parent );
-	
-	return parentPath.appended( relativeName ).fullPath();
+	return ( parentPath / relativePath ).string();
 }
 
 HierarchicalCache::ObjectHandle HierarchicalCache::relativeName( const ObjectHandle &obj )
-{	
-	if ( !IndexedIOPath(obj).hasRootDirectory() )
+{
+	fs::path pathObj( obj );
+	if ( !pathObj.has_root_directory() )
 	{
 		throw Exception( std::string( "Invalid object name ") + obj );
 	}
-	
-	IndexedIOPath pathObj( canonicalName(obj) );
-	return pathObj.tail();
+	return pathObj.leaf();
 }
 
 HierarchicalCache::ObjectHandle HierarchicalCache::parentName( const ObjectHandle &obj )
@@ -164,14 +160,12 @@ HierarchicalCache::ObjectHandle HierarchicalCache::parentName( const ObjectHandl
 	{
 		throw Exception( std::string( "Root node has no parents.") );
 	}
-	
-	if ( !IndexedIOPath( obj ).hasRootDirectory() )
+	fs::path pathObj( obj );
+	if ( !pathObj.has_root_directory() )
 	{
 		throw Exception( std::string( "Invalid object name ") + obj );
 	}
-	
-	IndexedIOPath pathObj( canonicalName(obj) );
-	return pathObj.head();
+	return pathObj.branch_path().string();
 }
 
 HierarchicalCache::ObjectHandle HierarchicalCache::canonicalName( const ObjectHandle &obj )
@@ -180,8 +174,8 @@ HierarchicalCache::ObjectHandle HierarchicalCache::canonicalName( const ObjectHa
 	{
 		return obj;
 	}
-
-	if ( !IndexedIOPath( obj ).hasRootDirectory() )
+	fs::path pathObj( obj );
+	if ( !pathObj.has_root_directory() )
 	{
 		throw Exception( std::string( "Invalid object name ") + obj );
 	}
@@ -199,54 +193,53 @@ void HierarchicalCache::objectPath( const ObjectHandle &obj, IndexedIO::EntryID 
 		path = "/";
 		return;
 	}
-	
-	if ( !IndexedIOPath( obj ).hasRootDirectory() )
+	fs::path objPath( obj );
+	if ( !objPath.has_root_directory() )
 	{
 		throw Exception( std::string( "Invalid object name ") + obj );
 	}
-	
-	IndexedIOPath objPath( canonicalName(obj) );
-	
-	path = "";
-	std::string str = objPath.fullPath();
-	
-	std::string::size_type s;
-	while ( ( s = str.find_first_of('/') ) != std::string::npos)
+	bool first = true;
+	while ( objPath.has_leaf() )
 	{
-		path += str.substr( 0, s );
-		path += "/children/";
-		str = str.substr( s+1, std::string::npos );
+		std::string leaf = objPath.leaf();
+		if (first)
+		{
+			if ( leaf == "/" )
+			{
+				path = "/children";
+			}
+			else
+			{
+				path = leaf;
+			}
+			first = false;
+		}
+		else
+		{
+			path = ( fs::path(leaf) / "children" / path).string();
+		}
+		
+		objPath = objPath.branch_path();
 	}
-	
-	path += str;
 }
 
 void HierarchicalCache::attributesPath( const ObjectHandle &obj, IndexedIO::EntryID &path )
 {
 	IndexedIO::EntryID ioPath;
 	objectPath( obj, ioPath );
-	
-	IndexedIOPath objPath( ioPath );
-	objPath .append( "attributes" );
-	
-	path = objPath.fullPath();		
+	fs::path objPath( ioPath );
+	objPath /= "attributes";
+	path = objPath.string();	
 }
 
 void HierarchicalCache::attributePath( const ObjectHandle &obj, const AttributeHandle &attr, IndexedIO::EntryID &path )
 {
 	IndexedIO::EntryID ioPath;
 	objectPath( obj, ioPath );
-	
-	IndexedIOPath objPath( ioPath );
-	objPath.append("attributes");
-	
-	/// \todo Establish why this function is ever being called with an empty attribute name
-	if ( attr.size() )
-	{
-		objPath.append(attr);	
-	}
-	
-	path = objPath.fullPath();
+	fs::path objPath( ioPath );
+	objPath /= "attributes";
+	objPath /= attr;
+	path = objPath.string();	
 }
 
 void HierarchicalCache::updateNode( const ObjectHandle &obj )

@@ -89,10 +89,15 @@ void MeshPrimitive::setTopology( ConstIntVectorDataPtr verticesPerFace, ConstInt
 			throw Exception( "Bad topology - number of vertices per face less than 3." );
 		}
 	}
-		
+
+	if (vertexIds->readable().size() < 3)
+	{
+		throw Exception( "Bad topology - insufficient vertexIds." );
+	}
+	
 	minIt = min_element( vertexIds->readable().begin(), vertexIds->readable().end() );
 	{
-		if( minIt!=vertexIds->readable().end() && *minIt<0 )
+		if( *minIt<0 )
 		{
 			throw Exception( "Bad topology - vertexId less than 0." );
 		}
@@ -117,7 +122,7 @@ void MeshPrimitive::setTopology( ConstIntVectorDataPtr verticesPerFace, ConstInt
 	m_interpolation = interpolation;
 }
 		
-size_t MeshPrimitive::variableSize( PrimitiveVariable::Interpolation interpolation ) const
+size_t MeshPrimitive::variableSize( PrimitiveVariable::Interpolation interpolation )
 {
 	switch(interpolation)
 	{

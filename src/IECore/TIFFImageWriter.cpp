@@ -49,11 +49,13 @@
 #include "IECore/FileNameParameter.h"
 #include "IECore/Parameter.h"
 #include "IECore/NumericParameter.h"
-#include "IECore/ScopedTIFFErrorHandler.h"
+#include "IECore/ScopedTIFFExceptionTranslator.h"
 #include "IECore/DataConvert.h"
 #include "IECore/ScaledDataConversion.h"
 #include "IECore/TypeTraits.h"
 #include "IECore/DespatchTypedData.h"
+
+#include "IECore/BoxOperators.h"
 
 #include "tiffio.h"
 
@@ -165,7 +167,7 @@ struct TIFFImageWriter::ChannelConverter
 };
 
 template<typename T>
-void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector<string> &names, const Imath::Box2i &dataWindow, tiff *tiffImage, size_t bufSize, unsigned int numStrips ) const
+void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector<string> &names, const Imath::Box2i &dataWindow, tiff *tiffImage, size_t bufSize, unsigned int numStrips )
 {
 	assert( tiffImage );
 
@@ -229,13 +231,9 @@ void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector
 	}
 }
 
-void TIFFImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow ) const
-{	
-	ScopedTIFFErrorHandler errorHandler;
-	if ( setjmp( errorHandler.m_jmpBuffer ) )
-	{
-		throw IOException( errorHandler.m_errorMessage );
-	}
+void TIFFImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow )
+{
+	ScopedTIFFExceptionTranslator errorHandler;
 
 	// create the tiff file
 	TIFF *tiffImage;
@@ -247,7 +245,7 @@ void TIFFImageWriter::writeImage( const vector<string> &names, ConstImagePrimiti
 	assert( tiffImage );
 
 	try
-	{	
+	{
 		/// Get the channels RGBA at the front, in that order, if they exist
 		vector<string> desiredChannelOrder;
 		desiredChannelOrder.push_back( "R" );
@@ -329,21 +327,19 @@ void TIFFImageWriter::writeImage( const vector<string> &names, ConstImagePrimiti
 		int height = 1 + dataWindow.max.y - dataWindow.min.y;
 
 		/// \todo different compression methods have a bearing on other attributes, eg. the strip size
-		/// handle these issues a bit better and perhaps more explicitly here.
+		/// handle these issues a bit better and perhaps more explicitly here.  also, we should probably
+		/// warn the user in cases where parameter settings are not permitted (eg 16 bit jpeg)
 		int compression = parameters()->parameter<IntParameter>("compression")->getNumericValue();
 		TIFFSetField( tiffImage, TIFFTAG_COMPRESSION, compression );
 
 		int bitDepth = m_bitDepthParameter->getNumericValue();
-		if ( compression == COMPRESSION_JPEG && bitDepth != 8 )
+		if ( compression == COMPRESSION_JPEG )
 		{
-			/// Change the compression method rather than the bitDepth, so at least we get the output we expected at the
-			/// expense of a possibly larger file size. This is arguably better than switching the bitDepth to 8, which would
-			/// change the format of the output to something unexpected.
-			msg( Msg::Warning, "TIFFImageWriter", "JPEG compression only compatible with 8-bit images. Switching to Deflate compression." );
-			compression = COMPRESSION_DEFLATE;
+			/// \todo Warn
+			/// \todo Decide whether to change the compression method or the bitdepth
+			bitDepth = 8;
 		}
 
-		/// \todo Add a parameter to let us write signed images		
 		switch ( bitDepth )
 		{
 		case 8:
@@ -385,6 +381,7 @@ void TIFFImageWriter::writeImage( const vector<string> &names, ConstImagePrimiti
 		TIFFSetField( tiffImage, TIFFTAG_BITSPERSAMPLE, (uint16)bitDepth );
 		TIFFSetField( tiffImage, TIFFTAG_ROWSPERSTRIP, (uint32)rowsPerStrip );
 
+		/// \todo What about files written on big endian platforms?
 		TIFFSetField( tiffImage, TIFFTAG_FILLORDER, (uint16)FILLORDER_MSB2LSB );
 		TIFFSetField( tiffImage, TIFFTAG_PLANARCONFIG, (uint16)PLANARCONFIG_CONTIG );
 

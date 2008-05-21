@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,6 +40,7 @@
 
 #include "IECore/IndexedIOInterface.h"
 #include "IECore/FileSystemIndexedIO.h"
+#include "IECore/SQLiteIndexedIO.h"
 #include "IECore/FileIndexedIO.h"
 #include "IECore/VectorTypedData.h"
 #include "IECore/bindings/IntrusivePtrPatch.h"
@@ -57,6 +58,7 @@ void bindIndexedIORegexFilter(const char *bindName);
 
 void bindIndexedIOInterface(const char *bindName);
 void bindFileSystemIndexedIO(const char *bindName);
+void bindSQLiteIndexedIO(const char *bindName);
 void bindFileIndexedIO(const char *bindName);
 
 void bindIndexedIO()
@@ -71,6 +73,9 @@ void bindIndexedIO()
 	
 	bindIndexedIOInterface("IndexedIOInterface");	
 	bindFileSystemIndexedIO("FileSystemIndexedIO");	
+#ifdef IECORE_WITH_SQLITE
+	bindSQLiteIndexedIO("SQLiteIndexedIO");
+#endif // IECORE_WITH_SQLITE
 	bindFileIndexedIO("FileIndexedIO");	
 }
 
@@ -99,7 +104,7 @@ struct IndexedIOInterfaceHelper
 	
 	template<typename T>
 	static void writeVector(IndexedIOInterfacePtr p, const IndexedIO::EntryID &name, 
-		const typename TypedData < T >::Ptr &x)
+		const boost::intrusive_ptr< TypedData < T > > &x)
 	{
 		assert(p);
 		
@@ -108,7 +113,7 @@ struct IndexedIOInterfaceHelper
 	}
 	
 	template<typename T>
-	static typename TypedData<T>::Ptr readSingle(IndexedIOInterfacePtr p, const IndexedIO::EntryID &name, const IndexedIO::Entry &entry)
+	static boost::intrusive_ptr<TypedData<T> > readSingle(IndexedIOInterfacePtr p, const IndexedIO::EntryID &name, const IndexedIO::Entry &entry)
 	{	
 		T data;
 		p->read(name, data);		
@@ -116,10 +121,10 @@ struct IndexedIOInterfaceHelper
 	}
 	
 	template<typename T>
-	static typename TypedData< std::vector<T> >::Ptr readArray(IndexedIOInterfacePtr p, const IndexedIO::EntryID &name, const IndexedIO::Entry &entry)
+	static boost::intrusive_ptr<TypedData< std::vector<T> > > readArray(IndexedIOInterfacePtr p, const IndexedIO::EntryID &name, const IndexedIO::Entry &entry)
 	{	
 		unsigned long count = entry.arrayLength();		
-		typename TypedData<std::vector<T> >::Ptr x = new TypedData<std::vector<T> > ();	
+		boost::intrusive_ptr< TypedData<std::vector<T> > > x = new TypedData<std::vector<T> > ();	
 		x->writable().resize( entry.arrayLength() );		
 		T *data = &(x->writable()[0]);		
 		p->read(name, data, count);		
@@ -142,7 +147,7 @@ struct IndexedIOInterfaceHelper
 			case IndexedIO::Int:
 				return readSingle<int>(p, name, entry);
 			case IndexedIO::Long:
-				return readSingle<int>(p, name, entry);
+				return readSingle<long>(p, name, entry);
 			case IndexedIO::String:
 				return readSingle<std::string>(p, name, entry);
 			case IndexedIO::StringArray:
@@ -154,7 +159,7 @@ struct IndexedIOInterfaceHelper
 			case IndexedIO::IntArray:
 				return readArray<int>(p, name, entry);
 			case IndexedIO::LongArray:
-				return readArray<int>(p, name, entry);			
+				return readArray<long>(p, name, entry);			
 			case IndexedIO::UInt:
 				return readSingle<unsigned int>(p, name, entry);
 			case IndexedIO::UIntArray:
@@ -204,6 +209,7 @@ void bindIndexedIOInterface(const char *bindName)
 	void (IndexedIOInterface::*writeFloat)(const IndexedIO::EntryID &, const float &) = &IndexedIOInterface::write;
 	void (IndexedIOInterface::*writeDouble)(const IndexedIO::EntryID &, const double &) = &IndexedIOInterface::write;
 	void (IndexedIOInterface::*writeInt)(const IndexedIO::EntryID &, const int &) = &IndexedIOInterface::write;
+	void (IndexedIOInterface::*writeLong)(const IndexedIO::EntryID &, const long &) = &IndexedIOInterface::write;
 	void (IndexedIOInterface::*writeString)(const IndexedIO::EntryID &, const std::string &) = &IndexedIOInterface::write;
 #if 0	
 	void (IndexedIOInterface::*writeUInt)(const IndexedIO::EntryID &, const unsigned int &) = &IndexedIOInterface::write;
@@ -260,10 +266,12 @@ void bindIndexedIOInterface(const char *bindName)
 		.def("write", &IndexedIOInterfaceHelper::writeVector<std::vector<float> >)
 		.def("write", &IndexedIOInterfaceHelper::writeVector<std::vector<double> >)
 		.def("write", &IndexedIOInterfaceHelper::writeVector<std::vector<int> >)
+		.def("write", &IndexedIOInterfaceHelper::writeVector<std::vector<long> >)
 		.def("write", &IndexedIOInterfaceHelper::writeVector<std::vector<std::string> >)
 		.def("write", writeFloat)
 		.def("write", writeDouble)
 		.def("write", writeInt)
+		.def("write", writeLong)
 		.def("write", writeString)
 #if 0
 		// We dont really want to bind these because they don't represent natural Python datatypes
@@ -290,6 +298,18 @@ void bindFileSystemIndexedIO(const char *bindName)
 	implicitly_convertible< FileSystemIndexedIOPtr, IndexedIOInterfacePtr >();
 }
 
+
+#ifdef IECORE_WITH_SQLITE
+void bindSQLiteIndexedIO(const char *bindName)
+{	
+	class_< SQLiteIndexedIO, SQLiteIndexedIOPtr, boost::noncopyable, bases<IndexedIOInterface> >(bindName, no_init)
+		.def(init<const std::string &, const std::string &, IndexedIO::OpenMode >())
+	;
+	
+	implicitly_convertible< SQLiteIndexedIOPtr, IndexedIOInterfacePtr >();
+}
+#endif // IECORE_WITH_SQLITE
+
 void bindFileIndexedIO(const char *bindName)
 {	
 	class_< FileIndexedIO, FileIndexedIOPtr, boost::noncopyable, bases<IndexedIOInterface> >(bindName, no_init)
@@ -302,7 +322,7 @@ void bindFileIndexedIO(const char *bindName)
 void bindIndexedIOEntry(const char *bindName)
 {
 	class_< IndexedIO::Entry>(bindName, no_init)		
-		.def("id", &IndexedIO::Entry::id, return_value_policy<copy_const_reference>())
+		.def("id", &IndexedIO::Entry::id)
 		.def("entryType", &IndexedIO::Entry::entryType)		
 		.def("dataType", &IndexedIO::Entry::dataType)
 		.def("arrayLength", &IndexedIO::Entry::arrayLength)

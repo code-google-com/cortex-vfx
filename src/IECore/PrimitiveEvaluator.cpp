@@ -82,21 +82,27 @@ PrimitiveEvaluator::Result::~Result()
 {
 }
 
-bool PrimitiveEvaluator::signedDistance( const Imath::V3f &p, float &distance ) const
-{	
-	distance = 0.0f;
-	ResultPtr result = createResult();
-
-	bool success = closestPoint( p, result );
-	if ( !success )
+void PrimitiveEvaluator::validateResult( const ResultPtr &result ) const
+{
+	if (dynamic_cast< const MeshPrimitiveEvaluator * >( this ) )
 	{
-		return false;
+		if (! boost::dynamic_pointer_cast< MeshPrimitiveEvaluator::Result >( result ) )
+		{
+			throw InvalidArgumentException("Invalid PrimitiveEvaulator result type");
+		}
 	}
-	
-	float planeConstant = result->normal().dot( result->point() );
-	float sign = result->normal().dot( p ) - planeConstant;             
-                                                                
-	distance = (result->point() - p ).length() * (sign < Imath::limits<float>::epsilon() ? -1.0 : 1.0 );
-	
-	return true;
+	else if (dynamic_cast< const SpherePrimitiveEvaluator * >( this ) )
+	{
+		if (! boost::dynamic_pointer_cast< SpherePrimitiveEvaluator::Result >( result ) )
+		{
+			throw InvalidArgumentException("Invalid PrimitiveEvaulator result type");
+		}
+	}
+	else if (dynamic_cast< const ImagePrimitiveEvaluator * >( this ) )
+	{
+		if (! boost::dynamic_pointer_cast< ImagePrimitiveEvaluator::Result >( result ) )
+		{
+			throw InvalidArgumentException("Invalid PrimitiveEvaulator result type");
+		}
+	}
 }

@@ -54,12 +54,11 @@ typedef TypedData< std::vector< float > > FloatVectorData;
 typedef TypedData< std::vector< double > > DoubleVectorData;
 typedef TypedData< std::vector< int > > IntVectorData;
 typedef TypedData< std::vector< unsigned int > > UIntVectorData;
+typedef TypedData< std::vector< long > > LongVectorData;
 typedef TypedData< std::vector< char > > CharVectorData;
 typedef TypedData< std::vector< unsigned char > > UCharVectorData;
 typedef TypedData< std::vector< short > > ShortVectorData;
 typedef TypedData< std::vector< unsigned short > > UShortVectorData;
-typedef TypedData< std::vector< int64_t > > Int64VectorData;
-typedef TypedData< std::vector< uint64_t > > UInt64VectorData;
 typedef TypedData< std::vector< std::string > > StringVectorData;
 
 // vectors for Imath types
@@ -91,13 +90,12 @@ IE_CORE_DECLAREPTR( FloatVectorData );
 IE_CORE_DECLAREPTR( DoubleVectorData );
 IE_CORE_DECLAREPTR( IntVectorData );
 IE_CORE_DECLAREPTR( UIntVectorData );
+IE_CORE_DECLAREPTR( LongVectorData );
 IE_CORE_DECLAREPTR( CharVectorData );
 IE_CORE_DECLAREPTR( UCharVectorData );
 IE_CORE_DECLAREPTR( ShortVectorData );
 IE_CORE_DECLAREPTR( UShortVectorData );
 IE_CORE_DECLAREPTR( StringVectorData );
-IE_CORE_DECLAREPTR( Int64VectorData );
-IE_CORE_DECLAREPTR( UInt64VectorData );
 // pointers to vectors of Imath types
 IE_CORE_DECLAREPTR( V2fVectorData );
 IE_CORE_DECLAREPTR( V2dVectorData );
@@ -121,16 +119,6 @@ IE_CORE_DECLAREPTR( Color3dVectorData );
 IE_CORE_DECLAREPTR( Color4dVectorData );
 
 #include "IECore/VectorTypedDataTraits.inl"
-
-/// \deprecated This class allows data of the obsolete typeId LongVectorDataTypeId or typename "LongVectorData" to register
-/// itself with an IntVectorData constructor to the Object factory. This allows temporary backwards compatibility (since
-/// long and int were both 32-bits wide on 32-bit platforms)
-class LongVectorDataAlias : private IntVectorData
-{
-	protected:
-		static TypeDescription<IntVectorData> m_typeDescription;
-		~LongVectorDataAlias() {};
-};
 
 } // namespace IECore
 
