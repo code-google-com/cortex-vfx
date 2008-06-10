@@ -53,7 +53,6 @@
 #include "DespatchTypedDataTest.h"
 #include "CompilerTest.h"
 #include "RadixSortTest.h"
-#include "SweepAndPruneTest.h"
 
 using namespace boost::unit_test;
 using boost::test_tools::output_test_stream;
@@ -77,7 +76,6 @@ test_suite* init_unit_test_suite( int argc, char* argv[] )
 		addDespatchTypedDataTest(test);
 		addCompilerTest(test);
 		addRadixSortTest(test);
-		addSweepAndPruneTest(test);
 	} 
 	catch (std::exception &ex)
 	{

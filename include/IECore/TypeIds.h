@@ -261,8 +261,7 @@ enum TypeId
 	Int64VectorDataTypeId = 218,
 	UInt64VectorDataTypeId = 219,
 	MappedRandomPointDistributionOpTypeId = 220,	
-	PointRepulsionOpTypeId = 221,
-	LuminanceOpTypeId = 222,
+	PointRepulsionOpTypeId = 221,	
 	
 	// Remember to update TypeIdBinding.cpp !!!
 	
