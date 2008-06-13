@@ -33,7 +33,6 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include <string.h>
-#include <stdint.h>
 
 #include <OpenEXR/ImfInt64.h>
 #include <OpenEXR/ImfXdr.h>
@@ -93,15 +92,15 @@ struct DataTypeTraits<int*>
 };
 
 template<>
-struct DataTypeTraits<int64_t>
+struct DataTypeTraits<long>
 {
-	static IndexedIO::DataType type() { return IndexedIO::Int64; }
+	static IndexedIO::DataType type() { return IndexedIO::Long; }
 };
 
 template<>
-struct DataTypeTraits<int64_t*>
+struct DataTypeTraits<long*>
 {
-	static IndexedIO::DataType type() { return IndexedIO::Int64Array; }
+	static IndexedIO::DataType type() { return IndexedIO::LongArray; }
 };
 
 template<>
@@ -129,18 +128,6 @@ struct DataTypeTraits<unsigned int*>
 };
 
 template<>
-struct DataTypeTraits<uint64_t>
-{
-	static IndexedIO::DataType type() { return IndexedIO::UInt64; }
-};
-
-template<>
-struct DataTypeTraits<uint64_t*>
-{
-	static IndexedIO::DataType type() { return IndexedIO::UInt64Array; }
-};
-
-template<>
 struct DataTypeTraits<char>
 {
 	static IndexedIO::DataType type() { return IndexedIO::Char; }
@@ -164,30 +151,50 @@ struct DataTypeTraits<unsigned char*>
 	static IndexedIO::DataType type() { return IndexedIO::UCharArray; }
 };
 
-template<>
-struct DataTypeTraits<short>
+/// Size
+
+template<typename T>
+struct DataSizeTraits<T*>
 {
-	static IndexedIO::DataType type() { return IndexedIO::Short; }
+	static unsigned long size(const T *&x, unsigned long arrayLength)
+	{ 
+		return arrayLength * Imf::Xdr::size<T>();  
+	}
 };
 
 template<>
-struct DataTypeTraits<short*>
+struct DataSizeTraits<std::string>
 {
-	static IndexedIO::DataType type() { return IndexedIO::ShortArray; }
+	static unsigned long size(const std::string& x) 
+	{ 	
+		return x.length() + 1; 
+	}
 };
 
 template<>
-struct DataTypeTraits<unsigned short>
+struct DataSizeTraits<std::string*>
 {
-	static IndexedIO::DataType type() { return IndexedIO::UShort; }
+	static unsigned long size(const std::string *&x, unsigned long arrayLength)
+	{ 
+		// String lengths are stored as unsigned longs
+		unsigned long s = arrayLength * Imf::Xdr::size<unsigned long>();
+		
+		for (unsigned i = 0; i < arrayLength; i++)
+		{
+			s += x[i].size();
+		}
+		return s;
+	}
 };
 
-template<>
-struct DataTypeTraits<unsigned short*>
+template<typename T>
+struct DataSizeTraits
 {
-	static IndexedIO::DataType type() { return IndexedIO::UShortArray; }
+	static unsigned long size(const T& x)
+	{ 
+		return Imf::Xdr::size<T>(); 
+	}		
 };
-
 
 template<typename T>
 struct DataTypeTraits
@@ -198,9 +205,6 @@ struct DataTypeTraits
 		return IndexedIO::Invalid;
 	}
 };
-
-namespace Detail
-{
 
 // Classes which crudely mimic a regular iostream, but read/write from/to a memory buffer.
 
@@ -277,169 +281,6 @@ struct MemoryStreamIO
 	}
 };
 
-template<typename T>
-inline int size()
-{
-	return Imf::Xdr::size<T>();
-}
-
-template<>
-inline int size<int64_t>()
-{
-	return 8;
-}
-
-template<>
-inline int size<uint64_t>()
-{
-	return 8;
-}
-
-template<class S, class T, class V>
-struct Writer
-{	
-	static void write( T &out, V v )
-	{
-		Imf::Xdr::write<S, T>( out, v );
-	}
-};
-
-template<class S, class T>
-struct Writer<S, T, int64_t>
-{
-	static void write( T &out, int64_t v )
-	{
-		signed char b[8];
-
-		b[0] =  (signed char) (v);
-		b[1] =  (signed char) (v >> 8);
-		b[2] =  (signed char) (v >> 16);
-		b[3] =  (signed char) (v >> 24);
-		b[4] =  (signed char) (v >> 32);
-		b[5] =  (signed char) (v >> 40);
-		b[6] =  (signed char) (v >> 48);
-		b[7] =  (signed char) (v >> 56);
-
-		Imf::Xdr::writeSignedChars<S> (out, b, 8);
-	}
-};
-
-template<class S, class T>
-struct Writer<S, T, uint64_t>
-{
-	static void write( T &out, uint64_t v )
-	{
-		unsigned char b[8];
-
-		b[0] =  (unsigned char) (v);
-		b[1] =  (unsigned char) (v >> 8);
-		b[2] =  (unsigned char) (v >> 16);
-		b[3] =  (unsigned char) (v >> 24);
-		b[4] =  (unsigned char) (v >> 32);
-		b[5] =  (unsigned char) (v >> 40);
-		b[6] =  (unsigned char) (v >> 48);
-		b[7] =  (unsigned char) (v >> 56);
-
-		Imf::Xdr::writeUnsignedChars<S> (out, b, 8);
-	}
-};
-
-template<class S, class T, class V>
-struct Reader
-{
-	static void read( T &in, V &v )
-	{
-		Imf::Xdr::read<S, T>( in, v );
-	}
-};
-
-template<class S, class T>
-struct Reader<S, T, int64_t>
-{
-	static void read( T &in, int64_t &v )
-	{
-		signed char b[8];
-
-		Imf::Xdr::readSignedChars<S> (in, b, 8);
-
-		v = (int64_t(b[0])     & 0x00000000000000ffLL) |
-		((int64_t(b[1]) << 8)  & 0x000000000000ff00LL) |
-		((int64_t(b[2]) << 16) & 0x0000000000ff0000LL) |
-		((int64_t(b[3]) << 24) & 0x00000000ff000000LL) |
-		((int64_t(b[4]) << 32) & 0x000000ff00000000LL) |
-		((int64_t(b[5]) << 40) & 0x0000ff0000000000LL) |
-		((int64_t(b[6]) << 48) & 0x00ff000000000000LL) |
-		((int64_t(b[7]) << 56) & 0xff00000000000000LL);
-	}
-};
-
-
-template<class S, class T>
-struct Reader<S, T, uint64_t>
-{
-	static void read( T &in, uint64_t &v )
-	{
-		unsigned char b[8];
-
-		Imf::Xdr::readUnsignedChars<S> (in, b, 8);
-
-		v = (uint64_t(b[0])     & 0x00000000000000ffLL) |
-		((uint64_t(b[1]) << 8)  & 0x000000000000ff00LL) |
-		((uint64_t(b[2]) << 16) & 0x0000000000ff0000LL) |
-		((uint64_t(b[3]) << 24) & 0x00000000ff000000LL) |
-		((uint64_t(b[4]) << 32) & 0x000000ff00000000LL) |
-		((uint64_t(b[5]) << 40) & 0x0000ff0000000000LL) |
-		((uint64_t(b[6]) << 48) & 0x00ff000000000000LL) |
-		((uint64_t(b[7]) << 56) & 0xff00000000000000LL);
-	}
-};
-
-} // namespace Detail
-
-/// Size
-
-template<typename T>
-struct DataSizeTraits<T*>
-{
-	static unsigned long size(const T *&x, unsigned long arrayLength)
-	{ 
-		return arrayLength * Detail::size<T>();  
-	}
-};
-
-template<>
-struct DataSizeTraits<std::string>
-{
-	static unsigned long size(const std::string& x) 
-	{ 	
-		return x.length() + 1; 
-	}
-};
-
-template<>
-struct DataSizeTraits<std::string*>
-{
-	static unsigned long size(const std::string *&x, unsigned long arrayLength)
-	{ 
-		// String lengths are stored as unsigned longs
-		unsigned long s = arrayLength * Detail::size<unsigned long>();
-		
-		for (unsigned i = 0; i < arrayLength; i++)
-		{
-			s += x[i].size();
-		}
-		return s;
-	}
-};
-
-template<typename T>
-struct DataSizeTraits
-{
-	static unsigned long size(const T& x)
-	{ 
-		return Detail::size<T>(); 
-	}		
-};
 
 // Flatten
 template<typename T>
@@ -452,8 +293,8 @@ struct DataFlattenTraits
 		char *data = new char[size];
 		assert(data);
 						
-		Detail::OutputMemoryStream mstream(data);
-		Detail::Writer<Detail::MemoryStreamIO, Detail::OutputMemoryStream, T>::write(mstream, x);		
+		OutputMemoryStream mstream(data);
+		Imf::Xdr::write<MemoryStreamIO> (mstream, x);		
 			
 		return mstream.head();
 	}
@@ -461,8 +302,8 @@ struct DataFlattenTraits
 	static void unflatten(const char *src, T &dst)
 	{		
 		assert(src);
-		Detail::InputMemoryStream mstream(src);
-		Detail::Reader<Detail::MemoryStreamIO, Detail::InputMemoryStream, T>::read( mstream, dst );
+		InputMemoryStream mstream(src);
+		Imf::Xdr::read<MemoryStreamIO>( mstream, dst );
 	}
 		
 	static void free(const char *x)
@@ -472,7 +313,6 @@ struct DataFlattenTraits
 	}
 };
 
-
 template<typename T>
 struct DataFlattenTraits<T*>
 {
@@ -480,11 +320,11 @@ struct DataFlattenTraits<T*>
 	{ 	
 		unsigned long size = IndexedIO::DataSizeTraits<T*>::size(x, arrayLength);
 		
-		Detail::OutputMemoryStream mstream(new char[size]);
+		OutputMemoryStream mstream(new char[size]);
 		
 		for (unsigned long i = 0; i < arrayLength; i++)
 		{
-			Detail::Writer<Detail::MemoryStreamIO, Detail::OutputMemoryStream, T>::write (mstream, x[i]);		
+			Imf::Xdr::write<MemoryStreamIO> (mstream, x[i]);		
 		}
 			
 		return mstream.head();
@@ -497,11 +337,11 @@ struct DataFlattenTraits<T*>
 			dst = new T[arrayLength];
 		}
 		
-		Detail::InputMemoryStream mstream(src);
+		InputMemoryStream mstream(src);
 		
 		for (unsigned long i = 0; i < arrayLength; i++)
 		{
-			Detail::Reader<Detail::MemoryStreamIO, Detail::InputMemoryStream, T>::read( mstream, dst[i] );
+			Imf::Xdr::read<MemoryStreamIO>( mstream, dst[i] );
 		}
 	}
 
@@ -513,6 +353,7 @@ struct DataFlattenTraits<T*>
 		}
 	}
 };
+
 
 template<>
 struct DataFlattenTraits<std::string>
@@ -541,13 +382,13 @@ struct DataFlattenTraits<std::string*>
 	{ 
 		unsigned long size = IndexedIO::DataSizeTraits<std::string*>::size(x, arrayLength);	
 	
-		Detail::OutputMemoryStream mstream(new char[size]);
+		OutputMemoryStream mstream(new char[size]);
 		
 		for (unsigned i = 0; i < arrayLength; i++)
 		{
 			unsigned long stringLength = x[i].size();
 			
-			Detail::Writer<Detail::MemoryStreamIO, Detail::OutputMemoryStream, unsigned long>::write (mstream, stringLength);
+			Imf::Xdr::write<MemoryStreamIO> (mstream, stringLength);
 		
 			memcpy( mstream.next(), x[i].c_str(), stringLength );
 			
@@ -564,12 +405,12 @@ struct DataFlattenTraits<std::string*>
 			dst = new std::string[arrayLength];			
 		}
 		
-		Detail::InputMemoryStream mstream(src);
+		InputMemoryStream mstream(src);
 		
 		for (unsigned long i = 0; i < arrayLength; i++)
 		{
 			unsigned long stringLength = 0;
-			Detail::Reader<Detail::MemoryStreamIO, Detail::InputMemoryStream, unsigned long>::read (mstream, stringLength);
+			Imf::Xdr::read<MemoryStreamIO> (mstream, stringLength);
 				
 			dst[i] = std::string(mstream.next(), stringLength);
 			assert(dst[i].size() == stringLength);

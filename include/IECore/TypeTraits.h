@@ -176,8 +176,6 @@ template< typename T > struct IsNumericVectorTypedData : boost::mpl::and_< IsVec
 BOOST_STATIC_ASSERT( (IsNumericVectorTypedData<FloatVectorData>::value) );
 BOOST_STATIC_ASSERT( (IsNumericVectorTypedData<UCharVectorData>::value) );
 BOOST_STATIC_ASSERT( (IsNumericVectorTypedData<HalfVectorData>::value) );
-BOOST_STATIC_ASSERT( (IsNumericVectorTypedData<Int64VectorData>::value) );
-BOOST_STATIC_ASSERT( (IsNumericVectorTypedData<UInt64VectorData>::value) );
 BOOST_STATIC_ASSERT( ( boost::mpl::not_< IsNumericVectorTypedData<StringVectorData> >::value) );
 
 /// IsNumericSimpleTypedData
@@ -185,12 +183,7 @@ template< typename T > struct IsNumericSimpleTypedData : boost::mpl::and_< IsSim
 BOOST_STATIC_ASSERT( (IsNumericSimpleTypedData<FloatData>::value) );
 BOOST_STATIC_ASSERT( (IsNumericSimpleTypedData<ShortData>::value) );
 BOOST_STATIC_ASSERT( (IsNumericSimpleTypedData<HalfData>::value) );
-BOOST_STATIC_ASSERT( (IsNumericSimpleTypedData<Int64Data>::value) );
-BOOST_STATIC_ASSERT( (IsNumericSimpleTypedData<UInt64Data>::value) );
 BOOST_STATIC_ASSERT( ( boost::mpl::not_< IsNumericSimpleTypedData<char> >::value) );
-
-/// IsNumericTypedData
-template< typename T > struct IsNumericTypedData : boost::mpl::or_< IsNumericSimpleTypedData<T>, IsNumericVectorTypedData<T> > {};
 
 } // namespace TypeTraits
 

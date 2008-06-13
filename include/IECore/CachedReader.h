@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,7 +37,6 @@
 
 #include "IECore/Reader.h"
 #include "IECore/SearchPath.h"
-#include "IECore/LRUCache.h"
 
 #include <set>
 
@@ -104,21 +103,18 @@ class CachedReader : public RefCounted
 		
 	private :
 	
-		struct CacheFn
-		{
-			typedef size_t Cost;
-			SearchPath m_paths;
-			std::set<std::string> m_unreadables;
-			
-			// Returns true if the "data" and "cost" arguments were computed from the "key", otherwise returns false
-			bool get( const std::string &key, ConstObjectPtr &data, Cost &cost );
-		};
+		SearchPath m_paths;
 	
-		typedef LRUCache< std::string, ConstObjectPtr, CacheFn> Cache;
+		size_t m_maxMemory;
+		size_t m_currentMemory;
 		
-		CacheFn m_fn;
-		
-		Cache m_cache;
+		// Remove things from the cache till m_currentMemory < m_maxMemory
+		void reduce( size_t size );
+	
+		// Least recently accessed filenames at the front
+		std::list<std::string> m_accessOrder;
+		std::map<std::string, ConstObjectPtr> m_cache;
+		std::set<std::string> m_unreadables;
 		
 };
 

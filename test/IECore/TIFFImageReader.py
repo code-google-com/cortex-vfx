@@ -73,21 +73,6 @@ class TestTIFFReader(unittest.TestCase):
 		self.assert_( "R" in channelNames )
 		self.assert_( "G" in channelNames )
 		self.assert_( "B" in channelNames )
-
-	def testReadHeader( self ):
-
-		r = Reader.create( "test/IECore/data/tiff/uvMap.512x256.8bit.tif" )
-		self.assertEqual( type(r), TIFFImageReader )
-		h = r.readHeader()
-
-		channelNames = h['channelNames']		
-		self.assertEqual( len( channelNames ), 3 )
-		self.assert_( "R" in channelNames )
-		self.assert_( "G" in channelNames )
-		self.assert_( "B" in channelNames )
-
-		self.assertEqual( h['displayWindow'], Box2iData( Box2i( V2i(0,0), V2i(511,255) ) ) )
-		self.assertEqual( h['dataWindow'], Box2iData( Box2i( V2i(0,0), V2i(511,255) ) ) )
 		
 	def testManyChannels( self ):
 	
@@ -272,56 +257,6 @@ class TestTIFFReader(unittest.TestCase):
 
 			self.assert_( ( color - expectedColor).length() < 1.e-6 )
 			
-	def testMultiDirectory( self ):
-	
-		r = Reader.create( "test/IECore/data/tiff/uvMap.multiRes.32bit.tif" )
-		self.assertEqual( type(r), TIFFImageReader )
-			
-		self.assertEqual( r.numDirectories(), 10 )
-		
-		self.assertRaises( RuntimeError, r.setDirectory, 10 )
-		self.assertRaises( RuntimeError, r.setDirectory, 11 )		
-		self.assertRaises( RuntimeError, r.setDirectory, 200 )				
-		
-		directoryResolutions = {		
-			0  : V2i( 256, 128 ),
-			1  : V2i( 512, 256 ),
-			2  : V2i( 256, 128 ),
-			3  : V2i( 128,  64 ),
-			4  : V2i(  64,  32 ),
-			5  : V2i(  32,  16 ),												
-			6  : V2i(  16,   8 ),			
-			7  : V2i(   8,   4 ),			
-			8  : V2i(   4,   2 ),			
-			9  : V2i(   2,   1 ),						
-		}
-				
-		for dirIndex, resolution in directoryResolutions.items() :
-
-			r.setDirectory( dirIndex )
-			
-			img = r.read()		
-
-			self.assertEqual( type(img), ImagePrimitive )
-		
-			bottomRight = V2i( resolution.x - 1, resolution.y - 1)
-		
-			self.assertEqual( img.displayWindow, Box2i( V2i( 0, 0 ), bottomRight ) )
-			self.assertEqual( img.dataWindow, Box2i( V2i( 0, 0 ), bottomRight ) )
-			
-			expectedResult = Reader.create( "test/IECore/data/expectedResults/multiDirTiff" + str( dirIndex) + ".exr" ).read()
-			
-			op = ImageDiffOp()
-		
-			res = op(
-				imageA = img,
-				imageB = expectedResult,
-				maxError = 0.004,
-				skipMissingChannels = True
-			)
-		
-			self.failIf( res.value )
-			
 	def testErrors( self ):			
 	
 		r = TIFFImageReader()
@@ -342,29 +277,25 @@ class TestTIFFReader(unittest.TestCase):
 			"test/IECore/data/tiff/rgb_black_circle.256x256.4bit.tiff",
 			"test/IECore/data/tiff/rgb_black_circle.256x256.2bit.tiff",
 			"test/IECore/data/tiff/rgb_black_circle.256x256.1bit.tiff", 
+			"test/IECore/data/tiff/rgb_black_circle.256x256.tiff",
 			"test/IECore/data/tiff/uvMap.512x256.16bit.truncated.tif",
 		]
 		
 		try:
 		
 			for f in fileNames:
-
-				r = TIFFImageReader( f ) 
-
-				if f in expectedFailures :
-				
-					self.assertRaises( RuntimeError, r.read )
-					
-				else :
-					self.assert_( TIFFImageReader.canRead( f ) )
-					self.failIf( JPEGImageReader.canRead( f ) )
-					self.failIf( EXRImageReader.canRead( f ) )
-					self.failIf( CINImageReader.canRead( f ) )					
-					
+			
+				try:
+					r = TIFFImageReader( f ) 
 					img = r.read()
 					self.assertEqual( type(img), ImagePrimitive )
 					self.assert_( img.arePrimitiveVariablesValid() )	
-								
+				except:
+					
+					if not f in expectedFailures:
+						print f
+						raise
+				
 		except:
 		
 			raise	

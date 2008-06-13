@@ -487,6 +487,8 @@ void MarchingCubes<ImplicitFn, MeshBuilder>::processCube( )
 	m_currentConfig = g_cases[m_lutEntry][1] ;
 	m_currentSubConfig = 0 ;
 	
+	/// \todo Check winding orders
+
 	switch ( m_currentCase )
 	{
 	case  0 :

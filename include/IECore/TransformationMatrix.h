@@ -38,7 +38,6 @@
 #include "OpenEXR/ImathVec.h"
 #include "OpenEXR/ImathQuat.h"
 #include "OpenEXR/ImathMatrix.h"
-#include "OpenEXR/ImathEuler.h"
 
 namespace IECore
 {
@@ -60,7 +59,7 @@ class TransformationMatrix
 		Imath::Vec3< T > scalePivotTranslation;
 		Imath::Vec3< T > rotatePivot;
 		Imath::Quat< T > rotationOrientation;
-		Imath::Euler< T > rotate;
+		Imath::Quat< T > rotate;
 		Imath::Vec3< T > rotatePivotTranslation;
 		Imath::Vec3< T > translate;
 
@@ -68,7 +67,7 @@ class TransformationMatrix
 		TransformationMatrix();
 
 		/// Basic constructor for setting common parameters: scale, rotate and translate.
-		TransformationMatrix( const Imath::Vec3< T > s, const Imath::Euler< T > r, const Imath::Vec3< T > t );
+		TransformationMatrix( const Imath::Vec3< T > s, const Imath::Quat< T > r, const Imath::Vec3< T > t );
 
 		/// Copy constructor
 		TransformationMatrix( const TransformationMatrix &cp );

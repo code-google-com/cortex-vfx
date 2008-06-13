@@ -59,19 +59,12 @@ class CurvesPrimitive : public Primitive
 		
 		virtual void render( RendererPtr renderer );
 		/// Follows the RenderMan specification for variable sizes.
-		virtual size_t variableSize( PrimitiveVariable::Interpolation interpolation ) const;
-		/// Returns the variable size for a single curve.
-		size_t variableSize( PrimitiveVariable::Interpolation interpolation, unsigned curveIndex ) const;
-		
-		/// Returns the number of segments in a given curve.
-		unsigned numSegments( unsigned curveIndex ) const;
-		/// Returns the number of segments of a curve with the given topology.
-		static unsigned numSegments( const CubicBasisf &basis, bool periodic, unsigned numVerts );
-		
+		virtual size_t variableSize( PrimitiveVariable::Interpolation interpolation );
+	
 	protected :
 		
 		/// Throws an exception if numVerts is an inappropriate number for the current basis.
-		static unsigned int numSegments( bool linear, int step, bool periodic, int numVerts );
+		unsigned int numSegments( int numVerts );
 		
 		CubicBasisf m_basis;
 		bool m_linear;

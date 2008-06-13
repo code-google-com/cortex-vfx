@@ -48,7 +48,6 @@ class InterpolatedCache : public RefCounted
 {
 	public:
 
-		typedef std::vector< AttributeCachePtr > CacheVector;
 		typedef IECore::AttributeCache::ObjectHandle ObjectHandle;
 		typedef IECore::AttributeCache::HeaderHandle HeaderHandle;
 		typedef IECore::AttributeCache::AttributeHandle AttributeHandle;
@@ -151,9 +150,6 @@ class InterpolatedCache : public RefCounted
 		// Throws an exception if the cache file is not found.
 		bool contains( const ObjectHandle &obj, const AttributeHandle &attr );
 
-		///Returns a copy of the internal vector of opened AttributeCache objects
-		CacheVector currentCaches();
-
 	protected:
 
 		///Close old cache files, reuse or open other cache files acoording to the current parameters.
@@ -177,6 +173,7 @@ class InterpolatedCache : public RefCounted
 		bool					m_useInterpolation;
 		double					m_x;
 
+		typedef std::vector< AttributeCachePtr > CacheVector;
 		CacheVector					m_caches;
 		std::vector< std::string>	m_cacheFiles;
 

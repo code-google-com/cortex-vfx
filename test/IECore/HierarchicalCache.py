@@ -307,7 +307,7 @@ class TestHierarchicalCache(unittest.TestCase):
 		self.assertEqual( cache.bound( "/t" ), Box3f( V3f( 0,0,1 ), V3f( 0,1,2 ) ) )
 		cache.remove( "/t" )
 		self.assertEqual( cache.bound( "/" ), Box3f( V3f( 0,0,1 ), V3f( 0,0,1 ) ) )
-	
+
 	def testOverwriteFailure( self ) :
 	
 		cache = HierarchicalCache("./test/HierarchicalCache.fio", IndexedIOOpenMode.Append)
@@ -331,7 +331,7 @@ class TestHierarchicalCache(unittest.TestCase):
 		
 		self.assertEqual( cache.shape( "/o1" ), mm )
 		self.assertNotEqual( cache.shape( "/o1" ), m )
-		
+
 	def setUp(self):
 		
 		# cleanup

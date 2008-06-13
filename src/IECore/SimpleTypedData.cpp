@@ -40,8 +40,6 @@
 namespace IECore 
 {
 
-LongDataAlias::TypeDescription<IntData> LongDataAlias::m_typeDescription( LongDataTypeId, "LongData" );
-
 #define IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( TNAME, TID )			\
 	IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( TNAME, TID )			\
 
@@ -54,15 +52,13 @@ IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( BoolData, BoolDataTypeId )
 IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( FloatData, FloatDataTypeId )
 IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( DoubleData, DoubleDataTypeId )
 IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( IntData, IntDataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( LongData, LongDataTypeId )
 IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( UIntData, UIntDataTypeId )
 IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( CharData, CharDataTypeId )
 IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( UCharData, UCharDataTypeId )
 IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( HalfData, HalfDataTypeId )
 IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( ShortData, ShortDataTypeId )
 IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( UShortData, UShortDataTypeId )
-IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( Int64Data, Int64DataTypeId )
-IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( UInt64Data, UInt64DataTypeId )
-
 
 IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( StringData, StringDataTypeId )
 IE_CORE_DEFINETYPEDDATANOBASESIZE( StringData )
@@ -195,13 +191,12 @@ template class TypedData<bool>;
 template class TypedData<float>;
 template class TypedData<double>;
 template class TypedData<int>;
+template class TypedData<long>;
 template class TypedData<unsigned int>;
 template class TypedData<char>;
 template class TypedData<unsigned char>;
 template class TypedData<short>;
 template class TypedData<unsigned short>;
-template class TypedData<int64_t>;
-template class TypedData<uint64_t>;
 template class TypedData<std::string>;
 template class TypedData<half>;
 template class TypedData<Imath::V2i>;

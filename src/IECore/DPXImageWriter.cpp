@@ -38,6 +38,7 @@
 #include "IECore/ByteOrder.h"
 #include "IECore/ImagePrimitive.h"
 #include "IECore/FileNameParameter.h"
+#include "IECore/BoxOperators.h"
 #include "IECore/DataConvert.h"
 #include "IECore/ScaledDataConversion.h"
 #include "IECore/CompoundDataConversion.h"
@@ -137,7 +138,7 @@ struct DPXImageWriter::ChannelConverter
 	};
 };
 
-void DPXImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow ) const
+void DPXImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow )
 {
 	// write the dpx in the standard 10bit log format
 	ofstream out;

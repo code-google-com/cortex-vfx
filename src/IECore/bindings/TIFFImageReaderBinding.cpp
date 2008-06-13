@@ -50,9 +50,7 @@ void bindTIFFImageReader()
 	typedef class_<TIFFImageReader, TIFFImageReaderPtr, boost::noncopyable, bases<ImageReader> > TIFFImageReaderPyClass;
 	TIFFImageReaderPyClass("TIFFImageReader", init<>())
 		.def( init<const std::string &>() )
-		.def( "canRead", &TIFFImageReader::canRead ).staticmethod( "canRead" )
-		.def( "numDirectories", &TIFFImageReader::numDirectories )
-		.def( "setDirectory", &TIFFImageReader::setDirectory )		
+		.def( "canRead", &TIFFImageReader::canRead).staticmethod( "canRead" )
 		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(TIFFImageReader)
 	;
 

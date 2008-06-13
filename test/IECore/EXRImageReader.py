@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -82,25 +82,6 @@ class TestEXRReader(unittest.TestCase):
 		
 		r = EXRImageReader( "thisFileDoesntExist.exr" )
 		self.assertRaises( Exception, r.channelNames )
-
-	def testReadHeader( self ):
-
-		r = EXRImageReader( "test/IECore/data/exrFiles/manyChannels.exr" )
-		h = r.readHeader()
-
-		c = h['channelNames']		
-		self.assert_( c.staticTypeId()==StringVectorData.staticTypeId() )
-		self.assert_( len( c ), 7 )
-		self.assert_( "R" in c )
-		self.assert_( "G" in c )
-		self.assert_( "B" in c )
-		self.assert_( "A" in c )
-		self.assert_( "diffuse.red" in c )
-		self.assert_( "diffuse.green" in c )
-		self.assert_( "diffuse.blue" in c )
-
-		self.assertEqual( h['displayWindow'], Box2iData( Box2i( V2i(0,0), V2i(255,255) ) ) )
-		self.assertEqual( h['dataWindow'], Box2iData( Box2i( V2i(0,0), V2i(255,255) ) ) )
 	
 	def testDataAndDisplayWindows( self ) :
 	
@@ -271,9 +252,9 @@ class TestEXRReader(unittest.TestCase):
 				wholeEvaluator.pointAtPixel( V2i( x, y ), wholeResult )
 				slicedEvaluator.pointAtPixel( V2i( x, y ), slicedResult )
 				
-				self.assertAlmostEqual( wholeResult.floatPrimVar( wholeR ), slicedResult.floatPrimVar( slicedR ), 4 )
-				self.assertAlmostEqual( wholeResult.floatPrimVar( wholeG ), slicedResult.floatPrimVar( slicedG ), 4 )
-				self.assertAlmostEqual( wholeResult.floatPrimVar( wholeB ), slicedResult.floatPrimVar( slicedB ), 4 )
+				self.assertEqual( wholeResult.floatPrimVar( wholeR ), slicedResult.floatPrimVar( slicedR ) )
+				self.assertEqual( wholeResult.floatPrimVar( wholeG ), slicedResult.floatPrimVar( slicedG ) )
+				self.assertEqual( wholeResult.floatPrimVar( wholeB ), slicedResult.floatPrimVar( slicedB ) )
 				
 	def testOrientation( self ) :
 	

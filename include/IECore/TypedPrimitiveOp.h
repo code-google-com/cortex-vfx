@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,7 +37,6 @@
 
 #include "IECore/PrimitiveOp.h"
 #include "IECore/MeshPrimitive.h"
-#include "IECore/ImagePrimitive.h"
 
 namespace IECore
 {
@@ -56,17 +55,17 @@ class TypedPrimitiveOp : public ModifyOp
 		virtual ~TypedPrimitiveOp();
 		
 		//! @name RunTimeTyped functions
-		////////////////////////////////////
-		//@{
-		virtual TypeId typeId() const;
-		virtual std::string typeName() const;
-		virtual bool isInstanceOf( TypeId typeId ) const;
-		virtual bool isInstanceOf( const std::string &typeName ) const;
-		static TypeId staticTypeId();
-		static std::string staticTypeName();
-		static bool inheritsFrom( TypeId typeId );
-		static bool inheritsFrom( const std::string &typeName );
-		//@}
+                ////////////////////////////////////
+                //@{
+                virtual TypeId typeId() const;
+                virtual std::string typeName() const;
+                virtual bool isInstanceOf( TypeId typeId ) const;
+                virtual bool isInstanceOf( const std::string &typeName ) const;
+                static TypeId staticTypeId();
+                static std::string staticTypeName();
+                static bool inheritsFrom( TypeId typeId );
+                static bool inheritsFrom( const std::string &typeName );
+                //@}
 		
 	protected :
 		
@@ -86,7 +85,6 @@ class TypedPrimitiveOp : public ModifyOp
 	typedef TypedPrimitiveOp<TNAME>::ConstPtr (Const ## TNAME ## OpPtr);
 	
 IE_CORE_DEFINETYPEDPRIMITIVEOP( MeshPrimitive )	
-IE_CORE_DEFINETYPEDPRIMITIVEOP( ImagePrimitive )	
 
 } // namespace IECore
 

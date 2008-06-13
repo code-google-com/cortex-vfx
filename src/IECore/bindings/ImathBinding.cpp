@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,7 +40,6 @@
 #include "IECore/bindings/ImathMatrixBinding.h"
 #include "IECore/bindings/ImathColorBinding.h"
 #include "IECore/bindings/ImathEulerBinding.h"
-#include "IECore/bindings/ImathRootsBinding.h"
 
 using namespace IECore;
 
@@ -56,7 +55,6 @@ void bindImath()
 	bindImathMatrix();
 	bindImathColor();
 	bindImathEuler();
-	bindImathRoots();
 }
 
 }

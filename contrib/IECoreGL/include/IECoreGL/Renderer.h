@@ -53,11 +53,7 @@ class Renderer : public IECore::Renderer
 
 		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::Renderer, RendererTypeId, IECore::Renderer );
 
-		/// \par Standard options supported :
-		///
-		/// \li <b>"searchPath:font"</b>
-		///
-		/// \par Implementation specific options supported :
+		/// Supports the following options :
 		///
 		/// "gl:mode" StringData 
 		/// Valid values are "immediate" or "deferred". In immediate mode rendering is
@@ -94,8 +90,8 @@ class Renderer : public IECore::Renderer
 		/// \li <b>"resolution"</b>
 		/// \li <b>"screenWindow"</b>
 		/// \li <b>"clippingPlanes"</b>
-		virtual void camera( const std::string &name, const IECore::CompoundDataMap &parameters );
-		virtual void display( const std::string &name, const std::string &type, const std::string &data, const IECore::CompoundDataMap &parameters );
+		virtual void camera( const std::string &name, IECore::CompoundDataMap &parameters );
+		virtual void display( const std::string &name, const std::string &type, const std::string &data, IECore::CompoundDataMap &parameters );
 
 		virtual void worldBegin();
 		virtual void worldEnd();
@@ -214,20 +210,6 @@ class Renderer : public IECore::Renderer
 		/// The size of the points (in pixels) used when rendering lightweight
 		/// points.
 		///
-		/// \par Implementation specific curves primitive attributes :
-		////////////////////////////////////////////////////////////
-		///
-		/// \li <b>"gl:curvesPrimitive:useGLLines" BoolData false</b><br>
-		/// When this is true then lightweight OpenGL line primitives are used
-		/// for representing curves.
-		///
-		/// \li <b>"gl:curvesPrimitive:glLineWidth" FloatData 1.0f</b><br>
-		/// Specifies the line width (in pixels) which is used when
-		/// rendering lightweight line primitives.
-		///
-		/// \li <b>"gl:pointsPrimitive:ignoreBasis" BoolData false</b><br>
-		/// When this is true, all curves are rendered as if they were linear.
-		///
 		/// \par Implementation specific blending attributes :
 		////////////////////////////////////////////////////////////
 		///
@@ -267,15 +249,6 @@ class Renderer : public IECore::Renderer
 		/// "reverseSubtract"<br>
 		/// "min"<br>
 		/// "max"<br>
-		///
-		/// \par Implementation specific antialiasing attributes :
-		///////////////////////////////////////////////////////////
-		///
-		/// \li <b>"gl:smoothing:points" BoolData false</b><br>
-		/// \li <b>"gl:smoothing:lines" BoolData false</b><br>
-		/// \li <b>"gl:smoothing:polygons" BoolData false</b><br>
-		/// These attributes enable GL_POINT_SMOOTH, GL_LINE_SMOOTH and
-		/// GL_POLYGON_SMOOTH respectively.
 		virtual void setAttribute( const std::string &name, IECore::ConstDataPtr value );
 		virtual IECore::ConstDataPtr getAttribute( const std::string &name ) const;
 		/// Supports only shader type "surface" or "gl:surface", looking for "name.vert" and  "name.frag" GLSL source files
@@ -322,14 +295,9 @@ class Renderer : public IECore::Renderer
 		/// Constant|Vertex|Varying FloatData|FloatVectorData "patchrotation"
 		/// These two are used only by the "patch" type.
 		virtual void points( size_t numPoints, const IECore::PrimitiveVariableMap &primVars );
-		virtual void disk( float radius, float z, float thetaMax, const IECore::PrimitiveVariableMap &primVars );
-		/// Supports the following primitive variables :
-		///
-		/// Vertex V3fVectorData "P"
-		/// Constant FloatData "width"
-		virtual void curves( const IECore::CubicBasisf &basis, bool periodic, IECore::ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars );
-		virtual void text( const std::string &font, const std::string &text, float kerning = 1.0f, const IECore::PrimitiveVariableMap &primVars=IECore::PrimitiveVariableMap() );
-		virtual void sphere( float radius, float zMin, float zMax, float thetaMax, const IECore::PrimitiveVariableMap &primVars );
+		virtual void curves( const std::string &interpolation, bool periodic, IECore::ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars );
+		virtual Imath::Box3f textExtents(const std::string & t, const float width = Imath::limits<float>::max() );
+		virtual void text(const std::string &t, const float width = Imath::limits<float>::max() );
 		/// Supports the following image formats specified as primitive variables :
 		///
 		/// 	"R", "G", "B", "A"	:	UCharVectorData
@@ -357,15 +325,13 @@ class Renderer : public IECore::Renderer
 		/// "zMax"		FloatData	1
 		///	"thetaMax"	FloatData	360
 		///
-		/// \deprecated Use the sphere() method instead.
+		/// See the documentation for the SpherePrimitive for the meaning of these values.
+		/// \todo Add specific calls to IECore::Renderer for simple geometric types and we won't have to be
+		/// using the geometry call.
 		virtual void geometry( const std::string &type, const IECore::CompoundDataMap &topology, const IECore::PrimitiveVariableMap &primVars );
 		virtual void procedural( IECore::Renderer::ProceduralPtr proc );
 
-		virtual void instanceBegin( const std::string &name, const IECore::CompoundDataMap &parameters );
-		virtual void instanceEnd();
-		virtual void instance( const std::string &name );
-
-		virtual IECore::DataPtr command( const std::string &name, const IECore::CompoundDataMap &parameters );
+		virtual void command( const std::string &name, const IECore::CompoundDataMap &parameters );
 
 		struct MemberData;
 		

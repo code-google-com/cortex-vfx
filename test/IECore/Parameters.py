@@ -825,7 +825,7 @@ class TestFileNameParameter( unittest.TestCase ) :
 		self.assertEqual (p.userData(), CompoundObject() )
 		
 		for e in p.extensions :
-			p.setValidatedValue( StringData("hello." + e) )
+			p.setValue( StringData( "hello." + e ) )
 
 		p.setValue( StringData( "test" ) )
 		self.assertRaises( RuntimeError, p.validate )

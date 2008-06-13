@@ -45,20 +45,41 @@
 #include "IECore/Exception.h"
 #include "IECore/ImagePrimitiveEvaluator.h"
 #include "IECore/Deleter.h"
-#include "IECore/Interpolator.h"
+#include "IECore/ClassData.h"
 
 using namespace IECore;
 using namespace Imath;
 
 static PrimitiveEvaluator::Description< ImagePrimitiveEvaluator > g_registraar = PrimitiveEvaluator::Description< ImagePrimitiveEvaluator >();
 
+struct ImagePrimitiveEvaluator::Result::ExtraData
+{
+	Box2i m_dataWindow;
+};
+
+typedef ClassData< ImagePrimitiveEvaluator::Result, ImagePrimitiveEvaluator::Result::ExtraData*, Deleter<ImagePrimitiveEvaluator::Result::ExtraData*> > ResultClassData;
+static ResultClassData g_resultClassData;
+
+
+ImagePrimitiveEvaluator::Result::Result( const Box3f &bound ) : m_bound( bound )
+{
+	ExtraData *extraData = g_resultClassData.create( this, new ExtraData() );
+	assert( extraData );
+	
+	extraData->m_dataWindow = Box2i( V2i((int)bound.min.x, (int)bound.min.y), V2i( (int)bound.max.x, (int)bound.max.y ) );
+}
+
 ImagePrimitiveEvaluator::Result::Result( const Imath::Box3f &bound, const Imath::Box2i &dataWindow ) : m_bound( bound )
 {
-	m_dataWindow = dataWindow;
+	ExtraData *extraData = g_resultClassData.create( this, new ExtraData() );
+	assert( extraData );
+	
+	extraData->m_dataWindow = dataWindow;
 }
 
 ImagePrimitiveEvaluator::Result::~Result()
 {
+	g_resultClassData.erase( this );
 }
 
 V3f ImagePrimitiveEvaluator::Result::point() const
@@ -170,26 +191,6 @@ unsigned char ImagePrimitiveEvaluator::Result::ucharPrimVar( const PrimitiveVari
 }
 
 template<typename T>
-T ImagePrimitiveEvaluator::Result::indexData( const std::vector<T> &data, const V2i &p ) const
-{
-	int dataWidth = m_dataWindow.size().x + 1;
-	int dataHeight = m_dataWindow.size().y + 1;						
-	
-	if ( p.x >= 0 && p.y >= 0 && p.x < dataWidth && p.y < dataHeight )			
-	{
-		int idx = ( p.y * dataWidth ) + p.x;								
-		assert( idx >= 0 );
-		assert( idx < (int)data.size() );
-
-		return data[idx];				
-	}
-	else
-	{
-		return T(0);
-	}				
-}
-
-template<typename T>
 T ImagePrimitiveEvaluator::Result::getPrimVar( const PrimitiveVariable &pv ) const
 {
 	if ( pv.interpolation == PrimitiveVariable::Constant )
@@ -226,90 +227,34 @@ T ImagePrimitiveEvaluator::Result::getPrimVar( const PrimitiveVariable &pv ) con
 		case PrimitiveVariable::Varying:
 		case PrimitiveVariable::FaceVarying:
 		{	
-			if ( m_dataWindow.isEmpty() )
+			ExtraData *extraData = g_resultClassData[ this ];
+			assert( extraData );
+			
+			if ( extraData->m_dataWindow.isEmpty() )
 			{
+				/// \todo Perhaps use a traits class here to specify some "zero" value
 				return T(0);
 			}
 			
-			V2f pf(
-				( m_p.x - m_bound.min.x ),
-				( m_p.y - m_bound.min.y )
-			);
+			// \todo Use UV coord instead, and perform bilinear interpolation
+			V2i p = pixel() ;	
 			
-			/// Don't interpolate at the half-pixel border on the image's interior
-			if ( 
-				   pf.x <= ( m_dataWindow.min.x + 0.5f )  
-				|| pf.y <= ( m_dataWindow.min.y + 0.5f )
-				|| pf.x >= ( m_dataWindow.max.x + 0.5f )
-				|| pf.y >= ( m_dataWindow.max.y + 0.5f )
-			)
-			{							
-				/// Fix boundary cases on bottom and right edges
-				const float tol = 1.e-3;	
-				if ( pf.x >= m_dataWindow.max.x + 1.0f - tol && pf.x <= m_dataWindow.max.x + 1.0f + tol)
-				{
-					pf.x = m_dataWindow.max.x + 1.0f - tol;
-				}
-				
-				if ( pf.y >= m_dataWindow.max.y + 1.0f - tol && pf.y <= m_dataWindow.max.y + 1.0f + tol)
-				{
-					pf.y = m_dataWindow.max.y + 1.0f - tol;
-				}
+			p = p - extraData->m_dataWindow.min;
 			
-				V2i p0(
-					static_cast<int>( pf.x ),
-					static_cast<int>( pf.y )
-				);
-				
-				p0 = p0 - m_dataWindow.min;
-				
-				return indexData<T>( data->readable(), p0 );
+			int dataWidth = static_cast<int>( extraData->m_dataWindow.size().x + 1 );
+			int dataHeight = static_cast<int>( extraData->m_dataWindow.size().y + 1 );
+			
+			if ( p.x < 0 || p.y < 0 || p.x >= dataWidth || p.y >= dataHeight )
+			{
+				/// \todo Perhaps use a traits class here to specify some "zero" value
+				return T(0);
 			}
-			
-			/// Translate pixel samples (taken at centre of pixels) back to align with pixel grid
-			pf = pf - V2f( 0.5 );
 						
-			V2i p0(
-				static_cast<int>( pf.x ),
-				static_cast<int>( pf.y )
-			);
-						
-			V2i p1 = p0 + V2i( 1 );
-			
-			V2f pfrac( pf.x - (float)(p0.x), pf.y - (float)(p0.y) );
-			
-			p0 = p0 - m_dataWindow.min;
-			p1 = p1 - m_dataWindow.min;
-			
-			// Layout of samples taken for interpolation:
-			//
-			// ---------------> X
-			//			
-			// a --- e -------- b      |
-			// |     |          |      |
-			// |  result        |      |
-			// |     |          |      |
-			// |     |          |      |
-			// |     |          |      |
-			// |     |          |      |
-			// |     |          |      v
-			// c --- f -------- d      Y
-			
-			T a = indexData<T>( data->readable(), V2i( p0.x, p0.y ) );
-			T b = indexData<T>( data->readable(), V2i( p1.x, p0.y ) );
-			T c = indexData<T>( data->readable(), V2i( p0.x, p1.y ) );
-			T d = indexData<T>( data->readable(), V2i( p1.x, p1.y ) );
-			
-			LinearInterpolator<T> interpolator;
-			
-			T e, f;								
-			interpolator( a, b, pfrac.x, e );
-			interpolator( c, d, pfrac.x, f );
-			
-			T result;
-			interpolator( e, f, pfrac.y, result );
-			
-			return result;
+			int idx = ( p.y * dataWidth ) + p.x;								
+			assert( idx >= 0 );
+			assert( idx < (int)data->readable().size() );
+
+			return data->readable()[idx];							
 		}
 			
 		default :
@@ -327,14 +272,6 @@ PrimitiveEvaluatorPtr ImagePrimitiveEvaluator::create( ConstPrimitivePtr primiti
 	return new ImagePrimitiveEvaluator( image );
 }
 
-void ImagePrimitiveEvaluator::validateResult( const PrimitiveEvaluator::ResultPtr &result ) const
-{
-	if (! boost::dynamic_pointer_cast< ImagePrimitiveEvaluator::Result >( result ) )
-	{
-		throw InvalidArgumentException("ImagePrimitiveEvaluator: Invalid PrimitiveEvaulator result type");
-	}
-}
-
 ImagePrimitiveEvaluator::ImagePrimitiveEvaluator( ConstImagePrimitivePtr image )
 {
 	if (! image )
@@ -342,7 +279,8 @@ ImagePrimitiveEvaluator::ImagePrimitiveEvaluator( ConstImagePrimitivePtr image )
 		throw InvalidArgumentException( "No image given to ImagePrimitiveEvaluator");
 	}
 	
-	if (! image->arePrimitiveVariablesValid() )
+	/// \todo Remove the const_cast once arePrimitiveVariablesValid() is const
+	if (! ( boost::const_pointer_cast< ImagePrimitive >(image) )->arePrimitiveVariablesValid() )
 	{
 		throw InvalidArgumentException( "Image with invalid primitive variables given to ImagePrimitiveEvaluator");
 	}
@@ -369,7 +307,7 @@ bool ImagePrimitiveEvaluator::closestPoint( const V3f &p, const PrimitiveEvaluat
 	ResultPtr r = boost::dynamic_pointer_cast< Result >( result );
 	assert( r );
 	
-	r->m_p = closestPointInBox( p, m_image->bound() );
+	r->m_p = closestPointOnBox( p, m_image->bound() );
 	
 	return true;
 }
@@ -387,7 +325,7 @@ bool ImagePrimitiveEvaluator::pointAtUV( const V2f &uv, const PrimitiveEvaluator
 	r->m_p = V3f(
 		m_image->bound().min.x + uv.x * ( m_image->bound().max.x - m_image->bound().min.x ),
 		m_image->bound().min.y + uv.y * ( m_image->bound().max.y - m_image->bound().min.y ),
-		0.0f
+		0.0
 	);
 	
 	return true;	
@@ -406,8 +344,8 @@ bool ImagePrimitiveEvaluator::pointAtPixel( const Imath::V2i &pixel, const Primi
 	}
 	
 	V2f uv(
-		( 0.5f + pixel.x ) / imageSize.x,
-		( 0.5f + pixel.y ) / imageSize.y		
+		( 1 + pixel.x ) / imageSize.x,
+		( 1 + pixel.y ) / imageSize.y		
 	);
 	
 	return pointAtUV( uv, r );

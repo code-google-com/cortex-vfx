@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-//! \file DespatchTypedData.h
+//! \file TypedDataDespatch.h
 /// Defines useful functions for calling template functions to manipulate
 /// TypedData instances when given only a DataPtr.
 
@@ -119,19 +119,12 @@ typename Functor::ReturnType despatchTypedData( const DataPtr &data, Functor &fu
 template< class Functor >
 typename Functor::ReturnType despatchTypedData( const DataPtr &data );
 
-/// An error handler which simply ignores any errors encountered
-struct DespatchTypedDataIgnoreError;
-
 /// A functor which can return the size (or "length") of any given TypedData. By definition, the size of a SimpleTypedData is 1,
 /// and the size of a VectorTypedData is equal to the size of its contained vector.
 struct TypedDataSize;
 
 /// A functor which can return the address of the data held by a TypedData object.
 struct TypedDataAddress;
-
-/// A functor which returns PrimitiveVariable::Vertex for VectorTypedData, PrimitiveVariable::Constant for SimpleTypedData,
-/// and PrimitiveVariable::Invalid otherwise (or if using the DespatchTypedDataIgnoreError error handler)
-struct TypedDataInterpolation;
 
 
 

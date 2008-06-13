@@ -40,7 +40,6 @@
 #include "IECore/VectorTypedData.h"
 #include "IECore/CompoundData.h"
 #include "IECore/Parameterised.h"
-#include "IECore/CubicBasis.h"
 
 #include "OpenEXR/ImathMatrix.h"
 #include "OpenEXR/ImathBox.h"
@@ -59,35 +58,12 @@ IE_CORE_FORWARDDECLARE( Renderer );
 /// more useful to have an incomplete image for diagnosis of the problem than to
 /// have an Exception thrown.
 /// 
-/// \par Naming conventions
-///
-/// Many of the calls in the Renderer interface associate a name with a piece of
-/// data. Both the setOption() and setAttribute() calls take a name to specify what
-/// is being modified and a DataPtr to specify the new value. Many other calls
-/// accept either a CompoundDataMap or a PrimitiveVariableMap, both of which may
-/// contain many named pieces of Data.
-///
-/// A naming convention exists to specify that particular data is intended only
-/// for a particular Renderer implementation. This allows rendering to be
-/// customised for a particular implementation without causing other implementations
-/// to error due to unsupported features. The convention for each name is as
-/// follows :
-///
-///	\li <b>"name"</b><br>
-/// Should be supported by all Renderer implementations. For instance, the "doubleSided"
-/// attribute should be supported by all Renderers. A warning message should be
-/// output if the name is not recognised and supported.
-///
-/// \li <b>"prefix:name"</b><br>
-/// Used to specify data intended only for a particular implementation. Implementations
-/// silently ignore all data destined for other implementations. For instance, the 
-/// "gl:primitive:wireframe" attribute is used by the GL renderer implementation but
-/// silently ignored by other implementations.  
-///
-/// \li <b>"user:name"</b><br>
-/// Used to specify data for the purposes of users. The renderer should store the value
-/// and make it available for query, but otherwise it should have no effect. This applies
-/// mostly to the attribute and option calls.
+/// \todo More primitives.
+/// \todo Document some standard options and attributes expected to be implemented
+/// by all subclasses. Also document the prefix: naming convention for passing
+/// renderer specific options and attributes to subclasses without causing errors
+/// in other implementations.
+/// \todo Methods for creating and using instances.
 class Renderer : public RunTimeTyped
 {
 	
@@ -103,13 +79,6 @@ class Renderer : public RunTimeTyped
 		/// render. These functions allow their setting and getting. All options must
 		/// be set before a call to worldBegin() - it is invalid to change an option
 		/// after worldBegin().
-		///
-		/// \par Standard SearchPath Options
-		/// <br>
-		/// \li <b>"searchPath:font" StringData</b><br>
-		/// A colon separated list of paths to search for fonts on - these are used
-		/// by the text() primitive. The default value should come from the
-		/// IECORE_FONT_PATHS environment variable if set.
 		///////////////////////////////////////////////////////////////////////////
 		//@{
 		/// Set an option. Must not be called after worldBegin().
@@ -158,14 +127,17 @@ class Renderer : public RunTimeTyped
 		/// \li <b>"shutter" V2fData</b><br>
 		/// The time interval for which the shutter is open - this is used in conjunction with the
 		/// times passed to motionBegin() to specify motion blur. Defaults to 0,0 if unspecified.
-		virtual void camera( const std::string &name, const CompoundDataMap &parameters ) = 0;
+		///
+		/// \todo The parameters argument should be a const reference.
+		virtual void camera( const std::string &name, CompoundDataMap &parameters ) = 0;
 		
 		/// Specifies an image to be output from the renderer. In the case of file outputs name
 		/// specified the filename. type specifies the type of output to create and data specifies
 		/// the data to be output, for instance "rgba". parameters provides an implementation specific
 		/// set of parameters to control other aspects of the image created. It is only valid to call this
 		/// before worldBegin.
-		virtual void display( const std::string &name, const std::string &type, const std::string &data, const CompoundDataMap &parameters ) = 0;
+		/// \todo The parameters argument should be a const reference.
+		virtual void display( const std::string &name, const std::string &type, const std::string &data, CompoundDataMap &parameters ) = 0;
 
 		//! @name World block
 		/// Once all options, cameras and displays are specified, a world block
@@ -287,18 +259,13 @@ class Renderer : public RunTimeTyped
 		//@{
 		/// Renders a set of points.
 		virtual void points( size_t numPoints, const PrimitiveVariableMap &primVars ) = 0;
-		/// Renders a disk of the specified radius on the xy plane, at the specified z value.
-		/// If the "rightHandedOrientation" attribute is true then the normal faces down
-		/// positive z, otherwise it faces down negative z.
-		virtual void disk( float radius, float z, float thetaMax, const PrimitiveVariableMap &primVars ) = 0;
 		/// Renders a set of curves.
-		virtual void curves( const CubicBasisf &basis, bool periodic, ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars ) = 0;
+		/// \todo This should take a CubicBasis object instead of a string.
+		virtual void curves( const std::string &interpolation, bool periodic, ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars ) = 0;
+		/// Returns the extents of the given string (under the current font, text-layout characteristics).
+		virtual Imath::Box3f textExtents(const std::string & t, const float width = Imath::limits<float>::max()) = 0;
 		/// Renders some text.
-		virtual void text( const std::string &font, const std::string &text, float kerning = 1.0f, const PrimitiveVariableMap &primVars=PrimitiveVariableMap() ) = 0;
-		/// Renders a sphere of the specified radius. zMin and zMax are measured as a proportion of the radius - so no matter
-		/// what the radius, the default values will always give a full sphere. If the "rightHandedOrientation"
-		/// attribute is true then the normals point outwards, otherwise they point inwards.
-		virtual void sphere( float radius, float zMin, float zMax, float thetaMax, const PrimitiveVariableMap &primVars ) = 0;
+		virtual void text(const std::string &t, const float width = Imath::limits<float>::max()) = 0;
 		/// Renders an image.
 		/// \todo Clarify the intended use of dataWindow and displayWindow.
 		virtual void image( const Imath::Box2i &dataWindow, const Imath::Box2i &displayWindow, const PrimitiveVariableMap &primVars ) = 0;
@@ -331,6 +298,9 @@ class Renderer : public RunTimeTyped
 				/// contain the geometry generated by the render()
 				/// method. Implemented to call doBound() - subclasses should
 				/// therefore implement that method.
+				/// \todo I think a RendererPtr should be passed to this function. It
+				/// seems plausible that bounds could be significantly different in an
+				/// OpenGL preview than they are in a final render.
 				Imath::Box3f bound() const;
 				/// Called when the renderer is ready to receive the procedural
 				/// geometry. Any relevant methods of renderer may be called, but
@@ -350,24 +320,11 @@ class Renderer : public RunTimeTyped
 		/// Renders a piece of procedural geometry.
 		virtual void procedural( ProceduralPtr proc ) = 0;
 		
-		//! @name Instancing
-		/// These methods provide a means of describing a portion of a scene once and reusing
-		/// it many times.
-		///////////////////////////////////////////////////////////////////////////////////////
-		//@{
-		/// Starts the description of a portion of a scene to be instanced.
-		virtual void instanceBegin( const std::string &name, const CompoundDataMap &parameters ) = 0;
-		/// Ends the description of an instance.
-		virtual void instanceEnd() = 0;
-		/// Instantiates a previously described instance at the current transform position, and
-		/// using the current attribute state.
-		virtual void instance( const std::string &name ) = 0;
-		//@}
-		
 		/// Generic call for executing arbitrary renderer commands. This is intended to allow
 		/// derived classes to support calls such as RiMakeTexture via calls of the form
 		/// renderer->command( "ri:makeTexture", ... ).
-		virtual DataPtr command( const std::string &name, const CompoundDataMap &parameters ) = 0;
+		/// \todo It would be nice if this had a return value of DataPtr.
+		virtual void command( const std::string &name, const CompoundDataMap &parameters ) = 0;
 
 };
 

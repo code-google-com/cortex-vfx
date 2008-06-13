@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,8 +32,6 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <cassert>
-
 #include "IECore/Exception.h"
 #include "IECore/IndexedIO.h"
 
@@ -48,7 +46,7 @@ Entry::Entry( const EntryID &id, EntryType eType, DataType dType, unsigned long 
 {
 }
 
-const EntryID &Entry::id() const
+EntryID Entry::id() const
 {
 	return m_ID;
 }
@@ -61,47 +59,25 @@ EntryType Entry::entryType() const
 DataType Entry::dataType() const
 {
 	if (m_entryType == Directory)
-	{
-		throw IOException( "IndexedIO Entry '" + m_ID + "' has no data type - it is a directory" );
-	}
+		throw IOException(m_ID);
 	
 	return m_dataType;
 }
 
-bool Entry::isArray() const
+unsigned long Entry::arrayLength() const
 {
-	return isArray( m_dataType );
-}
-
-bool Entry::isArray( DataType dType )
-{
-	switch( dType )
+	switch( dataType() )
 	{
 		case FloatArray:
 		case DoubleArray:
-		case HalfArray:
 		case IntArray:
 		case LongArray:
 		case StringArray:
 		case UIntArray:
 		case CharArray:
 		case UCharArray:
-		case ShortArray:
-		case UShortArray:
-		case Int64Array:
-		case UInt64Array:
-			return true;
+			return m_arrayLength;	
 		default:
-			return false;
+			throw IOException(m_ID);			
 	}
-}
-
-unsigned long Entry::arrayLength() const
-{
-	if ( !isArray() )
-	{
-		throw IOException( "IndexedIO Entry '" + m_ID + "' is not an array" );
-	}
-	
-	return m_arrayLength;	
 }

@@ -44,7 +44,7 @@ using namespace std;
 using namespace IECore;
 using namespace Imath;
 
-ImageWriter::ImageWriter( const std::string &name, const std::string &description ) :
+ImageWriter::ImageWriter( const std::string name, const std::string description ) :
 		Writer(name, description, ImagePrimitiveTypeId)
 {
 	m_channelsParameter = new StringVectorParameter("channels", "The list of channels to write.  No list causes all channels to be written." );
@@ -57,7 +57,7 @@ bool ImageWriter::canWrite( ConstObjectPtr image, const string &fileName )
 }
 
 /// get the user-requested channel names
-void ImageWriter::imageChannels( vector<string> &names ) const
+void ImageWriter::imageChannels( vector<string> &names )
 {	
 	ConstImagePrimitivePtr image = getImage();
 	assert( image );
@@ -87,7 +87,7 @@ void ImageWriter::imageChannels( vector<string> &names ) const
 	}
 }
 
-ConstImagePrimitivePtr ImageWriter::getImage() const
+ConstImagePrimitivePtr ImageWriter::getImage()
 {
 	/// \todo This case isn't good until we're making the input parameter accept only ImagePrimitive instances
 	return boost::static_pointer_cast<const ImagePrimitive>(object());
@@ -102,7 +102,7 @@ void ImageWriter::doWrite()
 	ConstImagePrimitivePtr image = getImage();
 	assert( image );
 
-	if ( !image->arePrimitiveVariablesValid() )
+	if ( !boost::const_pointer_cast<ImagePrimitive>(image)->arePrimitiveVariablesValid() )
 	{
 		throw InvalidArgumentException( "ImageWriter: Invalid primitive variables on image" );
 	}

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -49,6 +49,7 @@ IE_CORE_FORWARDDECLARE( MeshPrimitive )
 /// point of view of the camera - this can be changed at the point of rendering by
 /// setting attributes in the Renderer. This definition of winding order is the same as
 /// the OpenGL and Maya conventions but the opposite of RenderMan's.
+/// \todo Verify that we're interpreting winding order correctly thoughout Cortex.
 class MeshPrimitive : public Primitive
 {	  
 	
@@ -73,7 +74,7 @@ class MeshPrimitive : public Primitive
 		virtual void setTopology( ConstIntVectorDataPtr verticesPerFace, ConstIntVectorDataPtr vertexIds, const std::string &interpolation = "linear" );
 		//@}
 	
-		virtual size_t variableSize( PrimitiveVariable::Interpolation interpolation ) const;
+		virtual size_t variableSize( PrimitiveVariable::Interpolation interpolation );
 
 		/// Render the mesh
 		virtual void render( RendererPtr renderer );
@@ -82,7 +83,7 @@ class MeshPrimitive : public Primitive
 		//\todo Add subdivisions and texture coordinates.
 		static MeshPrimitivePtr createBox( Imath::Box3f b );
 		/// Creates a plane at z=0, with the geometric normal facing down positive z.
-		//\todo Add subdivisions.
+		//\todo Add subdivisions and texture coordinates.
 		static MeshPrimitivePtr createPlane( Imath::Box2f b );
 
 	private:

@@ -52,19 +52,6 @@ struct PrimitiveEvaluatorHelper
 		return PrimitiveEvaluator::create( primitive );
 	}
 	
-	static float signedDistance( PrimitiveEvaluator &evaluator, const Imath::V3f &p )
-	{
-
-		float distance = 0.0;
-		bool success = evaluator.signedDistance( p, distance );
-		
-		if ( !success )
-		{
-		}
-		
-		return distance;	
-	}
-	
 	static bool closestPoint( PrimitiveEvaluator &evaluator, const Imath::V3f &p, const PrimitiveEvaluator::ResultPtr &result )
 	{
 		evaluator.validateResult( result );
@@ -137,18 +124,12 @@ void bindPrimitiveEvaluator()
 	object p = PrimitiveEvaluatorPyClass ( "PrimitiveEvaluator", no_init )
 		.def( "create", &PrimitiveEvaluatorHelper::create ).staticmethod("create")
 		.def( "createResult", &PrimitiveEvaluator::createResult )
-		.def( "validateResult", &PrimitiveEvaluator::validateResult )	
-		.def( "signedDistance", &PrimitiveEvaluatorHelper::signedDistance )	
 		.def( "closestPoint", &PrimitiveEvaluatorHelper::closestPoint )
 		.def( "pointAtUV", &PrimitiveEvaluatorHelper::pointAtUV )
 		.def( "intersectionPoint", intersectionPoint )
 		.def( "intersectionPoint", intersectionPointMaxDist )		
 		.def( "intersectionPoints", intersectionPoints )
 		.def( "intersectionPoints", intersectionPointsMaxDist )
-		.def( "primitive", &PrimitiveEvaluator::primitive )
-		.def( "volume", &PrimitiveEvaluator::volume )
-		.def( "centerOfGravity", &PrimitiveEvaluator::centerOfGravity )
-		.def( "surfaceArea", &PrimitiveEvaluator::surfaceArea )
 		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(PrimitiveEvaluator)
 	;
 	INTRUSIVE_PTR_PATCH( PrimitiveEvaluator, PrimitiveEvaluatorPyClass );

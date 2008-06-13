@@ -54,13 +54,12 @@ typedef TypedData < bool > BoolData;
 typedef TypedData < float > FloatData;
 typedef TypedData < double > DoubleData;
 typedef TypedData < int > IntData;
+typedef TypedData < long > LongData;
 typedef TypedData < unsigned int > UIntData;
 typedef TypedData < char > CharData;
 typedef TypedData < unsigned char > UCharData;
 typedef TypedData < short > ShortData;
 typedef TypedData < unsigned short > UShortData;
-typedef TypedData < int64_t > Int64Data;
-typedef TypedData < uint64_t > UInt64Data;
 typedef TypedData < std::string > StringData;
 typedef TypedData<half> HalfData;
 typedef TypedData<Imath::V2i> V2iData;
@@ -91,6 +90,7 @@ IE_CORE_DECLAREPTR( BoolData );
 IE_CORE_DECLAREPTR( FloatData );
 IE_CORE_DECLAREPTR( DoubleData );
 IE_CORE_DECLAREPTR( IntData );
+IE_CORE_DECLAREPTR( LongData );
 IE_CORE_DECLAREPTR( UIntData );
 IE_CORE_DECLAREPTR( CharData );
 IE_CORE_DECLAREPTR( UCharData );
@@ -98,8 +98,6 @@ IE_CORE_DECLAREPTR( StringData );
 IE_CORE_DECLAREPTR( HalfData );
 IE_CORE_DECLAREPTR( ShortData );
 IE_CORE_DECLAREPTR( UShortData );
-IE_CORE_DECLAREPTR( Int64Data );
-IE_CORE_DECLAREPTR( UInt64Data );
 IE_CORE_DECLAREPTR( V2iData );
 IE_CORE_DECLAREPTR( V3iData );
 IE_CORE_DECLAREPTR( V2fData );
@@ -124,16 +122,6 @@ IE_CORE_DECLAREPTR( QuatfData );
 IE_CORE_DECLAREPTR( QuatdData );
 
 #include "IECore/SimpleTypedDataTraits.inl"
-
-/// \deprecated This class allows data of the obsolete typeId LongDataTypeId or typename "LongData" to register
-/// itself with an IntData constructor to the Object factory. This allows temporary backwards compatibility (since
-/// long and int were both 32-bits wide on 32-bit platforms)
-class LongDataAlias : private IntData
-{
-	protected:	
-		static TypeDescription<IntData> m_typeDescription;	
-		~LongDataAlias() {};	
-};
 
 } // namespace IECore
 

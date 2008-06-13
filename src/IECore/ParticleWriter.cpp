@@ -40,13 +40,12 @@
 #include "IECore/CompoundParameter.h"
 #include "IECore/FileNameParameter.h"
 #include "IECore/PointsPrimitive.h"
-#include "IECore/TestTypedData.h"
 
 using namespace std;
 using namespace IECore;
 using namespace boost;
 
-ParticleWriter::ParticleWriter( const std::string &name, const std::string &description )
+ParticleWriter::ParticleWriter( const std::string name, const std::string description )
 	:	Writer( name, description, PointsPrimitiveTypeId )
 {
 	m_attributesParameter = new StringVectorParameter(
@@ -80,8 +79,10 @@ void ParticleWriter::particleAttributes( std::vector<std::string> &names )
 	vector<string> allNames;
 	ConstPointsPrimitivePtr cd = particleObject();
 	for( PrimitiveVariableMap::const_iterator it=cd->variables.begin(); it!=cd->variables.end(); it++ )
-	{					
-		if ( testTypedData<TypeTraits::IsVectorTypedData>( it->second.data ) )
+	{
+	
+		/// \todo Remove use of exception handling as means of flow control
+		try
 		{
 			size_t s = despatchTypedData< TypedDataSize, TypeTraits::IsVectorTypedData >( it->second.data );
 			if( s==numParticles )
@@ -93,13 +94,18 @@ void ParticleWriter::particleAttributes( std::vector<std::string> &names )
 				msg( Msg::Warning, "ParticleWriter::particleAttributes", format( "Ignoring attribute \"%s\" due to insufficient elements (expected %d but found %d)." ) % it->first % numParticles % s );
 			}
 		}
-		else if ( testTypedData<TypeTraits::IsSimpleTypedData>( it->second.data ) )
+		catch( const std::exception &e )
 		{
 			// it's not data of a vector type but it could be of a simple type
 			// in which case it's suitable for saving as a constant particle attribute
-
-			despatchTypedData< TypedDataAddress, TypeTraits::IsSimpleTypedData >( it->second.data );
-			allNames.push_back( it->first );			
+			try
+			{
+				despatchTypedData< TypedDataAddress, TypeTraits::IsSimpleTypedData >( it->second.data );
+				allNames.push_back( it->first );
+			}
+			catch( ... )
+			{
+			}
 		}
 	}
 	
@@ -109,7 +115,8 @@ void ParticleWriter::particleAttributes( std::vector<std::string> &names )
 		names = allNames;
 		return;
 	}
-		
+	
+	
 	names.clear();
 	for( vector<string>::const_iterator it = d->readable().begin(); it!=d->readable().end(); it++ )
 	{

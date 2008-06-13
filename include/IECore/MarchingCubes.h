@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,7 +46,7 @@ namespace IECore
 {
 
 /// Templated implementation of "Efficient implementation of Marching Cubes cases with topological guarantees", Thomas Lewiner et al 2003, http://cuca.mat.puc-rio.br/~tomlew
-template< typename ImplicitFn = ImplicitSurfaceFunction<Imath::V3f, float>, typename MeshBuilder = MeshPrimitiveBuilder >
+template< typename ImplicitFn = ImplicitSurfaceFunction<Imath::V3f, float>, typename MeshBuilder = MeshPrimitiveBuilder<float> >
 class MarchingCubes : public RefCounted
 {
 	public :
@@ -60,7 +60,8 @@ class MarchingCubes : public RefCounted
 		typedef typename Imath::Vec3<PointBaseType> Vector;
 		typedef Imath::Box<Vector> BoxType;
 		
-		IE_CORE_DECLAREMEMBERPTR2( MarchingCubes<ImplicitFn, MeshBuilder> );
+		typedef boost::intrusive_ptr< MarchingCubes<ImplicitFn, MeshBuilder> > Ptr;
+		typedef boost::intrusive_ptr< const MarchingCubes<ImplicitFn, MeshBuilder> > ConstPtr;
 		
 		MarchingCubes( typename ImplicitFn::Ptr fn, typename MeshBuilder::Ptr builder );
 
@@ -124,7 +125,7 @@ class MarchingCubes : public RefCounted
 		unsigned m_numVerts;
 		
 		typedef TypedData< std::vector< Imath::Vec3<PointBaseType > > > V3xVectorData;
-		typedef typename TypedData< std::vector< Imath::Vec3<PointBaseType > > >::Ptr V3xVectorDataPtr;
+		typedef boost::intrusive_ptr< TypedData< std::vector< Imath::Vec3<PointBaseType > > > > V3xVectorDataPtr;
 		V3xVectorDataPtr m_P;
 		V3xVectorDataPtr m_N;		
 		

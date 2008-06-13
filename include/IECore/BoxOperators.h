@@ -41,13 +41,21 @@
 #include "OpenEXR/ImathBox.h"
 #include <iostream>
 
-namespace IECore
-{
+namespace IECore {
 
 /// Streaming for Imath::Box types
 template<class T>
 std::ostream &operator <<( std::ostream &os, const Imath::Box<T> &obj );
 
+/// calculate the intersection of two commensurable boxes
+/// \deprecated
+template <class T>
+Imath::Box<T> intersection(const Imath::Box<T> & a, const Imath::Box<T> & b);
+
+/// compute integer width of Box2i
+/// \deprecated
+int boxwidth(const Imath::Box2i & b);
+	
 } // namespace IECore
 
 #include "IECore/BoxOperators.inl"

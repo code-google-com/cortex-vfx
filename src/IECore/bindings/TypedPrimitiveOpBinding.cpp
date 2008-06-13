@@ -85,7 +85,6 @@ static void bindTypedPrimitiveOp( const char *name )
 void bindTypedPrimitiveOp()
 {
 	bindTypedPrimitiveOp< MeshPrimitive >( "MeshPrimitiveOp" );
-	bindTypedPrimitiveOp< ImagePrimitive >( "ImagePrimitiveOp" );
 }
 
 } // namespace IECore

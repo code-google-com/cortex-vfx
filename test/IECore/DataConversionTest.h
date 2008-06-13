@@ -36,15 +36,12 @@
 #define IE_CORE_DATACONVERSIONTEST_H
 
 #include <cassert>
-#include <limits.h>
 
 #include "boost/test/unit_test.hpp"
 #include "boost/test/floating_point_comparison.hpp"
-#include "boost/random.hpp"
 
 #include "IECore/HalfTypeTraits.h"
 #include "IECore/IECore.h"
-#include "IECore/ScaledDataConversion.h"
 #include "IECore/CineonToLinearDataConversion.h"
 #include "IECore/LinearToCineonDataConversion.h"
 #include "IECore/SRGBToLinearDataConversion.h"
@@ -89,31 +86,6 @@ struct DataConversionTest
 			BOOST_CHECK_CLOSE( double( fi(i) ), double( i ), 1.e-4 );
 		}
 	}
-	
-	template<typename F, typename T>
-	void testSignedScaled()
-	{
-		typedef ScaledDataConversion< F, T > Func;	
-		
-		Func f;
-		CompoundDataConversion< Func, typename Func::InverseType > f_fi( f, f.inverse() );
-		
-		unsigned seed = 42;
-		boost::mt19937 generator( seed );
-						
-		/// Create a random number generator within this range
-		boost::uniform_real<> uni_dist( std::numeric_limits<F>::min(), std::numeric_limits<F>::max() );		
-		boost::variate_generator<boost::mt19937&, boost::uniform_real<> > uni(generator, uni_dist);
-	
-		const int numTests = 100;
-		for ( int t = 0; t < numTests; t++)
-		{
-			F i = static_cast<F>( uni() );
-			
-			/// Verify that f(f'(i)) ~ i			
-			BOOST_CHECK_CLOSE( double( f_fi(i) ), double( i ), 1.e-4 );
-		}
-	}
 };
 
 struct DataConversionTestSuite : public boost::unit_test::test_suite
@@ -125,7 +97,6 @@ struct DataConversionTestSuite : public boost::unit_test::test_suite
 				
 		testCineonLinear( instance );
 		testSRGBLinear( instance );
-		testSignedScaled( instance );
 	}		
 	
 	void testCineonLinear( boost::shared_ptr<DataConversionTest> instance )
@@ -147,49 +118,6 @@ struct DataConversionTestSuite : public boost::unit_test::test_suite
 		add( BOOST_CLASS_TEST_CASE( &DataConversionTest::testSRGBLinear<float>, instance ) );		
 		add( BOOST_CLASS_TEST_CASE( &DataConversionTest::testSRGBLinear<double>, instance ) );
 		add( BOOST_CLASS_TEST_CASE( &DataConversionTest::testSRGBLinear<half>, instance ) );
-	}
-	
-	void testSignedScaled( boost::shared_ptr<DataConversionTest> instance )
-	{
-		void (DataConversionTest::*fn)() = 0;
-		
-		// "To" types have greater range/precision, so that we can accurately verify roundtrip. If we didn't do this
-		/// we'd lose information on the way through.
-
-		fn = &DataConversionTest::testSignedScaled<char, short>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );
-		fn = &DataConversionTest::testSignedScaled<char, int>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );
-		fn = &DataConversionTest::testSignedScaled<char, long>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );		
-		fn = &DataConversionTest::testSignedScaled<char, float>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );		
-		fn = &DataConversionTest::testSignedScaled<char, double>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );
-		
-		fn = &DataConversionTest::testSignedScaled<short, int>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );
-		fn = &DataConversionTest::testSignedScaled<short, long>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );		
-		fn = &DataConversionTest::testSignedScaled<short, float>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );		
-		fn = &DataConversionTest::testSignedScaled<short, double>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );	
-
-		fn = &DataConversionTest::testSignedScaled<int, long>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );		
-		fn = &DataConversionTest::testSignedScaled<int, float>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );		
-		fn = &DataConversionTest::testSignedScaled<int, double>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );	
-		
-		fn = &DataConversionTest::testSignedScaled<long, float>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );		
-		fn = &DataConversionTest::testSignedScaled<long, double>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );	
-			
-		fn = &DataConversionTest::testSignedScaled<float, double>;
-		add( BOOST_CLASS_TEST_CASE( fn, instance ) );											
 	}	
 		
 };

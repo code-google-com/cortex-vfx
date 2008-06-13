@@ -40,6 +40,7 @@
 #include "IECore/PrimitiveEvaluator.h"
 #include "IECore/MeshPrimitive.h"
 #include "IECore/BoundedKDTree.h"
+#include "IECore/ClassData.h"
 
 namespace IECore
 {
@@ -102,11 +103,10 @@ class MeshPrimitiveEvaluator : public PrimitiveEvaluator
 		
 		virtual ~MeshPrimitiveEvaluator();
 		
-		virtual ConstPrimitivePtr primitive() const;
+		/// \todo Add to PrimitiveEvaluator, and make virtual
+		ConstPrimitivePtr primitive() const;
 		
 		virtual PrimitiveEvaluator::ResultPtr createResult() const;
-		
-		virtual void validateResult( const PrimitiveEvaluator::ResultPtr &result ) const;
 						
 		virtual bool closestPoint( const Imath::V3f &p, const PrimitiveEvaluator::ResultPtr &result ) const;
 		
@@ -118,13 +118,14 @@ class MeshPrimitiveEvaluator : public PrimitiveEvaluator
 		virtual int intersectionPoints( const Imath::V3f &origin, const Imath::V3f &direction, 
 			std::vector<PrimitiveEvaluator::ResultPtr> &results, float maxDistance = Imath::limits<float>::max() ) const;
 			
-		virtual bool signedDistance( const Imath::V3f &p, float &distance ) const;
-			
-		virtual float volume() const;	
+		/// \todo Add to PrimitiveEvaluator, and make virtual
+		float volume() const;	
 
-		virtual Imath::V3f centerOfGravity() const;
+		/// \todo Add to PrimitiveEvaluator, and make virtual
+		Imath::V3f centerOfGravity() const;
 		
-		virtual float surfaceArea() const;
+		/// \todo Add to PrimitiveEvaluator, and make virtual
+		float surfaceArea() const;
 					
 	protected:
 	
@@ -163,32 +164,12 @@ class MeshPrimitiveEvaluator : public PrimitiveEvaluator
 		bool intersectionPointWalk( BoundedTriangleTree::NodeIndex nodeIndex, const Imath::Line3f &ray, float &maxDistSqrd, const ResultPtr &result, bool &hit ) const;
 		void intersectionPointsWalk( BoundedTriangleTree::NodeIndex nodeIndex, const Imath::Line3f &ray, float maxDistSqrd, std::vector<PrimitiveEvaluator::ResultPtr> &results ) const;		
 		
-		void calculateMassProperties() const;
-		void calculateAverageNormals() const;
-		
-		BoundedTriangleVector m_uvTriangles;
-		BoundedTriangleTree *m_uvTree;
-
-		PrimitiveVariable m_u;
-		PrimitiveVariable m_v;
-
-		mutable bool m_haveMassProperties;
-		mutable float m_volume;
-		mutable Imath::V3f m_centerOfGravity;	
-		mutable Imath::M33f m_inertia;
-
-		mutable bool m_haveSurfaceArea;
-		mutable float m_surfaceArea;
-		
-		mutable bool m_haveAverageNormals;
-		typedef int VertexIndex;
-		typedef int TriangleIndex;
-		typedef std::pair<VertexIndex, VertexIndex> Edge;		
-		
-		typedef std::map< Edge, Imath::V3f > EdgeAverageNormals;		
-		mutable EdgeAverageNormals m_edgeAverageNormals;
+		void calculateMassProperties();
 	
-		mutable V3fVectorDataPtr m_vertexAngleWeightedNormals;
+	public:	
+		
+		/// \todo Move all ExtraData members to here on next major version change
+		struct ExtraData;
 				
 };
 

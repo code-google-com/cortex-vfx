@@ -54,10 +54,6 @@
 #include "IECoreGL/OrthographicCamera.h"
 #include "IECoreGL/NameStateComponent.h"
 #include "IECoreGL/ToGLCameraConverter.h"
-#include "IECoreGL/CurvesPrimitive.h"
-#include "IECoreGL/ToGLMeshConverter.h"
-#include "IECoreGL/Font.h"
-#include "IECoreGL/TextPrimitive.h"
 
 #include "IECore/MessageHandler.h"
 #include "IECore/SimpleTypedData.h"
@@ -65,7 +61,6 @@
 #include "IECore/Camera.h"
 #include "IECore/Transform.h"
 #include "IECore/MatrixAlgo.h"
-#include "IECore/MeshPrimitive.h"
 
 #include <stack>
 
@@ -166,7 +161,6 @@ struct IECoreGL::Renderer::MemberData
 		Mode mode;
 		V2f shutter;
 		IECore::CompoundDataMap user;
-		string fontSearchPath;
 		string shaderSearchPath;
 		string shaderSearchPathDefault;
 		string shaderIncludePath;
@@ -185,12 +179,6 @@ struct IECoreGL::Renderer::MemberData
 	RendererImplementationPtr implementation;
 	ShaderLoaderPtr shaderLoader;
 	TextureLoaderPtr textureLoader;
-	
-#ifdef IECORE_WITH_FREETYPE
-	typedef std::map<std::string, FontPtr> FontMap;
-	FontMap fonts;
-#endif // IECORE_WITH_FREETYPE
-
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -204,8 +192,6 @@ IECoreGL::Renderer::Renderer()
 	m_data->options.mode = MemberData::Immediate;
 	m_data->options.shutter = V2f( 0 );
 	
-	const char *fontPath = getenv( "IECORE_FONT_PATHS" );
-	m_data->options.fontSearchPath = fontPath ? fontPath : "";
 	const char *shaderPath = getenv( "IECOREGL_SHADER_PATHS" );
 	m_data->options.shaderSearchPath = m_data->options.shaderSearchPathDefault = shaderPath ? shaderPath : "";
 	const char *shaderIncludePath = getenv( "IECOREGL_SHADER_INCLUDE_PATHS" );
@@ -279,19 +265,6 @@ static IECore::DataPtr shutterOptionGetter( const std::string &name, IECoreGL::R
 	return new V2fData( memberData->options.shutter );
 }
 
-static void fontSearchPathOptionSetter( const std::string &name, IECore::ConstDataPtr value, IECoreGL::Renderer::MemberData *memberData )
-{
-	if( ConstStringDataPtr s = castWithWarning<StringData>( value, name, "Renderer::setOption" ) )
-	{
-		memberData->options.fontSearchPath = s->readable();
-	}
-}
-
-static IECore::DataPtr fontSearchPathOptionGetter( const std::string &name, IECoreGL::Renderer::MemberData *memberData )
-{
-	return new StringData( memberData->options.fontSearchPath );
-}
-
 static void shaderSearchPathOptionSetter( const std::string &name, IECore::ConstDataPtr value, IECoreGL::Renderer::MemberData *memberData )
 {
 	if( ConstStringDataPtr s = castWithWarning<StringData>( value, name, "Renderer::setOption" ) )
@@ -338,7 +311,6 @@ static const OptionSetterMap *optionSetters()
 	{
 		(*o)["gl:mode"] = modeOptionSetter;
 		(*o)["shutter"] = shutterOptionSetter;
-		(*o)["searchPath:font"] = fontSearchPathOptionSetter;
 		(*o)["gl:searchPath:shader"] = shaderSearchPathOptionSetter;
 		(*o)["searchPath:shader"] = shaderSearchPathOptionSetter;
 		(*o)["gl:searchPath:shaderInclude"] = shaderIncludePathOptionSetter;
@@ -356,7 +328,6 @@ static const OptionGetterMap *optionGetters()
 	{
 		(*o)["gl:mode"] = modeOptionGetter;
 		(*o)["shutter"] = shutterOptionGetter;
-		(*o)["searchPath:font"] = fontSearchPathOptionGetter;
 		(*o)["gl:searchPath:shader"] = shaderSearchPathOptionGetter;
 		(*o)["searchPath:shader"] = shaderSearchPathOptionGetter;
 		(*o)["gl:searchPath:shaderInclude"] = shaderIncludePathOptionGetter;
@@ -422,7 +393,7 @@ IECore::ConstDataPtr IECoreGL::Renderer::getOption( const std::string &name ) co
 }
 
 
-void IECoreGL::Renderer::camera( const std::string &name, const IECore::CompoundDataMap &parameters )
+void IECoreGL::Renderer::camera( const std::string &name, IECore::CompoundDataMap &parameters )
 {
 	if( m_data->inWorld )
 	{
@@ -449,7 +420,7 @@ void IECoreGL::Renderer::camera( const std::string &name, const IECore::Compound
 }
 
 
-void IECoreGL::Renderer::display( const std::string &name, const std::string &type, const std::string &data, const IECore::CompoundDataMap &parameters )
+void IECoreGL::Renderer::display( const std::string &name, const std::string &type, const std::string &data, IECore::CompoundDataMap &parameters )
 {
 	// we store displays till worldbegin, as until that point we don't have a renderer implementation to pass
 	// them to
@@ -478,7 +449,7 @@ void IECoreGL::Renderer::worldBegin()
 	{
 		m_data->implementation = new ImmediateRendererImplementation;
 	}
-		
+	
 	if( m_data->options.shaderSearchPath==m_data->options.shaderSearchPathDefault && m_data->options.shaderIncludePath==m_data->options.shaderIncludePathDefault )
 	{
 		// use the shared default cache if we can
@@ -975,12 +946,6 @@ static const AttributeSetterMap *attributeSetters()
 		(*a)["name"] = nameSetter;
 		(*a)["doubleSided"] = typedAttributeSetter<DoubleSidedStateComponent>;
 		(*a)["rightHandedOrientation"] = typedAttributeSetter<RightHandedOrientationStateComponent>;
-		(*a)["gl:curvesPrimitive:useGLLines"] = typedAttributeSetter<CurvesPrimitive::UseGLLines>;
-		(*a)["gl:curvesPrimitive:glLineWidth"] = typedAttributeSetter<CurvesPrimitive::GLLineWidth>;
-		(*a)["gl:curvesPrimitive:ignoreBasis"] = typedAttributeSetter<CurvesPrimitive::IgnoreBasis>;
-		(*a)["gl:smoothing:points"] = typedAttributeSetter<PointSmoothingStateComponent>;
-		(*a)["gl:smoothing:lines"] = typedAttributeSetter<LineSmoothingStateComponent>;
-		(*a)["gl:smoothing:polygons"] = typedAttributeSetter<PolygonSmoothingStateComponent>;
 	}
 	return a;
 }
@@ -1016,12 +981,6 @@ static const AttributeGetterMap *attributeGetters()
 		(*a)["name"] = nameGetter;
 		(*a)["doubleSided"] = typedAttributeGetter<DoubleSidedStateComponent>;
 		(*a)["rightHandedOrientation"] = typedAttributeGetter<RightHandedOrientationStateComponent>;
-		(*a)["gl:curvesPrimitive:useGLLines"] = typedAttributeGetter<CurvesPrimitive::UseGLLines>;
-		(*a)["gl:curvesPrimitive:glLineWidth"] = typedAttributeGetter<CurvesPrimitive::GLLineWidth>;
-		(*a)["gl:curvesPrimitive:ignoreBasis"] = typedAttributeGetter<CurvesPrimitive::IgnoreBasis>;
-		(*a)["gl:smoothing:points"] = typedAttributeGetter<PointSmoothingStateComponent>;
-		(*a)["gl:smoothing:lines"] = typedAttributeGetter<LineSmoothingStateComponent>;
-		(*a)["gl:smoothing:polygons"] = typedAttributeGetter<PolygonSmoothingStateComponent>;
 	}
 	return a;
 }
@@ -1391,84 +1350,20 @@ void IECoreGL::Renderer::points( size_t numPoints, const IECore::PrimitiveVariab
 	addPrimitive( prim, primVars, m_data );
 }
 
-void IECoreGL::Renderer::disk( float radius, float z, float thetaMax, const IECore::PrimitiveVariableMap &primVars )
+void IECoreGL::Renderer::curves( const std::string &interpolation, bool periodic, IECore::ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars )
 {
-	msg( Msg::Warning, "Renderer::disk", "Not implemented" );
+	msg( Msg::Warning, "Renderer::curves", "Not implemented" );
 }
 
-void IECoreGL::Renderer::curves( const IECore::CubicBasisf &basis, bool periodic, IECore::ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars )
+Imath::Box3f IECoreGL::Renderer::textExtents(const std::string & t, const float width )
 {
-	ConstV3fVectorDataPtr points = findPrimVar<V3fVectorData>( "P", PrimitiveVariable::Vertex, primVars );
-	if( !points )
-	{
-		msg( Msg::Warning, "Renderer::mesh", "Must specify primitive variable \"P\", of type V3fVectorData and interpolation type Vertex." );
-		return;
-	}
-
-	ConstFloatDataPtr widthData = findPrimVar<FloatData>( "width", PrimitiveVariable::Constant, primVars );
-	if( !widthData  )
-	{
-		widthData = findPrimVar<FloatData>( "constantwidth", PrimitiveVariable::Constant, primVars );
-	}
-	
-	float width = 1;
-	if( widthData )
-	{
-		width = widthData->readable();
-	}
-	
-	CurvesPrimitivePtr prim = new CurvesPrimitive( basis, periodic, numVertices, points, width );
-	addPrimitive( prim, primVars, m_data );
+	msg( Msg::Warning, "Renderer::textExtents", "Not implemented" );
+	return Box3f();
 }
 
-void IECoreGL::Renderer::text( const std::string &font, const std::string &text, float kerning, const IECore::PrimitiveVariableMap &primVars )
+void IECoreGL::Renderer::text(const std::string &t, const float width )
 {
-
-#ifdef IECORE_WITH_FREETYPE
-	FontPtr f = 0;
-	MemberData::FontMap::const_iterator it = m_data->fonts.find( font );
-	if( it!=m_data->fonts.end() )
-	{
-		f = it->second;
-	}
-	else
-	{
-		IECore::SearchPath s( m_data->options.fontSearchPath, ":" );
-		string file = s.find( font ).string();
-		if( file!="" )
-		{
-			try
-			{
-				IECore::FontPtr cf = new IECore::Font( file );
-				f = new Font( cf );
-			}
-			catch( const std::exception &e )
-			{
-				IECore::msg( IECore::Msg::Warning, "Renderer::text", e.what() ); 
-			}
-		}
-		m_data->fonts[font] = f;
-	}
-	
-	if( !f )
-	{
-		IECore::msg( IECore::Msg::Warning, "Renderer::text", boost::format( "Font \"%s\" not found." ) % font ); 	
-		return;
-	}
-	
-	f->coreFont()->setKerning( kerning );
-	
-	TextPrimitivePtr prim = new TextPrimitive( text, f );
-	addPrimitive( prim, primVars, m_data );
-#else
-	IECore::msg( IECore::Msg::Warning, "Renderer::text", "IECore was not built with FreeType support." ); 	
-#endif // IECORE_WITH_FREETYPE
-}
-
-void IECoreGL::Renderer::sphere( float radius, float zMin, float zMax, float thetaMax, const IECore::PrimitiveVariableMap &primVars )
-{
-	SpherePrimitivePtr prim = new SpherePrimitive( radius, zMin, zMax, thetaMax );
-	addPrimitive( prim, primVars, m_data );
+	msg( Msg::Warning, "Renderer::text", "Not implemented" );
 }
 
 static IECoreGL::ShaderPtr imageShader()
@@ -1557,18 +1452,15 @@ void IECoreGL::Renderer::image( const Imath::Box2i &dataWindow, const Imath::Box
 
 void IECoreGL::Renderer::mesh( IECore::ConstIntVectorDataPtr vertsPerFace, IECore::ConstIntVectorDataPtr vertIds, const std::string &interpolation, const IECore::PrimitiveVariableMap &primVars )
 {
-	try
+	ConstV3fVectorDataPtr points = findPrimVar<V3fVectorData>( "P", PrimitiveVariable::Vertex, primVars );
+	if( !points )
 	{
-		IECore::MeshPrimitivePtr m = new IECore::MeshPrimitive( vertsPerFace, vertIds, interpolation );
-		m->variables = primVars;
-		MeshPrimitivePtr prim = boost::static_pointer_cast<MeshPrimitive>( ToGLMeshConverter( m ).convert() );
-		addPrimitive( prim, primVars, m_data );
-	}
-	catch( const std::exception &e )
-	{
-		msg( Msg::Warning, "Renderer::mesh", e.what() );
+		msg( Msg::Warning, "Renderer::mesh", "Must specify primitive variable \"P\", of type V3fVectorData and interpolation type Vertex." );
 		return;
 	}
+
+	MeshPrimitivePtr prim = new MeshPrimitive( vertsPerFace, vertIds, points );
+	addPrimitive( prim, primVars, m_data );
 }
 
 void IECoreGL::Renderer::nurbs( int uOrder, IECore::ConstFloatVectorDataPtr uKnot, float uMin, float uMax, int vOrder, IECore::ConstFloatVectorDataPtr vKnot, float vMin, float vMax, const IECore::PrimitiveVariableMap &primVars )
@@ -1584,7 +1476,8 @@ void IECoreGL::Renderer::geometry( const std::string &type, const IECore::Compou
 		float zMin = parameterValue<float>( "zMin", topology, -1 );
 		float zMax = parameterValue<float>( "zMax", topology, 1 );
 		float thetaMax = parameterValue<float>( "thetaMax", topology, 360 );
-		sphere( radius, zMin, zMax, thetaMax, primVars );
+		SpherePrimitivePtr prim = new SpherePrimitive( radius, zMin, zMax, thetaMax );
+		addPrimitive( prim, primVars, m_data );
 	}
 	else
 	{
@@ -1600,31 +1493,11 @@ void IECoreGL::Renderer::procedural( IECore::Renderer::ProceduralPtr proc )
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-// instancing
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void IECoreGL::Renderer::instanceBegin( const std::string &name, const IECore::CompoundDataMap &parameters )
-{
-	msg( Msg::Warning, "Renderer::instanceBegin", "Not implemented" );
-}
-
-void IECoreGL::Renderer::instanceEnd()
-{
-	msg( Msg::Warning, "Renderer::instanceEnd", "Not implemented" );
-}
-
-void IECoreGL::Renderer::instance( const std::string &name )
-{
-	msg( Msg::Warning, "Renderer::instance", "Not implemented" );
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
 // commands
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-IECore::DataPtr IECoreGL::Renderer::command( const std::string &name, const IECore::CompoundDataMap &parameters )
+void IECoreGL::Renderer::command( const std::string &name, const IECore::CompoundDataMap &parameters )
 {
-	msg( Msg::Warning, "Renderer::command", "Not implemented" );
-	return 0;
+	msg( Msg::Warning, "Renderer::setOption", "Not implemented" );
 }
 

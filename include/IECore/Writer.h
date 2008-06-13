@@ -56,11 +56,8 @@ class Writer : public Op
 
 		IE_CORE_DECLARERUNTIMETYPED( Writer, Op )
 
-		/// Creates and returns a Writer appropriate for saving the
-		/// specified object to the specified file (the file extension is
-		/// used to determine format). 
-		/// Throws an Exception if no suitable writer can be found.
-		static WriterPtr create( ObjectPtr object, const std::string &fileName );
+		Writer( const std::string name, const std::string description, TypeId writableType );
+		Writer( const std::string name, const std::string description, const ObjectParameter::TypeIdSet &writableTypes );
 		
 		/// Returns the name of the file this Writer
 		/// is set to create. This is just a convenience returning the equivalent of
@@ -74,15 +71,18 @@ class Writer : public Op
 		/// Writes object() to fileName(). This just calls operate() and is provided
 		/// for backwards compatibility and pretty syntax.
 		void write();
-						
+		
+		/// Creates and returns a Writer appropriate for saving the
+		/// specified object to the specified file (the file extension is
+		/// used to determine format). 
+		/// Throws an Exception if no suitable writer can be found.
+		static WriterPtr create( ObjectPtr object, const std::string &fileName );
+		
 		/// Fills the passed vector with all the extensions for which a Writer is
 		/// available. Extensions are of the form "tif" - ie without a preceding '.'.
 		static void supportedExtensions( std::vector<std::string> &extensions );
 		
 	protected :
-	
-		Writer( const std::string &name, const std::string &description, TypeId writableType );
-		Writer( const std::string &name, const std::string &description, const ObjectParameter::TypeIdSet &writableTypes );
 	
 		/// Implemented to call doWrite(), so derived classes need only implement that.
 		ObjectPtr doOperation( ConstCompoundObjectPtr operands );

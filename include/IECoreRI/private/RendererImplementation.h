@@ -38,7 +38,6 @@
 #include "IECore/Renderer.h"
 #include "IECore/CachedReader.h"
 #include "IECore/Camera.h"
-#include "IECore/Font.h"
 
 #include "ri.h"
 
@@ -62,8 +61,8 @@ class RendererImplementation : public IECore::Renderer
 		virtual void setOption( const std::string &name, IECore::ConstDataPtr value );
 		virtual IECore::ConstDataPtr getOption( const std::string &name ) const;
 
-		virtual void camera( const std::string &name, const IECore::CompoundDataMap &parameters );
-		virtual void display( const std::string &name, const std::string &type, const std::string &data, const IECore::CompoundDataMap &parameters );
+		virtual void camera( const std::string &name, IECore::CompoundDataMap &parameters );
+		virtual void display( const std::string &name, const std::string &type, const std::string &data, IECore::CompoundDataMap &parameters );
 
 		virtual void worldBegin();
 		virtual void worldEnd();
@@ -88,12 +87,11 @@ class RendererImplementation : public IECore::Renderer
 		virtual void motionEnd();
 
 		virtual void points( size_t numPoints, const IECore::PrimitiveVariableMap &primVars );
-		virtual void disk( float radius, float z, float thetaMax, const IECore::PrimitiveVariableMap &primVars );
 		
-		virtual void curves( const IECore::CubicBasisf &basis, bool periodic, IECore::ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars );
+		virtual void curves( const std::string &interpolation, bool periodic, IECore::ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars );
 
-		virtual void text( const std::string &font, const std::string &text, float kerning = 1.0f, const IECore::PrimitiveVariableMap &primVars=IECore::PrimitiveVariableMap() );
-		virtual void sphere( float radius, float zMin, float zMax, float thetaMax, const IECore::PrimitiveVariableMap &primVars );
+		virtual Imath::Box3f textExtents(const std::string & t, const float width = Imath::limits<float>::max() );
+		virtual void text(const std::string &t, const float width = Imath::limits<float>::max() );
 
 		virtual void image( const Imath::Box2i &dataWindow, const Imath::Box2i &displayWindow, const IECore::PrimitiveVariableMap &primVars );
 		virtual void mesh( IECore::ConstIntVectorDataPtr vertsPerFace, IECore::ConstIntVectorDataPtr vertIds, const std::string &interpolation, const IECore::PrimitiveVariableMap &primVars );
@@ -103,12 +101,8 @@ class RendererImplementation : public IECore::Renderer
 		virtual void geometry( const std::string &type, const IECore::CompoundDataMap &topology, const IECore::PrimitiveVariableMap &primVars );
 
 		virtual void procedural( IECore::Renderer::ProceduralPtr proc );
-
-		virtual void instanceBegin( const std::string &name, const IECore::CompoundDataMap &parameters );
-		virtual void instanceEnd();
-		virtual void instance( const std::string &name );
 		
-		virtual IECore::DataPtr command( const std::string &name, const IECore::CompoundDataMap &parameters );
+		virtual void command( const std::string &name, const IECore::CompoundDataMap &parameters );
 
 	private :
 	
@@ -124,10 +118,8 @@ class RendererImplementation : public IECore::Renderer
 		SetOptionHandlerMap m_setOptionHandlers;
 		GetOptionHandlerMap m_getOptionHandlers;
 		
-		void setFontSearchPathOption( const std::string &name, IECore::ConstDataPtr d );
 		void setShaderSearchPathOption( const std::string &name, IECore::ConstDataPtr d );
 		void setPixelSamplesOption( const std::string &name, IECore::ConstDataPtr d );
-		IECore::ConstDataPtr getFontSearchPathOption( const std::string &name ) const;
 		IECore::ConstDataPtr getShutterOption( const std::string &name ) const;
 		IECore::ConstDataPtr getResolutionOption( const std::string &name ) const;
 		
@@ -174,43 +166,20 @@ class RendererImplementation : public IECore::Renderer
 		static void procSubdivide( void *data, float detail );
 		static void procFree( void *data );
 		
-		typedef IECore::DataPtr ( RendererImplementation::*CommandHandler)( const std::string &name, const IECore::CompoundDataMap &parameters );
+		typedef void( RendererImplementation::*CommandHandler)( const std::string &name, const IECore::CompoundDataMap &parameters );
 		typedef std::map<std::string, CommandHandler> CommandHandlerMap;
 		CommandHandlerMap m_commandHandlers;
 		
-		IECore::DataPtr  readArchiveCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
+		void readArchiveCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
 		
 		typedef std::map<std::string, const void *> ObjectHandleMap;
 		ObjectHandleMap m_objectHandles;
-		IECore::DataPtr objectBeginCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
-		IECore::DataPtr objectEndCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
-		IECore::DataPtr objectInstanceCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
-		IECore::DataPtr archiveRecordCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
-
-		IECore::SearchPath m_fontSearchPath;
-#ifdef IECORE_WITH_FREETYPE
-		typedef std::map<std::string, IECore::FontPtr> FontMap;
-		FontMap m_fonts;
-#endif
+		void objectBeginCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
+		void objectEndCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
+		void objectInstanceCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
+		void archiveRecordCommand( const std::string &name, const IECore::CompoundDataMap &parameters );
 
 		static std::vector<int> g_nLoops;
-		
-		/// Renderman treats curve basis as an attribute, whereas we want to treat it as
-		/// part of the topology of primitives. It makes no sense as an attribute, as it changes the
-		/// size of primitive variables - an attribute which makes a primitive invalid is dumb. This
-		/// difference is fine, except it means we have to implement curves() as a call to RiBasis followed
-		/// by RiCurves. Which is fine too, until we do that inside a motion block - at this point the context
-		/// is invalid for the basis call - we should just be emitting the RiCurves call. We work around
-		/// this by delaying all calls to motionBegin until the primitive or transform calls have had a chance
-		/// to emit something first. This is what this function is all about - all interface functions which
-		/// may be called from within a motion block must call delayedMotionBegin(). This makes for an ugly
-		/// implementation but a better interface for the client. delayedMotionBegin() assumes that the correct
-		/// RiContext will have been made current already.
-		void delayedMotionBegin();
-		/// True when an RiMotionBegin call has been emitted but we have not yet emitted the matching RiMotionEnd.
-		bool m_inMotion;
-		std::vector<float> m_delayedMotionTimes;
-		
 };
 
 } // namespace IECoreRI

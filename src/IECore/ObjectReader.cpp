@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,10 @@
 #include "IECore/ObjectReader.h"
 #include "IECore/FileIndexedIO.h"
 #include "IECore/FileNameParameter.h"
-#include "IECore/CompoundData.h"
+
+#ifdef IECORE_WITH_SQLITE
+    #include "IECore/SQLiteIndexedIO.h"
+#endif // IECORE_WITH_SQLITE
 
 #include <cassert>
 
@@ -92,22 +95,28 @@ ObjectPtr ObjectReader::doOperation( ConstCompoundObjectPtr operands )
 	return Object::load( io, "object" );
 }
 
-CompoundObjectPtr ObjectReader::readHeader()
+CompoundDataPtr ObjectReader::readHeader() const
 {
-	CompoundObjectPtr header = Reader::readHeader();
-	
 	IndexedIOInterfacePtr io = open(fileName());
-	CompoundDataPtr objectHeader = runTimeCast<CompoundData>( Object::load( io, "header" ) );
-	
-	for ( CompoundData::ValueType::const_iterator it = objectHeader->readable().begin(); it != objectHeader->readable().end(); ++it )
-	{
-		header->members()[ it->first ] = it->second ;
-	}
-	
-	return header;
+	return runTimeCast<CompoundData>( Object::load( io, "header" ) );
 }
 
 IndexedIOInterfacePtr ObjectReader::open( const std::string &fileName )
 {
-	return new FileIndexedIO( fileName, "/", IndexedIO::Shared | IndexedIO::Read );
+	IndexedIOInterfacePtr iface;
+	
+#ifdef IECORE_WITH_SQLITE
+	try 
+	{
+		iface = new FileIndexedIO( fileName, "/", IndexedIO::Shared | IndexedIO::Read );
+	} 
+	catch (...)
+	{
+		iface = new SQLiteIndexedIO( fileName, "/", IndexedIO::Shared | IndexedIO::Read );
+	}	
+#else
+	iface = new FileIndexedIO( fileName, "/", IndexedIO::Shared | IndexedIO::Read );
+#endif
+	
+	return iface;
 }

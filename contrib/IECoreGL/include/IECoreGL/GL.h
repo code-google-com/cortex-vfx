@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,19 +42,5 @@
 // now we're using glew we can just include that instead
 // and it'll do all the cross platform worrying for us
 #include "glew.h"
-
-#include "OpenEXR/ImathVec.h"
-
-namespace IECoreGL
-{
-
-inline void glVertex( const Imath::V3f &v );
-inline void glNormal( const Imath::V3f &n );
-inline void glTranslate( const Imath::V2f &t );
-inline void glTranslate( const Imath::V3f &t );
-
-} // namespace IECoreGL
-
-#include "IECoreGL/GL.inl"
 
 #endif // IECOREGL_GL_H

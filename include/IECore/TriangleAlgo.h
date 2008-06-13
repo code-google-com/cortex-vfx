@@ -46,9 +46,7 @@ namespace IECore
 template<class Vec>
 typename VectorTraits<Vec>::BaseType triangleArea( const Vec &v0, const Vec &v1, const Vec &v2 );
 
-/// Returns the normal for the specified triangle. Winding order is considered to be counter-clockwise as
-/// with the rest of cortex - the normal will face towards a viewer who sees the loop v0->v1->v2->v0
-/// as being counter-clockwise.
+/// \todo Define and check winding order
 template<class Vec>
 Vec triangleNormal( const Vec &v0, const Vec &v1, const Vec &v2 );
 

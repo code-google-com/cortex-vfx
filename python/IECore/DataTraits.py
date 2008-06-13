@@ -60,7 +60,7 @@ def isSimpleDataType(obj):
 	return False
 
 ##	Utility function that recognizes objects that are numeric simple types. That means, 
-#	have one single value on it, and it is numeric. For example, IntData. But not
+#	have one single value on it, and it is numeric. For example, IntData, LongData. But not
 #	IntVectorData, nor CharData which just accepts characters (up to now).
 def isSimpleNumericDataType(obj):
 	if not isinstance(obj, IECore.Data):
@@ -114,6 +114,7 @@ __dataTypesConversionDict = {
 	IECore.BoolData: (bool, True),
 	IECore.IntData: (int, True),
 	IECore.UIntData: (int, False),
+	IECore.LongData: (long, False),
 	IECore.CharData: (str, False),
 	IECore.UCharData: (int, False),
 	IECore.StringData: (str, True),
@@ -121,10 +122,7 @@ __dataTypesConversionDict = {
 	IECore.DoubleData: (float, True),
 	IECore.HalfData: (float, False),
 	IECore.ShortData: (int, False),
-	IECore.UShortData: (int, False),
-	IECore.Int64Data: (int, False),
-	IECore.UInt64Data: (int, False),	
-		
+	IECore.UShortData: (int, False),	
 
 	IECore.V2fData: (IECore.V2f, True),
 	IECore.V2dData: (IECore.V2d, True),
@@ -160,8 +158,6 @@ __dataTypesConversionDict = {
 	IECore.StringVectorData: (list, False, str),
 	IECore.ShortVectorData: (list, False, int),
 	IECore.UShortVectorData: (list, False, int),
-	IECore.Int64VectorData: (list, False, int),
-	IECore.UInt64VectorData: (list, False, int),	
 	IECore.V2fVectorData: (list, False, IECore.V2f),
 	IECore.V2dVectorData: (list, False, IECore.V2d),
 	IECore.V2iVectorData: (list, False, IECore.V2i),

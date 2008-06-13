@@ -50,7 +50,9 @@ class PrimitiveOp : public ModifyOp
 		
 		IE_CORE_DECLARERUNTIMETYPED( PrimitiveOp, ModifyOp );
 		
-		PrimitiveOp( const std::string &name, const std::string &description );
+		/// \todo The parameters should be references. Also I don't know why
+		/// we even have a name parameter - what's wrong with typeName()?.
+		PrimitiveOp( const std::string name, const std::string description );
 		virtual ~PrimitiveOp();
 		
 	protected :

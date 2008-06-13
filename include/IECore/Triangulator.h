@@ -46,7 +46,7 @@ namespace IECore
 
 /// The Triangulator template class performs triangulation of simple planar polygons. It
 /// uses a MeshBuilder class to build the triangulated mesh.
-template<typename PointIterator, typename MeshBuilder = MeshPrimitiveBuilder >
+template<typename PointIterator, typename MeshBuilder = MeshPrimitiveBuilder<float> >
 class Triangulator : public RefCounted
 {
 	public :
@@ -59,7 +59,8 @@ class Triangulator : public RefCounted
 		/// to last point.
 		typedef std::pair<PointIterator, PointIterator> Loop;
 		
-		IE_CORE_DECLAREMEMBERPTR( Triangulator );
+		typedef boost::intrusive_ptr<Triangulator> Ptr;
+		typedef boost::intrusive_ptr<const Triangulator> ConstPtr;
 		
 		Triangulator( typename MeshBuilder::Ptr builder );
 		virtual ~Triangulator();
@@ -95,17 +96,15 @@ class Triangulator : public RefCounted
 		typedef LineSegment<Point> Edge;
 
 		void triangulate( VertexList &vertices, unsigned size );
-		
+
 		typename MeshBuilder::Ptr m_builder;
-		// the number of vertices already in the mesh at the start of each triangulate() call
-		unsigned m_baseVertexIndex;
-		
+
 };
 
 typedef Triangulator<std::vector<Imath::V2f>::const_iterator> V2fTriangulator;
 typedef Triangulator<std::vector<Imath::V3f>::const_iterator> V3fTriangulator;
-typedef Triangulator<std::vector<Imath::V2d>::const_iterator> V2dTriangulator;
-typedef Triangulator<std::vector<Imath::V3d>::const_iterator> V3dTriangulator;
+typedef Triangulator<std::vector<Imath::V2d>::const_iterator, MeshPrimitiveBuilder<double> > V2dTriangulator;
+typedef Triangulator<std::vector<Imath::V3d>::const_iterator, MeshPrimitiveBuilder<double> > V3dTriangulator;
 
 } // namespace IECore
 

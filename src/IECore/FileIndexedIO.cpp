@@ -935,7 +935,7 @@ void FileIndexedIO::Node::addChild( NodePtr c )
 {
 	if (c->m_parent)
 	{
-		throw IOException("FileIndexedIO: Node already has parent!");
+		throw IOException("Node already has parent!");
 	}
 		
 #ifndef NDEBUG			
@@ -955,15 +955,25 @@ void FileIndexedIO::Node::write( std::ostream &f )
 	
 	Imf::Int64 id = m_idx->m_stringCache.find( m_entry.id() );
 	writeLittleEndian<Imf::Int64>( f, id );
+
 	if ( m_entry.entryType() == IndexedIO::File )
 	{
-		t = m_entry.dataType();			
+		t = m_entry.m_dataType;			
 		f.write( &t, sizeof(char) );
 		
-		if ( m_entry.isArray() )
+		if ( m_entry.m_dataType == IndexedIO::FloatArray
+		     || m_entry.m_dataType == IndexedIO::DoubleArray
+		     || m_entry.m_dataType == IndexedIO::IntArray
+		     || m_entry.m_dataType == IndexedIO::LongArray
+		     || m_entry.m_dataType == IndexedIO::StringArray
+		     || m_entry.m_dataType == IndexedIO::UIntArray
+		     || m_entry.m_dataType == IndexedIO::CharArray
+		     || m_entry.m_dataType == IndexedIO::UCharArray
+		     || m_entry.m_dataType == IndexedIO::HalfArray
+		)
 		{
-			writeLittleEndian<Imf::Int64>( f, m_entry.arrayLength() );
-		}		
+			writeLittleEndian<Imf::Int64>(f, m_entry.m_arrayLength );
+		}
 	}
 								
 	writeLittleEndian<Imf::Int64>(f, m_id);
@@ -990,18 +1000,14 @@ void FileIndexedIO::Node::read( std::istream &f )
 	assert( m_idx );
 	
 	char t;	
-	f.read( &t, sizeof(char) );	
-	
-	std::string id;	
-	IndexedIO::EntryType entryType = (IndexedIO::EntryType)t;
-	IndexedIO::DataType dataType = IndexedIO::Invalid;
-	Imf::Int64 arrayLength = 0;
+	f.read( &t, sizeof(char) );		
+	m_entry.m_entryType = (IndexedIO::EntryType)t;
 
 	if (m_idx->m_version >= 1)
 	{
 		Imf::Int64 stringId;
 		readLittleEndian<Imf::Int64>(f, stringId);		
-		id = m_idx->m_stringCache.find( stringId );	
+		m_entry.m_ID = m_idx->m_stringCache.find( stringId );	
 	}
 	else
 	{
@@ -1011,23 +1017,39 @@ void FileIndexedIO::Node::read( std::istream &f )
 		f.read( s, entrySize );
 		s[entrySize] = '\0';
 
-		id = s;
+		m_entry.m_ID = s;
 		delete[] s;
 	}
 
-	if ( entryType == IndexedIO::File || m_idx->m_version < 2 )
+	if ( m_entry.m_entryType == IndexedIO::File || m_idx->m_version < 2 )
 	{
 		f.read( &t, sizeof(char) );		
-		dataType = (IndexedIO::DataType)t;
+		m_entry.m_dataType = (IndexedIO::DataType)t;
+	
+		Imf::Int64 arrayLength = 0;
 		
-		if ( IndexedIO::Entry::isArray( dataType ) || m_idx->m_version < 3 )
+		if ( m_idx->m_version < 3 
+		    || m_entry.m_dataType == IndexedIO::FloatArray
+		    || m_entry.m_dataType == IndexedIO::DoubleArray
+		    || m_entry.m_dataType == IndexedIO::IntArray
+		    || m_entry.m_dataType == IndexedIO::LongArray
+		    || m_entry.m_dataType == IndexedIO::StringArray
+		    || m_entry.m_dataType == IndexedIO::UIntArray
+		    || m_entry.m_dataType == IndexedIO::CharArray
+		    || m_entry.m_dataType == IndexedIO::UCharArray
+		    || m_entry.m_dataType == IndexedIO::HalfArray
+		)
 		{
 			readLittleEndian<Imf::Int64>( f, arrayLength );
 		}
+		m_entry.m_arrayLength = arrayLength;			
 	}
-	
-	m_entry = IndexedIO::Entry( id, entryType, dataType, static_cast<unsigned long>( arrayLength ) );
-			
+	else
+	{
+		m_entry.m_dataType = IndexedIO::Invalid;
+		m_entry.m_arrayLength = 0;
+	}
+		
 	readLittleEndian<Imf::Int64>(f, m_id );
 
 	m_idx->m_indexToNodeMap[m_id] = this;
@@ -1042,7 +1064,7 @@ void FileIndexedIO::Node::read( std::istream &f )
 	Index::IndexToNodeMap::iterator it = m_idx->m_indexToNodeMap.find( parentId );
 	if (it == m_idx->m_indexToNodeMap.end())
 	{		
-		throw IOException("FileIndexedIO: parentId not found");
+		throw IOException("parentId not found");
 	}
 
 	NodePtr parent = it->second ;
@@ -1052,10 +1074,10 @@ void FileIndexedIO::Node::read( std::istream &f )
 	} 
 	else if (m_id != 0)
 	{
-		throw IOException("FileIndexedIO: Non-root node has no parent");
+		throw IOException("Non-root node has no parent");
 	}
 	
-	if ( m_entry.entryType() == IndexedIO::File || m_idx->m_version < 2 )
+	if ( m_entry.m_entryType == IndexedIO::File || m_idx->m_version < 2 )
 	{
 		readLittleEndian<Imf::Int64>(f, m_offset );
 		readLittleEndian<Imf::Int64>(f, m_size );
@@ -1169,7 +1191,7 @@ FileIndexedIO::IndexedFile::IndexedFile( const std::string &filename, IndexedIO:
 		
 		if (! m_device->is_open() )
 		{
-			throw IOException( "FileIndexedIO: Cannot open '" + filename + "' for writing" );
+			throw IOException(filename);
 		}
 		
 		m_stream = new FilteredStream();
@@ -1187,7 +1209,7 @@ FileIndexedIO::IndexedFile::IndexedFile( const std::string &filename, IndexedIO:
 		
 			if (! m_device->is_open() )
 			{
-				throw IOException( "FileIndexedIO: Cannot open '" + filename + "' for append" );
+				throw IOException(filename);
 			}
 			
 			m_stream = new FilteredStream();
@@ -1203,7 +1225,7 @@ FileIndexedIO::IndexedFile::IndexedFile( const std::string &filename, IndexedIO:
 		
 			if (! m_device->is_open() )
 			{
-				throw IOException( "FileIndexedIO: Cannot open '" + filename + "' for read " );
+				throw IOException(filename);
 			}
 			
 			m_stream = new FilteredStream();
@@ -1221,7 +1243,7 @@ FileIndexedIO::IndexedFile::IndexedFile( const std::string &filename, IndexedIO:
 			}
 			catch (...)
 			{
-				throw IOException( "FileIndexedIO: Caught error reading index in file '" + filename + "'" );
+				throw IOException(filename);
 			}
 		}
 	}
@@ -1232,7 +1254,7 @@ FileIndexedIO::IndexedFile::IndexedFile( const std::string &filename, IndexedIO:
 		
 		if (! m_device->is_open() )
 		{
-			throw IOException( "FileIndexedIO: Cannot open file '" + filename + "' for read" );
+			throw IOException(filename);
 		}
 		
 		m_stream = new FilteredStream();
@@ -1250,7 +1272,7 @@ FileIndexedIO::IndexedFile::IndexedFile( const std::string &filename, IndexedIO:
 		} 
 		catch (...)
 		{
-			throw IOException( "FileIndexedIO: Caught error while reading index in '" + filename + "'");
+			throw IOException(filename);
 		}
 	}
 
@@ -1320,12 +1342,15 @@ bool FileIndexedIO::canRead( const std::string &path )
 	return Index::canRead( path );
 }
 
-FileIndexedIO::FileIndexedIO( const FileIndexedIO &other, IndexedIO::OpenMode mode )
+FileIndexedIO::FileIndexedIO(const FileIndexedIO &other, const IndexedIO::EntryID &root, IndexedIO::OpenMode mode  )
 {
 	m_mode = mode;
 	m_indexedFile = other.m_indexedFile;
+
+	/// \todo No need to pass "root" as a parameter because we can derive it, according to this assert	
+	assert( root == other.m_currentDirectory.fullPath() );
 	
-	m_currentDirectory = IndexedIOPath( other.m_currentDirectory.fullPath() );
+	m_currentDirectory = IndexedIOPath(root);
 	
 	m_rootDirectoryNode = other.m_currentDirectoryNode;
 	m_currentDirectoryNode = other.m_currentDirectoryNode;
@@ -1349,13 +1374,12 @@ IndexedIOInterfacePtr FileIndexedIO::resetRoot() const
 		mode |= IndexedIO::Append;
 	}
 		
-	return new FileIndexedIO(*this, mode);
+	return new FileIndexedIO(*this, m_currentDirectory.fullPath(), mode);
 }
 
 FileIndexedIO::FileIndexedIO(const std::string &path, const IndexedIO::EntryID &root, IndexedIO::OpenMode mode)
 {
 	validateOpenMode(mode);
-	m_mode = mode;
 	const fs::path p = fs::path(path);
 	const std::string filename = p.native_file_string();
 	m_currentDirectory = IndexedIOPath(root);
@@ -1375,7 +1399,7 @@ FileIndexedIO::FileIndexedIO(const std::string &path, const IndexedIO::EntryID &
 	{
 		if(!exists(m_currentDirectory.fullPath(), IndexedIO::Directory))
 		{
-			throw IOException( "FileIndexedIO: Cannot find directory '" + m_currentDirectory.fullPath() + "' in '" + filename + "'" );
+			throw IOException(filename);
 		}
 	}
 	else
@@ -1398,11 +1422,6 @@ FileIndexedIO::FileIndexedIO(const std::string &path, const IndexedIO::EntryID &
 
 FileIndexedIO::~FileIndexedIO()
 {	
-}
-
-IndexedIO::OpenMode FileIndexedIO::openMode() const
-{
-	return m_mode;
 }
 
 IndexedIO::EntryID FileIndexedIO::pwd()
@@ -1487,7 +1506,7 @@ void FileIndexedIO::chdir(const IndexedIO::EntryID &name)
 	
 	if (!found || node->m_entry.entryType() != IndexedIO::Directory)
 	{
-		throw IOException( "FileIndexedIO: Entry not found '" + m_currentDirectory.fullPath() + "/" +name + "'" );
+		throw IOException(name);
 	}
 
 	m_currentDirectory.append(name);
@@ -1534,7 +1553,7 @@ unsigned long FileIndexedIO::rm(const IndexedIO::EntryID &name, bool throwIfNonE
 	{
 		if (throwIfNonExistent)
 		{
-			throw IOException( "FileIndexedIO: Entry not found '" + name + "'" );
+			throw IOException(name);
 		}
 		else
 		{
@@ -1589,7 +1608,7 @@ IndexedIO::Entry FileIndexedIO::ls(const IndexedIO::EntryID &name)
 	
 	if (!found)
 	{
-		throw IOException( "FileIndexedIO: Entry not found '" + name + "'" );
+		throw IOException(name);
 	}
 	
 	return node->m_entry;
@@ -1623,7 +1642,7 @@ void FileIndexedIO::write(const IndexedIO::EntryID &name, const T *x, unsigned l
 	}
 	else
 	{
-		throw IOException( "FileIndexedIO: Could not insert node '" + name + "' into index" );
+		throw IOException( name );
 	}
 }
 
@@ -1654,7 +1673,7 @@ void FileIndexedIO::write(const IndexedIO::EntryID &name, const T &x)
 	}
 	else
 	{
-		throw IOException( "FileIndexedIO: Could not insert node '" + name + "' into index" );
+		throw IOException( name );
 	}
 }
 
@@ -1669,7 +1688,7 @@ void FileIndexedIO::read(const IndexedIO::EntryID &name, T *&x, unsigned long ar
 	
 	if (!found || node->m_entry.entryType() != IndexedIO::File)
 	{
-		throw IOException( "FileIndexedIO: Entry not found '" + name + "'" );
+		throw IOException(name);
 	}
 	
 	m_indexedFile->seekg( node );
@@ -1693,7 +1712,7 @@ void FileIndexedIO::read(const IndexedIO::EntryID &name, T &x) const
 	
 	if (!found || node->m_entry.entryType() != IndexedIO::File)
 	{
-		throw IOException( "FileIndexedIO: Entry not found '" + name + "'" );
+		throw IOException(name);
 	}
 
 	m_indexedFile->seekg( node );
@@ -1728,14 +1747,9 @@ void FileIndexedIO::write(const IndexedIO::EntryID &name, const int *x, unsigned
 	write<int>(name, x, arrayLength);
 }
 
-void FileIndexedIO::write(const IndexedIO::EntryID &name, const int64_t *x, unsigned long arrayLength)
+void FileIndexedIO::write(const IndexedIO::EntryID &name, const long *x, unsigned long arrayLength)
 {
-	write<int64_t>(name, x, arrayLength);
-}
-
-void FileIndexedIO::write(const IndexedIO::EntryID &name, const uint64_t *x, unsigned long arrayLength)
-{
-	write<uint64_t>(name, x, arrayLength);
+	write<long>(name, x, arrayLength);
 }
 
 void FileIndexedIO::write(const IndexedIO::EntryID &name, const unsigned int *x, unsigned long arrayLength)
@@ -1758,16 +1772,6 @@ void FileIndexedIO::write(const IndexedIO::EntryID &name, const std::string *x, 
 	write<std::string>(name, x, arrayLength);
 }
 
-void FileIndexedIO::write(const IndexedIO::EntryID &name, const short *x, unsigned long arrayLength)
-{
-	write<short>(name, x, arrayLength);
-}
-
-void FileIndexedIO::write(const IndexedIO::EntryID &name, const unsigned short *x, unsigned long arrayLength)
-{
-	write<unsigned short>(name, x, arrayLength);
-}
-
 void FileIndexedIO::write(const IndexedIO::EntryID &name, const float &x)
 {
 	write<float>(name, x);
@@ -1788,14 +1792,9 @@ void FileIndexedIO::write(const IndexedIO::EntryID &name, const int &x)
 	write<int>(name, x);
 }
 
-void FileIndexedIO::write(const IndexedIO::EntryID &name, const int64_t &x)
+void FileIndexedIO::write(const IndexedIO::EntryID &name, const long &x)
 {
-	write<int64_t>(name, x);
-}
-
-void FileIndexedIO::write(const IndexedIO::EntryID &name, const uint64_t &x)
-{
-	write<uint64_t>(name, x);
+	write<long>(name, x);
 }
 
 void FileIndexedIO::write(const IndexedIO::EntryID &name, const std::string &x)
@@ -1818,15 +1817,6 @@ void FileIndexedIO::write(const IndexedIO::EntryID &name, const unsigned char &x
 	write<unsigned char>(name, x);
 }
 
-void FileIndexedIO::write(const IndexedIO::EntryID &name, const short &x)
-{
-	write<short>(name, x);
-}
-
-void FileIndexedIO::write(const IndexedIO::EntryID &name, const unsigned short &x)
-{
-	write<unsigned short>(name, x);
-}
 // Read
 
 void FileIndexedIO::read(const IndexedIO::EntryID &name, float *&x, unsigned long arrayLength)
@@ -1849,14 +1839,9 @@ void FileIndexedIO::read(const IndexedIO::EntryID &name, int *&x, unsigned long 
 	read<int>(name, x, arrayLength);
 }
 
-void FileIndexedIO::read(const IndexedIO::EntryID &name, int64_t *&x, unsigned long arrayLength)
+void FileIndexedIO::read(const IndexedIO::EntryID &name, long *&x, unsigned long arrayLength)
 {
-	read<int64_t>(name, x, arrayLength);
-}
-
-void FileIndexedIO::read(const IndexedIO::EntryID &name, uint64_t *&x, unsigned long arrayLength)
-{
-	read<uint64_t>(name, x, arrayLength);
+	read<long>(name, x, arrayLength);
 }
 
 void FileIndexedIO::read(const IndexedIO::EntryID &name, unsigned int *&x, unsigned long arrayLength)
@@ -1879,16 +1864,6 @@ void FileIndexedIO::read(const IndexedIO::EntryID &name, std::string *&x, unsign
 	read<std::string>(name, x, arrayLength);
 }
 
-void FileIndexedIO::read(const IndexedIO::EntryID &name, short *&x, unsigned long arrayLength)
-{
-	read<short>(name, x, arrayLength);
-}
-
-void FileIndexedIO::read(const IndexedIO::EntryID &name, unsigned short *&x, unsigned long arrayLength)
-{
-	read<unsigned short>(name, x, arrayLength);
-}
-
 void FileIndexedIO::read(const IndexedIO::EntryID &name, float &x)
 {
 	read<float>(name, x);
@@ -1909,14 +1884,9 @@ void FileIndexedIO::read(const IndexedIO::EntryID &name, int &x)
 	read<int>(name, x);
 }
 
-void FileIndexedIO::read(const IndexedIO::EntryID &name, int64_t &x)
+void FileIndexedIO::read(const IndexedIO::EntryID &name, long &x)
 {
-	read<int64_t>(name, x);
-}
-
-void FileIndexedIO::read(const IndexedIO::EntryID &name, uint64_t &x)
-{
-	read<uint64_t>(name, x);
+	read<long>(name, x);
 }
 
 void FileIndexedIO::read(const IndexedIO::EntryID &name, std::string &x)
@@ -1937,14 +1907,4 @@ void FileIndexedIO::read(const IndexedIO::EntryID &name, char &x)
 void FileIndexedIO::read(const IndexedIO::EntryID &name, unsigned char &x)
 {
 	read<unsigned char>(name, x);
-}
-
-void FileIndexedIO::read(const IndexedIO::EntryID &name, short &x)
-{
-	read<short>(name, x);
-}
-
-void FileIndexedIO::read(const IndexedIO::EntryID &name, unsigned short &x)
-{
-	read<unsigned short>(name, x);
 }

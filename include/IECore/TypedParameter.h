@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -50,10 +50,8 @@ class TypedParameter : public Parameter
 	
 		typedef T ValueType;
 		typedef TypedData<T> ObjectType;
-
-		IE_CORE_DECLAREMEMBERPTR( TypedParameter<T> );		
-		IE_CORE_DECLAREPTR( ObjectType );
-		
+		typedef boost::intrusive_ptr<ObjectType> ObjectTypePtr;
+		typedef boost::intrusive_ptr<const ObjectType> ConstObjectTypePtr;
 		typedef std::map<std::string, T> PresetsMap;
 		typedef std::map<std::string, ObjectTypePtr> ObjectPresetsMap;
 	
@@ -87,7 +85,6 @@ class TypedParameter : public Parameter
 		/// Convenience function for value getting, which avoids all the hoop jumping
 		/// needed to extract the value from the Object returned by Parameter::getValue().
 		/// Throws an Exception if the value is not valid.
-		ValueType &getTypedValue();
 		const ValueType &getTypedValue() const;
 		/// Convenience function for value setting, constructs a TypedData<T> from value
 		/// and calls Parameter::setValue().

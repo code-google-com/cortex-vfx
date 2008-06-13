@@ -59,11 +59,8 @@ using namespace std;
 
 ImageDiffOp::ImageDiffOp()
 		:	Op(
-		        staticTypeName(),			
-			"Evaluates the root-mean-squared error between two images and returns true if it "
-			"exceeds a specified threshold. Unless the \"skip missing channels\" parameter is "
-			"enabled, it will also return true if either image contains a channel which  "
-			"the other doesn't.",
+		        staticTypeName(),
+		        "todo",
 		        new BoolParameter(
 		                "result",
 		                "True if the image differ, false if they're considered the same",
@@ -183,7 +180,8 @@ ObjectPtr ImageDiffOp::doOperation( ConstCompoundObjectPtr operands )
 	assert( imageA );
 	assert( imageB );
 	
-	if ( !imageA->arePrimitiveVariablesValid() || !imageB->arePrimitiveVariablesValid() )
+	/// \todo Remove const_cast once arePrimitiveVariablesValid is const
+	if ( !boost::const_pointer_cast<ImagePrimitive>(imageA)->arePrimitiveVariablesValid() || !boost::const_pointer_cast<ImagePrimitive>(imageB)->arePrimitiveVariablesValid() )
 	{
 		throw InvalidArgumentException( "ImageDiffOp: Image with invalid primitive variables specified as input parameter" );
 	}

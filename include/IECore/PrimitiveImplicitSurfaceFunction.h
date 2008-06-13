@@ -50,7 +50,8 @@ namespace IECore
 class PrimitiveImplicitSurfaceFunction : public ImplicitSurfaceFunction< Imath::V3f, float >
 {
         public:
-		IE_CORE_DECLAREMEMBERPTR( PrimitiveImplicitSurfaceFunction );
+                typedef boost::intrusive_ptr<PrimitiveImplicitSurfaceFunction> Ptr;
+                typedef boost::intrusive_ptr<const PrimitiveImplicitSurfaceFunction> ConstPtr;
 		
 		/// Construct the function from the given Primitive. If a PrimitiveEvaluator cannot be created from it an
 		/// InvalidArgumentException is thrown.
@@ -69,7 +70,9 @@ class PrimitiveImplicitSurfaceFunction : public ImplicitSurfaceFunction< Imath::
 	
 		PrimitiveImplicitSurfaceFunction();	
 	
+		PrimitivePtr m_primitive;
 		PrimitiveEvaluatorPtr m_evaluator;
+		PrimitiveVariableMap::const_iterator nIt;
 };
 
 IE_CORE_DECLAREPTR( PrimitiveImplicitSurfaceFunction );

@@ -76,21 +76,6 @@ class TestJPEGReader(unittest.TestCase):
 		channelNames = r.channelNames()
 		self.assertEqual( len( channelNames ), 1 )
 		self.assert_( channelNames[0]=="Y" )
-
-	def testReadHeader( self ):
-
-		r = Reader.create( "test/IECore/data/jpg/uvMap.512x256.jpg" )
-		self.assertEqual( type(r), JPEGImageReader )
-		h = r.readHeader()
-
-		channelNames = h['channelNames']		
-		self.assertEqual( len( channelNames ), 3 )
-		self.assert_( "R" in channelNames )
-		self.assert_( "G" in channelNames )
-		self.assert_( "B" in channelNames )
-
-		self.assertEqual( h['displayWindow'], Box2iData( Box2i( V2i(0,0), V2i(511,255) ) ) )
-		self.assertEqual( h['dataWindow'], Box2iData( Box2i( V2i(0,0), V2i(511,255) ) ) )
 		
 	def testRead( self ):
 
@@ -238,11 +223,7 @@ class TestJPEGReader(unittest.TestCase):
 					self.assertRaises( RuntimeError, r.read )
 					
 				else:
-					self.assert_( JPEGImageReader.canRead( f ) )
-					self.failIf( CINImageReader.canRead( f ) )
-					self.failIf( EXRImageReader.canRead( f ) )
-					self.failIf( TIFFImageReader.canRead( f ) )					
-										
+				
 					img = r.read()
 					self.assertEqual( type(img), ImagePrimitive )
 					self.assert_( img.arePrimitiveVariablesValid() )	

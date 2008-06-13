@@ -47,7 +47,9 @@
 namespace IECore
 {
 
-IE_CORE_FORWARDDECLARE( Object );
+class Object;
+typedef boost::intrusive_ptr<Object> ObjectPtr;
+typedef boost::intrusive_ptr<const Object> ConstObjectPtr;
 
 #define IE_CORE_DECLAREOBJECTTYPEDESCRIPTION( TYPENAME )																\
 	private :																											\
@@ -61,7 +63,7 @@ IE_CORE_FORWARDDECLARE( Object );
 		
 #define IE_CORE_DECLAREOBJECTMEMBERFNS( TYPENAME )																		\
 	public :																											\
-		TYPENAME::Ptr copy() const { return boost::static_pointer_cast<TYPENAME>( Object::copy() ); }	\
+		boost::intrusive_ptr<TYPENAME> copy() const { return boost::static_pointer_cast<TYPENAME>( Object::copy() ); }	\
 		bool isEqualTo( IECore::ConstObjectPtr other ) const;															\
 	protected :																											\
 		virtual void copyFrom( IECore::ConstObjectPtr other, IECore::Object::CopyContext *context );					\
@@ -119,7 +121,21 @@ class Object : public RunTimeTyped, private boost::noncopyable
 		/// Returns a deep copy of this object. In subclasses an
 		/// identical function is provided which returns a pointer
 		/// to the subclass rather than to this base class.
-		ObjectPtr copy() const;		
+		ObjectPtr copy() const;
+		/// Saves the object.
+		/// \param path The path on which to save - this is passed to
+		/// IndexedIOInterface::create() in order to obtain a suitable
+		/// io interface.
+		/// \deprecated The ObjectWriter class should be
+		/// used in preference to this method.
+		void save( const std::string &path ) const;
+		/// Saves the object.
+		/// \param ioInterface The ioInterface to use for data output.
+		/// The object will be saved in the current directory of the 
+		/// ioInterface object.
+		/// \deprecated You should use the form below, where a name is
+		/// specified.
+		void save( IndexedIOInterfacePtr ioInterface ) const;
 		/// Saves the object in the current directory of ioInterface, in
 		/// a subdirectory with the specified name.
 		void save( IndexedIOInterfacePtr ioInterface, const IndexedIO::EntryID &name ) const;
@@ -164,9 +180,25 @@ class Object : public RunTimeTyped, private boost::noncopyable
 		static ObjectPtr create( TypeId typeId );
 		/// Creates an instance of an object of the specified type.
 		/// Throws an Exception if typeName is not a valid type.
-		static ObjectPtr create( const std::string &typeName );		
+		static ObjectPtr create( const std::string &typeName );
+		/// Loads a previously save()d object.
+		/// \param path A path passed to IndexedIOInterface::create()
+		/// to make an appropriate IndexedIOInterface for the file type.
+		/// \deprecated The ObjectReader class should be used in
+		/// preference to this one.
+		static ObjectPtr load( const std::string &path );
+		/// Loads a previously save()d object.
+		/// \param ioInterface An io object with the root and 
+		/// current directory at the same point as it was when the
+		/// equivalent call to save() was made.
+		/// \deprecated You should use the form below, which specifies
+		/// a name.
+		static ObjectPtr load( IndexedIOInterfacePtr ioInterface );
 		/// Loads an object previously saved with the given name in the current directory
-		/// of ioInterface.
+		/// of ioInterface. As a convenience this function will also load objects
+		/// saved using the deprecated form of save(), where name specifies the directory which
+		/// was current at the point of saving. This provides useful support when
+		/// transitioning from use of the deprecated function to the new form.
 		static ObjectPtr load( IndexedIOInterfacePtr ioInterface, const IndexedIO::EntryID &name );
 		/// Returns the corresponding TypeId for the specified
 		/// typeName, or InvalidTypeId if typeName is not a
@@ -189,11 +221,7 @@ class Object : public RunTimeTyped, private boost::noncopyable
 		class TypeDescription
 		{
 			public :
-				/// Registers the object using its static typeId and static typename
 				TypeDescription();
-				
-				/// Registers the object using a specified typeId and typename
-				TypeDescription( TypeId alternateTypeId, const std::string &alternateTypeName );
 			private :
 				static ObjectPtr creator();
 		};
@@ -288,7 +316,7 @@ class Object : public RunTimeTyped, private boost::noncopyable
 				IndexedIOInterfacePtr container( const std::string &typeName, unsigned int &ioVersion );
 				template<class T>
 				/// Load an Object instance previously saved by SaveContext::save().
-				typename T::Ptr load( IndexedIOInterfacePtr container, const IndexedIO::EntryID &name );
+				boost::intrusive_ptr<T> load( IndexedIOInterfacePtr container, const IndexedIO::EntryID &name );
 				/// Returns an interface to a raw container created by SaveContext::rawContainer() - please see
 				/// documentation and cautionary notes for that function.
 				IndexedIOInterfacePtr rawContainer();
@@ -308,7 +336,7 @@ class Object : public RunTimeTyped, private boost::noncopyable
 				boost::shared_ptr<LoadedObjectMap> m_loadedObjects;
 				boost::shared_ptr<ContainerRootsMap> m_containerRoots;
 		};
-		IE_CORE_DECLAREPTR( LoadContext );
+		typedef boost::intrusive_ptr<LoadContext> LoadContextPtr;
 		
 		/// Must be implemented in all derived classes. Implementations should first call the parent class
 		/// save() method, then call context->container() before filling the returned container with

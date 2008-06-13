@@ -47,10 +47,12 @@ namespace IECore
 {
 
 /// A model of ImplicitSurfaceFunction for creating a signed distance field with respect to a MeshPrimitive.
+/// \deprecated In future versions PrimitiveImplicitSurfaceFunction will be able to acheive the same functionality as this class, as it will defer all work to the PrimitiveEvaluator itself
 class MeshPrimitiveImplicitSurfaceFunction : public PrimitiveImplicitSurfaceFunction
 {
         public:
-		IE_CORE_DECLAREMEMBERPTR( MeshPrimitiveImplicitSurfaceFunction );
+                typedef boost::intrusive_ptr<MeshPrimitiveImplicitSurfaceFunction> Ptr;
+                typedef boost::intrusive_ptr<const MeshPrimitiveImplicitSurfaceFunction> ConstPtr;
 		
 		MeshPrimitiveImplicitSurfaceFunction( MeshPrimitivePtr mesh );
 		
@@ -61,6 +63,20 @@ class MeshPrimitiveImplicitSurfaceFunction : public PrimitiveImplicitSurfaceFunc
 		
 		// Retrieve the signed distance from the mesh at the given point		
 		virtual Value getValue( const Point &p );
+
+		
+	protected:	
+	
+		typedef int VertexIndex;
+		typedef int TriangleIndex;
+		typedef std::pair<VertexIndex, VertexIndex> Edge;		
+		
+		typedef std::map< Edge, Imath::V3f > EdgeAverageNormals;		
+		EdgeAverageNormals m_edgeAverageNormals;
+	
+		V3fVectorDataPtr m_vertexAngleWeightedNormals;
+		
+		ConstV3fVectorDataPtr m_P;				
 };
 
 IE_CORE_DECLAREPTR( MeshPrimitiveImplicitSurfaceFunction );

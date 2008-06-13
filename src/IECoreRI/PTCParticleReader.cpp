@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,7 +41,7 @@
 #include "IECore/ByteOrder.h"
 #include "IECore/MessageHandler.h"
 #include "IECore/FileNameParameter.h"
-#include "IECore/DespatchTypedData.h"
+#include "IECore/TypedDataDespatch.h"
 
 #include "OpenEXR/ImathRandom.h"
 
@@ -274,20 +274,27 @@ ObjectPtr PTCParticleReader::doOperation( ConstCompoundObjectPtr operands )
 			msg( Msg::Warning, "ParticleReader::doOperation", format( "Attribute %s expected but not found." ) % *it );
 			continue;
 		}
-		
 		DataPtr d = itData->second;
-		
-		PrimitiveVariable::Interpolation interp = despatchTypedData< TypedDataInterpolation, TypeTraits::IsTypedData, DespatchTypedDataIgnoreError >( boost::const_pointer_cast<Data>( d ) );
-		
-		if ( interp == PrimitiveVariable::Invalid )
+		try
 		{
-			msg( Msg::Warning, "ParticleReader::doOperation", format( "Ignoring attribute \"%s\" due to unsupported type \"%s\"." ) % *it % d->typeName() );
+			// throws if it's not vector data
+			despatchVectorTypedDataFn<size_t, VectorTypedDataSize, VectorTypedDataSizeArgs>( d, VectorTypedDataSizeArgs() );
+			result->variables.insert( PrimitiveVariableMap::value_type( *it, PrimitiveVariable( PrimitiveVariable::Vertex, d ) ) );
 		}
-		else
+		catch( ... )
 		{
-			result->variables.insert( PrimitiveVariableMap::value_type( *it, PrimitiveVariable( interp, d ) ) );
+			// not vector data, maybe it's some sort of constant data
+			try
+			{
+				// throws if not simple data
+				despatchSimpleTypedDataFn<const void *, SimpleTypedDataAddress, SimpleTypedDataAddressArgs>( d, SimpleTypedDataAddressArgs() );
+				result->variables.insert( PrimitiveVariableMap::value_type( *it, PrimitiveVariable( PrimitiveVariable::Constant, d ) ) );
+			}
+			catch( ... )
+			{
+				msg( Msg::Warning, "ParticleReader::doOperation", format( "Ignoring attribute \"%s\" due to unsupported type \"%s\"." ) % *it % d->typeName() );
+			}
 		}
-		
 	}
 
 	// set blindData in the PointPrimitive object.

@@ -174,17 +174,6 @@ const typename TypedParameter<T>::ValueType &TypedParameter<T>::typedDefaultValu
 }
 
 template<typename T>
-typename TypedParameter<T>::ValueType &TypedParameter<T>::getTypedValue()
-{
-	ConstObjectTypePtr tValue = runTimeCast<const ObjectType>( getValue() );
-	if( !tValue )
-	{
-		throw Exception( string( "Value is not an instance of \"" ) + ObjectType::staticTypeName() + "\"");
-	}
-	return static_pointer_cast<TypedData<T> >( getValue() )->writable();
-}
-
-template<typename T>
 const typename TypedParameter<T>::ValueType &TypedParameter<T>::getTypedValue() const
 {
 	ConstObjectTypePtr tValue = runTimeCast<const ObjectType>( getValue() );

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -61,13 +61,6 @@ Object::TypeDescription<T>::TypeDescription()
 }
 
 template<class T>
-Object::TypeDescription<T>::TypeDescription( TypeId alternateTypeId, const std::string &alternateTypeName )
-{
-	Object::registerType( alternateTypeId, alternateTypeName, creator );
-}
-
-
-template<class T>
 ObjectPtr Object::TypeDescription<T>::creator()
 {
 	return new T;
@@ -80,7 +73,7 @@ Object::AbstractTypeDescription<T>::AbstractTypeDescription()
 }
 
 template<class T>
-typename T::Ptr Object::LoadContext::load( IndexedIOInterfacePtr i, const IndexedIO::EntryID &name )
+boost::intrusive_ptr<T> Object::LoadContext::load( IndexedIOInterfacePtr i, const IndexedIO::EntryID &name )
 {
 	return runTimeCast<T>( loadObjectOrReference( i, name ) );
 }

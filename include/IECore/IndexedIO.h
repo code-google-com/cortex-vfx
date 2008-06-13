@@ -40,9 +40,6 @@
 
 namespace IECore 
 {
-
-class FileIndexedIO;
-
 namespace IndexedIO
 {
 	enum OpenModeFlags
@@ -73,8 +70,8 @@ namespace IndexedIO
 		DoubleArray,
 		Int,
 		IntArray,
-		Long, /// Obsolete
-		LongArray, /// Obsolete
+		Long,
+		LongArray,
 		String,
 		StringArray,
 		UInt,
@@ -84,15 +81,7 @@ namespace IndexedIO
 		UChar,
 		UCharArray,
 		Half,
-		HalfArray,
-		Short,
-		ShortArray,
-		UShort,
-		UShortArray,
-		Int64,
-		Int64Array,
-		UInt64,
-		UInt64Array
+		HalfArray
 	} DataType;
 	
 	typedef std::string EntryID;
@@ -106,7 +95,7 @@ namespace IndexedIO
 			Entry( const EntryID &id, EntryType eType, DataType dType, unsigned long arrayLength);
 
 			/// ID, or name, of the file/directory
-			const EntryID &id() const;
+			EntryID id() const;
 
 			/// Returns either Directory or File.
 			EntryType entryType() const;
@@ -114,17 +103,9 @@ namespace IndexedIO
 			/// Should only be called on instances which represent files. Returns the type of data held by in the file. If this entry does not represent a file
 			/// an IOException is thrown.
 			DataType dataType() const;
-			
-			/// Convenience method to return if entry respresents an array. If Entry's datatype is not an array then an IOException is thrown. 
-			bool isArray() const;
-					
-			/// Convenience method to return size of array. If Entry's datatype is not an array then an IOException is thrown. 
-			unsigned long arrayLength() const;
-			
-			/// Convenience method to return if a data is an array or not
-			static bool isArray( DataType dType );
 		
-		protected:
+			/// Convenience method to calculate size of array. If Entry's datatype is not an array then an IOException is thrown. 
+			unsigned long arrayLength() const;
 		
 			EntryID m_ID;
 			EntryType m_entryType;

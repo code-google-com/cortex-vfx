@@ -127,19 +127,10 @@ void IndexedIOPath::buildPath() const
 	}
 	
 	m_path = rootPath();
-	
-	/// Make sure we don't have a duplicate separator (if root ends with one, and relative path starts with one)
 	if (r.size() > 1)
 	{
-		if (m_path.size() && m_path[ m_path.size() -1 ] == g_separator && r[0] == g_separator )
-		{
-			m_path += r.substr(1, std::string::npos);
-		}
-		else
-		{
-			m_path += r;
-		}
-	}
+		m_path += r;
+	}	
 		
 	if (m_isAbsolute && (!m_path.size() || m_path[0] != g_separator))
 	{		
@@ -238,17 +229,8 @@ void IndexedIOPath::append( const std::string &path )
 				std::string::size_type n = endPos-startPos;
 				if(endPos == pathSize-1)
 					n++;
-				
-				if ( startPos == 0 && n == path.size() )
-				{		
-					assert( path[path.size()-1] == g_separator );
-					
-					append( path.substr( startPos, n-1 ) );												
-				}
-				else
-				{					
-					append( path.substr( startPos, n ) );					
-				}
+
+				append( path.substr( startPos, n ) );
 				startPos = endPos + 1;
 				endPos = startPos;
 			}
@@ -388,7 +370,3 @@ std::string IndexedIOPath::tail() const
 			
 }
 		
-bool IndexedIOPath::hasRootDirectory() const
-{
-	return m_isAbsolute;
-}

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,6 +35,7 @@
 #include <iostream>
 
 #include <IECore/IndexedIOInterface.h>
+#include <IECore/SQLiteIndexedIO.h>
 #include <IECore/FileIndexedIO.h>
 
 #include "IndexedIOTest.h"
@@ -44,9 +45,38 @@ namespace IECore
 {
 
 template<>
+std::string IndexedIOTestSuite<SQLiteIndexedIO>::extension() const
+{
+	return "sql";
+}
+
+template<>
 std::string IndexedIOTestSuite<FileIndexedIO>::extension() const
 {
 	return "fio";
+}
+
+template<>
+void IndexedIOTestSuite<SQLiteIndexedIO>::getFilenames( FilenameList &filenames )
+{
+	filenames.clear();
+	
+	filenames.push_back("./test/IECore/data/sqlFiles/0.0.3/rhel4.i686/types.sql");
+	filenames.push_back("./test/IECore/data/sqlFiles/0.0.3/osx104.ppc/types.sql");
+	filenames.push_back("./test/IECore/data/sqlFiles/0.0.3/osx104.i686/types.sql");
+	
+	filenames.push_back("./test/IECore/data/sqlFiles/0.1.0/rhel4.i686/types.sql");
+	filenames.push_back("./test/IECore/data/sqlFiles/0.1.0/osx104.ppc/types.sql");
+	filenames.push_back("./test/IECore/data/sqlFiles/0.1.0/osx104.i686/types.sql");
+	
+	filenames.push_back("./test/IECore/data/sqlFiles/1.0.0/rhel4.i686/types.sql");	
+	filenames.push_back("./test/IECore/data/sqlFiles/1.0.0/osx104.i686/types.sql");
+	
+	filenames.push_back("./test/IECore/data/sqlFiles/2.0.0/rhel4.i686/types.sql");	
+	filenames.push_back("./test/IECore/data/sqlFiles/2.0.0/osx104.i686/types.sql");
+	
+	filenames.push_back("./test/IECore/data/sqlFiles/2.13.0/rhel4.i686/types.sql");	
+	filenames.push_back("./test/IECore/data/sqlFiles/2.13.0/osx104.i686/types.sql");		
 }
 
 template<>
@@ -55,9 +85,7 @@ void IndexedIOTestSuite<FileIndexedIO>::getFilenames( FilenameList &filenames )
 	filenames.clear();
 	
 	filenames.push_back("./test/IECore/data/fioFiles/2.13.0/rhel4.i686/types.fio");
-	filenames.push_back("./test/IECore/data/fioFiles/2.13.0/osx104.i686/types.fio");
-	filenames.push_back("./test/IECore/data/fioFiles/3.0.0/rhel4.i686/types.fio");
-	filenames.push_back("./test/IECore/data/fioFiles/3.0.0/cent5.x86_64/types.fio");			
+	filenames.push_back("./test/IECore/data/fioFiles/2.13.0/osx104.i686/types.fio");			
 }
 
 /// float 
@@ -169,56 +197,29 @@ int* IndexedIOTestDataTraits<int*>::value()
 	return v;
 } 
 
-/// int64_t 
+/// long 
 template<>
-std::string IndexedIOTestDataTraits<int64_t>::name() 
+std::string IndexedIOTestDataTraits<long>::name() 
 {
-	return "int64";
+	return "long";
 }
 
 template<>
-int64_t IndexedIOTestDataTraits<int64_t>::value()
+long IndexedIOTestDataTraits<long>::value()
 {
-	return -888;
+	return -222;
 } 
 
 template<>
-std::string IndexedIOTestDataTraits<int64_t*>::name() 
+std::string IndexedIOTestDataTraits<long*>::name() 
 {
-	return "int64Array";
+	return "longArray";
 }
 
 template<>
-int64_t* IndexedIOTestDataTraits<int64_t*>::value()
+long* IndexedIOTestDataTraits<long*>::value()
 {
-	static int64_t v[10] = {1,2,3,4,5,6,7,8,9,10};
-	
-	return v;
-} 
-
-/// uint64_t 
-template<>
-std::string IndexedIOTestDataTraits<uint64_t>::name() 
-{
-	return "uint64";
-}
-
-template<>
-uint64_t IndexedIOTestDataTraits<uint64_t>::value()
-{
-	return 999;
-} 
-
-template<>
-std::string IndexedIOTestDataTraits<uint64_t*>::name() 
-{
-	return "uint64Array";
-}
-
-template<>
-uint64_t* IndexedIOTestDataTraits<uint64_t*>::value()
-{
-	static uint64_t v[10] = {1,2,3,4,5,6,7,8,9,10};
+	static long v[10] = {1,2,3,4,5,6,7,8,9,10};
 	
 	return v;
 } 
@@ -332,63 +333,11 @@ unsigned char* IndexedIOTestDataTraits<unsigned char*>::value()
 	return v;
 } 
 
-/// short 
-template<>
-std::string IndexedIOTestDataTraits<short>::name() 
-{
-	return "short";
-}
-
-template<>
-short IndexedIOTestDataTraits<short>::value()
-{
-	return 12;
-} 
-
-template<>
-std::string IndexedIOTestDataTraits<short*>::name() 
-{
-	return "shortArray";
-}
-
-template<>
-short* IndexedIOTestDataTraits<short*>::value()
-{
-	static short v[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-	
-	return v;
-} 
-
-
-/// unsigned short 
-template<>
-std::string IndexedIOTestDataTraits<unsigned short>::name() 
-{
-	return "unsignedshort";
-}
-
-template<>
-unsigned short IndexedIOTestDataTraits<unsigned short>::value()
-{
-	return 5;
-} 
-
-template<>
-std::string IndexedIOTestDataTraits<unsigned short*>::name() 
-{
-	return "unsignedshortArray";
-}
-
-template<>
-unsigned short* IndexedIOTestDataTraits<unsigned short*>::value()
-{
-	static unsigned short v[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-	
-	return v;
-} 
-
 void addIndexedIOTest(boost::unit_test::test_suite* test)
 {
+#ifdef IECORE_WITH_SQLITE
+	test->add( new IndexedIOTestSuite<SQLiteIndexedIO>() );
+#endif
 	test->add( new IndexedIOTestSuite<FileIndexedIO>() );
 }
 

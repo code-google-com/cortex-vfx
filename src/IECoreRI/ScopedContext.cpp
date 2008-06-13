@@ -37,11 +37,10 @@
 using namespace IECoreRI;
 
 ScopedContext::ScopedContext( RtContextHandle context )
-	:	m_contextWasNull( context==RI_NULL )
+	:	m_contextWasNull( context==RI_NULL ), m_previousContext( RiGetContext() )
 {
 	if( !m_contextWasNull )
 	{
-		m_previousContext = RiGetContext();
 		RiContext( context );
 	}
 }

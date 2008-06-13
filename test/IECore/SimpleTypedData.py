@@ -78,6 +78,24 @@ class SimpleTypedDataTest(unittest.TestCase):
 		self.assertEqual( str( UIntData() ), "0" )
 		self.assertEqual( repr( UIntData() ), "UIntData( 0 )" )
 
+	def testLongData(self):
+		"""Test LongData"""
+		a = LongData()
+		self.assert_(type(a) is LongData)
+		b = LongData(1)
+		c = b.copy()
+		self.assertEqual(b.value, 1)
+		self.assertEqual(long(b), 1)
+		b.value = 2
+		self.assertEqual(b.value, 2)
+		a = LongData(2)
+		self.assert_(c < b)
+		self.assert_(not c > b)
+		self.assert_(a == b)
+		self.assert_(not a == c)
+		self.assertEqual( str( LongData() ), "0" )
+		self.assertEqual( repr( LongData() ), "LongData( 0 )" )
+
 	def testFloatData(self):
 		"""Test FloatData"""
 		a = FloatData()
@@ -201,43 +219,7 @@ class SimpleTypedDataTest(unittest.TestCase):
 		self.assert_(a == b)
 		self.assert_(not a == c)
 		self.assertEqual( str( UShortData() ), "0" )
-		self.assertEqual( repr( UShortData() ), "UShortData( 0 )" )
-		
-	def testInt64Data(self):
-		"""Test Int64Data"""
-		a = Int64Data()
-		self.assert_(type(a) is Int64Data)
-		b = Int64Data(1)
-		c = b.copy()
-		self.assertEqual(b.value, 1)
-		self.assertEqual(long(b), 1)
-		b.value = 2
-		self.assertEqual(b.value, 2)
-		a = Int64Data(2)
-		self.assert_(c < b)
-		self.assert_(not c > b)
-		self.assert_(a == b)
-		self.assert_(not a == c)
-		self.assertEqual( str( Int64Data() ), "0" )
-		self.assertEqual( repr( Int64Data() ), "Int64Data( 0 )" )
-		
-	def testUInt64Data(self):
-		"""Test UInt64Data"""
-		a = UInt64Data()
-		self.assert_(type(a) is UInt64Data)
-		b = UInt64Data(1)
-		c = b.copy()
-		self.assertEqual(b.value, 1)
-		self.assertEqual(long(b), 1)
-		b.value = 2
-		self.assertEqual(b.value, 2)
-		a = UInt64Data(2)
-		self.assert_(c < b)
-		self.assert_(not c > b)
-		self.assert_(a == b)
-		self.assert_(not a == c)
-		self.assertEqual( str( UInt64Data() ), "0" )
-		self.assertEqual( repr( UInt64Data() ), "UInt64Data( 0 )" )		
+		self.assertEqual( repr( UShortData() ), "UShortData( 0 )" )	
 		
 			
 		
@@ -303,7 +285,7 @@ class BoolDataTest( unittest.TestCase ) :
 	
 		a = BoolData()
 		self.assert_(type(a) is BoolData)
-		b = IntData(True)
+		b = LongData(True)
 		c = b.copy()
 		self.assertEqual(b.value, True)
 		b.value = False
@@ -315,23 +297,21 @@ class BoolDataTest( unittest.TestCase ) :
 		o = BoolData( True )
 		self.assertEqual( o.value, True )
 		
-		iface = IndexedIOInterface.create( "test/IECore/o.fio", "/", IndexedIOOpenMode.Write )
-		
-		o.save( iface, "test" )
-		oo = Object.load( iface, "test" )
+		o.save( "test/o.fio" )
+		oo = Object.load( "test/o.fio" )
 		self.assertEqual( o, oo )
 		
 		o = BoolData( False )
 		self.assertEqual( o.value, False )
 		
-		o.save( iface, "test" )
-		oo = Object.load( iface, "test" )
+		o.save( "test/o.fio" )
+		oo = Object.load( "test/o.fio" )
 		self.assertEqual( o, oo )
 		
 	def tearDown( self ) :
 	
-		if os.path.isfile("test/IECore/o.fio"):
-			os.remove("test/IECore/o.fio")		
+		if os.path.isfile("test/o.sql"):
+			os.remove("test/o.sql")		
 			
 if __name__ == "__main__":
     unittest.main()   

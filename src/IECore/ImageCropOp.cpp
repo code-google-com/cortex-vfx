@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,9 +41,8 @@
 #include "IECore/TypedObjectParameter.h"
 #include "IECore/CompoundParameter.h"
 #include "IECore/CompoundObject.h"
-#include "IECore/BoxOps.h"
+#include "IECore/BoxOperators.h"
 #include "IECore/ImagePrimitive.h"
-#include "IECore/DespatchTypedData.h"
 
 #include <cassert>
 
@@ -100,67 +99,47 @@ ImageCropOp::~ImageCropOp()
 {
 }
 
-
-struct ImageCropOp::ImageCropFn
+template< typename T>
+DataPtr cropImageVariable( boost::intrusive_ptr<T> source, const Imath::Box2i &sourceDataWindow, const Imath::Box2i &copyWindow, const Imath::Box2i &targetDataWindow )
 {
-	typedef DataPtr ReturnType;
-	
-	Imath::Box2i m_sourceDataWindow;
-	Imath::Box2i m_copyWindow;
-	Imath::Box2i m_targetDataWindow;	
-	
-	ImageCropFn( const Imath::Box2i &sourceDataWindow, const Imath::Box2i &copyWindow, const Imath::Box2i &targetDataWindow )
-	: m_sourceDataWindow( sourceDataWindow ), m_copyWindow( copyWindow ), m_targetDataWindow( targetDataWindow )
-	{
-	}
+	boost::intrusive_ptr<T> newChannel = new T;
+	int sourceX, sourceY, targetX, targetY, sourceWidth, targetWidth, targetHeight, cropWidth, cropHeight;
+	sourceWidth = sourceDataWindow.max.x - sourceDataWindow.min.x + 1;
+	targetWidth = targetDataWindow.max.x - targetDataWindow.min.x + 1;
+	targetHeight = targetDataWindow.max.y - targetDataWindow.min.y + 1;
+	cropWidth = copyWindow.max.x - copyWindow.min.x + 1;
+	cropHeight = copyWindow.max.y - copyWindow.min.y + 1;
+	sourceX = copyWindow.min.x - sourceDataWindow.min.x;
+	sourceY = copyWindow.min.y - sourceDataWindow.min.y;
+	targetX = copyWindow.min.x - targetDataWindow.min.x;
+	targetY = copyWindow.min.y - targetDataWindow.min.y;
 
-	template< typename T>
-	ReturnType operator()( typename T::Ptr source  )
+	if ( targetWidth > 0 && targetHeight > 0 )
 	{
-		assert( source );
-		
-		typename T::Ptr newChannel = new T;
-		int sourceX, sourceY, targetX, targetY, sourceWidth, targetWidth, targetHeight, cropWidth, cropHeight;
-		sourceWidth = m_sourceDataWindow.max.x - m_sourceDataWindow.min.x + 1;
-		targetWidth = m_targetDataWindow.max.x - m_targetDataWindow.min.x + 1;
-		targetHeight = m_targetDataWindow.max.y - m_targetDataWindow.min.y + 1;
-		cropWidth = m_copyWindow.max.x - m_copyWindow.min.x + 1;
-		cropHeight = m_copyWindow.max.y - m_copyWindow.min.y + 1;
-		sourceX = m_copyWindow.min.x - m_sourceDataWindow.min.x;
-		sourceY = m_copyWindow.min.y - m_sourceDataWindow.min.y;
-		targetX = m_copyWindow.min.x - m_targetDataWindow.min.x;
-		targetY = m_copyWindow.min.y - m_targetDataWindow.min.y;
+		typename T::ValueType &target = newChannel->writable();
+		target.resize( targetWidth * targetHeight );
+		typename T::ValueType::iterator targetIt;
 
-		if ( targetWidth > 0 && targetHeight > 0 )
+		if ( cropWidth < targetWidth || cropHeight < targetHeight )
 		{
-			typename T::ValueType &target = newChannel->writable();
-			target.resize( targetWidth * targetHeight );
-			typename T::ValueType::iterator targetIt;
-
-			if ( cropWidth < targetWidth || cropHeight < targetHeight )
+			for ( targetIt = target.begin(); targetIt != target.end(); targetIt++ )
 			{
-				for ( targetIt = target.begin(); targetIt != target.end(); targetIt++ )
-				{
-					*targetIt = 0;
-				}
-			}
-
-			typename T::ValueType::const_iterator sourceIt = source->readable().begin()+sourceWidth*sourceY+sourceX;
-			targetIt = target.begin()+targetWidth*targetY+targetX;
-
-			for ( int y = 0; y < cropHeight; y++ )
-			{
-				std::copy( sourceIt, sourceIt + cropWidth, targetIt );
-				sourceIt += sourceWidth;
-				targetIt += targetWidth;
+				*targetIt = 0;
 			}
 		}
-		
-		assert( newChannel );
-		return newChannel;
-	}
 
-};
+		typename T::ValueType::const_iterator sourceIt = source->readable().begin()+sourceWidth*sourceY+sourceX;
+		targetIt = target.begin()+targetWidth*targetY+targetX;
+
+		for ( int y = 0; y < cropHeight; y++ )
+		{
+			std::copy( sourceIt, sourceIt + cropWidth, targetIt );
+			sourceIt += sourceWidth;
+			targetIt += targetWidth;
+		}
+	}
+	return newChannel;
+}
 
 void ImageCropOp::modify( ObjectPtr toModify, ConstCompoundObjectPtr operands )
 {
@@ -176,9 +155,9 @@ void ImageCropOp::modify( ObjectPtr toModify, ConstCompoundObjectPtr operands )
 	bool matchDataWindow = m_matchDataWindow->getTypedValue();
 	bool resetOrigin = m_resetOrigin->getTypedValue();
 
-	Imath::Box2i croppedDisplayWindow = boxIntersection( cropBox, image->getDisplayWindow() );
+	Imath::Box2i croppedDisplayWindow = intersection( cropBox, image->getDisplayWindow() );
 	Imath::Box2i dataWindow = image->getDataWindow();
-	Imath::Box2i croppedDataWindow = boxIntersection( croppedDisplayWindow, dataWindow );
+	Imath::Box2i croppedDataWindow = intersection( croppedDisplayWindow, dataWindow );
 	Imath::Box2i newDisplayWindow = croppedDisplayWindow;
 	Imath::Box2i newDataWindow;
 
@@ -198,19 +177,33 @@ void ImageCropOp::modify( ObjectPtr toModify, ConstCompoundObjectPtr operands )
 
 		switch ( channel.interpolation )
 		{
-			case PrimitiveVariable::Vertex:
-			case PrimitiveVariable::Varying:
-			case PrimitiveVariable::FaceVarying:
-				{			
-					ImageCropFn fn( dataWindow, croppedDataWindow, newDataWindow );
+		case PrimitiveVariable::Vertex:
+		case PrimitiveVariable::Varying:
+		case PrimitiveVariable::FaceVarying:
 
-					channel.data = despatchTypedData< ImageCropFn, TypeTraits::IsNumericVectorTypedData >( data, fn );			
-				}
-				break;
-			
-			default:
-				// do nothing.
-				break;
+			if ( data->typeId() == FloatVectorDataTypeId )
+			{
+				channel.data = cropImageVariable( boost::static_pointer_cast< FloatVectorData >(data),
+										dataWindow, croppedDataWindow, newDataWindow );
+			}
+			else if (data->typeId() == HalfVectorDataTypeId )
+			{
+				channel.data = cropImageVariable( boost::static_pointer_cast< HalfVectorData >(data),
+										dataWindow, croppedDataWindow, newDataWindow );
+			}
+			else if (data->typeId() == UIntVectorDataTypeId )
+			{
+				channel.data = cropImageVariable( boost::static_pointer_cast< UIntVectorData >(data),
+										dataWindow, croppedDataWindow, newDataWindow );
+			}
+			else
+			{
+				throw Exception( "Invalid channel type in input image!" );
+			}
+			break;
+		default:
+			// do nothing.
+			break;
 		}
 	}
 
@@ -224,4 +217,3 @@ void ImageCropOp::modify( ObjectPtr toModify, ConstCompoundObjectPtr operands )
 	image->setDataWindow( newDisplayWindow );
 	image->setDisplayWindow( newDataWindow );
 }
-

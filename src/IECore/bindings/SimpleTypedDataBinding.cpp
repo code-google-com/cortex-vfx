@@ -33,9 +33,6 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include <boost/python.hpp>
-
-#include <limits.h>
-
 #include <boost/python/make_constructor.hpp>
 
 #include "OpenEXR/ImathLimits.h"
@@ -69,7 +66,7 @@ static intrusive_ptr<T> construct()
 
 /// Half needs explicit initialisation
 template<>
-intrusive_ptr<HalfData> construct()
+static intrusive_ptr<HalfData> construct()
 {
 	return new HalfData(0);
 }
@@ -110,7 +107,7 @@ static int cmp( T &x, T &y )
 }
 
 template<>
-int cmp( StringData &x, StringData &y )
+static int cmp( StringData &x, StringData &y )
 {
 	return x.readable().compare( y.readable() );
 }
@@ -118,13 +115,13 @@ int cmp( StringData &x, StringData &y )
 template<class T>
 static typename T::ValueType minValue( T &x )
 {
-	return std::numeric_limits<typename T::ValueType>::min();
+	return Imath::limits<typename T::ValueType>::min();
 }
 
 template<class T>
 static typename T::ValueType maxValue( T & x)
 {
-	return std::numeric_limits<typename T::ValueType>::max();
+	return Imath::limits<typename T::ValueType>::max();
 }
 
 template<>
@@ -189,6 +186,7 @@ string str<TYPE>( TYPE &x )																				\
 }				
 
 DEFINENUMERICSTRSPECIALISATION( bool );
+DEFINENUMERICSTRSPECIALISATION( long );
 DEFINENUMERICSTRSPECIALISATION( int );
 DEFINENUMERICSTRSPECIALISATION( unsigned int );
 DEFINENUMERICSTRSPECIALISATION( float );
@@ -196,8 +194,6 @@ DEFINENUMERICSTRSPECIALISATION( double );
 DEFINENUMERICSTRSPECIALISATION( half );
 DEFINENUMERICSTRSPECIALISATION( short );
 DEFINENUMERICSTRSPECIALISATION( unsigned short );
-DEFINENUMERICSTRSPECIALISATION( int64_t );
-DEFINENUMERICSTRSPECIALISATION( uint64_t );
 
 #define DEFINETYPEDDATASTRSPECIALISATION( TYPE )														\
 template<>																								\
@@ -219,14 +215,13 @@ string str<TypedData<TYPE> >( TypedData<TYPE> &x )														\
 DEFINETYPEDDATASTRSPECIALISATION( bool );
 DEFINETYPEDDATASTRSPECIALISATION( char );
 DEFINETYPEDDATASTRSPECIALISATION( unsigned char );
+DEFINETYPEDDATASTRSPECIALISATION( long );
 DEFINETYPEDDATASTRSPECIALISATION( int );
 DEFINETYPEDDATASTRSPECIALISATION( unsigned int );
 DEFINETYPEDDATASTRSPECIALISATION( float );
 DEFINETYPEDDATASTRSPECIALISATION( double );
 DEFINETYPEDDATASTRSPECIALISATION( short );
 DEFINETYPEDDATASTRSPECIALISATION( unsigned short );
-DEFINETYPEDDATASTRSPECIALISATION( int64_t );
-DEFINETYPEDDATASTRSPECIALISATION( uint64_t );
 DEFINETYPEDDATASTRSPECIALISATION( string );
 DEFINETYPEDDATASTRSPECIALISATION( half );
 DEFINETYPEDDATASTRSPECIALISATION( V2i );
@@ -276,7 +271,6 @@ static class_<T, intrusive_ptr<T>, boost::noncopyable, bases<Data> > bindSimpleD
 template<class T>
 static void bindNumericMethods( class_<T, intrusive_ptr<T>, boost::noncopyable, bases<Data> > &c )
 {
-	/// \todo minValue/maxValue should be static
 	c.add_property( "minValue", &minValue<T>, "Minimum representable value." );
 	c.add_property( "maxValue", &maxValue<T>, "Maximum representable value." );
 	c.def( "__cmp__", &cmp<T>, "Comparison operators ( <, >, >=, <= )" );
@@ -304,6 +298,11 @@ void bindAllSimpleTypedData()
 	bindNumericMethods( idc );
 	idc.def( "__int__", &getValue<IntData> );
 	implicitly_convertible<IntDataPtr, DataPtr>();
+
+	class_< LongData, LongDataPtr, boost::noncopyable, bases<Data> > ldc = bindSimpleData<LongData>();
+	bindNumericMethods( ldc );
+	ldc.def( "__long__", &getValue<LongData> );
+	implicitly_convertible<LongDataPtr, DataPtr>();
 	
 	class_< UIntData, UIntDataPtr, boost::noncopyable, bases<Data> > uidc = bindSimpleData<UIntData>();
 	bindNumericMethods( uidc );
@@ -343,17 +342,7 @@ void bindAllSimpleTypedData()
 	class_< UShortData, UShortDataPtr, boost::noncopyable, bases<Data> > ushdc = bindSimpleData<UShortData>();
 	bindNumericMethods( ushdc );
 	ushdc.def( "__int__", &getValue<UShortData> );
-	implicitly_convertible<UShortDataPtr, DataPtr>();
-	
-	class_< Int64Data, Int64DataPtr, boost::noncopyable, bases<Data> > i64dc = bindSimpleData<Int64Data>();
-	bindNumericMethods( i64dc );
-	i64dc.def( "__long__", &getValue<Int64Data> );
-	implicitly_convertible<Int64DataPtr, DataPtr>();
-	
-	class_< UInt64Data, UInt64DataPtr, boost::noncopyable, bases<Data> > ui64dc = bindSimpleData<UInt64Data>();
-	bindNumericMethods( ui64dc );
-	ui64dc.def( "__long__", &getValue<UInt64Data> );
-	implicitly_convertible<UInt64DataPtr, DataPtr>();	
+	implicitly_convertible<UShortDataPtr, DataPtr>();	
 
 	bindSimpleData<V2iData>();
 	implicitly_convertible<V2iDataPtr, DataPtr>();

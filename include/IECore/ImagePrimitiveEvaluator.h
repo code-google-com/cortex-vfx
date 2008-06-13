@@ -57,6 +57,9 @@ class ImagePrimitiveEvaluator : public PrimitiveEvaluator
 			friend class ImagePrimitiveEvaluator;
 			
 			public:
+			
+				/// \depracated
+				Result( const Imath::Box3f &bound );
 				
 				Result( const Imath::Box3f &bound, const Imath::Box2i &dataWindow );
 				virtual ~Result();
@@ -85,13 +88,13 @@ class ImagePrimitiveEvaluator : public PrimitiveEvaluator
 			
 				Imath::Box3f m_bound;
 				Imath::V3f m_p;
-				Imath::Box2i m_dataWindow;
 			
 				template<typename T>
 				T getPrimVar( const PrimitiveVariable &pv ) const;
 				
-				template<typename T>
-				T indexData( const std::vector<T> &data, const Imath::V2i &p ) const;
+			public:
+			
+				struct ExtraData;			
 			
 		};
 		IE_CORE_DECLAREPTR( Result );		
@@ -102,17 +105,15 @@ class ImagePrimitiveEvaluator : public PrimitiveEvaluator
 		
 		virtual ~ImagePrimitiveEvaluator();
 		
+		/// \todo Move to base class
 		virtual ConstPrimitivePtr primitive() const;
 		
 		virtual PrimitiveEvaluator::ResultPtr createResult() const;
-		
-		virtual void validateResult( const PrimitiveEvaluator::ResultPtr &result ) const;	
 						
 		virtual bool closestPoint( const Imath::V3f &p, const PrimitiveEvaluator::ResultPtr &result ) const;
 		
 		virtual bool pointAtUV( const Imath::V2f &uv, const PrimitiveEvaluator::ResultPtr &result ) const;
 		
-		/// Returns the object-space point at the center of the specified pixel
 		virtual bool pointAtPixel( const Imath::V2i &pixel, const PrimitiveEvaluator::ResultPtr &result ) const;
 		
 		virtual bool intersectionPoint( const Imath::V3f &origin, const Imath::V3f &direction, 
@@ -121,11 +122,14 @@ class ImagePrimitiveEvaluator : public PrimitiveEvaluator
 		virtual int intersectionPoints( const Imath::V3f &origin, const Imath::V3f &direction, 
 			std::vector<PrimitiveEvaluator::ResultPtr> &results, float maxDistance = Imath::limits<float>::max() ) const;
 			
-		virtual float volume() const;	
+		/// \todo Add to PrimitiveEvaluator, and make virtual
+		float volume() const;	
 
-		virtual Imath::V3f centerOfGravity() const;
+		/// \todo Add to PrimitiveEvaluator, and make virtual
+		Imath::V3f centerOfGravity() const;
 		
-		virtual float surfaceArea() const;
+		/// \todo Add to PrimitiveEvaluator, and make virtual
+		float surfaceArea() const;
 		
 		/// Returns the "R" (red) channel of the image, if available. Otherwise returns the variables' "end" iterator.
 		PrimitiveVariableMap::const_iterator R() const;
@@ -141,8 +145,6 @@ class ImagePrimitiveEvaluator : public PrimitiveEvaluator
 		
 		/// Returns the "Y" (luminance) channel of the image, if available. Otherwise returns the variables' "end" iterator.		
 		PrimitiveVariableMap::const_iterator Y() const;
-		
-		
 					
 	protected:
 	

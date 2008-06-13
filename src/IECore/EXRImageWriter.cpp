@@ -69,7 +69,8 @@ EXRImageWriter::EXRImageWriter(ObjectPtr image, const string &fileName)
 	m_fileNameParameter->setTypedValue( fileName );
 }
 
-void EXRImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow) const
+// \todo "names" should be const
+void EXRImageWriter::writeImage(vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow)
 {
 	assert( image );
 
@@ -108,19 +109,19 @@ void EXRImageWriter::writeImage( const vector<string> &names, ConstImagePrimitiv
 			switch (channelData->typeId())
 			{
 			case FloatVectorDataTypeId:
-				writeTypedChannel<float>(name, dataWindow,
+				writeTypedChannel<float>(name, image, dataWindow,
 				                         boost::static_pointer_cast<const FloatVectorData>(channelData)->readable(),
 				                         FLOAT, header, fb);
 				break;
 
 			case UIntVectorDataTypeId:
-				writeTypedChannel<unsigned int>(name, dataWindow,
+				writeTypedChannel<unsigned int>(name, image, dataWindow,
 				                                boost::static_pointer_cast<const UIntVectorData>(channelData)->readable(),
 				                                UINT, header, fb);
 				break;
 
 			case HalfVectorDataTypeId:
-				writeTypedChannel<half>(name, dataWindow,
+				writeTypedChannel<half>(name, image, dataWindow,
 				                        boost::static_pointer_cast<const HalfVectorData>(channelData)->readable(),
 				                        HALF, header, fb);
 				break;
@@ -152,10 +153,13 @@ void EXRImageWriter::writeImage( const vector<string> &names, ConstImagePrimitiv
 }
 
 template<typename T>
-void EXRImageWriter::writeTypedChannel(const char *name, const Box2i &dataWindow,
-                                       const vector<T> &channel, const Imf::PixelType pixelType, Header &header, FrameBuffer &fb) const
+void EXRImageWriter::writeTypedChannel(const char *name, ConstImagePrimitivePtr image, const Box2i &dataWindow,
+                                       const vector<T> &channel, const Imf::PixelType pixelType, Header &header, FrameBuffer &fb)
 {
 	assert( name );
+
+	/// \todo Remove this unused parameter
+	(void) image;
 
 	int width = 1 + dataWindow.max.x - dataWindow.min.x;
 

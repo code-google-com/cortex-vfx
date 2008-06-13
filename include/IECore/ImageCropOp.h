@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,9 +42,8 @@ namespace IECore
 {
 
 /// The ImageCropOp performs cropping over ImagePrimitive objects.
-/// The operation results on an ImagePrimitive with displayWindow equal to the given crop box.
-/// If matchDataWindow if On then the dataWindow will match displayWindow. Otherwise it will be intersected against the given crop box.
-/// \todo This should derive from ImagePrimitiveOp
+// The operation results on an ImagePrimitive with displayWindow equal to the given crop box.
+// If matchDataWindow if On then the dataWindow will match displayWindow. Otherwise it will be intersected against the given crop box.
 class ImageCropOp : public ModifyOp
 {
 	public :
@@ -57,8 +56,6 @@ class ImageCropOp : public ModifyOp
 		virtual void modify( ObjectPtr toModify, ConstCompoundObjectPtr operands );
 		
 	private :
-	
-		struct ImageCropFn;
 		
 		Box2iParameterPtr m_cropBox;
 		BoolParameterPtr m_matchDataWindow;

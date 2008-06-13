@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,7 +52,6 @@ PointsPrimitive::PointsPrimitive( V3fVectorDataPtr points, FloatVectorDataPtr ra
 	variables.insert( PrimitiveVariableMap::value_type( "P", PrimitiveVariable( PrimitiveVariable::Vertex, points ) ) );
 	if( radii )
 	{
-		/// \todo This isn't the name the renderers are looking for - why are we using it?
 		variables.insert( PrimitiveVariableMap::value_type( "r", PrimitiveVariable( PrimitiveVariable::Vertex, radii ) ) );
 	}
 }
@@ -115,7 +114,7 @@ void PointsPrimitive::setNumPoints( size_t n )
 	m_numPoints = n;
 }
 
-size_t PointsPrimitive::variableSize( PrimitiveVariable::Interpolation interpolation ) const
+size_t PointsPrimitive::variableSize( PrimitiveVariable::Interpolation interpolation )
 {
 	switch( interpolation )
 	{

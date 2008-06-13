@@ -83,6 +83,7 @@ from FormattedParameterHelp import *
 from MotionPrimitive import *
 from Transform import *
 from Group import *
+from VisibleRenderable import *
 from NamespacePollution import *
 from OptionalCompoundParameter import *
 from ObjectInterpolation import *
@@ -138,18 +139,6 @@ from CubicBasisTest import *
 from CurvesPrimitiveTest import *
 from ImageDiffOp import *
 from TriangulatorTest import *
-from BezierAlgoTest import *
-from MeshNormalsOpTest import *
-from PrimitiveTest import *
-from MeshMergeOpTest import *
-from UniformRandomPointDistributionOpTest import *
-from UnicodeToStringTest import *
-from MappedRandomPointDistributionOpTest import *
-from RadixSortTest import *
-from ImathRootsTest import *
-from AngleConversionTest import *
-from LuminanceOpTest import *
-from SummedAreaOpTest import *
 from GradeTest import *
 
 if IECore.withTIFF() :
@@ -159,9 +148,10 @@ if IECore.withTIFF() :
 if IECore.withJPEG() :
 	from JPEGImageReader import *
 	from JPEGImageWriter import *
-	
-if IECore.withFreeType() :
-	from FontTest import *
+
+if IECore.withSQLite() :
+	from SQLiteIndexedIO import *
+	from FileFormatSwitch import *
 
 class SplitStream :
 

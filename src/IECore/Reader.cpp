@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,18 +48,11 @@ using namespace IECore;
 using namespace boost;
 using namespace boost::filesystem;
 
-Reader::Reader(  const std::string &name, const std::string &description, ParameterPtr resultParameter )
+Reader::Reader(  const std::string name, const std::string description, ParameterPtr resultParameter )
 	: 	Op( name, description, resultParameter ? resultParameter : new Parameter( "result", "The loaded object.", new NullObject ) )
 {
 	m_fileNameParameter = new FileNameParameter( "fileName", "The name of the file to be loaded", "", "", false, PathParameter::MustExist );
 	parameters()->addParameter( m_fileNameParameter );
-}
-
-CompoundObjectPtr Reader::readHeader()
-{
-	CompoundObjectPtr header = new CompoundObject();
-	
-	return header;
 }
 
 ObjectPtr Reader::read()
@@ -78,7 +71,7 @@ ReaderPtr Reader::create( const std::string &fileName )
 	bool knownExtension = false;
 	ExtensionsToFnsMap *m = extensionsToFns();
 	assert( m );
-	string ext = extension(boost::filesystem::path(fileName));
+	string ext = extension(boost::filesystem::path(fileName, boost::filesystem::native));
 	if( ext!="" )
 	{
 		ExtensionsToFnsMap::const_iterator it = m->find( ext );

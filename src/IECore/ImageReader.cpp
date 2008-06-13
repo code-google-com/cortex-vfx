@@ -47,7 +47,7 @@ using namespace IECore;
 using namespace boost;
 using namespace Imath;
 
-ImageReader::ImageReader( const std::string &name, const std::string &description ) :
+ImageReader::ImageReader( const std::string name, const std::string description ) :
 		Reader( name, description, new ObjectParameter( "result", "The loaded object", new NullObject, ImagePrimitive::staticTypeId() ) )
 {
 	m_dataWindowParameter = new Box2iParameter(
@@ -204,15 +204,4 @@ StringVectorParameterPtr ImageReader::channelNamesParameter()
 ConstStringVectorParameterPtr ImageReader::channelNamesParameter() const
 {
 	return m_channelNamesParameter;
-}
-
-CompoundObjectPtr ImageReader::readHeader()
-{
-	std::vector<std::string> cn;
-	channelNames( cn );
-	CompoundObjectPtr header = Reader::readHeader();
-	header->members()["displayWindow"] = new Box2iData( displayWindow() );
-	header->members()["dataWindow"] = new Box2iData( dataWindow() );
-	header->members()["channelNames"] = new StringVectorData( cn );
-	return header;
 }

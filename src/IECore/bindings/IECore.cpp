@@ -169,21 +169,6 @@
 #include "IECore/bindings/CurvesPrimitiveBinding.h"
 #include "IECore/bindings/ImageDiffOpBinding.h"
 #include "IECore/bindings/TriangulatorBinding.h"
-#include "IECore/bindings/BezierAlgoBinding.h"
-#include "IECore/bindings/ToCoreConverterBinding.h"
-#include "IECore/bindings/MeshNormalsOpBinding.h"
-#include "IECore/bindings/PolygonAlgoBinding.h"
-#include "IECore/bindings/MeshMergeOpBinding.h"
-#include "IECore/bindings/FontBinding.h"
-#include "IECore/bindings/UniformRandomPointDistributionOpBinding.h"
-#include "IECore/bindings/UnicodeToStringBinding.h"
-#include "IECore/bindings/MappedRandomPointDistributionOpBinding.h"
-#include "IECore/bindings/RadixSortBinding.h"
-#include "IECore/bindings/PointRepulsionOpBinding.h"
-#include "IECore/bindings/AngleConversionBinding.h"
-#include "IECore/bindings/LuminanceOpBinding.h"
-#include "IECore/bindings/ChannelOpBinding.h"
-#include "IECore/bindings/SummedAreaOpBinding.h"
 #include "IECore/bindings/GradeBinding.h"
 #include "IECore/IECore.h"
 
@@ -333,27 +318,6 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindCurvesPrimitive();
 	bindImageDiffOp();	
 	bindTriangulator();
-	bindBezierAlgo();
-	bindToCoreConverter();
-	bindMeshNormalsOp();
-	bindPolygonAlgo();
-	bindMeshMergeOp();
-	
-#ifdef IECORE_WITH_FREETYPE
-
-	bindFont();
-
-#endif	
-
-	bindUniformRandomPointDistributionOp();
-	bindUnicodeToString();
-	bindMappedRandomPointDistributionOp();
-	bindRadixSort();	
-	bindPointRepulsionOp();		
-	bindAngleConversion();	
-	bindLuminanceOp();	
-	bindChannelOp();	
-	bindSummedAreaOp();	
 	bindGrade();
 
 	def( "majorVersion", &IECore::majorVersion );
@@ -362,6 +326,5 @@ BOOST_PYTHON_MODULE(_IECore)
 	def( "versionString", &IECore::versionString, return_value_policy<copy_const_reference>() );
 	def( "withTIFF", &IECore::withTIFF );
 	def( "withJPEG", &IECore::withJPEG );
-	def( "withFreeType", &IECore::withFreeType );
-
+	def( "withSQLite", &IECore::withSQLite );
 }

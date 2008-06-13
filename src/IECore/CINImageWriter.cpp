@@ -38,6 +38,7 @@
 #include "IECore/ByteOrder.h"
 #include "IECore/ImagePrimitive.h"
 #include "IECore/FileNameParameter.h"
+#include "IECore/BoxOperators.h"
 #include "IECore/DataConvert.h"
 #include "IECore/ScaledDataConversion.h"
 #include "IECore/CompoundDataConversion.h"
@@ -137,7 +138,7 @@ struct CINImageWriter::ChannelConverter
 	};
 };
 
-void CINImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow ) const
+void CINImageWriter::writeImage( vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow )
 {
 	// write the cineon in the standard 10bit log format
 	std::ofstream out;

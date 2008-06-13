@@ -57,6 +57,9 @@ void bindData()
 	INTRUSIVE_PTR_PATCH( Data, DataPyClass );
 
 	implicitly_convertible<DataPtr, ObjectPtr>();
+
+	/// \todo:
+	/// add the conversion between a ptr and the const ptr for child elements
 	implicitly_convertible<DataPtr, ConstDataPtr>();
 }
 }

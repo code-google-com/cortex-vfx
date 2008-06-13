@@ -270,7 +270,7 @@ void MeshPrimitiveImplicitSurfaceOp::modifyTypedPrimitive( MeshPrimitivePtr type
 	cacheTolerance = std::min(cacheTolerance, ((bound.max.y - bound.min.y) / (double)resolution.y) / 2.0 );
 	cacheTolerance = std::min(cacheTolerance, ((bound.max.z - bound.min.z) / (double)resolution.z) / 2.0 );	
 
-	MeshPrimitiveBuilderPtr builder = new MeshPrimitiveBuilder();
+	MeshPrimitiveBuilder<float>::Ptr builder = new MeshPrimitiveBuilder<float>();
 
 	typedef MarchingCubes< CachedImplicitSurfaceFunction< V3f, float > > Marcher ;								
 				

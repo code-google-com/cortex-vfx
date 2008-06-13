@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -168,7 +168,7 @@ struct ValidateArraySize
 	} 
 
 	template<typename T>
-	bool operator() ( typename T::ConstPtr data )
+	bool operator() ( typename T::Ptr data )
 	{
 		assert( data );
                 
@@ -187,13 +187,13 @@ struct ReturnTrue
 	typedef bool ReturnType;
 	
 	template<typename T>
-	bool operator() ( typename T::ConstPtr data )
+	bool operator() ( typename T::Ptr data )
 	{
 		return true;
 	}
 };
 
-bool Primitive::isPrimitiveVariableValid( const PrimitiveVariable &pv ) const
+bool Primitive::isPrimitiveVariableValid( const PrimitiveVariable &pv )
 {
 	if (! pv.data )
 	{
@@ -207,7 +207,7 @@ bool Primitive::isPrimitiveVariableValid( const PrimitiveVariable &pv ) const
 		if ( sz == 1 )
 		{
 			ReturnTrue func;
-			return despatchTypedData<ReturnTrue, TypeTraits::IsSimpleTypedData>( pv.data, func );	
+			return despatchTypedData<ReturnTrue, TypeTraits::IsSimpleTypedData>( static_pointer_cast<Data>( pv.data ), func );	
 		}	
 	}
 	catch ( InvalidArgumentException &e )
@@ -215,10 +215,10 @@ bool Primitive::isPrimitiveVariableValid( const PrimitiveVariable &pv ) const
 	}
 	
 	ValidateArraySize func( sz );
-	return despatchTypedData<ValidateArraySize, TypeTraits::IsVectorTypedData>( pv.data, func );	
+	return despatchTypedData<ValidateArraySize, TypeTraits::IsVectorTypedData>( static_pointer_cast<Data>( pv.data ), func );	
 }
 
-bool Primitive::arePrimitiveVariablesValid() const
+bool Primitive::arePrimitiveVariablesValid()
 {
 	for( PrimitiveVariableMap::const_iterator it=variables.begin(); it!=variables.end(); it++ )
 	{
@@ -229,35 +229,4 @@ bool Primitive::arePrimitiveVariablesValid() const
 	}
 	
 	return true;
-}
-
-PrimitiveVariable::Interpolation Primitive::inferInterpolation( size_t numElements ) const
-{
-	if( variableSize( PrimitiveVariable::Constant )==numElements )
-	{
-		return PrimitiveVariable::Constant;
-	}
-	else if( variableSize( PrimitiveVariable::Uniform )==numElements )
-	{
-		return PrimitiveVariable::Uniform;
-	}
-	else if( variableSize( PrimitiveVariable::Vertex )==numElements )
-	{
-		return PrimitiveVariable::Vertex;
-	}
-	else if( variableSize( PrimitiveVariable::Varying )==numElements )
-	{
-		return PrimitiveVariable::Varying;
-	}
-	else if( variableSize( PrimitiveVariable::FaceVarying )==numElements )
-	{
-		return PrimitiveVariable::FaceVarying;
-	}
-	return PrimitiveVariable::Invalid;
-}
-
-PrimitiveVariable::Interpolation Primitive::inferInterpolation( ConstDataPtr data ) const
-{
-	size_t s = IECore::despatchTypedData<IECore::TypedDataSize>( boost::const_pointer_cast<Data>( data ) );
-	return inferInterpolation( s );
 }

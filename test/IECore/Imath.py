@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -539,23 +539,7 @@ class ImathBox3f(unittest.TestCase):
 		m[1,1]=2
 		m[2,2]=2
 		self.assertEqual( b.transform( m ), Box3f( V3f(2), V3f(4) ) )
-	
-	def testContains( self ) :
-	
-		b1 = Box3f( V3f( -1 ), V3f( 1 ) )
-		b2 = Box3f( V3f( 0, -0.5, 0.5 ), V3f( 0.1, 0, 0.9 ) )
-		b3 = Box3f( V3f( -1.2, -0.6, 0.4 ), V3f( 0.2, 0.1, 1 ) )
 		
-		self.assert_( b1.contains( b2 ) )
-		self.assert_( not b2.contains( b1 ) )
-		
-		self.assert_( not b2.contains( b3 ) )
-		self.assert_( b3.contains( b2 ) )
-		
-		self.assert_( not b3.contains( b1 ) )
-		self.assert_( not b1.contains( b3 ) )
-		
-	
 class ImathQuatf(unittest.TestCase):
 	def testConstructors(self):
 		"""Test Quatf constructors"""
@@ -921,7 +905,7 @@ class ImathM44f(unittest.TestCase):
 			z = m.multDirMatrix( V3f( 0, 0, 1 ) )
 			o = V3f( 0, 0, 0 ) * m
 			
-			self.assertEqual( M44f.createFromBasis( x, y, z, o ), m )
+			self.assertEqual( matrixFromBasis( x, y, z, o ), m )
 			
 	def testDeterminant( self ) :
 	
@@ -935,8 +919,6 @@ class ImathM44f(unittest.TestCase):
 		self.assertAlmostEqual( m.determinant(), -3, 10 )
 		m.scale( V3f( 3, 3, 1 ) )
 		self.assertAlmostEqual( m.determinant(), -27, 10 )
-		
-		random.seed( 42 )
 
 		r = curry( random.uniform, -2, 2 )	
 		for i in range( 0, 1000 ) :
@@ -949,10 +931,10 @@ class ImathM44f(unittest.TestCase):
 				mi = m.inverse()
 				di = mi.determinant()
 			
-				self.assertAlmostEqual( d, 1/di, 4 )
+				self.assertAlmostEqual( d, 1/di, 3 )
 				
 			mt = m.transposed()
-			self.assertAlmostEqual( d, mt.determinant(), 4 )
+			self.assertAlmostEqual( d, mt.determinant(), 3 )
 			
 		for i in range( 0, 1000 ) :
 		
