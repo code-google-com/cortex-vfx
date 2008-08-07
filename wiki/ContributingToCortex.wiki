@@ -18,20 +18,21 @@ Discuss the bug in the cortex-dev group, to clarify whether or not the behavior 
 Any new major functionality should be first be discussed in the cortex-dev group, to ensure that it fits within the spirit of the Cortex project. All patches will be considered for inclusion, but you stand a better chance if following the guidelines:
 
   * Do not introduce any new unnecessary dependencies (we already link to Boost, OpenEXR, Free Type, libtiff, libjpeg, Python, Maya, Nuke, OpenGL, etc, etc!)
+  * Keep different features, bug fixes, etc, in separate patches. 
   * Please try and follow the coding style already present in the code base, most notably :
-    * Use tabs for indentation, not spaces
+    * Use tabs for indentation, not spaces.
     * Do not assume the width of a tab character, so in some cases it may even be necessary to use a combination of tabs (for indent) and spaces (for formatting) on the same line.
     * Keep curly braces delimiting blocks on a line of their own.
     * When in doubt, copy the style of the surrounding code.
-  * Comment / assert / document as much as you can
-  * Try not to disturb any surrounding code unnecessarily
-  * Keep changes to formatting in separate patches to new code
+  * Comment / assert / document as much as you can.
+  * Try not to disturb any surrounding code unnecessarily.
+  * Keep changes to formatting in separate patches to new code.
   * Where applicable, please submit a unit test to exercise the functionality of your patch, ensuring that all tests pass against a recently updated trunk.
   * State which platforms your patch has been tested successfully on. Don't worry if only one platform is available to you, as we can run tests internally on multiple platforms.
+  * For optmisations, please try to measure and quantify the performance benefits.
 
 To submit a patch :
 
   * Open a Issue for it using the Issue Tracker, describing the purpose of the patch as much as possible.
   * From the root directory (where the SConstruct file resides), run "svn diff > XXXXX.patch" where "XXXXX" is the numeric Issue ID.
   * Attach the patch file to the Issue.
-
