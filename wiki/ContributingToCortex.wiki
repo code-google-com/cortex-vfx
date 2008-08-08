@@ -7,7 +7,7 @@ We would like to keep it as simple as possible to contribute to Cortex in order 
 
 == Bugs ==
 
-Discuss the bug in the cortex-dev group, to clarify whether or not the behavior you are experiencing is expected or not, or whether it's already a known issue.
+Discuss the bug in the [http://groups.google.com/group/cortexdev cortexdev group], to clarify whether or not the behavior you are experiencing is expected or not, or whether it's already a known issue.
 
   * Once a bug has been identified, use the Issue Tracker to log it. 
   * Where possible, submit a Python unit test case that exercises the bug. Name the test file IssueXXXXXTest.py where XXXXX is the Issue ID. Attach the file to the Issue, and a Project Member will integrate it with the test suite.
@@ -15,7 +15,7 @@ Discuss the bug in the cortex-dev group, to clarify whether or not the behavior 
 
 == Patches ==
 
-Any new major functionality should be first be discussed in the cortex-dev group, to ensure that it fits within the spirit of the Cortex project. All patches will be considered for inclusion, but you stand a better chance if following the guidelines:
+Any new major functionality should be first be discussed in the [http://groups.google.com/group/cortexdev cortexdev group], to ensure that it fits within the spirit of the Cortex project. All patches will be considered for inclusion, but you stand a better chance if following the guidelines:
 
   * Do not introduce any new unnecessary dependencies (we already link to Boost, OpenEXR, Free Type, libtiff, libjpeg, Python, Maya, Nuke, OpenGL, etc, etc!)
   * Keep different features, bug fixes, etc, in separate patches. 
