@@ -23,6 +23,7 @@ Any new major functionality should be first be discussed in the [http://groups.g
     * Use tabs for indentation, not spaces.
     * Do not assume the width of a tab character, so in some cases it may even be necessary to use a combination of tabs (for indent) and spaces (for formatting) on the same line.
     * Keep curly braces delimiting blocks on a line of their own.
+    * Don't leave in any commented-out code, as this can confuse future maintainers
     * When in doubt, copy the style of the surrounding code.
   * Comment / assert / document as much as you can.
   * Try not to disturb any surrounding code unnecessarily.
