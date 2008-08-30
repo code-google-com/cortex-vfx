@@ -877,10 +877,6 @@ class NumericParameterUI( ParameterUI ) :
 			
 		if parameter.hasMaxValue():
 			kw['maxValue'] = parameter.maxValue
-						
-		if self.parameter.isInstanceOf( IECore.TypeId.DoubleParameter ) :
-		
-			kw['precision'] = 12
 			
 		self.__field = self.fieldType()(				
 			value = parameter.getNumericValue(),
@@ -908,7 +904,7 @@ class NumericParameterUI( ParameterUI ) :
 		
 	def sliderType( self ):	
 	
-		if self.parameter.isInstanceOf( IECore.TypeId.FloatParameter ) or self.parameter.isInstanceOf( IECore.TypeId.DoubleParameter ):
+		if self.parameter.isInstanceOf( IECore.TypeId.FloatParameter ):
 			return cmds.floatSlider
 		elif self.parameter.isInstanceOf( IECore.TypeId.IntParameter ):
 			return cmds.intSlider
@@ -917,7 +913,7 @@ class NumericParameterUI( ParameterUI ) :
 		
 	def fieldType( self ):
 	
-		if self.parameter.isInstanceOf( IECore.TypeId.FloatParameter ) or self.parameter.isInstanceOf( IECore.TypeId.DoubleParameter ):
+		if self.parameter.isInstanceOf( IECore.TypeId.FloatParameter ):
 			return cmds.floatField
 		elif self.parameter.isInstanceOf( IECore.TypeId.IntParameter ):
 			return cmds.intField
@@ -1119,7 +1115,6 @@ class BoxParameterUI( ParameterUI ) :
 					fieldNum += 1
 
 ParameterUI.registerUI( IECore.TypeId.FloatParameter, NumericParameterUI )	
-ParameterUI.registerUI( IECore.TypeId.DoubleParameter, NumericParameterUI )
 ParameterUI.registerUI( IECore.TypeId.IntParameter, NumericParameterUI )
 ParameterUI.registerUI( IECore.TypeId.BoolParameter, BoolParameterUI )
 ParameterUI.registerUI( IECore.TypeId.CompoundParameter, CompoundParameterUI )

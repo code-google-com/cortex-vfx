@@ -33,11 +33,23 @@
 //////////////////////////////////////////////////////////////////////////
 
 //! \file BoxOperators.h
-/// \deprecated Defines operators which ideally would be already defined in ImathBox.h, now available in BoxAlgo.h
+/// Defines operators which ideally would be already defined in ImathBox.h
 
 #ifndef IE_CORE_BOXOPERATORS_H
 #define IE_CORE_BOXOPERATORS_H
 
-#include "IECore/BoxAlgo.h"
+#include "OpenEXR/ImathBox.h"
+#include <iostream>
+
+namespace IECore
+{
+
+/// Streaming for Imath::Box types
+template<class T>
+std::ostream &operator <<( std::ostream &os, const Imath::Box<T> &obj );
+
+} // namespace IECore
+
+#include "IECore/BoxOperators.inl"
 
 #endif // IE_CORE_BOXOPERATOR_H
