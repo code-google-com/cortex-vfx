@@ -54,7 +54,6 @@ from ToMayaMeshConverterTest import *
 from MayaTypeIdTest import *
 from FromMayaTransformConverterTest import *
 from CallbackIdTest import *
-from TemporaryAttributeValuesTest import *
 
 import MayaUnitTest
 
