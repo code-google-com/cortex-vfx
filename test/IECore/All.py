@@ -160,11 +160,11 @@ from SplineDataTest import *
 from TypeIdTest import *
 from LayeredDictTest import *
 from SplineParameterTest import *
-#from DisplayDriverTest import *
+from DisplayDriverTest import *
 from AttributeStateTest import *
 from CoordinateSystemTest import *
 from SplineToImageTest import *
-#from DisplayTest import *
+from DisplayTest import *
 from MeshTangentsOpTest import *
 from CubeColorLookupTest import *
 from CubeColorLookupDataTest import *
@@ -176,6 +176,7 @@ from ImagePremultiplyOpTest import *
 from ImageUnpremultiplyOpTest import *
 from ImageCompositeOpTest import *
 from ImageSequenceCompositeOpTest import *
+from YUVImageWriter import *
 
 if IECore.withTIFF() :
 	from TIFFImageReader import *
