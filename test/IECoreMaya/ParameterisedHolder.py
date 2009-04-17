@@ -38,6 +38,7 @@ import unittest, MayaUnitTest
 import os.path
 import IECore
 import IECoreMaya
+			
 
 class TestParameterisedHolder( unittest.TestCase ) :
 		
@@ -60,6 +61,7 @@ class TestParameterisedHolder( unittest.TestCase ) :
 		cmds.setAttr( pl.name(), "testValue2", typ="string" )
 		h.setParameterisedValue( p.parameters().filename )
 		self.assertEqual( p.parameters().filename.getValue().value, "testValue2" )
+		
 					
 	def testParameterisedHolderSetReference( self ):	
 		""" Test multiple references to ieParameterisedHolderSet nodes """
@@ -97,6 +99,51 @@ class TestParameterisedHolder( unittest.TestCase ) :
 		
 		self.assert_( fn1.userNode() )
 		self.assert_( fn2.userNode() ) # This failure is due to a Maya bug. When referencing the same scene twice, as an optimisation Maya will duplicate existing nodes instead of creating new ones. There is a bug in MPxObjectSet::copy() which gets exercised here. Setting the environment variable MAYA_FORCE_REF_READ to 1 will disable this optimisation, however.
+		
+	def testChangeDefault( self ) :
+		""" Test that changing parameter defaults is correctly reflected in Maya attributes """
+	
+		def makeOp( defaultValue ) :
+
+			class TestOp( IECore.Op ) :
+
+				def __init__( self ) :
+
+					IECore.Op.__init__( self, "TestOp", "Tests stuff",
+						IECore.IntParameter(
+							name = "result",
+							description = "",
+							defaultValue = 0
+						)
+					)
+
+					self.parameters().addParameters(
+						[
+							IECore.Color3fParameter(
+								name = "c",
+								description = "",
+								defaultValue = defaultValue
+							),
+						]
+					)
+					
+			return TestOp()	
+	
+	
+		n = cmds.createNode( "ieParameterisedHolderNode" )	
+		h = IECoreMaya.FnParameterisedHolder( str(n) )
+		self.assert_( h )
+		
+		p = makeOp( IECore.Color3f( 0, 0, 0 ) )		
+		h.setParameterised( p )
+		dv = cmds.attributeQuery ( "parm_c", node = n, listDefault = True )
+		self.assertEqual( dv, [ 0, 0, 0 ] )
+		
+		p = makeOp( IECore.Color3f( 1, 1, 1 ) )			
+		h.setParameterised( p )		
+		dv = cmds.attributeQuery ( "parm_c", node = n, listDefault = True )
+		self.assertEqual( dv, [ 1, 1, 1 ] )
+		
 		
 	def tearDown( self ) :
 		
