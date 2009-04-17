@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,7 +46,7 @@ namespace IECore
 
 IE_CORE_FORWARDDECLARE( ImagePrimitive );
 
-/// Abstract base class for serializing images
+/// abstract base class for serializing images
 class ImageWriter : public Writer
 {
 
@@ -54,28 +54,31 @@ class ImageWriter : public Writer
 
 		IE_CORE_DECLARERUNTIMETYPED( ImageWriter, Writer )
 
-		/// Checks that object is an ImagePrimitive instance
+		/// checks that object is an ImagePrimitive instance
 		static bool canWrite( ConstObjectPtr object, const std::string &fileName );
 
-		/// Convenience function to access the channels specified in parameters
+		/// convenience function to access the channels specified in parameters
 		void imageChannels( std::vector<std::string> &names ) const;
 
 	protected:
 	
 		ImageWriter( const std::string &name, const std::string &description );	
 
-		/// Return the image object to write
+		/// Writes the associated ImagePrimitive. There's no need to reimplement
+		/// this in subclasses - implement writeImage() instead.
+		virtual void doWrite();
+
+		/// return the image object to write
 		ConstImagePrimitivePtr getImage() const;
 
-		/// Write the image. Subclasses implement this method.
+		/// write the image. subclasses implement this method.
 		virtual void writeImage( const std::vector<std::string> &names,
 		                         ConstImagePrimitivePtr image,
 		                         const Imath::Box2i &dataWindow	) const = 0;
 
 	private :
-		
-		/// Implementation of Writer::doWrite(). Calls through to writeImage()
-		virtual void doWrite();
+
+		void constructParameters();
 
 		StringVectorParameterPtr m_channelsParameter;
 

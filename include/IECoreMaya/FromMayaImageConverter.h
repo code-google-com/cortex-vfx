@@ -42,7 +42,6 @@
 
 #include "IECore/Object.h"
 #include "IECore/ImagePrimitive.h"
-#include "IECore/TypedParameter.h"
 
 #include "maya/MImage.h"
 
@@ -63,16 +62,11 @@ class FromMayaImageConverter : public FromMayaConverter
 		FromMayaImageConverter( MImage &image );
 	
 		/// The MImage which will be converted by the convert() function.
-		const MImage &image() const;	
-		
-		IECore::BoolParameterPtr depthParameter();
-		IECore::BoolParameterPtr depthParameter() const;			
+		const MImage &image() const;				
 		
 	protected :
 				
 		virtual IECore::ObjectPtr doConversion( IECore::ConstCompoundObjectPtr operands ) const;
-		
-		IECore::BoolParameterPtr m_depthParameter;
 		
 	private :
 
@@ -83,8 +77,6 @@ class FromMayaImageConverter : public FromMayaConverter
 		
 		template<typename T> 
 		void writeChannels( IECore::ImagePrimitivePtr target, const std::vector< std::string > &channelNames ) const;
-		
-		void writeDepth( IECore::ImagePrimitivePtr target, const float *depth ) const;
 
 };
 

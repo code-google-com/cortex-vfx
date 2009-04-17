@@ -41,9 +41,9 @@ import re
 EnsureSConsVersion( 0, 97 )
 SConsignFile()
 
-ieCoreMajorVersion=4
-ieCoreMinorVersion=0
-ieCorePatchVersion=0
+ieCoreMajorVersion=3
+ieCoreMinorVersion=43
+ieCorePatchVersion=1
 
 ###########################################################################################
 # Command line options
@@ -707,8 +707,6 @@ if testEnv["TEST_LIBPATH"] != "" :
 
 testEnv["ENV"][testEnv["TEST_LIBRARY_PATH_ENV_VAR"]] = testEnvLibPath
 testEnv["ENV"]["DYLD_LIBRARY_PATH" if Environment()["PLATFORM"]=="darwin" else "LD_LIBRARY_PATH"] = testEnvLibPath
-testEnv["ENV"]["IECORE_PROCEDURAL_PATHS"] = "test/IECore/procedurals"
-testEnv["ENV"]["IECORE_OP_PATHS"] = "test/IECore/ops"
 
 if env["PLATFORM"]=="darwin" :	
 	# Special workaround for suspected gcc issue - see BoostUnitTestTest for more information
@@ -824,7 +822,7 @@ if doConfigure :
 		sys.stderr.write( "WARNING: no TIFF library found, no TIFF support, check TIFF_INCLUDE_PATH and TIFF_LIB_PATH.\n" )
 		coreSources.remove( "src/IECore/TIFFImageWriter.cpp" )
 		coreSources.remove( "src/IECore/TIFFImageReader.cpp" )
-		coreSources.remove( "src/IECore/ScopedTIFFErrorHandler.cpp" )		
+		coreSources.remove( "src/IECore/ScopedTIFFExceptionTranslator.cpp" )		
 		corePythonSources.remove( "src/IECore/bindings/TIFFImageReaderBinding.cpp" )
 		corePythonSources.remove( "src/IECore/bindings/TIFFImageWriterBinding.cpp" )
 		

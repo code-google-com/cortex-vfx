@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -34,7 +34,7 @@
 
 // This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/bindings/FontBinding.h"
 #include "IECore/bindings/IntrusivePtrPatch.h"
@@ -83,14 +83,14 @@ void bindFont()
 		.def( "setKerning", &Font::setKerning )
 		.def( "getKerning", &Font::getKerning )
 		.def( "mesh", &mesh )
-		.def( "mesh", (MeshPrimitivePtr (Font::*)( const std::string &)const)&Font::mesh )
+		.def( "mesh", (MeshPrimitivePtr (Font::*)( const std::string &))&Font::mesh )
 		.def( "meshGroup", &Font::meshGroup )
 		.def( "advance", &Font::advance )
-		.def( "bound", (Imath::Box2f (Font::*)( )const)&Font::bound )
-		.def( "bound", (Imath::Box2f (Font::*)( char )const)&Font::bound )
-		.def( "bound", (Imath::Box2f (Font::*)( const std::string &)const)&Font::bound )
+		.def( "bound", (Imath::Box2f (Font::*)( ))&Font::bound )
+		.def( "bound", (Imath::Box2f (Font::*)( char ))&Font::bound )
+		.def( "bound", (Imath::Box2f (Font::*)( const std::string &))&Font::bound )
 		.def( "image", &image )
-		.def( "image", (ImagePrimitivePtr (Font::*)()const)&Font::image )
+		.def( "image", (ImagePrimitivePtr (Font::*)())&Font::image )
 		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( Font )		
 	;
 

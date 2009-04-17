@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -39,27 +39,26 @@ class TestInterned( unittest.TestCase ) :
 
 	def test( self ) :
 		
-		originalSize = InternedString.size()
+		self.assertEqual( InternedString.size(), 0 )
 		
-		s1 = InternedString( "nothingElseIsUsingThisStringYet" )
-		s2 = InternedString( "nothingElseIsUsingThisStringYet" )
+		s1 = InternedString( "hello" )
+		s2 = InternedString( "hello" )
 		self.assertEqual( s1, s2 )
-		self.assertEqual( str( s1 ), "nothingElseIsUsingThisStringYet" )
+		self.assertEqual( str( s1 ), "hello" )
 		self.assertEqual( str( s1 ), str( s2 ) )
-		self.assertEqual( InternedString.size(), originalSize + 1 )
+		self.assertEqual( InternedString.size(), 1 )
 				
-		s3 = InternedString( "nothingElseIsUsingThisStringYetEither" )
+		s3 = InternedString( "cat" )
 		self.assertNotEqual( s1, s3 )
-		self.assertEqual( str( s3 ), "nothingElseIsUsingThisStringYetEither" )
-		self.assertEqual( str( s1 ), "nothingElseIsUsingThisStringYet" )
-		self.assertEqual( str( s2 ), "nothingElseIsUsingThisStringYet" )
-		self.assertEqual( InternedString.size(), originalSize + 2 )
+		self.assertEqual( str( s3 ), "cat" )
+		self.assertEqual( str( s1 ), "hello" )
+		self.assertEqual( str( s2 ), "hello" )
+		self.assertEqual( InternedString.size(), 2 )
 		
 		s4 = InternedString( s1 )
 		self.assertEqual( s1, s4 )
 		self.assertEqual( s2, s4 )
 		self.assertNotEqual( s3, s4 )
-		self.assertEqual( InternedString.size(), originalSize + 2 )
 		
 if __name__ == "__main__":
 	unittest.main()

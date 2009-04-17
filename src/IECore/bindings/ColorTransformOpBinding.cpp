@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/ColorTransformOp.h"
 #include "IECore/CompoundObject.h"
@@ -42,7 +42,6 @@
 
 using namespace boost;
 using namespace boost::python;
-
 
 namespace IECore {
 
@@ -57,6 +56,9 @@ class ColorTransformOpWrap : public ColorTransformOp, public Wrapper<ColorTransf
 			override o = this->get_override( "begin" );
 			if( o )
 			{
+				//// \todo We may want to call operands->copy() here instead of casting away the constness. If the Python code being called
+				/// here actually attempts to change the CompoundObject, then any C++ calling code might get confused when a suposedly const value
+				/// changes unexpectedly. Check any performance overhead of the copy.
 				o( const_pointer_cast<CompoundObject>( operands ) );
 			}
 		}
@@ -89,11 +91,9 @@ IE_CORE_DECLAREPTR( ColorTransformOpWrap );
 
 void bindColorTransformOp()
 {
-	using boost::python::arg;
-	
 	typedef class_< ColorTransformOp, ColorTransformOpWrapPtr, boost::noncopyable, bases<PrimitiveOp> > ColorTransformOpPyClass;
 	ColorTransformOpPyClass( "ColorTransformOp", no_init )
-		.def( init< const std::string, const std::string>( ( arg( "name" ), arg( "description" ) ) ) )
+		.def( init< const std::string, const std::string>( args( "name", "description" ) ) )
 		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(ColorTransformOp)
 	;
 	

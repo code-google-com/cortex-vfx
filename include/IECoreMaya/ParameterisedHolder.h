@@ -85,6 +85,13 @@ class ParameterisedHolder : public BaseType, public ParameterisedHolderInterface
 		
 		virtual void postConstructor();
 		
+		/// \bug This isn't actually overriding the virtual method defined on MPxNode as it's
+		/// missing the const from the signature. It's debatable as to what the right course of
+		/// action is - right now I suspect that we need it to be broken as the derived classes
+		/// aren't overriding it to make themselves non-abstract again.
+		/// \todo Fix this for the next major version.		
+		bool isAbstractClass();
+		
 		virtual MStatus setDependentsDirty( const MPlug &plug, MPlugArray &plugArray );
 		
 		virtual MStatus shouldSave( const MPlug &plug, bool &isSaving );
@@ -95,9 +102,9 @@ class ParameterisedHolder : public BaseType, public ParameterisedHolderInterface
 		/// Set the node to hold a particular Parameterised object. When using this version
 		/// of setParameterised the node will not be able to preserve the object across scene
 		/// save/load - this becomes your responsibility if it's necessary.
-		virtual MStatus setParameterised( IECore::RunTimeTypedPtr p );
+		virtual MStatus setParameterised( IECore::ParameterisedPtr p );
 		virtual MStatus setParameterised( const std::string &className, int classVersion, const std::string &searchPathEnvVar );
-		virtual IECore::RunTimeTypedPtr getParameterised( std::string *className = 0, int *classVersion = 0, std::string *searchPathEnvVar = 0 );
+		virtual IECore::ParameterisedPtr getParameterised( std::string *className = 0, int *classVersion = 0, std::string *searchPathEnvVar = 0 );
 		virtual MStatus setNodeValues();
 		virtual MStatus setNodeValue( IECore::ParameterPtr pa );
 		virtual MStatus setParameterisedValues();
@@ -112,7 +119,7 @@ class ParameterisedHolder : public BaseType, public ParameterisedHolderInterface
 				
 	private:
 		
-		IECore::RunTimeTypedPtr loadClass( const MString &className, int classVersion, const MString &searchPathEnvVar );
+		IECore::ParameterisedPtr loadClass( const MString &className, int classVersion, const MString &searchPathEnvVar );
 		
 		/// Creates (or updates existing) attributes for each parameter. Removes any old attributes no longer
 		/// needed.
@@ -144,7 +151,7 @@ class ParameterisedHolder : public BaseType, public ParameterisedHolderInterface
 		
 	protected :
 	
-		IECore::RunTimeTypedPtr m_parameterised;
+		IECore::ParameterisedPtr m_parameterised;
 		bool m_failedToLoad; // to avoid constantly trying to reload things that aren't there						
 		
 };

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,7 +41,7 @@
 
 #include "IECoreMaya/ParameterisedHolder.h"
 
-#include "IECore/ParameterisedProcedural.h"
+#include "IECore/Renderer.h"
 #include "IECore/Interned.h"
 
 #include "maya/MPxComponentShape.h"
@@ -94,7 +94,7 @@ class ProceduralHolder : public ParameterisedHolderComponentShape
 		/// Calls setParameterised( className, classVersion, "IECORE_PROCEDURAL_PATHS" ).
 		MStatus setProcedural( const std::string &className, int classVersion );
 		/// Returns runTimeCast<ParameterisedProcedural>( getProcedural( className, classVersion ) ). 
-		IECore::ParameterisedProceduralPtr getProcedural( std::string *className = 0, int *classVersion = 0 );
+		IECore::Renderer::ProceduralPtr getProcedural( std::string *className = 0, int *classVersion = 0 );
 	
 		/// Returns an up to date scene from the procedural
 		IECoreGL::ConstScenePtr scene();
@@ -116,12 +116,17 @@ class ProceduralHolder : public ParameterisedHolderComponentShape
 										
 		typedef std::map<IECore::InternedString,  std::pair< unsigned int, IECoreGL::GroupPtr > > ComponentsMap;
 		typedef std::map< int, std::set< std::pair< std::string, IECoreGL::GroupPtr > > > ComponentToGroupMap;		
-				
+		
+		ComponentsMap &componentsMap();		
+		ComponentToGroupMap &componentToGroupMap();
+		
 		void buildComponents();		
 		void buildComponents( IECoreGL::ConstNameStateComponentPtr nameState, IECoreGL::GroupPtr group );
 		
-		ComponentsMap m_componentsMap;		
-		ComponentToGroupMap m_componentToGroupMap;
+	public:
+	
+		/// \todo Move members into class on next major version change
+		struct MemberData;	
 				
 };
 

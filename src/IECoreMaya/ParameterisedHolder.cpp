@@ -52,7 +52,6 @@
 #include "maya/MDGModifier.h"
 #include "maya/MNodeMessage.h"
 #include "maya/MFnExpression.h"
-#include "maya/MFnDagNode.h"
 
 #include "IECoreMaya/ParameterisedHolder.h"
 #include "IECoreMaya/Parameter.h"
@@ -109,6 +108,12 @@ void ParameterisedHolder<B>::postConstructor()
 {
 	B::setExistWithoutInConnections(true);
 	B::setExistWithoutOutConnections(true);	
+}
+
+template<typename B>
+bool ParameterisedHolder<B>::isAbstractClass()
+{
+	return true;
 }
 
 template<typename B>
@@ -209,7 +214,7 @@ MStatus ParameterisedHolder<B>::initialize()
 }
 
 template<typename B>
-MStatus ParameterisedHolder<B>::setParameterised( IECore::RunTimeTypedPtr p )
+MStatus ParameterisedHolder<B>::setParameterised( IECore::ParameterisedPtr p )
 {
 	MPlug pClassName( B::thisMObject(), aParameterisedClassName );
 	MPlug pVersion( B::thisMObject(), aParameterisedVersion );
@@ -253,7 +258,7 @@ MStatus ParameterisedHolder<B>::setParameterised( const std::string &className, 
 }
 
 template<typename B>
-IECore::RunTimeTypedPtr ParameterisedHolder<B>::getParameterised( std::string *classNameOut, int *classVersionOut, std::string *searchPathEnvVarOut )
+IECore::ParameterisedPtr ParameterisedHolder<B>::getParameterised( std::string *classNameOut, int *classVersionOut, std::string *searchPathEnvVarOut )
 {
 	MPlug pClassName( B::thisMObject(), aParameterisedClassName );
 	MPlug pVersion( B::thisMObject(), aParameterisedVersion );
@@ -474,7 +479,7 @@ IECore::ParameterPtr ParameterisedHolder<B>::plugParameter( const MPlug &plug )
 }
 
 template<typename B>
-IECore::RunTimeTypedPtr ParameterisedHolder<B>::loadClass( const MString &className, int classVersion, const MString &searchPathEnvVar )
+IECore::ParameterisedPtr ParameterisedHolder<B>::loadClass( const MString &className, int classVersion, const MString &searchPathEnvVar )
 {
 	string toExecute = boost::str( format( 
 			"IECore.ClassLoader.defaultLoader( \"%s\" ).load( \"%s\", %d )()\n"
@@ -489,7 +494,7 @@ IECore::RunTimeTypedPtr ParameterisedHolder<B>::loadClass( const MString &classN
 			PythonCmd::globalContext().ptr() )
 		);
 		object result( resultHandle );
-		return extract<RunTimeTypedPtr>( result )();
+		return extract<ParameterisedPtr>( result )();
 	}
 	catch( error_already_set & )
 	{
@@ -519,8 +524,7 @@ MStatus ParameterisedHolder<B>::createAndRemoveAttributes()
 	MStatus s;
 	if( m_parameterised )
 	{
-		ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( m_parameterised.get() );
-		s = createAttributesWalk( parameterisedInterface->parameters(), "parm" );
+		s = createAttributesWalk( m_parameterised->parameters(), "parm" );
 		if( !s )
 		{
 			msg( Msg::Error, "ParameterisedHolder::createAndRemoveAttributes", boost::format( "Unable to create attributes to represent class." ) );
@@ -542,14 +546,6 @@ template<typename B>
 MStatus ParameterisedHolder<B>::createAttributesWalk( IECore::ConstCompoundParameterPtr parameter, const std::string &rootName )
 {
 	MFnDependencyNode fnDN( B::thisMObject() );
-	
-	MString thisNodeName = B::name();
-	MFnDagNode fnDAGN( B::thisMObject() );
-	if( fnDAGN.hasObj( B::thisMObject() ) )
-	{
-		thisNodeName = fnDAGN.fullPathName();
-	}
-	
 	const CompoundParameter::ParameterVector &children = parameter->orderedParameters();
 	for( size_t i=0; i<children.size(); i++ )
 	{
@@ -635,7 +631,7 @@ MStatus ParameterisedHolder<B>::createAttributesWalk( IECore::ConstCompoundParam
 						if ( it != mayaUserData.end() && it->second->typeId() == StringDataTypeId )
 						{
 							std::string defaultConnection = static_pointer_cast<StringData>(it->second)->readable();
-							std::string cmd = string( "connectAttr " ) + defaultConnection + " " + thisNodeName.asChar() + "." + plug.partialName().asChar();
+							std::string cmd = string( "connectAttr " ) + defaultConnection + " " + plug.partialName( true ).asChar();
 							MDGModifier dgMod;
 							dgMod.commandToExecute( cmd.c_str() );
 							dgMod.doIt();												
@@ -644,7 +640,7 @@ MStatus ParameterisedHolder<B>::createAttributesWalk( IECore::ConstCompoundParam
 						if ( it != mayaUserData.end() && it->second->typeId() == StringDataTypeId )
 						{
 							std::string defaultExpression = static_pointer_cast<StringData>(it->second)->readable();
-							MString cmd = thisNodeName + "." + plug.partialName() + defaultExpression.c_str();
+							MString cmd = plug.partialName( true ) + defaultExpression.c_str();
 							MFnExpression expFn;
 							expFn.create( cmd );
 						}

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -34,11 +34,11 @@
 
 // This include needs to be the very first to prevent problems with warnings
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include <string>
 
-#include "IECore/InterpolatedCache.h"
+#include <IECore/InterpolatedCache.h>
 #include "IECore/CompoundObject.h"
 #include "IECore/bindings/IntrusivePtrPatch.h"
 
@@ -146,20 +146,9 @@ void bindInterpolatedCache()
 		;
 	}
 	interpolatedCacheClass
-		.def( 
-			init< optional<const std::string &, double, InterpolatedCache::Interpolation, int, double > >
-			( 
-				(
-					arg( "pathTemplate" ) = std::string(""), 
-					arg( "frame" ) = double(0.0), 
-					arg( "interpolation" ) = InterpolatedCache::None, 
-					arg( "oversamples" ) = int(1),
-					arg( "frameRate") = double(24.0)
-				)
-			) 
-		)
+		.def( init< optional<const std::string &, double, InterpolatedCache::Interpolation, int, double > >( args("pathTemplate", "frame", "interpolation", "oversamples", "frameRate") ) )
 		.def("setPathTemplate", &InterpolatedCache::setPathTemplate )
-		.def("getPathTemplate", &InterpolatedCache::getPathTemplate, return_value_policy<copy_const_reference>() )
+		.def("getPathTemplate", &InterpolatedCache::getPathTemplate )
 		.def("setFrame", &InterpolatedCache::setFrame )
 		.def("getFrame", &InterpolatedCache::getFrame )
 		.def("setInterpolation", &InterpolatedCache::setInterpolation )

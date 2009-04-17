@@ -178,7 +178,7 @@ enum TypeId
 	ModifyOpTypeId = 135,
 	ImageOpTypeId = 136,
 	PrimitiveOpTypeId = 137,
-	ProceduralTypeId = 138, // Obsolete
+	ProceduralTypeId = 138,
 	Box3iParameterTypeId = 139,
 	V2iParameterTypeId = 140,
 	V3iParameterTypeId = 141,
@@ -319,19 +319,6 @@ enum TypeId
 	PatchMeshPrimitiveTypeId = 276,
 	CurvesPrimitiveParameterTypeId = 277,
 	CurveExtrudeOpTypeId = 278,
-	FrameListTypeId = 279,
-	EmptyFrameListTypeId = 280,
-	FrameRangeTypeId = 281,
-	CompoundFrameListTypeId = 282,
-	ReorderedFrameListTypeId = 283,
-	BinaryFrameListTypeId = 284,
-	ReversedFrameListTypeId = 285,
-	ExclusionFrameListTypeId = 286,	   
-	FrameListParameterTypeId = 287, 
-	FileSequenceTypeId = 288,
-	FileSequenceParameterTypeId = 289,
-	FileSequenceVectorParameterTypeId = 290,
-	ParameterisedProceduralTypeId = 291,
 	
 	// Remember to update TypeIdBinding.cpp !!!
 	

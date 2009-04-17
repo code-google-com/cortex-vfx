@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -57,30 +57,30 @@ class FromMayaMeshConverterTest( unittest.TestCase ) :
 		sphere = maya.cmds.listRelatives( sphere, shapes=True )[0]
 	
 		converter = IECoreMaya.FromMayaShapeConverter.create( sphere )
-		self.assertEqual( converter["interpolation"].getTypedValue(), "linear" )
+		self.assertEqual( converter.interpolation.getTypedValue(), "linear" )
 		p = converter.convert()
 		self.assertEqual( p.interpolation, "linear" )		
-		converter["interpolation"].setTypedValue( "catmullClark" )
+		converter.interpolation.setTypedValue( "catmullClark" )
 		p = converter.convert()
 		self.assertEqual( p.interpolation, "catmullClark" )
 		
 		converter = IECoreMaya.FromMayaShapeConverter.create( sphere )
-		self.assertEqual( converter["points"].getTypedValue(), True )
+		self.assertEqual( converter.points.getTypedValue(), True )
 		self.assert_( "P" in converter.convert() )		
-		converter["points"].setTypedValue( False )
+		converter.points.setTypedValue( False )
 		self.assert_( not "P" in converter.convert() )
 		
 		converter = IECoreMaya.FromMayaShapeConverter.create( sphere )
-		self.assertEqual( converter["normals"].getTypedValue(), True )
+		self.assertEqual( converter.normals.getTypedValue(), True )
 		self.assert_( "N" in converter.convert() )		
-		converter["normals"].setTypedValue( False )
+		converter.normals.setTypedValue( False )
 		self.assert_( not "N" in converter.convert() )
 		
 		converter = IECoreMaya.FromMayaShapeConverter.create( sphere )
-		self.assertEqual( converter["st"].getTypedValue(), True )
+		self.assertEqual( converter.st.getTypedValue(), True )
 		self.assert_( "s" in converter.convert() )		
 		self.assert_( "t" in converter.convert() )		
-		converter["st"].setTypedValue( False )
+		converter.st.setTypedValue( False )
 		self.assert_( not "s" in converter.convert() )		
 		self.assert_( not "t" in converter.convert() )	
 	
@@ -101,10 +101,6 @@ class FromMayaMeshConverterTest( unittest.TestCase ) :
 		self.assertEqual( m["N"].data.size(), 180 )
 		self.assertEqual( m["s"].data.size(), 180 )
 		self.assertEqual( m["t"].data.size(), 180 )
-		self.assert_( m["P"].data == converter.points() )
-		self.assert_( m["N"].data == converter.normals() )		
-		self.assert_( m["s"].data == converter.s( "map1" ) )		
-		self.assert_( m["t"].data == converter.t( "map1" ) )				
 				
 		self.assert_( IECore.Box3f( IECore.V3f( -1.0001 ), IECore.V3f( 1.0001 ) ).contains( m.bound() ) )
 		self.assert_( m.bound().contains( IECore.Box3f( IECore.V3f( -0.90 ), IECore.V3f( 0.90 ) ) ) )
@@ -117,11 +113,11 @@ class FromMayaMeshConverterTest( unittest.TestCase ) :
 	
 		converter = IECoreMaya.FromMayaShapeConverter.create( sphere )
 		
-		self.assertEqual( converter["space"].getNumericValue(), IECoreMaya.FromMayaCurveConverter.Space.Object )
+		self.assertEqual( converter.space.getNumericValue(), IECoreMaya.FromMayaCurveConverter.Space.Object )
 		m = converter.convert()
 		self.assert_( IECore.Box3f( IECore.V3f( -1.0001 ), IECore.V3f( 1.0001 ) ).contains( m.bound() ) )
 
-		converter["space"].setNumericValue( IECoreMaya.FromMayaShapeConverter.Space.World )
+		converter.space.setNumericValue( IECoreMaya.FromMayaShapeConverter.Space.World )
 		m = converter.convert()
 		self.assert_( IECore.Box3f( IECore.V3f( -1.0001 ) + IECore.V3f( 1, 2, 3 ), IECore.V3f( 1.0001 ) + IECore.V3f( 1, 2, 3 ) ).contains( m.bound() ) )
 	
@@ -138,7 +134,7 @@ class FromMayaMeshConverterTest( unittest.TestCase ) :
 		m = converter.convert()
 		self.assert_( "N" in m )
 		
-		converter["interpolation"].setTypedValue( "catmullClark" )
+		converter.interpolation.setTypedValue( "catmullClark" )
 		m = converter.convert()
 		self.assert_( not "N" in m )
 	
@@ -199,7 +195,7 @@ class FromMayaMeshConverterTest( unittest.TestCase ) :
 	
 		converter = IECoreMaya.FromMayaPlugConverter.create( sphere + ".worldMesh" )
 		
-		converter["space"].setNumericValue( IECoreMaya.FromMayaShapeConverter.Space.World )
+		converter.space.setNumericValue( IECoreMaya.FromMayaShapeConverter.Space.World )
 		m = converter.convert()
 		self.assert_( IECore.Box3f( IECore.V3f( -1.0001 ) + IECore.V3f( 1, 2, 3 ), IECore.V3f( 1.0001 ) + IECore.V3f( 1, 2, 3 ) ).contains( m.bound() ) )
 							

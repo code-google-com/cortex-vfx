@@ -126,7 +126,7 @@ class SplineParameterHandlerTest( unittest.TestCase ) :
 			parameterised.parameters()["spline"].setValue( splineData )
 
 			# Put the value to the node's attributes
-			fnPH.setNodeValue( parameterised.parameters()["spline"], False )
+			fnPH.setNodeValue( parameterised.parameters()["spline"] )
 
 			# Retrieve the value from the node's attributes		
 			fnPH.setParameterisedValue( parameterised.parameters()["spline"] )
@@ -134,7 +134,11 @@ class SplineParameterHandlerTest( unittest.TestCase ) :
 			# The parameter value should not have changed
 			
 			data = parameterised.parameters()["spline"].getValue()
-			self.assertEqual( len( data.value ), len( splineData.value ) )	
+			self.assertEqual( len( data.value ), len( splineData.value ) )
+			
+			if data.value != splineData.value :
+			
+				print data.value, "!=", splineData.value	
 			
 			for i in range( 0, len( data.value ) ) :
 			
@@ -178,7 +182,7 @@ class SplineParameterHandlerTest( unittest.TestCase ) :
 			parameterised.parameters()["spline"].setValue( splineData )
 
 			# Put the value to the node's attributes
-			fnPH.setNodeValue( parameterised.parameters()["spline"], False )
+			fnPH.setNodeValue( parameterised.parameters()["spline"] )
 
 			# Retrieve the value from the node's attributes		
 			fnPH.setParameterisedValue( parameterised.parameters()["spline"] )

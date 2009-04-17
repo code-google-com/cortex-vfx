@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/TypeIds.h"
 #include "IECore/bindings/TypeIdBinding.h"
@@ -318,18 +318,6 @@ void bindTypeId()
 		.value("PatchMeshPrimitive", PatchMeshPrimitiveTypeId )
 		.value("CurvesPrimitiveParameter", CurvesPrimitiveParameterTypeId )
 		.value("CurveExtrudeOp", CurveExtrudeOpTypeId )
-		.value("FrameList", FrameListTypeId ) 
-		.value("EmptyFrameList", EmptyFrameListTypeId )
-		.value("FrameRange", FrameRangeTypeId )
-		.value("CompoundFrameList", CompoundFrameListTypeId )
-		.value("ReorderedFrameList", ReorderedFrameListTypeId )
-		.value("BinaryFrameList", BinaryFrameListTypeId )
-		.value("ReversedFrameList", ReversedFrameListTypeId )
-		.value("ExclusionFrameList", ExclusionFrameListTypeId )
-		.value("FrameListParameter", FrameListParameterTypeId )
-		.value("FileSequence", FileSequenceTypeId )
-		.value("FileSequenceParameter", FileSequenceParameterTypeId )		
-		.value("FileSequenceVectorParameter", FileSequenceVectorParameterTypeId )
 	;
 }
 

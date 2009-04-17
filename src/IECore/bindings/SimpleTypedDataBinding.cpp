@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,16 +32,16 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include <limits.h>
 
-#include "boost/python/make_constructor.hpp"
+#include <boost/python/make_constructor.hpp>
 
 #include "OpenEXR/ImathLimits.h"
-#include "OpenEXR/halfLimits.h"
 
 #include "IECore/SimpleTypedData.h"
+#include "IECore/BoxOperators.h"
 #include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/bindings/IECoreBinding.h"
@@ -113,6 +113,18 @@ template<>
 int cmp( StringData &x, StringData &y )
 {
 	return x.readable().compare( y.readable() );
+}
+
+template<class T>
+static typename T::ValueType minValue( T &x )
+{
+	return std::numeric_limits<typename T::ValueType>::min();
+}
+
+template<class T>
+static typename T::ValueType maxValue( T & x)
+{
+	return std::numeric_limits<typename T::ValueType>::max();
 }
 
 template<>
@@ -264,9 +276,15 @@ static class_<T, intrusive_ptr<T>, boost::noncopyable, bases<Data> > bindSimpleD
 template<class T>
 static void bindNumericMethods( class_<T, intrusive_ptr<T>, boost::noncopyable, bases<Data> > &c )
 {
-	c.add_static_property( "minValue", &std::numeric_limits<typename T::ValueType>::min, "Minimum representable value." );
-	c.add_static_property( "maxValue", &std::numeric_limits<typename T::ValueType>::max, "Maximum representable value." );
+	/// \todo minValue/maxValue should be static
+	c.add_property( "minValue", &minValue<T>, "Minimum representable value." );
+	c.add_property( "maxValue", &maxValue<T>, "Maximum representable value." );
 	c.def( "__cmp__", &cmp<T>, "Comparison operators ( <, >, >=, <= )" );
+}
+
+static void bindHalfMethods( class_<HalfData, intrusive_ptr<HalfData>, boost::noncopyable, bases<Data> > &c )
+{
+	c.def( "__cmp__", &cmp<HalfData>, "Comparison operators ( <, >, >=, <= )" );
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -313,7 +331,7 @@ void bindAllSimpleTypedData()
 	implicitly_convertible<UCharDataPtr, DataPtr>();
 	
 	class_< HalfData, HalfDataPtr, boost::noncopyable, bases<Data> > hdc = bindSimpleData<HalfData>();
-	bindNumericMethods( hdc );
+	bindHalfMethods( hdc );
 	hdc.def( "__float__", &getValue<HalfData> );
 	implicitly_convertible<HalfDataPtr, DataPtr>();
 	

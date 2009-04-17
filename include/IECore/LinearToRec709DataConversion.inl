@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,10 +43,10 @@ namespace IECore
 {
 
 template<typename F, typename T>
-T LinearToRec709DataConversion<F, T>::operator()( F f ) const
+T LinearToRec709DataConversion<F, T>::operator()( F f )
 {
-	const float phi = 4.5f;
-	const float cutoff = (float)(0.081f / 4.5f);
+	float phi = 4.5f;
+	float cutoff = (float)(0.081f / 4.5f);
 
 	if ( f <= cutoff )
 	{
@@ -54,8 +54,8 @@ T LinearToRec709DataConversion<F, T>::operator()( F f ) const
 	}
 	else
 	{
-		const float alpha = 0.099f;
-		const float exponent = 1/.45;
+		float alpha = 0.099f;
+		float exponent = 1/.45;
 
 		float v = ( 1.0f + alpha ) * Imath::Math<float>::pow(f, 1.0f / exponent ) - alpha;
 

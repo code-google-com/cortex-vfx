@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -34,7 +34,7 @@
 
 // This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Camera.h"
 #include "IECore/Transform.h"
@@ -43,7 +43,6 @@
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
-using boost::python::arg;
 
 namespace IECore
 {
@@ -52,17 +51,7 @@ void bindCamera()
 {
 	typedef class_<Camera, boost::noncopyable, CameraPtr, bases<PreWorldRenderable> > CameraPyClass;
 	CameraPyClass( "Camera", no_init )
-		.def( init< optional< const std::string &, TransformPtr, CompoundDataPtr > >
-			( 
-				( 
-					arg( "name" ) = std::string( "default" ), 
-					arg( "transform" ) = TransformPtr(), 
-					
-					/// We need to explicitly make this a CompoundData::Ptr so that boost.python finds the correct to_python converter
-					arg( "parameters" ) = CompoundData::Ptr( new CompoundData() )
-				) 
-			)
-		)
+		.def( init< optional< const std::string &, TransformPtr, CompoundDataPtr > >( args( "name", "transform", "parameters" ) ) )
 		.def( "setName", &Camera::setName )
 		.def( "getName", &Camera::getName, return_value_policy<copy_const_reference>() )
 		.def( "setTransform", &Camera::setTransform )

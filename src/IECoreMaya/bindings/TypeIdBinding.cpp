@@ -62,7 +62,6 @@ void bindTypeId()
 		.value( "FromMayaPluginDataPlugConverter", FromMayaPluginDataPlugConverterTypeId )		
 		.value( "FromMayaTransformConverter", FromMayaTransformConverterTypeId )				
 		.value( "FromMayaImageConverter", FromMayaImageConverterTypeId )						
-		.value( "PlaybackFrameList", PlaybackFrameListTypeId )
 	;
 }
 

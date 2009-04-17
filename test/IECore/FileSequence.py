@@ -45,8 +45,8 @@ class testFrameRange( unittest.TestCase ) :
 	
 		self.assertRaises( TypeError, FrameRange, 1, 100.1 )
 		self.assertRaises( TypeError, FrameRange, "1", "100" )
-		self.assertRaises( RuntimeError, FrameRange, 10, 1 )
-		self.assertRaises( RuntimeError, FrameRange, 1, 9, 3 )
+		self.assertRaises( ValueError, FrameRange, 10, 1 )
+		self.assertRaises( ValueError, FrameRange, 1, 9, 3 )
 		
 		r = FrameRange( 1, 100 )
 		self.assertEqual( r.start, 1 )
@@ -108,7 +108,7 @@ class testFileSequence( unittest.TestCase ) :
 
 	def testConstructor( self ) :
 		
-		self.assertRaises( RuntimeError, FileSequence, "", FrameRange( 0, 1 ) )
+		self.assertRaises( ValueError, FileSequence, "", FrameRange( 0, 1 ) )
 		
 		s = FileSequence( "seq.#.tif", FrameRange( 0, 2 ) )
 		self.assertEqual( s.fileNames(), ["seq.0.tif", "seq.1.tif", "seq.2.tif"] )
@@ -212,7 +212,7 @@ class testCompoundFrameList( unittest.TestCase ) :
 	def testConstructor( self ) :
 	
 		self.assertRaises( TypeError, CompoundFrameList, "" )
-		self.assertRaises( RuntimeError, CompoundFrameList, [ "" ] )
+		self.assertRaises( TypeError, CompoundFrameList, [ "" ] )
 		
 		c = CompoundFrameList()
 		c = CompoundFrameList([])

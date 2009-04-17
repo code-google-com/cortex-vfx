@@ -34,18 +34,16 @@
 
 // This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 // System includes
 #include <string>
 #include <stdexcept>
 
-#include "OpenEXR/ImathMatrix.h"
-#include "OpenEXR/ImathMatrixAlgo.h"
+#include <OpenEXR/ImathMatrix.h>
+#include <OpenEXR/ImathMatrixAlgo.h>
 
-#include "IECore/Exception.h"
 #include "IECore/MatrixAlgo.h"
-#include "IECore/MatrixTraits.h"
 #include "IECore/bindings/ImathMatrixBinding.h"
 #include "IECore/bindings/IECoreBinding.h"
 
@@ -57,50 +55,19 @@ using namespace std;
 namespace IECore 
 {
 
-template<class L>
-static const char *typeName()
-{
-	BOOST_STATIC_ASSERT( sizeof(L) == 0 );
-	return "";
-}
-
-template<>
-static const char *typeName<M33f>()
-{
-	return "M33f";
-}
-
-template<>
-static const char *typeName<M33d>()
-{
-	return "M33d";
-}
-
-template<>
-static const char *typeName<M44f>()
-{
-	return "M44f";
-}
-
-template<>
-static const char *typeName<M44d>()
-{
-	return "M44d";
-}
+template<typename T>
+void bindMatrix33(const char *bindName);
 
 template<typename T>
-void bindMatrix33();
-
-template<typename T>
-void bindMatrix44();
+void bindMatrix44(const char *bindName);
 
 void bindImathMatrix()
 {
-	bindMatrix33<float>();
-	bindMatrix33<double>();
+	bindMatrix33<float>("M33f");
+	bindMatrix33<double>("M33d");
 
-	bindMatrix44<float>();
-	bindMatrix44<double>();
+	bindMatrix44<float>("M44f");
+	bindMatrix44<double>("M44d");
 }	
 
 template<typename T>
@@ -138,34 +105,6 @@ struct MatrixDimensions< Matrix44<T> >
 		return make_tuple(4, 4);
 	}
 };
-
-template<typename M>
-M *constructFromList( list l )
-{
-	if ( len( l ) != (int)(MatrixTraits<M>::dimensions() * MatrixTraits<M>::dimensions() ) )
-	{
-		throw InvalidArgumentException( std::string( "Invalid list length given to IECore." ) + typeName<M>() + " constructor" );
-	}
-	
-	M *r = new M();
-	
-	int i = 0;
-	for ( unsigned row = 0; row < MatrixTraits<M>::dimensions(); row ++ )
-	{
-		for ( unsigned col = 0; col < MatrixTraits<M>::dimensions(); col ++ )
-		{
-			extract< typename MatrixTraits<M>::BaseType > ex( l[i++] );
-			if ( !ex.check() )
-			{
-				throw InvalidArgumentException( std::string( "Invalid list element given to IECore." ) + typeName<M>() + " constructor" );
-			}
-		
-			(*r)[row][col] = ex();
-		}
-	}
-	
-	return r ;
-}
 
 template<typename T>
 struct MatrixWrapper
@@ -346,43 +285,45 @@ tuple extractSHRT33( const Matrix33<T> &m )
 	return make_tuple( s, h, r, t );
 }
 
-#define DEFINEMATRIXSTRSPECIALISATION( TYPE, D )\
-template<>\
-string repr<TYPE>( TYPE &x )\
-{\
-	stringstream s;\
-	s << "IECore." << typeName<TYPE>() << "( ";\
-	for( int i=0; i<D; i++ )\
-	{\
-		for( int j=0; j<D; j++ )\
-		{\
-			s << x[i][j];\
-			if( !(i==D-1 && j==D-1) )\
-			{\
-				s << ", ";\
-			}\
-		}\
-	}\
-	s << " )";\
-	return s.str();\
-}\
-\
-template<>\
-string str<TYPE>( TYPE &x )\
-{\
-	stringstream s;\
-	for( int i=0; i<D; i++ )\
-	{\
-		for( int j=0; j<D; j++ )\
-		{\
-			s << x[i][j];\
-			if( !(i==D-1 && j==D-1) )\
-			{\
-				s << " ";\
-			}\
-		}\
-	}\
-	return s.str();\
+/// \todo The only reason this is a macro is so that it can turn the class type to a string. We should probably do this 
+/// with a small traits class instead, and get rid of the macro.
+#define DEFINEMATRIXSTRSPECIALISATION( TYPE, D )														\
+template<>																								\
+string repr<TYPE>( TYPE &x )																			\
+{																										\
+	stringstream s;																						\
+	s << "IECore." << #TYPE << "( ";																	\
+	for( int i=0; i<D; i++ )																			\
+	{																									\
+		for( int j=0; j<D; j++ )																		\
+		{																								\
+			s << x[i][j];																				\
+			if( !(i==D-1 && j==D-1) )																	\
+			{																							\
+				s << ", ";																				\
+			}																							\
+		}																								\
+	}																									\
+	s << " )";																							\
+	return s.str();																						\
+}																										\
+																										\
+template<>																								\
+string str<TYPE>( TYPE &x )																				\
+{																										\
+	stringstream s;																						\
+	for( int i=0; i<D; i++ )																			\
+	{																									\
+		for( int j=0; j<D; j++ )																		\
+		{																								\
+			s << x[i][j];																				\
+			if( !(i==D-1 && j==D-1) )																	\
+			{																							\
+				s << " ";																				\
+			}																							\
+		}																								\
+	}																									\
+	return s.str();																						\
 }		
 
 DEFINEMATRIXSTRSPECIALISATION( M33f, 3 );
@@ -396,7 +337,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(Matrix33GJInvertOverloads, gjInvert, 0, 1
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(Matrix33GJInverseOverloads, gjInverse, 0, 1);		
 
 template<typename T>
-void bindMatrix33()
+void bindMatrix33(const char *bindName)
 {
 	const Matrix33<T> &(Matrix33<T>::*setScale1)(const Vec2<T> &) = &Matrix33<T>::setScale;	
 	const Matrix33<T> &(Matrix33<T>::*setScale2)(T) = &Matrix33<T>::setScale;	
@@ -407,17 +348,14 @@ void bindMatrix33()
 	const Matrix33<T> &(Matrix33<T>::*shear1)(const T &) = &Matrix33<T>::template shear<T>;
 	const Matrix33<T> &(Matrix33<T>::*shear2)(const Vec2<T> &) = &Matrix33<T>::template shear<T>;
 	
-	const char *bindName = typeName<Matrix33<T> >();
-	
-	class_< Matrix33<T> >( bindName )
+	class_< Matrix33<T> >(bindName)
 		//.def_readwrite("x", &Matrix33<T>::x)
 		.def(init<>())
 		.def(init<T>())
 		.def(init<T, T, T, T, T, T, T, T, T>())
+		/// \todo Could add constructor which takes a Python list
 		
 		.def(init<const Matrix33<T> &>())
-		
-		.def("__init__", make_constructor( &constructFromList< Matrix33<T> > ) )
 	
 		.def("dimensions", &MatrixDimensions<Matrix33<T> >::get)
 	
@@ -515,7 +453,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(Matrix44GJInvertOverloads, gjInvert, 0, 1
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(Matrix44GJInverseOverloads, gjInverse, 0, 1);
 
 template<typename T>
-void bindMatrix44()
+void bindMatrix44(const char *bindName)
 {
 	const Matrix44<T> &(Matrix44<T>::*setScale1)(const Vec3<T> &) = &Matrix44<T>::setScale;	
 	const Matrix44<T> &(Matrix44<T>::*setScale2)(T) = &Matrix44<T>::setScale;	
@@ -526,17 +464,15 @@ void bindMatrix44()
 	//const Matrix44<T> &(Matrix44<T>::*shear1)(const Shear6<T> &) = &Matrix44<T>::template shear<T>;
 	const Matrix44<T> &(Matrix44<T>::*shear2)(const Vec3<T> &) = &Matrix44<T>::template shear<T>;
 	
-	const char *bindName = typeName<Matrix44<T> >();
-	
-	class_< Matrix44<T> >( bindName )
+	class_< Matrix44<T> >(bindName)
+		//.def_readwrite("x", &Matrix44<T>::x)
 		
+		/// \todo Could add constructor which takes a Python list, which would certainly make integration with Maya nicer
 		.def(init<>())
 		.def(init<T>())
 		.def(init<T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T>())
 		.def(init<Matrix33<T>, Vec3<T> >())
 		.def(init<const Matrix44<T> &>())
-		
-		.def("__init__", make_constructor( &constructFromList< Matrix44<T> > ) )		
 		
 		//.def(self = T())
 		

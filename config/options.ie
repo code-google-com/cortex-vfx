@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -116,7 +116,12 @@ else :
 
 withAsserts = getOption( "WITH_ASSERTS", withAsserts )
 if not withAsserts :
-	CXXFLAGS += [ "-DNDEBUG", "-DBOOST_DISABLE_ASSERTS" ]
+	# \todo This doesnt disable ALL asserts - boost ones are controlled
+	# by their own preprocessor symbol. We may want to specify
+	# "-DBOOST_DISABLE_ASSERTS" in this list too, to disable Boost's
+	# asserts here. It shows a ~5% speedup on the test cases, so could
+	# be worthwhile.
+	CXXFLAGS += [ "-DNDEBUG" ]
 
 TESTCXXFLAGS = copy.copy( CXXFLAGS )
 	
@@ -125,12 +130,7 @@ TESTCXXFLAGS += [ "-O0" ]
 	
 if not debug :
 
-	CXXFLAGS += [ "-O2" ]
-			
-
-if IEEnv.platformHardware() == "i686" :
-
-	CXXFLAGS += [ "-march=pentium4", "-mfpmath=sse" ]
+	CXXFLAGS += [ "-O2" ]		
 
 
 PYTHONCXXFLAGS = copy.copy( CXXFLAGS )
@@ -138,12 +138,11 @@ PYTHONCXXFLAGS = copy.copy( CXXFLAGS )
 ###########################################################################################
 # Warning flags. We'd like to set these for all environments but boost::python and
 # boost::unit_test generate loads of warnings so we can't set it for the python bindings
-# or C++ tests. GCC 4.3.0 gives out a lot of boost warnings in general, too. 
-# boost 1.38.0 generates construction initialization order warnings which we don't want, either.
+# or C++ tests. GCC 4.3.0 gives out a lot of boost warnings in general, too.
 ###########################################################################################		
 if compilerVersionInt < 430 :
 
-	CXXFLAGS += [ "-Werror", "-Wno-reorder" ]
+	CXXFLAGS += [ "-Werror" ]
 	
 LINKFLAGS = []	
 if compilerVersionInt < 350 :
@@ -157,7 +156,7 @@ if compilerVersionInt < 350 :
 	
 
 # set the include paths
-BOOST_INCLUDE_PATH = "/software/tools/include/boost/1.38.0"
+BOOST_INCLUDE_PATH = "/software/tools/include/boost/1.35.0"
 OPENEXR_INCLUDE_PATH = "/software/tools/include/OpenEXR/" + openEXRVersion
 TIFF_INCLUDE_PATH = "/software/tools/include/tiff/3.8.2"
 JPEG_INCLUDE_PATH = "/software/tools/include/jpeg/6b"
@@ -168,9 +167,9 @@ CPPPATH = "/software/tools/include/freetype/2.3.5"
 # figure out the boost lib suffix
 compilerVersionSplit = compilerVersion.split( "." )
 if IEEnv.platformOS().startswith( "osx" ) :
-	BOOST_LIB_SUFFIX = "-xgcc" + compilerVersionSplit[0] + compilerVersionSplit[1] + "-mt-1_38"
+	BOOST_LIB_SUFFIX = "-mt-1_35"
 else:
-	BOOST_LIB_SUFFIX = "-" + compiler + compilerVersionSplit[0] + compilerVersionSplit[1] + "-mt-1_38"
+	BOOST_LIB_SUFFIX = "-" + compiler + compilerVersionSplit[0] + compilerVersionSplit[1] + "-mt-1_35"
 
 # find the right libraries based on compiler and platform
 LIBPATH = "/software/tools/lib/" + platform + "/" + compiler + "/" + compilerVersion

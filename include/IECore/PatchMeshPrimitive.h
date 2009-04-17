@@ -79,14 +79,14 @@ class PatchMeshPrimitive : public Primitive
 		bool uPeriodic() const;
 		bool vPeriodic() const;
 
-		virtual void render( RendererPtr renderer ) const;
+		virtual void render( RendererPtr renderer );
 		
 		/// Follows the RenderMan specification for variable sizes.
 		virtual size_t variableSize( PrimitiveVariable::Interpolation interpolation ) const;
 
 	protected :
 
-		bool m_uLinear, m_vLinear;
+		bool m_linear;
 		unsigned int m_uPoints, m_vPoints;
 		CubicBasisf m_uBasis, m_vBasis;
 		bool m_uPeriodic, m_vPeriodic;

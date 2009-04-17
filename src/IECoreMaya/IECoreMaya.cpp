@@ -38,7 +38,6 @@
 #include "boost/format.hpp"
 
 #include "IECoreGL/IECoreGL.h"
-#include "IECoreGL/GL.h"
 
 #include "maya/MPxNode.h"
 #include "maya/MPxLocatorNode.h"
@@ -65,7 +64,6 @@
 #include "IECoreMaya/ConverterHolder.h"
 #include "IECoreMaya/ImageFile.h"
 #include "IECoreMaya/ImagePlaneHolder.h"
-#include "IECoreMaya/ParameterisedHolderSetValueCmd.h"
 
 namespace IECoreMaya
 {
@@ -148,8 +146,6 @@ MStatus initialize(MFnPlugin &plugin)
 		
 		s = plugin.registerCommand( "ieSystemExit", SystemExitCmd::creator );				
 		
-		s = plugin.registerCommand( "ieParameterisedHolderSetValue", ParameterisedHolderSetValueCmd::creator, ParameterisedHolderSetValueCmd::newSyntax );				
-
 		MStringArray imageFileExtensions;
 		imageFileExtensions.append( "exr" );
 		
@@ -204,8 +200,6 @@ MStatus uninitialize(MFnPlugin &plugin)
 		s = plugin.deregisterCommand( "iePython" );
 		s = plugin.deregisterCommand( "ieSystemExit" );
 		PythonCmd::uninitialize();
-		
-		s = plugin.deregisterCommand( "ieParameterisedHolderSetValue" );
 		
 		s = plugin.deregisterData( ObjectData::id );
 		

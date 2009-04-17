@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,10 +42,10 @@ namespace IECore
 
 /// See http://en.wikipedia.org/wiki/SRGB_color_space for implementation details	
 template<typename F, typename T>
-T SRGBToLinearDataConversion<F, T>::operator()( F f ) const
+T SRGBToLinearDataConversion<F, T>::operator()( F f )
 {
-	const float k0 = 0.04045f;
-	const float phi = 12.92f;
+	float k0 = 0.04045f;
+	float phi = 12.92f;
 
 	if ( f <= k0 )
 	{
@@ -53,8 +53,8 @@ T SRGBToLinearDataConversion<F, T>::operator()( F f ) const
 	}
 	else
 	{
-		const float alpha = 0.055;
-		const float exponent = 2.4;
+		float alpha = 0.055;
+		float exponent = 2.4;
 
 		float v = Imath::Math<float>::pow( ( f + alpha ) / ( 1.0f + alpha ), exponent );
 

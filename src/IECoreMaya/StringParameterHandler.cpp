@@ -43,8 +43,6 @@
 #include "IECore/FileNameParameter.h"
 #include "IECore/DirNameParameter.h"
 #include "IECore/ValidatedStringParameter.h"
-#include "IECore/FileSequenceParameter.h"
-#include "IECore/FrameListParameter.h"
 
 #include "maya/MFnTypedAttribute.h"
 #include "maya/MFnMessageAttribute.h"
@@ -67,8 +65,6 @@ static ParameterHandler::Description< StringParameterHandler > pathRegistrar( IE
 static ParameterHandler::Description< StringParameterHandler > fileNameRegistrar( IECore::FileNameParameter::staticTypeId() );
 static ParameterHandler::Description< StringParameterHandler > dirNameRegistrar( IECore::DirNameParameter::staticTypeId() );
 static ParameterHandler::Description< StringParameterHandler > validatedStringRegistrar( IECore::ValidatedStringParameter::staticTypeId() );
-static ParameterHandler::Description< StringParameterHandler > fileSequenceRegistrar( IECore::FileSequenceParameter::staticTypeId() );
-static ParameterHandler::Description< StringParameterHandler > frameListRegistrar( IECore::FrameListParameter::staticTypeId() );
 
 MStatus StringParameterHandler::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
 {

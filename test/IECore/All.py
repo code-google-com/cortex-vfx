@@ -32,11 +32,6 @@
 #
 ##########################################################################
 
-import warnings
-warnings.filterwarnings( "error", "Access to Parameters as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Access to CompoundObject children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Access to CompoundParameter children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-
 import unittest
 import IECore
 import sys
@@ -97,7 +92,6 @@ from ReversedFrameList import *
 from BinaryFrameList import *
 from PointsExpressionOp import *
 from FrameList import *
-from FrameListParameter import *
 from Struct import *
 from Enum import *
 from HeaderGenerator import *
@@ -192,8 +186,6 @@ from TimeDurationDataTest import *
 from TimePeriodDataTest import *
 from PatchMeshPrimitiveTest import *
 from CurveExtrudeOp import *
-from ParameterisedProceduralTest import *
-from LevenbergMarquardtTest import *
 
 if IECore.withTIFF() :
 	from TIFFImageReader import *

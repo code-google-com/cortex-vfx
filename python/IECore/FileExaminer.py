@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -33,7 +33,8 @@
 ##########################################################################
 
 import os.path
-from IECore import ls
+from FileSequence import FileSequence
+from FileSequenceFunctions import ls
 
 ## The FileExaminer class is an abstract base class for classes which
 # can perform some query on a file.
@@ -78,7 +79,7 @@ class FileExaminer :
 			dependencies = examiner.dependencies()
 			result = dependencies
 			for dependency in dependencies :
-				if IECore.FileSequence.fileNameValidator().match( dependency ) :
+				if FileSequence.fileNameValidator().match( dependency ) :
 					ext = os.path.splitext( dependency )
 					if ext!="" :
 						ext = ext[1:]

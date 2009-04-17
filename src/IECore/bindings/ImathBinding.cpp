@@ -41,7 +41,6 @@
 #include "IECore/bindings/ImathColorBinding.h"
 #include "IECore/bindings/ImathEulerBinding.h"
 #include "IECore/bindings/ImathRootsBinding.h"
-#include "IECore/bindings/ImathPlaneBinding.h"
 
 using namespace IECore;
 
@@ -58,7 +57,6 @@ void bindImath()
 	bindImathColor();
 	bindImathEuler();
 	bindImathRoots();
-	bindImathPlane();
 }
 
 }

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -34,7 +34,7 @@
 
 // This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Group.h"
 #include "IECore/bindings/GroupBinding.h"
@@ -49,7 +49,7 @@ namespace IECore
 static list children( Group &g )
 {
 	list result;
-	for( Group::ChildContainer::const_iterator it=g.children().begin(); it!=g.children().end(); it++ )
+	for( Group::ChildSet::const_iterator it=g.children().begin(); it!=g.children().end(); it++ )
 	{
 		result.append( *it );
 	}
@@ -59,7 +59,7 @@ static list children( Group &g )
 static list state( Group &g )
 {
 	list result;
-	for( Group::StateContainer::const_iterator it=g.state().begin(); it!=g.state().end(); it++ )
+	for( Group::StateSet::const_iterator it=g.state().begin(); it!=g.state().end(); it++ )
 	{
 		result.append( *it );
 	}

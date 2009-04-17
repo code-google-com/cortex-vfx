@@ -37,9 +37,6 @@
 
 #include "OpenEXR/ImathFun.h"
 
-#include "IECore/SRGBToLinearDataConversion.h"
-#include "IECore/LinearToSRGBDataConversion.h"
-
 namespace IECore
 {
 
@@ -64,30 +61,6 @@ T adjustSaturation( const T &color, typename T::BaseType saturation )
 	desaturated[1] = l;
 	desaturated[2] = l;
 	return Imath::lerp( desaturated, color, saturation ); 
-}
-
-template<typename T>
-T linearToSRGB( const T &color )
-{
-	LinearToSRGBDataConversion<typename T::BaseType, typename T::BaseType> cv;
-	T result;
-	for( unsigned i=0; i<T::dimensions(); i++ )
-	{
-		result[i] = cv( color[i] );
-	}
-	return result;
-}
-
-template<typename T>
-T sRGBToLinear( const T &color )
-{
-	SRGBToLinearDataConversion<typename T::BaseType, typename T::BaseType> cv;
-	T result;
-	for( unsigned i=0; i<T::dimensions(); i++ )
-	{
-		result[i] = cv( color[i] );
-	}
-	return result;
 }
 
 } // namespace IECore

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,15 +37,29 @@
 
 #include "IECore/CompoundParameter.h"
 #include "IECore/MessageHandler.h"
+#include "IECore/ClassData.h"
+#include "IECore/SRGBToLinearDataConversion.h"
 
 #include "truelight.h"
 
 using namespace IECoreTruelight;
 using namespace IECore;
 
+struct TruelightColorTransformOp::ExtraData
+{
+	IECore::BoolParameterPtr m_rawTruelightOutputParameter;
+	mutable IECore::SRGBToLinearDataConversion<float, float> m_srgbToLinearConversion;
+};
+
+static IECore::ClassData< TruelightColorTransformOp, TruelightColorTransformOp::ExtraData *> g_classData;
+
+
+
 TruelightColorTransformOp::TruelightColorTransformOp()
 	:	ColorTransformOp( "TruelightColorTransformOp", "Applies truelight transforms." ), m_instance( 0 )
 {
+	ExtraData* extraData = g_classData.create( this, new ExtraData() );
+	assert( extraData );	
 	
 	m_profileParameter = new StringParameter(
 		"profile",
@@ -69,7 +83,7 @@ TruelightColorTransformOp::TruelightColorTransformOp()
 		inputSpacePresets
 	);
 	
-	m_rawTruelightOutputParameter = new BoolParameter(
+	extraData->m_rawTruelightOutputParameter = new BoolParameter(
 		"rawTruelightOutput",
 		"If disabled, applies an sRGB->Linear conversion after the Truelight LUT.",
 		true
@@ -78,7 +92,7 @@ TruelightColorTransformOp::TruelightColorTransformOp()
 	parameters()->addParameter( m_profileParameter );
 	parameters()->addParameter( m_displayParameter );
 	parameters()->addParameter( m_inputSpaceParameter );
-	parameters()->addParameter( m_rawTruelightOutputParameter );
+	parameters()->addParameter( extraData->m_rawTruelightOutputParameter );
 	
 	init( "" );
 	
@@ -92,6 +106,7 @@ TruelightColorTransformOp::TruelightColorTransformOp()
 
 TruelightColorTransformOp::~TruelightColorTransformOp()
 {
+	g_classData.erase( this );
 	TruelightDestroyInstance( m_instance );
 }
 
@@ -127,12 +142,16 @@ IECore::ConstIntParameterPtr TruelightColorTransformOp::inputSpaceParameter() co
 
 IECore::BoolParameterPtr TruelightColorTransformOp::rawTruelightOutputParameter()
 {
-	return m_rawTruelightOutputParameter;
+	ExtraData* extraData = g_classData[ this ];
+	assert( extraData );
+	return extraData->m_rawTruelightOutputParameter;
 }
 
 IECore::ConstBoolParameterPtr TruelightColorTransformOp::rawTruelightOutputParameter() const
 {
-	return m_rawTruelightOutputParameter;	
+	const ExtraData* extraData = g_classData[ this ];
+	assert( extraData );
+	return extraData->m_rawTruelightOutputParameter;	
 }
 
 void TruelightColorTransformOp::begin( IECore::ConstCompoundObjectPtr operands )
@@ -179,12 +198,14 @@ void TruelightColorTransformOp::transform( Imath::Color3f &color ) const
 	TruelightInstanceTransformF( m_instance, color.getValue() );
 	maybeWarn();
 	
-	if ( !m_rawTruelightOutputParameter->getTypedValue() )
+	const ExtraData* extraData = g_classData[ this ];
+	assert( extraData );
+	if ( !extraData->m_rawTruelightOutputParameter->getTypedValue() )
 	{
 		/// \todo This would be easier if we had some sort of DataConversionToColorTransformAdapter template
-		color.x = m_srgbToLinearConversion( color.x );
-		color.y = m_srgbToLinearConversion( color.y );
-		color.z = m_srgbToLinearConversion( color.z );  			 
+		color.x = extraData->m_srgbToLinearConversion( color.x );
+		color.y = extraData->m_srgbToLinearConversion( color.y );
+		color.z = extraData->m_srgbToLinearConversion( color.z );				
 	}		
 }
 

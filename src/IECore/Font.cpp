@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,10 +39,12 @@
 #include "IECore/BezierAlgo.h"
 #include "IECore/PolygonAlgo.h"
 #include "IECore/BoxOps.h"
+#include "IECore/BoxOperators.h"
 #include "IECore/TransformOp.h"
 #include "IECore/MeshMergeOp.h"
 #include "IECore/Group.h"
 #include "IECore/MatrixTransform.h"
+#include "IECore/ClassData.h"
 
 #include "ft2build.h"
 #include FT_FREETYPE_H
@@ -53,6 +55,11 @@
 using namespace IECore;
 using namespace Imath;
 using namespace std;
+
+/// \todo Use standard member data on the next major version.
+static ClassData<Font, string> g_fileNames;
+typedef std::map<char, ConstImagePrimitivePtr> ImageMap;
+static ClassData<Font, ImageMap> g_images;
 
 ////////////////////////////////////////////////////////////////////////////////
 // struct definitions for the font caches
@@ -285,8 +292,10 @@ int Font::Mesher::cubicTo( const FT_Vector *control1, const FT_Vector *control2,
 //////////////////////////////////////////////////////////////////////////////////////////
 
 Font::Font( const std::string &fontFile )
-	:	m_fileName( fontFile ), m_kerning( 1.0f ), m_curveTolerance( 0.01 ), m_pixelsPerEm( 0 )
+	:	m_kerning( 1.0f ), m_curveTolerance( 0.01 ), m_pixelsPerEm( 0 )
 {
+	g_fileNames.create( this, fontFile );
+	g_images.create( this );
 	FT_Error e = FT_New_Face( library(), fontFile.c_str(), 0, &m_face );
 	if( e )
 	{
@@ -297,12 +306,14 @@ Font::Font( const std::string &fontFile )
 
 Font::~Font()
 {
+	g_fileNames.erase( this );
+	g_images.erase( this );
 	FT_Done_Face( m_face );
 }
 
 const std::string &Font::fileName() const
 {
-	return m_fileName;
+	return g_fileNames[this];
 }
 
 void Font::setKerning( float kerning )
@@ -331,7 +342,7 @@ void Font::setResolution( float pixelsPerEm )
 	if( pixelsPerEm!=m_pixelsPerEm )
 	{
 		m_pixelsPerEm = pixelsPerEm;
-		m_images.clear();
+		g_images[this].clear();
 		FT_Set_Pixel_Sizes( m_face, (FT_UInt)pixelsPerEm, (FT_UInt)pixelsPerEm );
 	}
 }
@@ -341,7 +352,7 @@ float Font::getResolution() const
 	return m_pixelsPerEm;
 }
 
-Font::ConstMeshPtr Font::cachedMesh( char c ) const
+Font::ConstMeshPtr Font::cachedMesh( char c )
 {
 	// see if we have it cached
 	MeshMap::const_iterator it = m_meshes.find( c );
@@ -376,12 +387,12 @@ Font::ConstMeshPtr Font::cachedMesh( char c ) const
 	return mesh;
 }
 		
-ConstMeshPrimitivePtr Font::mesh( char c ) const
+ConstMeshPrimitivePtr Font::mesh( char c )
 {
 	return cachedMesh( c )->primitive;
 }
 
-MeshPrimitivePtr Font::mesh( const std::string &text ) const
+MeshPrimitivePtr Font::mesh( const std::string &text )
 {
 	MeshPrimitivePtr result = new MeshPrimitive;
 	result->variables["P"] = PrimitiveVariable( PrimitiveVariable::Vertex, new V3fVectorData );
@@ -422,7 +433,7 @@ MeshPrimitivePtr Font::mesh( const std::string &text ) const
 	return result;
 }
 
-GroupPtr Font::meshGroup( const std::string &text ) const
+GroupPtr Font::meshGroup( const std::string &text )
 {
 	GroupPtr result = new Group;
 	
@@ -453,7 +464,7 @@ GroupPtr Font::meshGroup( const std::string &text ) const
 	return result;
 }
 
-Imath::V2f Font::advance( char first, char second ) const
+Imath::V2f Font::advance( char first, char second )
 {
 	V2f a = cachedMesh( first )->advance;
 	if( m_kerning!=0.0f )
@@ -470,7 +481,7 @@ Imath::V2f Font::advance( char first, char second ) const
 	return a;
 }
 
-Imath::Box2f Font::bound() const
+Imath::Box2f Font::bound()
 {
 	float scale = 1.0f / (float)(m_face->units_per_EM);
 	return Box2f(
@@ -479,13 +490,13 @@ Imath::Box2f Font::bound() const
 	);
 }
 
-Imath::Box2f Font::bound( char c ) const
+Imath::Box2f Font::bound( char c )
 {
 	Imath::Box3f b = cachedMesh( c )->bound;
 	return Imath::Box2f( Imath::V2f( b.min.x, b.min.y ), Imath::V2f( b.max.x, b.max.y ) );
 }
 
-Imath::Box2f Font::bound( const std::string &text ) const
+Imath::Box2f Font::bound( const std::string &text )
 {
 	Imath::Box2f result;
 	if( !text.size() )
@@ -509,12 +520,12 @@ Imath::Box2f Font::bound( const std::string &text ) const
 	return result;
 }
 
-ConstImagePrimitivePtr Font::image( char c ) const
+ConstImagePrimitivePtr Font::image( char c )
 {
 	return cachedImage( c );
 }
 
-ImagePrimitivePtr Font::image() const
+ImagePrimitivePtr Font::image()
 {
 	Box2i charDisplayWindow = boundingWindow();
 	int charWidth = charDisplayWindow.size().x + 1;
@@ -554,8 +565,9 @@ ImagePrimitivePtr Font::image() const
 	return result;
 }
 
-ConstImagePrimitivePtr Font::cachedImage( char c ) const
+ConstImagePrimitivePtr Font::cachedImage( char c )
 {
+	ImageMap &m_images = g_images[this];
 
 	// see if we have it cached
 	ImageMap::const_iterator it = m_images.find( c );

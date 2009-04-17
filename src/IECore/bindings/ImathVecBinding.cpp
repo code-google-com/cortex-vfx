@@ -34,16 +34,14 @@
 
 // This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 // System includes
 #include <string>
 #include <stdexcept>
 
-#include "OpenEXR/ImathVec.h"
-#include "OpenEXR/ImathMatrix.h"
-
-#include "IECore/Exception.h"
+#include <OpenEXR/ImathVec.h>
+#include <OpenEXR/ImathMatrix.h>
 
 #include "IECore/bindings/ImathVecBinding.h"
 #include "IECore/bindings/IECoreBinding.h"
@@ -55,64 +53,21 @@ using namespace std;
 namespace IECore 
 {
 
-template<class L>
-static const char *typeName()
-{
-	BOOST_STATIC_ASSERT( sizeof(L) == 0 );
-	return "";
-}
-
-template<>
-static const char *typeName<V2f>()
-{
-	return "V2f";
-}
-
-template<>
-static const char *typeName<V2d>()
-{
-	return "V2d";
-}
-
-template<>
-static const char *typeName<V2i>()
-{
-	return "V2i";
-}
-
-template<>
-static const char *typeName<V3f>()
-{
-	return "V3f";
-}
-
-template<>
-static const char *typeName<V3d>()
-{
-	return "V3d";
-}
-
-template<>
-static const char *typeName<V3i>()
-{
-	return "V3i";
-}
+template<typename T>
+void bindVec2(const char *bindName);
 
 template<typename T>
-void bindVec2();
-
-template<typename T>
-void bindVec3();
+void bindVec3(const char *bindName);
 
 void bindImathVec()
 {
-	bindVec2<float>();
-	bindVec2<double>();
-	bindVec2<int>();
+	bindVec2<float>("V2f");
+	bindVec2<double>("V2d");
+	bindVec2<int>("V2i");
 
-	bindVec3<float>();
-	bindVec3<double>();
-	bindVec3<int>();
+	bindVec3<float>("V3f");
+	bindVec3<double>("V3d");
+	bindVec3<int>("V3i");
 }
 
 template<typename T>
@@ -149,39 +104,41 @@ struct VectorIndexer
 	
 };
 
-#define DEFINEVECSTRSPECIALISATION( VEC )\
-\
-template<>\
-std::string repr<VEC>( VEC &x )\
-{\
-	std::stringstream s;\
-	s << "IECore." << typeName<VEC>() << "( ";\
-	for( unsigned i=0; i<VEC::dimensions(); i++ )\
-	{\
-		s << x[i];\
-		if( i!=VEC::dimensions()-1 )\
-		{\
-			s << ", ";\
-		}\
-	}\
-	s << " )";\
-	return s.str();\
-}\
-\
-template<>\
-std::string str<VEC>( VEC &x )\
-{\
-	std::stringstream s;\
-	for( unsigned i=0; i<VEC::dimensions(); i++ )\
-	{\
-		s << x[i];\
-		if( i!=VEC::dimensions()-1 )\
-		{\
-			s << " ";\
-		}\
-	}\
-	return s.str();\
-}\
+/// \todo The only reason this is a macro is so that it can turn the class type to a string. We should probably do this 
+/// with a small traits class instead, and get rid of the macro.
+#define DEFINEVECSTRSPECIALISATION( VEC )				\
+														\
+template<>												\
+std::string repr<VEC>( VEC &x )							\
+{														\
+	std::stringstream s;								\
+	s << "IECore." << #VEC << "( ";									\
+	for( unsigned i=0; i<VEC::dimensions(); i++ )		\
+	{													\
+		s << x[i];										\
+		if( i!=VEC::dimensions()-1 )					\
+		{												\
+			s << ", ";									\
+		}												\
+	}													\
+	s << " )";											\
+	return s.str();										\
+}														\
+														\
+template<>												\
+std::string str<VEC>( VEC &x )							\
+{														\
+	std::stringstream s;								\
+	for( unsigned i=0; i<VEC::dimensions(); i++ )		\
+	{													\
+		s << x[i];										\
+		if( i!=VEC::dimensions()-1 )					\
+		{												\
+			s << " ";									\
+		}												\
+	}													\
+	return s.str();										\
+}														\
 
 DEFINEVECSTRSPECIALISATION( V2i );
 DEFINEVECSTRSPECIALISATION( V2f );
@@ -190,40 +147,14 @@ DEFINEVECSTRSPECIALISATION( V3i );
 DEFINEVECSTRSPECIALISATION( V3f );
 DEFINEVECSTRSPECIALISATION( V3d );
 
-template<typename V>
-V *constructFromList( list l )
-{
-	if ( len( l ) != (int)V::dimensions() )
-	{
-		throw InvalidArgumentException( std::string( "Invalid list length given to IECore." ) + typeName<V>() + " constructor" );
-	}
-	
-	V *r = new V();
-	
-	for ( unsigned i = 0; i < V::dimensions(); i ++ )
-	{
-		extract< typename V::BaseType > ex( l[i] );
-		if ( !ex.check() )
-		{
-			throw InvalidArgumentException( std::string( "Invalid list element given to IECore." ) + typeName<V>() + " constructor" );
-		}
-		
-		(*r)[i] = ex();
-	}
-	
-	return r ;
-}
-
 template<typename T>
-void bindVec2()
+void bindVec2(const char *bindName)
 {	
 	// To allow correct resolve of overloaded methods
 	void (Vec2<T>::*sv1)(T, T) = &Vec2<T>::template setValue<T>;
 	void (Vec2<T>::*sv2)(const Vec2<T>&) = &Vec2<T>::template setValue<T>;
 	
-	const char *bindName = typeName<Vec2<T> >();
-	
-	class_< Vec2<T> >( bindName )
+	class_< Vec2<T> >(bindName)
 		.def_readwrite("x", &Vec2<T>::x)
 		.def_readwrite("y", &Vec2<T>::y)
 	
@@ -238,8 +169,7 @@ void bindVec2()
 		.def(init<const Vec2<float> &>())
 		.def(init<const Vec2<double> &>())
 		.def(init<const Vec2<int> &>())
-		
-		.def("__init__", make_constructor( &constructFromList< Vec2<T> > ) )
+		/// \todo Could add constructor which takes a Python list
 	
 		.def("setValue", sv1)
 		.def("setValue", sv2)
@@ -306,15 +236,13 @@ void bindVec2()
 
 
 template<typename T>
-void bindVec3()
+void bindVec3(const char *bindName)
 {	
 	// To allow correct resolve of overloaded methods
 	void (Vec3<T>::*sv1)(T, T, T) = &Vec3<T>::template setValue<T>;
 	void (Vec3<T>::*sv2)(const Vec3<T>&) = &Vec3<T>::template setValue<T>;
 	
-	const char *bindName = typeName<Vec3<T> >();
-	
-	class_< Vec3<T> >( bindName )
+	class_< Vec3<T> >(bindName)
 		.def_readwrite("x", &Vec3<T>::x)
 		.def_readwrite("y", &Vec3<T>::y)
 		.def_readwrite("z", &Vec3<T>::z)
@@ -323,6 +251,7 @@ void bindVec3()
 		.def("__getitem__", &VectorIndexer<Vec3<T> >::get)
 		.def("__setitem__", &VectorIndexer<Vec3<T> >::set)
 	
+		/// \todo Could add constructor which takes a Python list, which would certainly make integration with Maya nicer
 		.def(init<>())
 		.def(init<T>())
 		.def(init<T, T, T>())
@@ -330,8 +259,6 @@ void bindVec3()
 		.def(init<const Vec3<float> &>())
 		.def(init<const Vec3<double> &>())
 		.def(init<const Vec3<int> &>())
-		
-		.def("__init__", make_constructor( &constructFromList< Vec3<T> > ) )
 	
 		.def("setValue", sv1)
 		.def("setValue", sv2)

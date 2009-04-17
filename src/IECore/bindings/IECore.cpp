@@ -32,8 +32,12 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+// System includes
 
+// External includes
+#include <boost/python.hpp>
+
+// Local includes
 #include "IECore/bindings/RefCountedBinding.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/bindings/ExceptionBinding.h"
@@ -219,21 +223,6 @@
 #include "IECore/bindings/TimePeriodDataBinding.h"
 #include "IECore/bindings/PatchMeshPrimitiveBinding.h"
 #include "IECore/bindings/CurveExtrudeOpBinding.h"
-#include "IECore/bindings/FrameListBinding.h"
-#include "IECore/bindings/EmptyFrameListBinding.h"
-#include "IECore/bindings/FrameRangeBinding.h"
-#include "IECore/bindings/CompoundFrameListBinding.h"
-#include "IECore/bindings/ReorderedFrameListBinding.h"
-#include "IECore/bindings/BinaryFrameListBinding.h"
-#include "IECore/bindings/ReversedFrameListBinding.h"
-#include "IECore/bindings/ExclusionFrameListBinding.h"
-#include "IECore/bindings/FrameListParameterBinding.h"
-#include "IECore/bindings/FileSequenceBinding.h"
-#include "IECore/bindings/FileSequenceFunctionsBinding.h"
-#include "IECore/bindings/FileSequenceParameterBinding.h"
-#include "IECore/bindings/FileSequenceVectorParameterBinding.h"
-#include "IECore/bindings/ParameterisedProceduralBinding.h"
-#include "IECore/bindings/LevenbergMarquardtBinding.h"
 #include "IECore/IECore.h"
 
 using namespace IECore;
@@ -249,7 +238,6 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindImath();
 	bindKDTree();
 	bindObject();
-	bindCompoundObject();		
 	bindTypeId();
 	bindData();
 	bindAllSimpleTypedData();
@@ -280,7 +268,8 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindValidatedStringParameter();	
 	bindPathParameter();	
 	bindFileNameParameter();	
-	bindDirNameParameter();		
+	bindDirNameParameter();	
+	bindCompoundObject();	
 	bindPrimitive();	
 	bindPrimitiveVariable();	
 	bindPointsPrimitive();	
@@ -442,21 +431,6 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindTimePeriodData();
 	bindPatchMeshPrimitive();
 	bindCurveExtrudeOp();
-	bindFrameList();
-	bindEmptyFrameList();	
-	bindFrameRange();	
-	bindCompoundFrameList();
-	bindReorderedFrameList();
-	bindBinaryFrameList();
-	bindReversedFrameList();
-	bindExclusionFrameList();	
-	bindFrameListParameter();
-	bindFileSequence();
-	bindFileSequenceFunctions();
-	bindFileSequenceParameter();
-	bindFileSequenceVectorParameter();
-	bindParameterisedProcedural();
-	bindLevenbergMarquardt();
 
 	def( "majorVersion", &IECore::majorVersion );
 	def( "minorVersion", &IECore::minorVersion );

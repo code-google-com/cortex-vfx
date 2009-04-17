@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/bindings/ParameterBinding.h"
 #include "IECore/bindings/Wrapper.h"
@@ -93,29 +93,19 @@ class TypedObjectParameterWrap : public TypedObjectParameter<T>, public Wrapper<
 		TypedObjectParameterWrap( PyObject *self, const std::string &n, const std::string &d, typename T::Ptr dv, const dict &p = dict(), bool po = false, CompoundObjectPtr ud = 0 )	
 			:	TypedObjectParameter<T>( n, d, dv, makePresets( p ), po, ud ), Wrapper< TypedObjectParameter<T> >( self, this ) {};
 		
+		TypedObjectParameterWrap( PyObject *self, const std::string &n, const std::string &d, typename T::Ptr dv, CompoundObjectPtr ud )	
+			:	TypedObjectParameter<T>( n, d, dv, typename TypedObjectParameter<T>::ObjectPresetsMap(), false, ud ), Wrapper< TypedObjectParameter<T> >( self, this ) {};
+
 		IE_COREPYTHON_PARAMETERWRAPPERFNS( TypedObjectParameter<T> );
 };
 
 template<typename T>
 static void bindTypedObjectParameter( const char *name )
 {
-	using boost::python::arg;
-	
 	typedef class_< TypedObjectParameter<T>, typename TypedObjectParameterWrap< T >::Ptr , boost::noncopyable, bases<ObjectParameter> > TypedObjectParameterPyClass;
 	TypedObjectParameterPyClass( name, no_init )
-		.def( 
-			init< const std::string &, const std::string &, typename T::Ptr, boost::python::optional<const dict &, bool, CompoundObjectPtr > >
-			( 
-				( 
-					arg( "name" ), 
-					arg( "description" ), 
-					arg( "defaultValue" ),
-					arg( "presets" ) = dict(),
-					arg( "presetsOnly" ) = false , 
-					arg( "userData" ) = CompoundObject::Ptr( 0 )
-				) 
-			)
-		) 		
+		.def( init< const std::string &, const std::string &, typename T::Ptr, boost::python::optional<const dict &, bool, CompoundObjectPtr > >( args( "name", "description", "defaultValue", "presets", "presetsOnly", "userData") ) )
+		.def( init< const std::string &, const std::string &, typename T::Ptr, CompoundObjectPtr >( args( "name", "description", "defaultValue", "userData") ) )
 		.IE_COREPYTHON_DEFPARAMETERWRAPPERFNS( TypedObjectParameter<T> )
 		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( TypedObjectParameter<T> )
 	;

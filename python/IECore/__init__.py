@@ -37,7 +37,6 @@
 # Some parts of the IECore library are defined purely in Python. These are shown below.
 
 from _IECore import *
-
 # access by a shorter name for convenience
 Msg = MessageHandler
 from RunTimeTypedUtil import *
@@ -46,7 +45,18 @@ from Formatter import Formatter
 from WrappedTextFormatter import WrappedTextFormatter
 import StringUtil
 from DataTraits import *
+from FrameList import FrameList
+from FrameRange import FrameRange
+from CompoundFrameList import CompoundFrameList
+from ReorderedFrameList import ReorderedFrameList
+from ReversedFrameList import ReversedFrameList
+from BinaryFrameList import BinaryFrameList
+from ExclusionFrameList import ExclusionFrameList
+from FileSequence import FileSequence
 from FileSequenceFunctions import *
+from EmptyFrameList import EmptyFrameList
+from FileSequenceParameter import FileSequenceParameter
+from FrameListParameter import FrameListParameter
 from ClassLoader import ClassLoader
 from RemovePrimitiveVariables import RemovePrimitiveVariables
 from RenamePrimitiveVariables import RenamePrimitiveVariables
@@ -78,6 +88,7 @@ from SearchReplaceOp import SearchReplaceOp
 from CapturingMessageHandler import CapturingMessageHandler
 from FileSequenceAnalyzerOp import FileSequenceAnalyzerOp
 from CheckImagesOp import CheckImagesOp
+from FileSequenceVectorParameter import FileSequenceVectorParameter
 from FileSequenceGraphOp import FileSequenceGraphOp
 from BatchSingleOp import BatchSingleOp
 from LayeredDict import LayeredDict

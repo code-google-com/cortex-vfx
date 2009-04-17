@@ -37,8 +37,6 @@
 
 #include "boost/intrusive_ptr.hpp"
 
-#include <cassert>
-
 namespace IECore
 {
 
@@ -73,24 +71,20 @@ class RefCounted
 	
 		IE_CORE_DECLAREMEMBERPTR( RefCounted );
 	
-		typedef size_t RefCount;
+		typedef unsigned long RefCount;
 		
 		RefCounted();		
 	
 		/// Add a reference to the current object
-		inline void addRef() const { m_numRefs++; };
+		/// \todo Inline me!
+		void addRef() const;
 	
 		/// Remove a reference from the current object
-		inline void removeRef() const
-		{
-			assert( m_numRefs > 0 );
-			m_numRefs--;
-			if( m_numRefs==0 ) 
-			{
-				delete this;
-			}
-		};
+		/// \todo Inline me!
+		void removeRef() const;
 		
+		/// \deprecated Use refCount() instead.
+		RefCount refCounter() const;
 		/// Returns the current reference count.
 		inline RefCount refCount() const { return m_numRefs; };
 	
@@ -98,10 +92,8 @@ class RefCounted
 		
 		virtual ~RefCounted();	
 		
-	private :
-	
+		/// \todo Make me private
 		mutable RefCount m_numRefs;
-		
 };
 
 IE_CORE_DECLAREPTR( RefCounted )

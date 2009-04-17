@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -96,17 +96,16 @@ void Group::addState( StateRenderablePtr state )
 	{
 		throw Exception( "Transforms cannot be added as state." );
 	}
-	m_state.push_back( state );
+	m_state.insert( state );
 }
 
 void Group::removeState( StateRenderablePtr state )
 {
-	StateContainer::iterator it = find( m_state.begin(), m_state.end(), state );
-	if( it==m_state.end() )
+	if( m_state.find( state )==m_state.end() )
 	{
 		throw Exception( "State not present in Group" );
 	}
-	m_state.erase( it );
+	m_state.erase( state );
 }
 
 void Group::clearState()
@@ -114,7 +113,7 @@ void Group::clearState()
 	m_state.clear();
 }
 		
-const Group::StateContainer &Group::state() const
+const Group::StateSet &Group::state() const
 {
 	return m_state;
 }
@@ -131,12 +130,12 @@ void Group::addChild( VisibleRenderablePtr child )
 		}
 		gChild->m_parent = this;
 	}
-	m_children.push_back( child );
+	m_children.insert( child );
 }
 
 void Group::removeChild( VisibleRenderablePtr child )
 {
-	ChildContainer::iterator it = find( m_children.begin(), m_children.end(), child );
+	ChildSet::iterator it = m_children.find( child );
 	
 	if( it==m_children.end() )
 	{
@@ -154,13 +153,16 @@ void Group::removeChild( VisibleRenderablePtr child )
 
 void Group::clearChildren()
 {
-	while( m_children.size() )
+	ChildSet::const_iterator it=m_children.begin();
+	while( it!=m_children.end() )
 	{
-		removeChild( m_children[0] );
+		ChildSet::const_iterator next = it; next++;
+		removeChild( *it );
+		it = next;
 	}
 }
 		
-const Group::ChildContainer &Group::children() const
+const Group::ChildSet &Group::children() const
 {
 	return m_children;
 }
@@ -188,12 +190,12 @@ void Group::copyFrom( ConstObjectPtr other, CopyContext *context )
 		m_transform = 0;
 	}
 	clearState();
-	for( StateContainer::const_iterator it=tOther->state().begin(); it!=tOther->state().end(); it++ )
+	for( StateSet::const_iterator it=tOther->state().begin(); it!=tOther->state().end(); it++ )
 	{
 		addState( context->copy<StateRenderable>( *it ) );
 	}
 	clearChildren();
-	for( ChildContainer::const_iterator it=tOther->children().begin(); it!=tOther->children().end(); it++ )
+	for( ChildSet::const_iterator it=tOther->children().begin(); it!=tOther->children().end(); it++ )
 	{
 		addChild( context->copy<VisibleRenderable>( *it ) );
 	}
@@ -210,7 +212,7 @@ void Group::save( SaveContext *context ) const
 	container->mkdir( "state" );
 	container->chdir( "state" );
 		int i = 0;
-		for( StateContainer::const_iterator it=state().begin(); it!=state().end(); it++ )
+		for( StateSet::const_iterator it=state().begin(); it!=state().end(); it++ )
 		{
 			string name = str( boost::format( "%d" ) % i );
 			context->save( *it, container, name );
@@ -220,7 +222,7 @@ void Group::save( SaveContext *context ) const
 	container->mkdir( "children" );
 	container->chdir( "children" );
 		i = 0;
-		for( ChildContainer::const_iterator it = children().begin(); it!=children().end(); it++ )
+		for( ChildSet::const_iterator it = children().begin(); it!=children().end(); it++ )
 		{
 			string name = str( boost::format( "%d" ) % i );
 			context->save( *it, container, name );
@@ -285,9 +287,18 @@ bool Group::isEqualTo( ConstObjectPtr other ) const
 	{
 		return false;
 	}
-	for( size_t i=0; i<m_state.size(); i++ )
+	for( StateSet::const_iterator it=m_state.begin(); it!=m_state.end(); it++ )
 	{	
-		if( !m_state[i]->isEqualTo( tOther->m_state[i] ) )
+		bool found = false;
+		for( StateSet::const_iterator it2=tOther->m_state.begin(); it2!=tOther->m_state.end(); it2++ )
+		{
+			if( (*it)->isEqualTo( *it2 ) )
+			{
+				found = true;
+				break;
+			}
+		}
+		if( !found )
 		{
 			return false;
 		}
@@ -298,9 +309,18 @@ bool Group::isEqualTo( ConstObjectPtr other ) const
 	{
 		return false;
 	}
-	for( size_t i=0; i<m_children.size(); i++ )
+	for( StateSet::const_iterator it=m_state.begin(); it!=m_state.end(); it++ )
 	{	
-		if( !m_children[i]->isEqualTo( tOther->m_children[i] ) )
+		bool found = false;
+		for( StateSet::const_iterator it2=tOther->m_state.begin(); it2!=tOther->m_state.end(); it2++ )
+		{
+			if( (*it)->isEqualTo( *it2 ) )
+			{
+				found = true;
+				break;
+			}
+		}
+		if( !found )
 		{
 			return false;
 		}
@@ -313,28 +333,28 @@ void Group::memoryUsage( Object::MemoryAccumulator &a ) const
 {
 	VisibleRenderable::memoryUsage( a );
 	a.accumulate( m_transform );
-	for( StateContainer::const_iterator it=state().begin(); it!=state().end(); it++ )
+	for( StateSet::const_iterator it=state().begin(); it!=state().end(); it++ )
 	{
 		a.accumulate( *it );
 	}
-	for( ChildContainer::const_iterator it=children().begin(); it!=children().end(); it++ )
+	for( ChildSet::const_iterator it=children().begin(); it!=children().end(); it++ )
 	{
 		a.accumulate( *it );
 	}
 }
 
-void Group::render( RendererPtr renderer ) const
+void Group::render( RendererPtr renderer )
 {
 	renderer->attributeBegin();
 		if( m_transform )
 		{
 			m_transform->render( renderer );
 		}
-		for( StateContainer::const_iterator it=state().begin(); it!=state().end(); it++ )
+		for( StateSet::const_iterator it=state().begin(); it!=state().end(); it++ )
 		{
 			(*it)->render( renderer );
 		}
-		for( ChildContainer::const_iterator it=children().begin(); it!=children().end(); it++ )
+		for( ChildSet::const_iterator it=children().begin(); it!=children().end(); it++ )
 		{
 			(*it)->render( renderer );
 		}
@@ -344,7 +364,7 @@ void Group::render( RendererPtr renderer ) const
 Imath::Box3f Group::bound() const
 {
 	Box3f result;
-	for( ChildContainer::const_iterator it=children().begin(); it!=children().end(); it++ )
+	for( ChildSet::const_iterator it=children().begin(); it!=children().end(); it++ )
 	{
 		result.extendBy( (*it)->bound() );
 	}

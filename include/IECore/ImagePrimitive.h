@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -79,8 +79,6 @@ namespace IECore
 ///
 /// UV-space has the same orientation as pixel-space, and is defined to be (0,0) at the origin of the display window
 /// and (1,1) at the maximum of the display window.
-///
-/// \todo Define standard depth channel ("Z"? "depth"?)
 class ImagePrimitive : public Primitive
 {
 
@@ -117,7 +115,7 @@ class ImagePrimitive : public Primitive
 		/// Returns 2-d image size for Vertex, Varying, and FaceVarying Interpolation, otherwise 1.
 		virtual size_t variableSize( PrimitiveVariable::Interpolation interpolation ) const;
 
-		virtual void render( RendererPtr renderer ) const;
+		virtual void render( RendererPtr renderer );
 
 		//! @name Channels
 		/// Channels of the image are just primitive variables with the following

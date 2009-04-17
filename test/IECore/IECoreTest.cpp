@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -57,9 +57,6 @@
 #include "RadixSortTest.h"
 #include "SweepAndPruneTest.h"
 #include "ColorTransformTest.h"
-#include "AssociatedLegendreTest.h"
-#include "SphericalHarmonicsTest.h"
-#include "LevenbergMarquardtTest.h"
 
 using namespace boost::unit_test;
 using boost::test_tools::output_test_stream;
@@ -85,9 +82,6 @@ test_suite* init_unit_test_suite( int argc, char* argv[] )
 		addRadixSortTest(test);
 		addSweepAndPruneTest(test);
 		addColorTransformTest(test);
-		addAssociatedLegendreTest(test);
-		addSphericalHarmonicsTest(test);
-		addLevenbergMarquardtTest(test);
 	} 
 	catch (std::exception &ex)
 	{

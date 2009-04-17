@@ -89,7 +89,25 @@ inline void KDTree<PointIterator>::Node::makeBranch( unsigned char cutAxis, Base
 	m_cutAxisAndLeaf = cutAxis;
 	m_cutValue = cutValue;
 }
-			
+
+template<class PointIterator>
+inline typename KDTree<PointIterator>::NodeIndex KDTree<PointIterator>::Node::rootIndex()
+{
+	return 1;
+}
+
+template<class PointIterator>
+inline typename KDTree<PointIterator>::NodeIndex KDTree<PointIterator>::Node::lowChildIndex( NodeIndex index )
+{
+	return index * 2;
+}
+
+template<class PointIterator>
+inline typename KDTree<PointIterator>::NodeIndex KDTree<PointIterator>::Node::highChildIndex( NodeIndex index )
+{
+	return index * 2 + 1;
+}
+								
 template<class PointIterator>
 class KDTree<PointIterator>::AxisSort
 {
@@ -137,7 +155,7 @@ KDTree<PointIterator>::KDTree( PointIterator first, PointIterator last, int maxL
 		m_perm[i++] = it;
 	}
 	
-	build( rootIndex(), m_perm.begin(), m_perm.end() );
+	build( Node::rootIndex(), m_perm.begin(), m_perm.end() );
 }
 
 template<class PointIterator>
@@ -192,8 +210,8 @@ void KDTree<PointIterator>::build( NodeIndex nodeIndex, PermutationIterator perm
 		// insert node
 		m_nodes[nodeIndex].makeBranch( cutAxis, cutValue );
 		
-		build( lowChildIndex( nodeIndex ), permFirst, permMid );
-		build( highChildIndex( nodeIndex ), permMid, permLast );
+		build( Node::lowChildIndex( nodeIndex ), permFirst, permMid );
+		build( Node::highChildIndex( nodeIndex ), permMid, permLast );
 	}
 	else
 	{
@@ -209,7 +227,7 @@ PointIterator KDTree<PointIterator>::nearestNeighbour( const Point &p ) const
 {
 	BaseType maxDistSquared = Imath::limits<BaseType>::max();
 	PointIterator closestPoint = m_lastPoint;
-	nearestNeighbourWalk( rootIndex(), p, closestPoint, maxDistSquared );
+	nearestNeighbourWalk( Node::rootIndex(), p, closestPoint, maxDistSquared );
 	return closestPoint;
 }
 
@@ -217,7 +235,7 @@ template<class PointIterator>
 PointIterator KDTree<PointIterator>::nearestNeighbour( const Point &p, BaseType &distSquared ) const
 {
 	PointIterator closestPoint = m_lastPoint;
-	nearestNeighbourWalk( rootIndex(), p, closestPoint, distSquared );
+	nearestNeighbourWalk( Node::rootIndex(), p, closestPoint, distSquared );
 	return closestPoint;
 }
 
@@ -226,7 +244,7 @@ unsigned int KDTree<PointIterator>::nearestNeighbours( const Point &p, BaseType 
 {	
 	nearNeighbours.clear();
 			
-	nearestNeighboursWalk(rootIndex(), p, r*r, nearNeighbours );
+	nearestNeighboursWalk(Node::rootIndex(), p, r*r, nearNeighbours );
 	
 	return nearNeighbours.size();
 }
@@ -241,7 +259,7 @@ unsigned int KDTree<PointIterator>::nearestNNeighbours( const Point &p, unsigned
 		BaseType maxDistSquared = Imath::limits<BaseType>::max();
 	
 		std::set<NearNeighbour> neighbourSet;	
-		nearestNNeighboursWalk(rootIndex(), p, numNeighbours, neighbourSet, maxDistSquared );
+		nearestNNeighboursWalk(Node::rootIndex(), p, numNeighbours, neighbourSet, maxDistSquared );
 
 		typename std::set<NearNeighbour>::const_iterator it = neighbourSet.begin();
 		for (; it != neighbourSet.end(); ++it)
@@ -279,13 +297,13 @@ void KDTree<PointIterator>::nearestNeighbourWalk( NodeIndex nodeIndex, const Poi
 		NodeIndex firstChild, secondChild;
 		if( d>0.0 )
 		{
-			firstChild = highChildIndex( nodeIndex );
-			secondChild = lowChildIndex( nodeIndex );
+			firstChild = Node::highChildIndex( nodeIndex );
+			secondChild = Node::lowChildIndex( nodeIndex );
 		}
 		else
 		{
-			firstChild = lowChildIndex( nodeIndex );
-			secondChild = highChildIndex( nodeIndex );
+			firstChild = Node::lowChildIndex( nodeIndex );
+			secondChild = Node::highChildIndex( nodeIndex );
 		}
 		
 		nearestNeighbourWalk( firstChild, p, closestPoint, distSquared );
@@ -321,13 +339,13 @@ void KDTree<PointIterator>::nearestNeighboursWalk( NodeIndex nodeIndex, const Po
 		NodeIndex firstChild, secondChild;
 		if( d>0.0 )
 		{
-			firstChild = highChildIndex( nodeIndex );
-			secondChild = lowChildIndex( nodeIndex );
+			firstChild = Node::highChildIndex( nodeIndex );
+			secondChild = Node::lowChildIndex( nodeIndex );
 		}
 		else
 		{
-			firstChild = lowChildIndex( nodeIndex );
-			secondChild = highChildIndex( nodeIndex );
+			firstChild = Node::lowChildIndex( nodeIndex );
+			secondChild = Node::highChildIndex( nodeIndex );
 		}
 		
 		nearestNeighboursWalk( firstChild, p, r2, nearNeighbours );
@@ -384,13 +402,13 @@ void KDTree<PointIterator>::nearestNNeighboursWalk( NodeIndex nodeIndex, const P
 		NodeIndex firstChild, secondChild;
 		if( d>0.0 )
 		{
-			firstChild = highChildIndex( nodeIndex );
-			secondChild = lowChildIndex( nodeIndex );
+			firstChild = Node::highChildIndex( nodeIndex );
+			secondChild = Node::lowChildIndex( nodeIndex );
 		}
 		else
 		{
-			firstChild = lowChildIndex( nodeIndex );
-			secondChild = highChildIndex( nodeIndex );
+			firstChild = Node::lowChildIndex( nodeIndex );
+			secondChild = Node::highChildIndex( nodeIndex );
 		}
 		
 		nearestNNeighboursWalk( firstChild, p, numNeighbours, nearNeighbours, maxDistSquared );
@@ -410,19 +428,19 @@ inline const typename KDTree<PointIterator>::Node &KDTree<PointIterator>::node( 
 template<class PointIterator>
 inline typename KDTree<PointIterator>::NodeIndex KDTree<PointIterator>::rootIndex() const
 {
-	return 1;
+	return Node::rootIndex();
 }
 
 template<class PointIterator>
 inline typename KDTree<PointIterator>::NodeIndex KDTree<PointIterator>::lowChildIndex( NodeIndex parentIndex ) const
 {
-	return parentIndex * 2;
+	return Node::lowChildIndex( parentIndex );
 }
 
 template<class PointIterator>
 inline typename KDTree<PointIterator>::NodeIndex KDTree<PointIterator>::highChildIndex( NodeIndex parentIndex ) const
 {
-	return parentIndex * 2 + 1;
+	return Node::highChildIndex( parentIndex );
 }
 
 } // namespace IECore

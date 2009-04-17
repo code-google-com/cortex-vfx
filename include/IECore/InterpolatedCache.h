@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -56,7 +56,7 @@ class InterpolatedCache : public RefCounted
 		typedef IECore::AttributeCache::HeaderHandle HeaderHandle;
 		typedef IECore::AttributeCache::AttributeHandle AttributeHandle;
 	
-		enum Interpolation
+		enum Interpolation 
 		{ 
 			None = 0,
 			Linear,
@@ -66,7 +66,9 @@ class InterpolatedCache : public RefCounted
 
 		///Constructor
 		///pathTemplate must contain "%d" indicating the frame number position in the file name. You can use padding too: %03d for example.
-		///\todo For consistency with the rest of the library, this should really be taking a FileSequence instead of a format string.
+		///\todo For consistency with the rest of the library, this should really be taking a FileSequence instead of a format string. We'd
+		/// have to reimplement FileSequence in C++ for that, but there have been several cases where it would've been preferable in C++
+		/// already.
 		InterpolatedCache( const std::string &pathTemplate = "", double frame = 0.0, Interpolation interpolation = None, int oversamples = 1, double frameRate = 24.0 );
 
 		~InterpolatedCache();
@@ -76,7 +78,7 @@ class InterpolatedCache : public RefCounted
 		void setPathTemplate( const std::string &pathTemplate );
 
 		///Returns the current path template used to open cache files.
-		const std::string &getPathTemplate() const;
+		std::string	getPathTemplate();
 
 		///Advances in time.
 		// It will not try to load the new files until the read methods are called.

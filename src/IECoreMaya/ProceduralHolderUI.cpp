@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,8 +47,10 @@
 #include "IECoreMaya/ProceduralHolderUI.h"
 #include "IECoreMaya/ProceduralHolder.h"
 #include "IECoreMaya/Convert.h"
+#include "IECoreMaya/DisplayStyle.h"
 
 #include "IECore/MessageHandler.h"
+#include "IECore/ClassData.h"
 
 #include "maya/MGlobal.h"
 #include "maya/MDrawData.h"
@@ -65,13 +67,24 @@
 using namespace IECoreMaya;
 using namespace std;
 
+
+struct ProceduralHolderUI::MemberData
+{
+	mutable StateMap m_stateMap;
+	DisplayStyle m_displayStyle;
+};
+
+static IECore::ClassData< ProceduralHolderUI, ProceduralHolderUI::MemberData > g_classData;
+
 ProceduralHolderUI::ProceduralHolderUI()
 	:	m_boxPrimitive( new IECoreGL::BoxPrimitive( Imath::Box3f() ) )
 {
+	g_classData.create( this );
 }
 
 ProceduralHolderUI::~ProceduralHolderUI()
 {
+	g_classData.erase( this );
 }
 
 void *ProceduralHolderUI::creator()
@@ -252,7 +265,7 @@ void ProceduralHolderUI::draw( const MDrawRequest &request, M3dView &view ) cons
 			// draw the bound if asked
 			if( request.token()==BoundDrawMode )
 			{
-				IECoreGL::ConstStatePtr wireframeState = m_displayStyle.baseState( M3dView::kWireFrame );
+				IECoreGL::ConstStatePtr wireframeState = g_classData[this].m_displayStyle.baseState( M3dView::kWireFrame );
 				m_boxPrimitive->setBox( IECore::convert<Imath::Box3f>( proceduralHolder->boundingBox() ) );
 				glPushAttrib( wireframeState->mask() );
 					(boost::static_pointer_cast<IECoreGL::Renderable>( m_boxPrimitive ))->render( wireframeState );
@@ -283,7 +296,7 @@ void ProceduralHolderUI::draw( const MDrawRequest &request, M3dView &view ) cons
 						}
 					}
 
-					IECoreGL::ConstStatePtr displayState = m_displayStyle.baseState( (M3dView::DisplayStyle)request.displayStyle() );
+					IECoreGL::ConstStatePtr displayState = g_classData[this].m_displayStyle.baseState( (M3dView::DisplayStyle)request.displayStyle() );
 
 					if ( request.component() != MObject::kNullObj )
 					{								
@@ -301,10 +314,10 @@ void ProceduralHolderUI::draw( const MDrawRequest &request, M3dView &view ) cons
 						{ 
 							int compId = fnComp.element(j);
 
-							assert( proceduralHolder->m_componentToGroupMap.find( compId ) != proceduralHolder->m_componentToGroupMap.end() );
+							assert( proceduralHolder->componentToGroupMap().find( compId ) != proceduralHolder->componentToGroupMap().end() );
 
 							hiliteGroups( 
-								proceduralHolder->m_componentToGroupMap[compId], 
+								proceduralHolder->componentToGroupMap()[compId], 
 								hilite,
 								boost::const_pointer_cast<IECoreGL::WireframeColorStateComponent>( displayState->get< IECoreGL::WireframeColorStateComponent >() )
 							);								
@@ -348,7 +361,7 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 		view.beginSelect( &selectBuffer[0], selectBufferSize );
 		glInitNames();
 		glPushName( 0 );
-		scene->render( m_displayStyle.baseState( selectInfo.displayStyle() ) );
+		scene->render( g_classData[this].m_displayStyle.baseState( selectInfo.displayStyle() ) );
 	}
 	else
 	{
@@ -381,8 +394,8 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 		const std::string &hitName = it->name.value();
 		selected = true;
 		
-		ProceduralHolder::ComponentsMap::const_iterator compIt = proceduralHolder->m_componentsMap.find( hitName );
-		assert( compIt != proceduralHolder->m_componentsMap.end() );
+		ProceduralHolder::ComponentsMap::const_iterator compIt = proceduralHolder->componentsMap().find( hitName );
+		assert( compIt != proceduralHolder->componentsMap().end() );
 				
 		int compId = compIt->second.first;
 
@@ -405,9 +418,9 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 		}
 		else
 		{
-			assert( proceduralHolder->m_componentToGroupMap.find( compId ) != proceduralHolder->m_componentToGroupMap.end() );
+			assert( proceduralHolder->componentToGroupMap().find( compId ) != proceduralHolder->componentToGroupMap().end() );
 			
-			const ProceduralHolder::ComponentToGroupMap::mapped_type &groups = proceduralHolder->m_componentToGroupMap[compId];			
+			const ProceduralHolder::ComponentToGroupMap::mapped_type &groups = proceduralHolder->componentToGroupMap()[compId];			
 			for ( ProceduralHolder::ComponentToGroupMap::mapped_type::const_iterator jit = groups.begin(); jit != groups.end(); ++jit )
 			{			
 				const IECoreGL::GroupPtr &group = jit->second;
@@ -435,9 +448,9 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 			assert( foundClosest );
 			assert( closestCompId >= 0 );
 			
-			assert( proceduralHolder->m_componentToGroupMap.find( closestCompId ) != proceduralHolder->m_componentToGroupMap.end() );
+			assert( proceduralHolder->componentToGroupMap().find( closestCompId ) != proceduralHolder->componentToGroupMap().end() );
 			
-			const ProceduralHolder::ComponentToGroupMap::mapped_type &groups = proceduralHolder->m_componentToGroupMap[closestCompId];
+			const ProceduralHolder::ComponentToGroupMap::mapped_type &groups = proceduralHolder->componentToGroupMap()[closestCompId];
 			for ( ProceduralHolder::ComponentToGroupMap::mapped_type::const_iterator jit = groups.begin(); jit != groups.end(); ++jit )
 			{			
 				const IECoreGL::GroupPtr &group = jit->second;
@@ -493,6 +506,8 @@ void ProceduralHolderUI::hiliteGroups( const ProceduralHolder::ComponentToGroupM
 		unhiliteGroupChildren( it->first, it->second, base );		
 	}
 	
+	StateMap &m_stateMap = g_classData[this].m_stateMap;
+		
 	for( ProceduralHolder::ComponentToGroupMap::mapped_type::const_iterator it = groups.begin(); it != groups.end(); ++it )
 	{
 		IECoreGL::GroupPtr group = it->second;
@@ -513,6 +528,8 @@ void ProceduralHolderUI::unhiliteGroupChildren( const std::string &name, IECoreG
 {
 	assert( base );
 	assert( group );
+	
+	StateMap &m_stateMap = g_classData[this].m_stateMap;	
 	
 	/// Add state so that the group hilite state doesn't propogate down the hierarchy past the given name
 	IECoreGL::ConstNameStateComponentPtr n = group->getState()->get< IECoreGL::NameStateComponent >();
@@ -544,6 +561,8 @@ void ProceduralHolderUI::unhiliteGroupChildren( const std::string &name, IECoreG
 
 void ProceduralHolderUI::resetHilites() const
 {
+	StateMap &m_stateMap = g_classData[this].m_stateMap;
+	
 	for ( StateMap::iterator it = m_stateMap.begin(); it != m_stateMap.end(); ++it )
 	{
 		it->first->setState( it->second );

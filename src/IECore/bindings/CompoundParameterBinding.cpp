@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,8 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
-#include "boost/python/suite/indexing/container_utils.hpp"
-#include "boost/python/suite/indexing/container_utils.hpp"
+#include <boost/python.hpp>
+#include <boost/python/suite/indexing/container_utils.hpp>
 
 #include "IECore/CompoundParameter.h"
 #include "IECore/bindings/IntrusivePtrPatch.h"
@@ -159,8 +158,20 @@ class CompoundParameterWrap : public CompoundParameter, public Wrapper< Compound
 
 	public :
 
-		CompoundParameterWrap( PyObject *self, const std::string &name = "", const std::string &description = "", const list &members = list(), const object &userData = object() )
+		CompoundParameterWrap( PyObject *self, const std::string &name, const std::string &description, const list &members = list(), const object &userData = object() )
 			:	CompoundParameter( name, description, getUserData( userData ) ), Wrapper< CompoundParameter >( self, this ) 
+		{
+			addParametersFromMembers( members );
+		}
+
+		CompoundParameterWrap( PyObject *self, const std::string &name, const list &members, const object & userData = object() )
+			:	CompoundParameter( name, "", getUserData( userData ) ), Wrapper< CompoundParameter >( self, this )
+		{
+			addParametersFromMembers( members );
+		}
+		
+		CompoundParameterWrap( PyObject *self, const list &members, const object & userData = object() )
+			:	CompoundParameter( "", "", getUserData( userData ) ), Wrapper< CompoundParameter >( self, this )
 		{
 			addParametersFromMembers( members );
 		}
@@ -181,16 +192,6 @@ static ParameterPtr compoundParameterGetItem( CompoundParameter &o, const std::s
 		throw Exception( std::string("Bad index: ") + n );
 	}
 	return result;
-}
-
-static ParameterPtr compoundParameterGetAttr( CompoundParameter &o, const std::string &n )
-{
-	if( PyErr_WarnEx( PyExc_DeprecationWarning, "Access to CompoundParameter children as attributes is deprecated - please use item style access instead.", 1 ) )
-	{
-		// warning converted to exception;
-		throw error_already_set();
-	}
-	return compoundParameterGetItem( o, n );
 }
 
 static bool compoundParameterContains( const CompoundParameter &o, const std::string &n )
@@ -229,25 +230,18 @@ static void compoundParameterAddParameters( CompoundParameter &o, const boost::p
 
 void bindCompoundParameter()
 {
-	using boost::python::arg ;
-	
+
 	typedef class_< CompoundParameter, CompoundParameterWrap::Ptr, boost::noncopyable, bases<Parameter> > CompoundParameterPyClass;
 	CompoundParameterPyClass( "CompoundParameter", no_init )
-		.def(
-			init< const std::string &, const std::string &, boost::python::optional<const list &,  const object & > >
-			( 
-				(
-					arg( "name" ) = std::string(""),
-					arg( "description" ) = std::string(""),
-					arg( "members" ) = list(),
-					arg( "userData") = object()
-				)
-			) 
-		)
+		.def( init< const std::string &, const std::string &, optional<const list &,  const object & > >( args( "name", "description", "members", "userData") ) )
+		.def( init< const std::string &, const list &, optional<  const object & > >( args( "name", "members", "userData") ) )
+		.def( init< const list &, optional<  const object & > >( args( "members", "userData") ) )
 		.def( "__len__", &compoundParameterLen )
 		.def( "__getitem__", &compoundParameterGetItem )
-		/// \todo Remove attribute style access in major version 5.
-		.def( "__getattr__", &compoundParameterGetAttr )
+		/// \todo This __getattr__ is causing problems because we can have parameter names and method names fighting over the same namespace.
+		/// It would be better to use only  __getitem__ for children. This would have a massive effect on existing scripts however, as they are all using the parameter.child
+		/// syntax in preference to parameter["child"].
+		.def( "__getattr__", &compoundParameterGetItem )
 		.def( "__contains__", &compoundParameterContains )
 		.def( "keys", &compoundParameterKeys )
 		.def( "values", &compoundParameterValues )

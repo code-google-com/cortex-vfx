@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Parameterised.h"
 #include "IECore/CompoundParameter.h"
@@ -63,30 +63,19 @@ static ParameterPtr parameterisedGetItem( Parameterised &o, const std::string &n
 	return p;
 }
 
-static ParameterPtr parameterisedGetAttr( Parameterised &o, const std::string &n )
-{
-	if( PyErr_WarnEx( PyExc_DeprecationWarning, "Access to Parameters as attributes is deprecated - please use item style access instead.", 1 ) )
-	{
-		// warning converted to exception;
-		throw error_already_set();
-	}
-	return parameterisedGetItem( o, n );
-}
-
 void bindParameterised()
 {
-	using boost::python::arg;
-	
 	typedef class_< Parameterised, ParameterisedWrapPtr, boost::noncopyable, bases<RunTimeTyped> > ParameterisedPyClass;
 	ParameterisedPyClass( "Parameterised", no_init )
-		.def( init< const std::string, const std::string>( ( arg( "name" ), arg( "description") ) ) )
-		.def( init< const std::string, const std::string, CompoundParameterPtr >( ( arg( "name" ), arg( "description") , arg( "compoundParameter") ) ) )
+		.def( init< const std::string, const std::string>( args( "name", "description") ) )
+		.def( init< const std::string, const std::string, CompoundParameterPtr >( args( "name", "description", "compoundParameter") ) )
 		.add_property( "name", make_function( &Parameterised::name, return_value_policy<copy_const_reference>() ) )
 		.add_property( "description", make_function( &Parameterised::description, return_value_policy<copy_const_reference>() ) )
 		.def( "parameters", (CompoundParameterPtr (Parameterised::*)())&Parameterised::parameters )
 		.def( "__getitem__", &parameterisedGetItem )
-		/// \todo Remove this in major version 5.
-		.def( "__getattr__", &parameterisedGetAttr )
+		/// \todo Remove this getattr binding. It's bad. You can mask attributes with methods and all sorts of badness. We should
+		/// use only the getitem syntax. See other notes in CompoundObject and CompoundParameter bindings.
+		.def( "__getattr__", &parameterisedGetItem )
 		.def( "userData", (CompoundObjectPtr (Parameterised::*)())&Parameterised::userData )
 		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(Parameterised)
 	;

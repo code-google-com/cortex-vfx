@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -53,6 +53,7 @@
 #include "IECore/VectorOps.h"
 #include "IECore/MessageHandler.h"
 #include "IECore/SimpleTypedData.h"
+#include "IECore/ClassData.h"
 
 #include "maya/MFnNumericAttribute.h"
 #include "maya/MFnTypedAttribute.h"
@@ -75,9 +76,29 @@ MObject ProceduralHolder::aTransparent;
 MObject ProceduralHolder::aDrawBound;
 MObject ProceduralHolder::aProceduralComponents;
 
+struct ProceduralHolder::MemberData
+{
+	ComponentsMap m_componentsMap;		
+	ComponentToGroupMap m_componentToGroupMap;
+};
+
+static IECore::ClassData< ProceduralHolder, ProceduralHolder::MemberData > g_classData;
+
+ProceduralHolder::ComponentsMap &ProceduralHolder::componentsMap()
+{
+	return g_classData[this].m_componentsMap;
+	
+}
+		
+ProceduralHolder::ComponentToGroupMap &ProceduralHolder::componentToGroupMap()
+{
+	return g_classData[this].m_componentToGroupMap;
+}
+
 ProceduralHolder::ProceduralHolder()
 	:	m_boundDirty( true ), m_sceneDirty( true )
 {
+	g_classData.create( this );
 }
 
 ProceduralHolder::~ProceduralHolder()
@@ -173,7 +194,7 @@ MBoundingBox ProceduralHolder::boundingBox() const
 		
 	m_bound = MBoundingBox( MPoint( -1, -1, -1 ), MPoint( 1, 1, 1 ) );
 
-	ParameterisedProceduralPtr p = const_cast<ProceduralHolder*>(this)->getProcedural();
+	Renderer::ProceduralPtr p = const_cast<ProceduralHolder*>(this)->getProcedural();
 	if( p )
 	{
 		const_cast<ProceduralHolder*>(this)->setParameterisedValues();
@@ -222,9 +243,9 @@ MStatus ProceduralHolder::setProcedural( const std::string &className, int class
 	return setParameterised( className, classVersion, "IECORE_PROCEDURAL_PATHS" );
 }
 
-IECore::ParameterisedProceduralPtr ProceduralHolder::getProcedural( std::string *className, int *classVersion )
+IECore::Renderer::ProceduralPtr ProceduralHolder::getProcedural( std::string *className, int *classVersion )
 {
-	return runTimeCast<IECore::ParameterisedProcedural>( getParameterised( className, classVersion ) );
+	return runTimeCast<Renderer::Procedural>( getParameterised( className, classVersion ) );
 }
 
 IECoreGL::ConstScenePtr ProceduralHolder::scene()
@@ -235,7 +256,7 @@ IECoreGL::ConstScenePtr ProceduralHolder::scene()
 	}
 	
 	m_scene = 0;
-	ParameterisedProceduralPtr p = ((ProceduralHolder*)this)->getProcedural();
+	Renderer::ProceduralPtr p = ((ProceduralHolder*)this)->getProcedural();
 	if( p )
 	{
 		setParameterisedValues();
@@ -308,7 +329,7 @@ MPxSurfaceShape::MatchResult ProceduralHolder::matchComponent( const MSelectionL
 
 		if ( (dim > 0) && (attrSpec.name() == "proceduralComponents" || attrSpec.name() == "prcm" || attrSpec.name() == "f" ) )
 		{	
-			int numComponents = m_componentToGroupMap.size();
+			int numComponents = componentToGroupMap().size();
 
 			MAttributeIndex attrIndex = attrSpec[0];
 			
@@ -370,16 +391,16 @@ void ProceduralHolder::buildComponents( IECoreGL::ConstNameStateComponentPtr nam
 	const std::string &name = nameState->name();		
 	int compId = nameState->glName();
 	
-	ComponentsMap::const_iterator it = m_componentsMap.find( name );
-	if( it == m_componentsMap.end() )
+	ComponentsMap::const_iterator it = componentsMap().find( name );
+	if( it == componentsMap().end() )
 	{		
-		compId = m_componentsMap.size();
+		compId = componentsMap().size();
 				
 		/// Reserve slot in the componentsMap. The exact component ID gets generated later, once all components have been
 		/// traversed. IDs are then assigned in ascending order whilst iterating over the component map, which is sorted by name. This
 		/// ensures a consistent ordering of components from frame to frame, which we'd not otherwise get due to IECore::Group using
 		/// a regular set (sorted by pointer) to store its children.
-		m_componentsMap[name] = ComponentsMap::mapped_type( 0, group );				
+		componentsMap()[name] = ComponentsMap::mapped_type( 0, group );				
 	}		
 		
 	const IECoreGL::Group::ChildContainer &children = group->children();
@@ -404,9 +425,9 @@ void ProceduralHolder::buildComponents()
 	MArrayDataHandle cH = block.outputArrayValue( aProceduralComponents, &s );
 	assert( s );
 
-	m_componentsMap.clear();
+	componentsMap().clear();
 
-	m_componentToGroupMap.clear();
+	componentToGroupMap().clear();
 	
 	IECoreGL::ConstStatePtr defaultState = IECoreGL::State::defaultState();
 	assert( defaultState );
@@ -423,11 +444,11 @@ void ProceduralHolder::buildComponents()
 	assert( s );
 	
 	int compId = 0;
-	ComponentsMap::iterator it = m_componentsMap.begin();
-	for ( ; it != m_componentsMap.end(); it ++ )
+	ComponentsMap::iterator it = componentsMap().begin();
+	for ( ; it != componentsMap().end(); it ++ )
 	{
 		/// Build the mapping that goes from ID -> ( name, group )
-		m_componentToGroupMap[compId].insert( ComponentToGroupMap::mapped_type::value_type( it->first.value(), it->second.second ) );
+		componentToGroupMap()[compId].insert( ComponentToGroupMap::mapped_type::value_type( it->first.value(), it->second.second ) );
 	
 		it->second.first = compId ++;
 		
@@ -445,7 +466,7 @@ void ProceduralHolder::buildComponents()
 	
 #ifndef NDEBUG
 	MPlug plug( thisMObject(), aProceduralComponents );
-	for ( ComponentsMap::const_iterator it = m_componentsMap.begin(); it != m_componentsMap.end(); ++it )
+	for ( ComponentsMap::const_iterator it = componentsMap().begin(); it != componentsMap().end(); ++it )
 	{
 		MPlug child = plug.elementByLogicalIndex( it->second.first, &s );
 		assert( s );
