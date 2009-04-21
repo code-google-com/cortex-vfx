@@ -11,7 +11,7 @@ The build process has yet to stabilise fully, so if you encounter problems pleas
  
 IECore is built using the SCons built tool, which is not installed as standard on many systems. It should be downloaded and installed from http://www.scons.org. You will need at least version 0.97.
 
-You will also need the [http://www.openexr.org OpenEXR] and [http://www.boost.org boost] libraries. Internally at Image Engine we currently use OpenEXR 1.4.0 and boost 1.33.1, but builds with the current latest versions (1.6.0 and 1.34.1 respectively) are known to work.
+You will also need the [http://www.openexr.org OpenEXR] and [http://www.boost.org boost] libraries. Internally at Image Engine we currently use OpenEXR 1.6.1 and boost 1.38.0, but builds with earlier versions (1.4.0 and 1.35.0 respectively) are known to work.
 
 Finally, you'll need at least Python version 2.4. This is preinstalled on many systems, but current Apple systems ship with only version 2.3, so you may need to download and install a later version from http://www.python.org/download.
 
