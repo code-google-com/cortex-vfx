@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,68 +32,55 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <iostream>
+#ifndef IE_CORE_EUCLIDIANTOSPHERICALTRANSFORM_INL
+#define IE_CORE_EUCLIDIANTOSPHERICALTRANSFORM_INL
 
-#include "OpenEXR/ImathColor.h"
+#include <cassert>
 
-#include <boost/test/test_tools.hpp>
-#include <boost/test/results_reporter.hpp>
-#include <boost/test/unit_test_suite.hpp>
-#include <boost/test/output_test_stream.hpp>
-#include <boost/test/unit_test_log.hpp>
-#include <boost/test/framework.hpp>
-#include <boost/test/detail/unit_test_parameters.hpp>
+#include "OpenEXR/ImathVec.h"
+#include "OpenEXR/ImathMatrix.h"
+#include "OpenEXR/ImathMath.h"
 
-#include "KDTreeTest.h"
-#include "TypedDataTest.h"
-#include "InterpolatorTest.h"
-#include "IndexedIOTest.h"
-#include "BoostUnitTestTest.h"
-#include "MarchingCubesTest.h"
-#include "DataConversionTest.h"
-#include "DataConvertTest.h"
-#include "DespatchTypedDataTest.h"
-#include "CompilerTest.h"
-#include "RadixSortTest.h"
-#include "SweepAndPruneTest.h"
-#include "ColorTransformTest.h"
-#include "AssociatedLegendreTest.h"
-#include "SphericalHarmonicsTest.h"
-#include "SpaceTransformTest.h"
+#include "IECore/VectorTraits.h"
 
-using namespace boost::unit_test;
-using boost::test_tools::output_test_stream;
+namespace IECore
+{
 
-using namespace IECore;
-
-test_suite* init_unit_test_suite( int argc, char* argv[] )
-{	
-	test_suite* test = BOOST_TEST_SUITE( "IECore unit test" );
-	
-	try
-	{
-		addBoostUnitTestTest(test);
-		addKDTreeTest(test);
-		addTypedDataTest(test);
-		addInterpolatorTest(test);
-		addIndexedIOTest(test);
-		addMarchingCubesTest(test);
-		addDataConversionTest(test);
-		addDataConvertTest(test);
-		addDespatchTypedDataTest(test);
-		addCompilerTest(test);
-		addRadixSortTest(test);
-		addSweepAndPruneTest(test);
-		addColorTransformTest(test);
-		addAssociatedLegendreTest(test);
-		addSphericalHarmonicsTest(test);
-		addSpaceTransformTest(test);
-	} 
-	catch (std::exception &ex)
-	{
-		std::cerr << "Failed to create test suite: " << ex.what() << std::endl;
-		throw;
-	}
-	
-	return test;
+template<typename F, typename T>
+EuclidianToSphericalTransform<F, T>::EuclidianToSphericalTransform()
+{
 }
+
+template<typename F, typename T>
+T EuclidianToSphericalTransform<F, T>::transform( const F &f )
+{
+	typedef typename VectorTraits<T>::BaseType U;
+	U len = f.length();
+	F v( f );
+	v.normalize();
+	U phi = Imath::Math< U >::atan2( v.y, v.x );
+	if ( phi < 0 )
+	{
+		phi += static_cast< U >( 2*M_PI );
+	}
+	T res;
+	res[0] = phi;
+	res[1] = Imath::Math< U >::acos( v.z );
+	if ( TypeTraits::IsVec3<F>::value )
+	{
+		res[2] = len;
+	}
+	return res;
+}
+
+template<typename F, typename T>
+typename EuclidianToSphericalTransform<F, T>::InverseType EuclidianToSphericalTransform<F, T>::inverse() const
+{
+	return InverseType();
+}
+
+
+} // namespace IECore
+
+#endif // IE_CORE_EUCLIDIANTOSPHERICALTRANSFORM_INL
+

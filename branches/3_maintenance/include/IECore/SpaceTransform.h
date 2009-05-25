@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,68 +32,44 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <iostream>
+#ifndef IE_CORE_SPACETRANSFORM_H
+#define IE_CORE_SPACETRANSFORM_H
 
-#include "OpenEXR/ImathColor.h"
+#include <functional>
 
-#include <boost/test/test_tools.hpp>
-#include <boost/test/results_reporter.hpp>
-#include <boost/test/unit_test_suite.hpp>
-#include <boost/test/output_test_stream.hpp>
-#include <boost/test/unit_test_log.hpp>
-#include <boost/test/framework.hpp>
-#include <boost/test/detail/unit_test_parameters.hpp>
 
-#include "KDTreeTest.h"
-#include "TypedDataTest.h"
-#include "InterpolatorTest.h"
-#include "IndexedIOTest.h"
-#include "BoostUnitTestTest.h"
-#include "MarchingCubesTest.h"
-#include "DataConversionTest.h"
-#include "DataConvertTest.h"
-#include "DespatchTypedDataTest.h"
-#include "CompilerTest.h"
-#include "RadixSortTest.h"
-#include "SweepAndPruneTest.h"
-#include "ColorTransformTest.h"
-#include "AssociatedLegendreTest.h"
-#include "SphericalHarmonicsTest.h"
-#include "SpaceTransformTest.h"
+namespace IECore
+{
 
-using namespace boost::unit_test;
-using boost::test_tools::output_test_stream;
+/// Base class for data conversions
+template<typename F, typename T>
+struct SpaceTransform : public std::unary_function<F, T>
+{
+	typedef F FromType;
+	typedef T ToType;
 
-using namespace IECore;
+	/// The type of the converter that can perform the inverse transformation
+	typedef SpaceTransform<T, F> InverseType;
 
-test_suite* init_unit_test_suite( int argc, char* argv[] )
-{	
-	test_suite* test = BOOST_TEST_SUITE( "IECore unit test" );
-	
-	try
+	virtual ~SpaceTransform()
 	{
-		addBoostUnitTestTest(test);
-		addKDTreeTest(test);
-		addTypedDataTest(test);
-		addInterpolatorTest(test);
-		addIndexedIOTest(test);
-		addMarchingCubesTest(test);
-		addDataConversionTest(test);
-		addDataConvertTest(test);
-		addDespatchTypedDataTest(test);
-		addCompilerTest(test);
-		addRadixSortTest(test);
-		addSweepAndPruneTest(test);
-		addColorTransformTest(test);
-		addAssociatedLegendreTest(test);
-		addSphericalHarmonicsTest(test);
-		addSpaceTransformTest(test);
-	} 
-	catch (std::exception &ex)
-	{
-		std::cerr << "Failed to create test suite: " << ex.what() << std::endl;
-		throw;
 	}
-	
-	return test;
-}
+
+	T operator()( const F &f )
+	{
+		return transform( f );
+	}
+
+	InverseType inverse() const
+	{
+		/// Function is not invertible
+		BOOST_STATIC_ASSERT( sizeof(T) == 0 );
+	}
+
+	virtual T transform( const F &f ) = 0;
+
+};
+
+} // namespace IECore
+
+#endif // IE_CORE_SPACETRANSFORM_H
