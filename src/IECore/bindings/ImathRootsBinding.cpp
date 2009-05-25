@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,9 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "OpenEXR/ImathRoots.h"
 
@@ -43,7 +43,7 @@
 using namespace boost::python;
 using namespace Imath;
 
-namespace IECore
+namespace IECore 
 {
 
 tuple solveLinearWrapper( double a, double b )
@@ -74,7 +74,7 @@ tuple solveQuadraticWrapper( double a, double b, double c )
 		case 1 :
 			return make_tuple( x[0] );
 		case 2 :
-			return make_tuple( x[0], x[1] );
+			return make_tuple( x[0], x[1] );	
 		default :
 			PyErr_SetString( PyExc_ArithmeticError, "Infinite solutions." );
 			throw_error_already_set();
@@ -95,7 +95,7 @@ tuple solveCubicWrapper( double a, double b, double c, double d )
 		case 2 :
 			return make_tuple( x[0], x[1] );
 		case 3 :
-			return make_tuple( x[0], x[1], x[2] );
+			return make_tuple( x[0], x[1], x[2] );		
 		default :
 			PyErr_SetString( PyExc_ArithmeticError, "Infinite solutions." );
 			throw_error_already_set();

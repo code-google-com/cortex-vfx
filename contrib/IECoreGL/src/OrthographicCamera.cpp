@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,8 +38,6 @@
 using namespace IECoreGL;
 using namespace Imath;
 
-IE_CORE_DEFINERUNTIMETYPED( OrthographicCamera );
-
 OrthographicCamera::OrthographicCamera(
 	const Imath::M44f &transform,
 	const Imath::V2i &resolution,
@@ -57,6 +55,6 @@ void OrthographicCamera::render( ConstStatePtr state ) const
 	glOrtho( m_screenWindow.min.x, m_screenWindow.max.x,
 		m_screenWindow.min.y, m_screenWindow.max.y,
 		m_clippingPlanes[0], m_clippingPlanes[1] );
-
+			
 	setModelViewMatrix();
 }

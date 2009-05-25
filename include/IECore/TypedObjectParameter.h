@@ -39,6 +39,8 @@
 
 #include "IECore/ObjectParameter.h"
 
+
+
 namespace IECore
 {
 
@@ -51,6 +53,12 @@ class MatrixMotionTransform;
 class MatrixTransform;
 class VisibleRenderable;
 class Group;
+class MotionPrimitive;
+class Primitive;
+class ImagePrimitive;
+class MeshPrimitive;
+class CurvesPrimitive;
+class PointsPrimitive;
 class ObjectVector;
 
 /// The TypedObjectParameter class implements an ObjectParameter which rigidly only
@@ -59,36 +67,34 @@ template<typename T>
 class TypedObjectParameter : public ObjectParameter
 {
 	public :
-
+		
+		IE_CORE_DECLAREMEMBERPTR( TypedObjectParameter<T> );
 		typedef T ObjectType;
 		typedef typename T::Ptr ObjectTypePtr;
 		typedef typename T::ConstPtr ConstObjectTypePtr;
-		typedef std::pair<std::string, ObjectTypePtr> ObjectPreset;
-		typedef std::vector<ObjectPreset> ObjectPresetsContainer;
-
-		TypedObjectParameter( const std::string &name, const std::string &description, typename T::Ptr defaultValue, const ObjectPresetsContainer &presets = ObjectPresetsContainer(), bool presetsOnly = false,ConstCompoundObjectPtr userData=0 );
-
-		IECORE_RUNTIMETYPED_DECLARETEMPLATE( TypedObjectParameter<T>, ObjectParameter );
-
-		//! @name Object functions
+		typedef std::map<std::string, ObjectTypePtr> ObjectPresetsMap;
+		
+		TypedObjectParameter( const std::string &name, const std::string &description, typename T::Ptr defaultValue, const ObjectPresetsMap &presets = ObjectPresetsMap(), bool presetsOnly = false,ConstCompoundObjectPtr userData=0 );		
+		
+		//! @name RunTimeTyped functions
 		////////////////////////////////////
 		//@{
-		typename TypedObjectParameter<T>::Ptr copy() const;
+		virtual TypeId typeId() const;
+		virtual std::string typeName() const;
+		virtual bool isInstanceOf( TypeId typeId ) const;
+		virtual bool isInstanceOf( const std::string &typeName ) const;
+		static TypeId staticTypeId();
+		static std::string staticTypeName();
+		static bool inheritsFrom( TypeId typeId );
+		static bool inheritsFrom( const std::string &typeName );
 		//@}
-
+		
 		/// Implemented to return true only if value is of type T.
 		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
-
+		
 	protected:
-
-		TypedObjectParameter();
-
-		static PresetsContainer makePresets( const ObjectPresetsContainer &presets );
-
-	private :
-
-		static TypeDescription<TypedObjectParameter<T> > g_typeDescription;
-		friend class TypeDescription<TypedObjectParameter<T> >;
+	
+		static PresetsMap makePresets( const ObjectPresetsMap &presets );
 
 };
 
@@ -101,6 +107,12 @@ typedef TypedObjectParameter<MatrixMotionTransform> MatrixMotionTransformParamet
 typedef TypedObjectParameter<MatrixTransform> MatrixTransformParameter;
 typedef TypedObjectParameter<VisibleRenderable> VisibleRenderableParameter;
 typedef TypedObjectParameter<Group> GroupParameter;
+typedef TypedObjectParameter<MotionPrimitive> MotionPrimitiveParameter;
+typedef TypedObjectParameter<Primitive> PrimitiveParameter;
+typedef TypedObjectParameter<ImagePrimitive> ImagePrimitiveParameter;
+typedef TypedObjectParameter<MeshPrimitive> MeshPrimitiveParameter;
+typedef TypedObjectParameter<CurvesPrimitive> CurvesPrimitiveParameter;
+typedef TypedObjectParameter<PointsPrimitive> PointsPrimitiveParameter;
 typedef TypedObjectParameter<CompoundObject> CompoundObjectParameter;
 typedef TypedObjectParameter<ObjectVector> ObjectVectorParameter;
 
@@ -113,11 +125,15 @@ IE_CORE_DECLAREPTR( MatrixMotionTransformParameter );
 IE_CORE_DECLAREPTR( MatrixTransformParameter );
 IE_CORE_DECLAREPTR( VisibleRenderableParameter );
 IE_CORE_DECLAREPTR( GroupParameter );
+IE_CORE_DECLAREPTR( MotionPrimitiveParameter );
+IE_CORE_DECLAREPTR( PrimitiveParameter );
+IE_CORE_DECLAREPTR( ImagePrimitiveParameter );
+IE_CORE_DECLAREPTR( MeshPrimitiveParameter );
+IE_CORE_DECLAREPTR( CurvesPrimitiveParameter );
+IE_CORE_DECLAREPTR( PointsPrimitiveParameter );
 IE_CORE_DECLAREPTR( CompoundObjectParameter );
 IE_CORE_DECLAREPTR( ObjectVectorParameter );
 
 } // namespace IECore
-
-#include "IECore/TypedObjectParameter.inl"
 
 #endif // IE_CORE_TYPEDOBJECTPARAMETER_H

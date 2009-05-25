@@ -36,7 +36,13 @@
 #define IE_CORE_TYPEDPARAMETER_H
 
 #include "IECore/Parameter.h"
-#include "IECore/TypedData.h"
+#include "IECore/SimpleTypedData.h"
+#include "IECore/VectorTypedData.h"
+#include "IECore/SplineData.h"
+#include "IECore/CubeColorLookupData.h"
+#include "IECore/DateTimeData.h"
+#include "IECore/TimeDurationData.h"
+#include "IECore/TimePeriodData.h"
 
 namespace IECore
 {
@@ -46,40 +52,43 @@ template<typename T>
 class TypedParameter : public Parameter
 {
 	public :
-
+	
 		typedef T ValueType;
 		typedef TypedData<T> ObjectType;
 
+		IE_CORE_DECLAREMEMBERPTR( TypedParameter<T> );		
 		IE_CORE_DECLAREPTR( ObjectType );
-
-		typedef std::pair<std::string, T> Preset;
-		typedef std::pair<std::string, ObjectTypePtr> ObjectPreset;
-		typedef std::vector<Preset> PresetsContainer;
-		typedef std::vector<ObjectPreset> ObjectPresetsContainer;
-
+		
+		typedef std::map<std::string, T> PresetsMap;
+		typedef std::map<std::string, ObjectTypePtr> ObjectPresetsMap;
+	
 		/// Constructs a new ObjectType object to hold the default value.
 		TypedParameter( const std::string &name, const std::string &description, const T &defaultValue = T(),
-			const PresetsContainer &presets = PresetsContainer(), bool presetsOnly = false, ConstCompoundObjectPtr userData = 0 );
+			const PresetsMap &presets = PresetsMap(), bool presetsOnly = false, ConstCompoundObjectPtr userData = 0 );
 		/// Takes a copy of defaultValue for use as the default value.
 		TypedParameter( const std::string &name, const std::string &description, ObjectTypePtr defaultValue,
-			const ObjectPresetsContainer &presets = ObjectPresetsContainer(), bool presetsOnly = false, ConstCompoundObjectPtr userData = 0 );
-
-		IECORE_RUNTIMETYPED_DECLARETEMPLATE( TypedParameter<T>, Parameter );
-
-		//! @name Object functions
+			const ObjectPresetsMap &presets = ObjectPresetsMap(), bool presetsOnly = false, ConstCompoundObjectPtr userData = 0 );
+		
+		//! @name RunTimeTyped functions
 		////////////////////////////////////
 		//@{
-		typename TypedParameter<T>::Ptr copy() const;
-		virtual bool isEqualTo( ConstObjectPtr other ) const;
+		virtual TypeId typeId() const;
+		virtual std::string typeName() const;
+		virtual bool isInstanceOf( TypeId typeId ) const;
+		virtual bool isInstanceOf( const std::string &typeName ) const;
+		static TypeId staticTypeId();
+		static std::string staticTypeName();
+		static bool inheritsFrom( TypeId typeId );
+		static bool inheritsFrom( const std::string &typeName );
 		//@}
-
+			
 		/// Implemented to return true only if value is of type TypedData<T>.
 		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
-
+		
 		/// Convenience function for getting the default value, which avoids all the hoop jumping
 		/// needed to extract the value from the Object returned by Parameter::defaultValue().
 		const ValueType &typedDefaultValue() const;
-
+		
 		/// Convenience function for value getting, which avoids all the hoop jumping
 		/// needed to extract the value from the Object returned by Parameter::getValue().
 		/// Throws an Exception if the value is not valid.
@@ -88,22 +97,105 @@ class TypedParameter : public Parameter
 		/// Convenience function for value setting, constructs a TypedData<T> from value
 		/// and calls Parameter::setValue().
 		void setTypedValue( const T &value );
-
-	protected :
-
-		TypedParameter();
-
-		virtual void copyFrom( ConstObjectPtr other, CopyContext *context );
-		virtual void save( SaveContext *context ) const;
-		virtual void load( LoadContextPtr context );
-		virtual void memoryUsage( Object::MemoryAccumulator &accumulator ) const;
-
-	private :
-
-		static const TypeDescription<TypedParameter<T> > g_typeDescription;
-		friend class TypeDescription<TypedParameter<T> >;
-
+		
 };
+
+/// \todo Split some of these off into separate files to speed up compilation times
+typedef TypedParameter<bool> BoolParameter;
+typedef TypedParameter<std::string> StringParameter;
+typedef TypedParameter<Imath::V2i> V2iParameter;
+typedef TypedParameter<Imath::V3i> V3iParameter;
+typedef TypedParameter<Imath::V2f> V2fParameter;
+typedef TypedParameter<Imath::V3f> V3fParameter;
+typedef TypedParameter<Imath::V2d> V2dParameter;
+typedef TypedParameter<Imath::V3d> V3dParameter;
+typedef TypedParameter<Imath::Color3f> Color3fParameter;
+typedef TypedParameter<Imath::Color4f> Color4fParameter;
+typedef TypedParameter<Imath::Box2i> Box2iParameter;
+typedef TypedParameter<Imath::Box3i> Box3iParameter;
+typedef TypedParameter<Imath::Box2f> Box2fParameter;
+typedef TypedParameter<Imath::Box3f> Box3fParameter;
+typedef TypedParameter<Imath::Box2d> Box2dParameter;
+typedef TypedParameter<Imath::Box3d> Box3dParameter;
+typedef TypedParameter<Imath::M44f> M44fParameter;
+typedef TypedParameter<Imath::M44d> M44dParameter;
+typedef TypedParameter<Splineff> SplineffParameter;
+typedef TypedParameter<Splinedd> SplineddParameter;
+typedef TypedParameter<SplinefColor3f> SplinefColor3fParameter;
+typedef TypedParameter<SplinefColor4f> SplinefColor4fParameter;
+typedef TypedParameter<CubeColorLookupf> CubeColorLookupfParameter;
+typedef TypedParameter<CubeColorLookupd> CubeColorLookupdParameter;
+typedef TypedParameter<boost::posix_time::ptime> DateTimeParameter;
+typedef TypedParameter<boost::posix_time::time_duration> TimeDurationParameter;
+typedef TypedParameter<TimePeriod> TimePeriodParameter;
+
+typedef TypedParameter<std::vector<bool> > BoolVectorParameter;
+typedef TypedParameter<std::vector<int> > IntVectorParameter;
+typedef TypedParameter<std::vector<float> > FloatVectorParameter;
+typedef TypedParameter<std::vector<double> > DoubleVectorParameter;
+typedef TypedParameter<std::vector<std::string> > StringVectorParameter;
+typedef TypedParameter<std::vector<Imath::V2f> > V2fVectorParameter;
+typedef TypedParameter<std::vector<Imath::V3f> > V3fVectorParameter;
+typedef TypedParameter<std::vector<Imath::V2d> > V2dVectorParameter;
+typedef TypedParameter<std::vector<Imath::V3d> > V3dVectorParameter;
+typedef TypedParameter<std::vector<Imath::Box3f> > Box3fVectorParameter;
+typedef TypedParameter<std::vector<Imath::Box3d> > Box3dVectorParameter;
+typedef TypedParameter<std::vector<Imath::M33f> > M33fVectorParameter;
+typedef TypedParameter<std::vector<Imath::M44f> > M44fVectorParameter;
+typedef TypedParameter<std::vector<Imath::M33d> > M33dVectorParameter;
+typedef TypedParameter<std::vector<Imath::M44d> > M44dVectorParameter;
+typedef TypedParameter<std::vector<Imath::Quatf> > QuatfVectorParameter;
+typedef TypedParameter<std::vector<Imath::Quatd> > QuatdVectorParameter;
+typedef TypedParameter<std::vector<Imath::Color3f> > Color3fVectorParameter;
+typedef TypedParameter<std::vector<Imath::Color4f> > Color4fVectorParameter;
+
+IE_CORE_DECLAREPTR( BoolParameter );
+IE_CORE_DECLAREPTR( StringParameter );
+IE_CORE_DECLAREPTR( V2iParameter );
+IE_CORE_DECLAREPTR( V3iParameter );
+IE_CORE_DECLAREPTR( V2fParameter );
+IE_CORE_DECLAREPTR( V3fParameter );
+IE_CORE_DECLAREPTR( V2dParameter );
+IE_CORE_DECLAREPTR( V3dParameter );
+IE_CORE_DECLAREPTR( Color3fParameter );
+IE_CORE_DECLAREPTR( Color4fParameter );
+IE_CORE_DECLAREPTR( Box2iParameter );
+IE_CORE_DECLAREPTR( Box3iParameter );
+IE_CORE_DECLAREPTR( Box2fParameter );
+IE_CORE_DECLAREPTR( Box3fParameter );
+IE_CORE_DECLAREPTR( Box2dParameter );
+IE_CORE_DECLAREPTR( Box3dParameter );
+IE_CORE_DECLAREPTR( M44fParameter );
+IE_CORE_DECLAREPTR( M44dParameter );
+IE_CORE_DECLAREPTR( SplineffParameter );
+IE_CORE_DECLAREPTR( SplineddParameter );
+IE_CORE_DECLAREPTR( SplinefColor3fParameter );
+IE_CORE_DECLAREPTR( SplinefColor4fParameter );
+IE_CORE_DECLAREPTR( CubeColorLookupfParameter );
+IE_CORE_DECLAREPTR( CubeColorLookupdParameter );
+IE_CORE_DECLAREPTR( DateTimeParameter );
+IE_CORE_DECLAREPTR( TimeDurationParameter );
+IE_CORE_DECLAREPTR( TimePeriodParameter );
+
+IE_CORE_DECLAREPTR( BoolVectorParameter );
+IE_CORE_DECLAREPTR( IntVectorParameter );
+IE_CORE_DECLAREPTR( FloatVectorParameter );
+IE_CORE_DECLAREPTR( DoubleVectorParameter );
+IE_CORE_DECLAREPTR( StringVectorParameter );
+IE_CORE_DECLAREPTR( V2fVectorParameter );
+IE_CORE_DECLAREPTR( V3fVectorParameter );
+IE_CORE_DECLAREPTR( V2dVectorParameter );
+IE_CORE_DECLAREPTR( V3dVectorParameter );
+IE_CORE_DECLAREPTR( Box3fVectorParameter );
+IE_CORE_DECLAREPTR( Box3dVectorParameter );
+IE_CORE_DECLAREPTR( M33fVectorParameter );
+IE_CORE_DECLAREPTR( M44fVectorParameter );
+IE_CORE_DECLAREPTR( M33dVectorParameter );
+IE_CORE_DECLAREPTR( M44dVectorParameter );
+IE_CORE_DECLAREPTR( QuatfVectorParameter );
+IE_CORE_DECLAREPTR( QuatdVectorParameter );
+IE_CORE_DECLAREPTR( Color3fVectorParameter );
+IE_CORE_DECLAREPTR( Color4fVectorParameter );
 
 } // namespace IECore
 

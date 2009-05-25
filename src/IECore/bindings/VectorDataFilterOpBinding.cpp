@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/VectorDataFilterOp.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -44,9 +45,14 @@ namespace IECore {
 
 void bindVectorDataFilterOp()
 {
-	RunTimeTypedClass<VectorDataFilterOp>()
-		.def( init<>() )
+	typedef class_< VectorDataFilterOp, VectorDataFilterOpPtr, boost::noncopyable, bases<ModifyOp> > VectorDataFilterOpPyClass;
+	VectorDataFilterOpPyClass( "VectorDataFilterOp" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( VectorDataFilterOp )
 	;
+	
+	INTRUSIVE_PTR_PATCH( VectorDataFilterOp, VectorDataFilterOpPyClass );
+	implicitly_convertible<VectorDataFilterOpPtr, ModifyOpPtr>();	
+
 }
 
 } // namespace IECore

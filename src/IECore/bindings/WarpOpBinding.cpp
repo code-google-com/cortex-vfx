@@ -37,6 +37,7 @@
 
 #include "IECore/WarpOp.h"
 #include "IECore/bindings/WarpOpBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -46,9 +47,14 @@ namespace IECore
 
 void bindWarpOp()
 {
-
-	RunTimeTypedClass<WarpOp>()
+	
+	typedef class_<WarpOp, WarpOpPtr, boost::noncopyable, bases<ImagePrimitiveOp> > WarpOpPyClass;
+	WarpOpPyClass( "WarpOp", no_init )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( WarpOp )
 	;
+	
+	INTRUSIVE_PTR_PATCH( WarpOp, WarpOpPyClass );
+	implicitly_convertible<WarpOpPtr, ImagePrimitiveOpPtr>();	
 
 }
 

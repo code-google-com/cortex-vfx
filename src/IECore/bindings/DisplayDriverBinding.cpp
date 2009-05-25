@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,14 +32,15 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
-#include "boost/python/suite/indexing/container_utils.hpp"
+#include <boost/python.hpp>
+#include <boost/python/suite/indexing/container_utils.hpp>
 
 #include "IECore/DisplayDriver.h"
 #include "IECore/SimpleTypedData.h"
-#include "IECore/VectorTypedData.h"
+#include "IECore/VectorTypedData.h" 
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
-#include "IECore/bindings/Wrapper.h"
+#include "IECore/bindings/WrapperToPython.h"
 
 using namespace boost;
 using namespace boost::python;
@@ -49,11 +50,11 @@ namespace IECore {
 class DisplayDriverCreatorWrap : public DisplayDriver::DisplayDriverCreator, public Wrapper<DisplayDriver::DisplayDriverCreator>
 {
 	public :
-
+		
 		DisplayDriverCreatorWrap( PyObject *self ) : DisplayDriverCreator(), Wrapper<DisplayDriver::DisplayDriverCreator>( self, this )
 		{
 		};
-
+		
 		virtual DisplayDriverPtr create( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, const std::vector<std::string> &channelNames, IECore::ConstCompoundDataPtr parameters )
 		{
 			override c = this->get_override( "create" );
@@ -66,8 +67,11 @@ class DisplayDriverCreatorWrap : public DisplayDriver::DisplayDriverCreator, pub
 					channelList.append( *iterX );
 					iterX++;
 				}
-
-				DisplayDriverPtr r = c( displayWindow, dataWindow, channelList,
+				
+				//// \todo We may want to call operands->copy() here instead of casting away the constness. If the Python code being called
+				/// here actually attempts to change the CompoundObject, then any C++ calling code might get confused when a suposedly const value
+				/// changes unexpectedly. Check any performance overhead of the copy.
+				DisplayDriverPtr r = c( displayWindow, dataWindow, channelList, 
 					const_pointer_cast<CompoundData>( parameters ) );
 				if( !r )
 				{
@@ -122,12 +126,13 @@ std::vector< T > listToVector( const boost::python::list &names )
 
 static DisplayDriverPtr displayDriverCreate( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, const boost::python::list &channelNames, CompoundDataPtr parameters )
 {
-	return DisplayDriver::create( displayWindow, dataWindow, listToVector<std::string>(channelNames), parameters );
+	return DisplayDriver::create( displayWindow, dataWindow, listToVector<std::string>(channelNames), parameters ); 
 }
 
 void bindDisplayDriver()
 {
-	scope displayDriverScope = RunTimeTypedClass<DisplayDriver>()
+	typedef class_< DisplayDriver, DisplayDriverPtr, boost::noncopyable, bases<RunTimeTyped> > DisplayDriverPyClass;
+	scope displayDriverScope = DisplayDriverPyClass( "DisplayDriver", no_init )
 		.def( "imageData", &displayDriverImageData )
 		.def( "imageClose", &displayDriverImageClose )
 		.def( "scanLineOrderOnly", &displayDriverScanLineOrderOnly )
@@ -137,12 +142,21 @@ void bindDisplayDriver()
 		.def( "create", &displayDriverCreate ).staticmethod("create")
 		.def( "registerFactory", &DisplayDriver::registerFactory ).staticmethod("registerFactory")
 		.def( "unregisterFactory", &DisplayDriver::unregisterFactory ).staticmethod("unregisterFactory")
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(DisplayDriver)		
 	;
+	INTRUSIVE_PTR_PATCH( DisplayDriver, DisplayDriverPyClass );
+	implicitly_convertible<DisplayDriverPtr, RunTimeTypedPtr>();
 
-	RunTimeTypedClass<DisplayDriver::DisplayDriverCreator, DisplayDriverCreatorWrapPtr>()
-		.def( init<>() )
+	typedef class_< DisplayDriver::DisplayDriverCreator, DisplayDriverCreatorWrapPtr, boost::noncopyable, bases<RunTimeTyped> > DisplayDriverCreatorPyClass;
+	DisplayDriverCreatorPyClass( "DisplayDriverCreator" )
 		.def( "create", &DisplayDriverCreatorWrap::create )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( DisplayDriver::DisplayDriverCreator )		
 	;
+	
+	WrapperToPython<DisplayDriver::DisplayDriverCreatorPtr>();
+	INTRUSIVE_PTR_PATCH( DisplayDriver::DisplayDriverCreator, DisplayDriverCreatorPyClass );
+	implicitly_convertible< DisplayDriver::DisplayDriverCreatorPtr, RunTimeTypedPtr>();
+
 }
 
 } // namespace IECore

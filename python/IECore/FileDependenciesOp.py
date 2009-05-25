@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -39,7 +39,7 @@ import os.path
 class FileDependenciesOp( Op ) :
 
 	def __init__( self ) :
-
+	
 		Op.__init__( self, "FileDependenciesOp", "Lists the dependencies of a file.",
 			Parameter(
 				name = "result",
@@ -47,7 +47,7 @@ class FileDependenciesOp( Op ) :
 				defaultValue = StringVectorData()
 			)
 		)
-
+		
 		self.parameters().addParameters(
 			[
 				FileNameParameter(
@@ -63,33 +63,33 @@ class FileDependenciesOp( Op ) :
 					description = "When on, recursively searches the file dependency tree and lists all results.",
 					defaultValue = False,
 				),
-				StringParameter(
+				StringParameter( 
 					name = "resultType",
 					description = "The format of the result",
 					defaultValue = "string",
-					presets = (
-						( "string", "string" ),
-						( "stringVector", "stringVector" ),
-					),
+					presets = {
+						"string" : "string",
+						"stringVector" : "stringVector",
+					},
 					presetsOnly = True,
 				)
 			]
 		)
 
 	def doOperation( self, operands ) :
-
+	
 		files = set()
-		if operands["recurse"].value :
-
-			files = FileExaminer.allDependencies( operands["file"].value )
-
+		if operands.recurse.value :
+			
+			files = FileExaminer.allDependencies( operands.file.value )
+		
 		else :
-
-			files = FileExaminer.create( operands["file"].value ).dependencies()
-
-		if operands["resultType"].value == "string" :
+		
+			files = FileExaminer.create( operands.file.value ).dependencies()
+								
+		if operands.resultType.value == "string" :
 			return StringData( "\n".join( [str(s) for s in files] ) )
 		else :
 			return StringVectorData( [str(s) for s in files] )
 
-registerRunTimeTyped( FileDependenciesOp, 100010, Op )
+makeRunTimeTyped( FileDependenciesOp, 100010, Op )

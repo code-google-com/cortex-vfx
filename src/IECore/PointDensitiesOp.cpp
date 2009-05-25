@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,8 +45,6 @@
 using namespace IECore;
 using namespace Imath;
 using namespace std;
-
-IE_CORE_DEFINERUNTIMETYPED( PointDensitiesOp );
 
 static TypeId pointTypes[] = { V3fVectorDataTypeId, V3dVectorDataTypeId, InvalidTypeId };
 static TypeId resultTypes[] = { FloatVectorDataTypeId, DoubleVectorDataTypeId, InvalidTypeId };
@@ -130,7 +128,7 @@ static void densities( const vector<Vec3<T> > &points, int numNeighbours, T mult
 
 	Tree tree( points.begin(), points.end() );
 	vector<typename Tree::Iterator> neighbours;
-
+		
 	result.resize( points.size() );
 	for( unsigned int i=0; i<points.size(); i++ )
 	{
@@ -164,7 +162,7 @@ ObjectPtr PointDensitiesOp::doOperation( ConstCompoundObjectPtr operands )
 				densities<double>( boost::static_pointer_cast<const V3dVectorData>( points )->readable(), numNeighbours, multiplier, resultT->writable() );
 				result = resultT;
 			}
-			break;
+			break;	
 		default :
 			// should never get here
 			assert( 0 );

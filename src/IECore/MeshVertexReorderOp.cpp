@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,8 +41,6 @@
 using namespace IECore;
 using namespace std;
 
-IE_CORE_DEFINERUNTIMETYPED( MeshVertexReorderOp );
-
 MeshVertexReorderOp::MeshVertexReorderOp() : MeshPrimitiveOp( staticTypeName(), "Calculates vertex normals for a mesh." )
 {
 	m_startingVerticesParameter = new V3iParameter(
@@ -71,13 +69,13 @@ ConstV3iParameterPtr MeshVertexReorderOp::startingVerticesParameter() const
 struct MeshVertexReorderOp::ReorderFn
 {
 	std::string m_name;
-
+	
 	typedef DataPtr ReturnType;
 
 	ReorderFn( const std::vector<int> &indices ) : m_indices( indices )
 	{
 	}
-
+	
 	template<typename T>
 	DataPtr operator()( typename T::Ptr d )
 	{
@@ -109,7 +107,7 @@ struct MeshVertexReorderOp::HandleErrors
 	{
 		assert( d );
 		string e = boost::str( boost::format( "MeshVertexReorderOp : \"%s\" has unsupported data type \"%s\"." ) % f.m_name % d->typeName() );
-		throw InvalidArgumentException( e );
+		throw InvalidArgumentException( e ); 
 	}
 };
 
@@ -335,7 +333,7 @@ void MeshVertexReorderOp::buildInternalTopology( ConstMeshPrimitivePtr mesh )
 
 		vertOffset += numFaceVertices;
 	}
-
+	
 	for ( EdgeToConnectedFacesMap::const_iterator it = m_edgeToConnectedFacesMap.begin(); it != m_edgeToConnectedFacesMap.end(); ++it )
 	{
 		if ( it->second.size() > 2 || it->second.size() == 0 )

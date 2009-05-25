@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/TIFFImageReader.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -46,13 +47,17 @@ namespace IECore
 
 void bindTIFFImageReader()
 {
-	RunTimeTypedClass<TIFFImageReader>()
-		.def( init<>() )
+	typedef class_<TIFFImageReader, TIFFImageReaderPtr, boost::noncopyable, bases<ImageReader> > TIFFImageReaderPyClass;
+	TIFFImageReaderPyClass("TIFFImageReader", init<>())
 		.def( init<const std::string &>() )
 		.def( "canRead", &TIFFImageReader::canRead ).staticmethod( "canRead" )
 		.def( "numDirectories", &TIFFImageReader::numDirectories )
-		.def( "setDirectory", &TIFFImageReader::setDirectory )
+		.def( "setDirectory", &TIFFImageReader::setDirectory )		
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(TIFFImageReader)
 	;
+
+	INTRUSIVE_PTR_PATCH( TIFFImageReader, TIFFImageReaderPyClass );
+	implicitly_convertible<TIFFImageReaderPtr, ImageReaderPtr>();
 }
 
 } // namespace IECore

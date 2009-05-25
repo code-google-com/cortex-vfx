@@ -38,6 +38,7 @@
 #include "IECoreMaya/FromMayaObjectConverter.h"
 #include "IECoreMaya/StatusException.h"
 
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 #include "maya/MSelectionList.h"
@@ -48,7 +49,13 @@ using namespace boost::python;
 
 void IECoreMaya::bindFromMayaObjectConverter()
 {
-	IECore::RunTimeTypedClass<FromMayaObjectConverter>()
+	typedef class_<FromMayaObjectConverter, FromMayaObjectConverterPtr, boost::noncopyable, bases<FromMayaConverter> > FromMayaObjectConverterPyClass;
+
+	FromMayaObjectConverterPyClass( "FromMayaObjectConverter", no_init )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( FromMayaObjectConverter )
 		.def( "create", &FromMayaObjectConverter::create, ( arg_( "object" ), arg_( "resultType" ) = IECore::InvalidTypeId ) ).staticmethod( "create" )
 	;
+	
+	INTRUSIVE_PTR_PATCH( FromMayaObjectConverter, FromMayaObjectConverterPyClass );
+	implicitly_convertible<FromMayaObjectConverterPtr, FromMayaConverterPtr>();
 }

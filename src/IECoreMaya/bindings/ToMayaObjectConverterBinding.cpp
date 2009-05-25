@@ -37,6 +37,7 @@
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/bindings/ToMayaObjectConverterBinding.h"
 
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 #include "IECore/Object.h"
@@ -54,8 +55,14 @@ static bool convert( ToMayaObjectConverter &c, const MObject &o )
 
 void IECoreMaya::bindToMayaObjectConverter()
 {
-	IECore::RunTimeTypedClass<ToMayaObjectConverter>()
+	typedef class_<ToMayaObjectConverter, ToMayaObjectConverterPtr, boost::noncopyable, bases<ToMayaConverter> > ToMayaObjectConverterPyClass;
+
+	ToMayaObjectConverterPyClass( "ToMayaObjectConverter", no_init )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( ToMayaObjectConverter )
 		.def( "convert", &convert )
 		.def( "create", (ToMayaObjectConverterPtr (*)( IECore::ConstObjectPtr))&ToMayaObjectConverter::create ).staticmethod( "create" )
 	;
+	
+	INTRUSIVE_PTR_PATCH( ToMayaObjectConverter, ToMayaObjectConverterPyClass );
+	implicitly_convertible<ToMayaObjectConverterPtr, ToMayaConverterPtr>();
 }

@@ -40,6 +40,4 @@ namespace IECore
 void bindTypedParameter();
 }
 
-#include "IECore/bindings/TypedParameterBinding.inl"
-
 #endif // IE_COREPYTHON_TYPEDPARAMETERBINDING_H

@@ -42,8 +42,6 @@
 using namespace IECoreMaya;
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPED( FromMayaStringPlugConverter );
-
 FromMayaPlugConverter::Description<FromMayaStringPlugConverter> FromMayaStringPlugConverter::m_description( MFnData::kString, StringData::staticTypeId(), true );
 
 FromMayaStringPlugConverter::FromMayaStringPlugConverter( const MPlug &plug )

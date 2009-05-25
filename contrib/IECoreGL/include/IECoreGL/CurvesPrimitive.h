@@ -48,7 +48,7 @@ class CurvesPrimitive : public Primitive
 {
 	public :
 
-		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::CurvesPrimitive, CurvesPrimitiveTypeId, Primitive );
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( CurvesPrimitive, CurvesPrimitiveTypeId, Primitive );
 
 		CurvesPrimitive( const IECore::CubicBasisf &basis, bool periodic, IECore::ConstIntVectorDataPtr vertsPerCurve,
 			IECore::ConstV3fVectorDataPtr points, float width=1.0f );
@@ -56,7 +56,7 @@ class CurvesPrimitive : public Primitive
 
 		virtual Imath::Box3f bound() const;
 		virtual size_t vertexAttributeSize() const;
-
+		
 		//! @name StateComponents
 		/// The following StateComponent classes have an effect only on
 		/// CurvesPrimitive objects.
@@ -76,13 +76,13 @@ class CurvesPrimitive : public Primitive
 		typedef TypedStateComponent<float, CurvesPrimitiveGLLineWidthTypeId> GLLineWidth;
 		IE_CORE_DECLAREPTR( GLLineWidth );
 		//@}
-
+		
 	protected :
-
+		
 		virtual void render( ConstStatePtr state, IECore::TypeId style ) const;
-
+		
 	private :
-
+	
 		void renderLines( ConstStatePtr state, IECore::TypeId style ) const;
 		void renderRibbons( ConstStatePtr state, IECore::TypeId style ) const;
 

@@ -39,8 +39,6 @@
 using namespace IECoreMaya;
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPED( FromMayaConverter );
-
 FromMayaConverter::FromMayaConverter( const std::string &name, const std::string &description )
 	:	ToCoreConverter( name, description )
 {

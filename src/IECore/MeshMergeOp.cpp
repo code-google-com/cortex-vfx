@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,8 +43,6 @@
 using namespace IECore;
 using namespace std;
 
-IE_CORE_DEFINERUNTIMETYPED( MeshMergeOp );
-
 MeshMergeOp::MeshMergeOp()
 	:	MeshPrimitiveOp( staticTypeName(), "Merges one mesh with another." )
 {
@@ -53,7 +51,7 @@ MeshMergeOp::MeshMergeOp()
 		"The mesh to be merged with the input.",
 		new MeshPrimitive
 	);
-
+	
 	parameters()->addParameter( m_meshParameter );
 }
 
@@ -74,7 +72,7 @@ ConstMeshPrimitiveParameterPtr MeshMergeOp::meshParameter() const
 struct MeshMergeOp::AppendPrimVars
 {
 	typedef void ReturnType;
-
+	
 	AppendPrimVars( ConstMeshPrimitivePtr mesh2, const std::string &name )
 		:	m_mesh2( mesh2 ), m_name( name )
 	{
@@ -83,7 +81,7 @@ struct MeshMergeOp::AppendPrimVars
 	template<typename T>
 	ReturnType operator()( typename T::Ptr data )
 	{
-
+	
 		PrimitiveVariableMap::const_iterator it = m_mesh2->variables.find( m_name );
 		if( it!=m_mesh2->variables.end() )
 		{
@@ -96,7 +94,7 @@ struct MeshMergeOp::AppendPrimVars
 	}
 
 	private :
-
+	
 		ConstMeshPrimitivePtr m_mesh2;
 		std::string m_name;
 
@@ -105,13 +103,13 @@ struct MeshMergeOp::AppendPrimVars
 void MeshMergeOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands )
 {
 	ConstMeshPrimitivePtr mesh2 = boost::static_pointer_cast<const MeshPrimitive>( m_meshParameter->getValue() );
-
+	
 	const vector<int> &verticesPerFace1 = mesh->verticesPerFace()->readable();
 	const vector<int> &vertexIds1 = mesh->vertexIds()->readable();
-
-	const vector<int> &verticesPerFace2 = mesh2->verticesPerFace()->readable();
-	const vector<int> &vertexIds2 = mesh2->vertexIds()->readable();
-
+	
+	const vector<int> &verticesPerFace2 = mesh2->verticesPerFace()->readable(); 
+	const vector<int> &vertexIds2 = mesh2->vertexIds()->readable(); 
+	
 	IntVectorDataPtr verticesPerFaceData = new IntVectorData;
 	vector<int> &verticesPerFace = verticesPerFaceData->writable();
 	verticesPerFace.resize( verticesPerFace1.size() + verticesPerFace2.size() );
@@ -126,7 +124,7 @@ void MeshMergeOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObje
 	transform( vertexIds2.begin(), vertexIds2.end(), it, bind2nd( plus<int>(), vertexIdOffset ) );
 
 	mesh->setTopology( verticesPerFaceData, vertexIdsData, mesh->interpolation() );
-
+	
 	PrimitiveVariableMap::iterator pvIt;
 	for( pvIt=mesh->variables.begin(); pvIt!=mesh->variables.end(); pvIt++ )
 	{
@@ -135,5 +133,5 @@ void MeshMergeOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObje
 			AppendPrimVars f( mesh2, pvIt->first );
 			despatchTypedData<AppendPrimVars, TypeTraits::IsVectorTypedData, DespatchTypedDataIgnoreError>( pvIt->second.data, f );
 		}
-	}
+	}	
 }

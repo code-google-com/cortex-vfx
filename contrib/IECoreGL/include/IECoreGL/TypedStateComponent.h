@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,31 +46,28 @@ template<typename T, unsigned int TId>
 class TypedStateComponent : public StateComponent
 {
 	public :
-
+	
 		typedef T ValueType;
-
+	
 		typedef boost::intrusive_ptr<TypedStateComponent> Ptr;
 		typedef boost::intrusive_ptr<const TypedStateComponent> ConstPtr;
-
+	
 		TypedStateComponent();
 		TypedStateComponent( const T &value );
-
+	
 		//! @name RunTimeTyped interface
 		////////////////////////////////////////////////////
 		//@{
 		virtual IECore::TypeId typeId() const;
-		virtual const char *typeName() const;
+		virtual std::string typeName() const;
 		virtual bool isInstanceOf( IECore::TypeId typeId ) const;
-		virtual bool isInstanceOf( const char *typeName ) const;
+		virtual bool isInstanceOf( const std::string &typeName ) const;
 		static IECore::TypeId staticTypeId();
-		static const char *staticTypeName();
+		static std::string staticTypeName();
 		static bool inheritsFrom( IECore::TypeId typeId );
-		static bool inheritsFrom( const char *typeName );
-		static IECore::TypeId baseTypeId();
-		static const char *baseTypeName();
-		typedef StateComponent BaseClass;
+		static bool inheritsFrom( const std::string &typeName );
 		//@}
-
+		
 		//! @name Bindable interface
 		////////////////////////////////////////////////////
 		//@{
@@ -79,27 +76,27 @@ class TypedStateComponent : public StateComponent
 		//@}
 
 		const T &value() const;
-
+		
 		static T defaultValue();
-
+		
 	private :
 
 		T m_value;
-
+		
 		static Description<TypedStateComponent<T, TId> > g_description;
-
+		
 };
 
 /// Use this macro to specialise the necessary parts of a TypedStateComponent instantiation.
 #define IECOREGL_TYPEDSTATECOMPONENT_SPECIALISE( TYPE, BASETYPE, DEFAULTVALUE )				\
 	template<>																				\
-	const char *TYPE::typeName() const														\
+	std::string TYPE::typeName() const														\
 	{																						\
 		return # TYPE;																		\
 	}																						\
 																							\
 	template<>																				\
-	const char *TYPE::staticTypeName()														\
+	std::string TYPE::staticTypeName()														\
 	{																						\
 		return # TYPE;																		\
 	}																						\
@@ -108,12 +105,12 @@ class TypedStateComponent : public StateComponent
 	BASETYPE TYPE::defaultValue()															\
 	{																						\
 		return DEFAULTVALUE;																\
-	}
+	}						
 
 #define IECOREGL_TYPEDSTATECOMPONENT_SPECIALISEANDINSTANTIATE( TYPE, TYPEID, BASETYPE, DEFAULTVALUE )	\
 	IECOREGL_TYPEDSTATECOMPONENT_SPECIALISE( TYPE, BASETYPE, DEFAULTVALUE )								\
 	template class TypedStateComponent<BASETYPE, TYPEID>;										\
-
+	
 /// \todo Now there are loads of these typedefs I think they should really be defined in the places
 /// they're used - so PrimitiveBound would be a typedef member in Primitive etc. This would help people
 /// see where StateComponents have effect, and also provide a better location for documenting them. Otherwise
@@ -195,7 +192,7 @@ template<>
 GLbitfield DoubleSidedStateComponent::mask() const;
 
 /// Used to implement the "rightHandedOrientation" Renderer attribute. Implemented by calling
-/// glFrontFace( GL_CCW ) when true and glFrontFace( GL_CW ) when false.
+/// glFrontFace( GL_CCW ) when true and glFrontFace( GL_CW ) when false. 
 typedef TypedStateComponent<bool, RightHandedOrientationStateComponentTypeId> RightHandedOrientationStateComponent;
 template<>
 void RightHandedOrientationStateComponent::bind() const;

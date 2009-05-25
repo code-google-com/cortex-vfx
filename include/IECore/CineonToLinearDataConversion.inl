@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,7 +52,7 @@ CineonToLinearDataConversion<F, T>::CineonToLinearDataConversion() : m_LUT( 1024
 	m_filmGamma = 0.6f;
 	m_refWhiteVal = 685;
 	m_refBlackVal = 95;
-
+		
 	m_LUTValid = false;
 }
 
@@ -61,13 +61,13 @@ CineonToLinearDataConversion<F, T>::CineonToLinearDataConversion( float filmGamm
 {
 	m_filmGamma = filmGamma;
 	m_refWhiteVal = refWhiteVal;
-	m_refBlackVal = refBlackVal;
-
+	m_refBlackVal = refBlackVal;	
+	
 	m_LUTValid = false;
 }
 
 template<typename F, typename T>
-T CineonToLinearDataConversion<F, T>::operator()( F f ) const
+T CineonToLinearDataConversion<F, T>::operator()( F f )
 {
 	std::vector<float>::size_type i = static_cast<std::vector<float>::size_type>( f );
 
@@ -81,21 +81,21 @@ template<typename F, typename T>
 const std::vector<float> &CineonToLinearDataConversion<F, T>::lookupTable() const
 {
 	if ( ! m_LUTValid )
-	{
+	{	
 		float refMult = 0.002f / m_filmGamma;
-		float blackOffset = Imath::Math<float>::pow( 10.0f, ( m_refBlackVal - m_refWhiteVal ) * refMult );
-
+		float blackOffset = Imath::Math<float>::pow( 10.0f, ( m_refBlackVal - m_refWhiteVal ) * refMult );	
+		
 		assert( m_LUT.size() == 1024 );
 		for ( unsigned i = 0; i < 1024; ++i )
 		{
 			m_LUT[i] = ( Imath::Math<float>::pow( 10.0f, ( (float)i - m_refWhiteVal ) * refMult ) - blackOffset ) / ( 1.0f - blackOffset );
 		}
-		m_LUTValid = true;
+		m_LUTValid = true;	
 	}
 
 	assert( m_LUT.size() == 1024 );
 	return m_LUT;
-}
+}	
 
 template<typename F, typename T>
 typename CineonToLinearDataConversion<F, T>::InverseType CineonToLinearDataConversion<F, T>::inverse() const

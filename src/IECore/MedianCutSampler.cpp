@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,17 +47,15 @@ using namespace boost;
 using namespace Imath;
 using namespace std;
 
-IE_CORE_DEFINERUNTIMETYPED( MedianCutSampler );
-
 MedianCutSampler::MedianCutSampler()
 	:
 	Op(
 		staticTypeName(),
-		"Performs importance sampling of an image.",
+		"Performs importance sampling of an image.", 
 		new ObjectParameter( "result",
 			"A CompoundObject containing a vector of areas which cover the image, and all of which "
 			"represent the same amount of energy, and a vector of weighted centroids of these areas.",
-			NullObject::defaultNullObject(),
+			NullObject::defaultNullObject(), 
 			CompoundObject::staticTypeId()
 		)
 	)
@@ -73,17 +71,17 @@ MedianCutSampler::MedianCutSampler()
 		"The name of a channel to use when computing the point distribution.",
 		"Y"
 	);
-
+	
 	m_subdivisionDepthParameter = new IntParameter(
 		"subdivisionDepth",
 		"The number of times to subdivide the image. This controls how many "
 		"points will be created.",
 		4
 	);
-
-	IntParameter::PresetsContainer projectionPresets;
-	projectionPresets.push_back( IntParameter::Preset( "rectilinear", Rectilinear ) );
-	projectionPresets.push_back( IntParameter::Preset( "latLong", LatLong ) );
+	
+	IntParameter::PresetsMap projectionPresets;
+	projectionPresets["rectilinear"] = Rectilinear;
+	projectionPresets["latLong"] = LatLong;
 	m_projectionParameter = new IntParameter(
 		"projection",
 		"The projection the image represents. When in latLong mode the "
@@ -101,7 +99,7 @@ MedianCutSampler::MedianCutSampler()
 	parameters()->addParameter( m_channelNameParameter );
 	parameters()->addParameter( m_subdivisionDepthParameter );
 	parameters()->addParameter( m_projectionParameter );
-
+	
 }
 
 MedianCutSampler::~MedianCutSampler()
@@ -160,7 +158,7 @@ static inline float energy( const Array2D &summedLuminance, const Box2i &area )
 	float b = min.y >= 0 ? summedLuminance[area.max.x][min.y] : 0.0f;
 	float c = min.x >= 0 ? summedLuminance[min.x][area.max.y] : 0.0f;
 	float d = min.x >= 0 && min.y >= 0 ? summedLuminance[min.x][min.y] : 0.0f;
-
+		
 	return a - b - c + d;
 }
 
@@ -179,9 +177,9 @@ static void medianCut( const Array2D &luminance, const Array2D &summedLuminance,
 				float e = luminance[x][y];
 				position += V2f( x, y ) * e;
 				totalEnergy += e;
-			}
+			} 
 		}
-
+			
 		position /= totalEnergy;
 		centroids.push_back( position );
 		areas.push_back( area );
@@ -217,7 +215,7 @@ ObjectPtr MedianCutSampler::doOperation( ConstCompoundObjectPtr operands )
 {
 	ImagePrimitivePtr image = static_pointer_cast<ImagePrimitive>( imageParameter()->getValue() )->copy();
 	Box2i dataWindow = image->getDataWindow();
-
+	
 	// find the right channel
 	const std::string &channelName = m_channelNameParameter->getTypedValue();
 	FloatVectorDataPtr luminance = image->getChannel<float>( channelName );
@@ -225,7 +223,7 @@ ObjectPtr MedianCutSampler::doOperation( ConstCompoundObjectPtr operands )
 	{
 		throw Exception( str( format( "No FloatVectorData channel named \"%s\"." ) % channelName ) );
 	}
-
+	
 	// if the projection requires it, weight the luminances so they're less
 	// important towards the poles of the sphere
 	Projection projection = (Projection)m_projectionParameter->getNumericValue();
@@ -233,12 +231,12 @@ ObjectPtr MedianCutSampler::doOperation( ConstCompoundObjectPtr operands )
 	{
 		float radiansPerPixel = M_PI / (dataWindow.size().y + 1);
 		float angle = ( M_PI - radiansPerPixel ) / 2.0f;
-
+		
 		float *p = &(luminance->writable()[0]);
-
+		
 		for( int y=dataWindow.min.y; y<=dataWindow.max.y; y++ )
 		{
-			float *pEnd = p + dataWindow.size().x + 1;
+			float *pEnd = p + dataWindow.size().x + 1;		
 			float w = cosf( angle );
 			while( p < pEnd )
 			{
@@ -247,27 +245,27 @@ ObjectPtr MedianCutSampler::doOperation( ConstCompoundObjectPtr operands )
 			}
 			angle -= radiansPerPixel;
 		}
-
+	
 	}
-
+	
 	// make a summed area table for speed
 	FloatVectorDataPtr summedLuminance = luminance;
 	luminance = luminance->copy(); // we need this for the centroid computation
-
+	
 	SummedAreaOpPtr summedAreaOp = new SummedAreaOp();
 	summedAreaOp->inputParameter()->setValue( image );
 	summedAreaOp->copyParameter()->setTypedValue( false );
 	summedAreaOp->channelNamesParameter()->getTypedValue().clear();
 	summedAreaOp->channelNamesParameter()->getTypedValue().push_back( "Y" );
 	summedAreaOp->operate();
-
+	
 	// do the median cut thing
 	CompoundObjectPtr result = new CompoundObject;
 	V2fVectorDataPtr centroids = new V2fVectorData;
 	Box2iVectorDataPtr areas = new Box2iVectorData;
 	result->members()["centroids"] = centroids;
 	result->members()["areas"] = areas;
-
+	
 	dataWindow.max -= dataWindow.min;
 	dataWindow.min -= dataWindow.min; // let's start indexing from 0 shall we?
 	Array2D array( &(luminance->writable()[0]), extents[dataWindow.size().x+1][dataWindow.size().y+1], fortran_storage_order() );

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,15 +35,15 @@
 // System includes
 
 // External includes
-#include "boost/python.hpp"
-#include "boost/python/make_constructor.hpp"
-#include "boost/python/suite/indexing/container_utils.hpp"
-#include "boost/numeric/conversion/cast.hpp"
-#include "boost/python/implicit.hpp"
+#include <boost/python.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/suite/indexing/container_utils.hpp>
+#include <boost/numeric/conversion/cast.hpp>
+#include <boost/python/implicit.hpp>
 
-#include "OpenEXR/ImathBox.h"
-#include "OpenEXR/ImathQuat.h"
-#include "OpenEXR/ImathVec.h"
+#include <OpenEXR/ImathBox.h>
+#include <OpenEXR/ImathQuat.h>
+#include <OpenEXR/ImathVec.h>
 
 #include "IECore/VectorTypedData.h"
 #include "IECore/bindings/ImathMatrixVectorBinding.h"
@@ -51,6 +51,7 @@
 #include "IECore/bindings/ImathColorVectorBinding.h"
 #include "IECore/bindings/ImathBoxVectorBinding.h"
 #include "IECore/bindings/ImathQuatVectorBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/VectorTypedDataBinding.inl"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
@@ -77,98 +78,111 @@ IE_COREPYTHON_DEFINEVECTORDATASTRSPECIALISATION( std::string )
 
 // we have to specialise the repr() and str() separately here, because of
 // the whole vector<bool> is not a container thing.
-template<>
-std::string repr<BoolVectorData>( BoolVectorData &x )
-{
-	std::stringstream s;
-	s << "IECore." << x.typeName() << "( [ ";
-	const std::vector<bool> &xd = x.readable();
-	for( size_t i=0; i<xd.size(); i++ )
-	{
-		bool b = xd[i];
-		s << repr( b );
-		if( i!=xd.size()-1 )
-		{
-			s << ", ";
-		}
-	}
-	s<< " ] )";
-	return s.str();
-}
-
-
-template<>
-std::string str<BoolVectorData>( BoolVectorData &x )
-{
-	std::stringstream s;
-	const std::vector<bool> &xd = x.readable();
-	for( size_t i=0; i<xd.size(); i++ )
-	{
-		bool b = xd[i];
-		s << str( b );
-		if( i!=xd.size()-1 )
-		{
-			s << " ";
-		}
-	}
-	return s.str();
-}
+template<>																
+std::string repr<BoolVectorData>( BoolVectorData &x )					
+{																		
+	std::stringstream s;												
+	s << "IECore." << x.typeName() << "( [ ";										
+	const std::vector<bool> &xd = x.readable();	
+	for( size_t i=0; i<xd.size(); i++ )									
+	{	
+		bool b = xd[i];																
+		s << repr( b );						
+		if( i!=xd.size()-1 )											
+		{																
+			s << ", ";													
+		}																
+	}																	
+	s<< " ] )";															
+	return s.str();														
+}																		
+																		
+																		
+template<>																			
+std::string str<BoolVectorData>( BoolVectorData &x )	
+{																					
+	std::stringstream s;															
+	const std::vector<bool> &xd = x.readable();				
+	for( size_t i=0; i<xd.size(); i++ )												
+	{																				
+		bool b = xd[i];																
+		s << str( b );									
+		if( i!=xd.size()-1 )														
+		{																			
+			s << " ";																
+		}																			
+	}																				
+	return s.str();																	
+}																					
 
 void bindAllVectorTypedData()
 {
 	// basic types
-	BIND_VECTOR_TYPEDDATA(
+	BIND_VECTOR_TYPEDDATA( 
 		bool,
+		"BoolVectorData",
 		"bool")
-
-	BIND_FULL_OPERATED_VECTOR_TYPEDDATA(
+		
+	BIND_FULL_OPERATED_VECTOR_TYPEDDATA( 
 		half,
+		"HalfVectorData",
 		"half")
-
-	BIND_FULL_OPERATED_VECTOR_TYPEDDATA(
+		
+	BIND_FULL_OPERATED_VECTOR_TYPEDDATA( 
 		float,
+		"FloatVectorData",
 		"float")
-
-	BIND_FULL_OPERATED_VECTOR_TYPEDDATA(
+		
+	BIND_FULL_OPERATED_VECTOR_TYPEDDATA( 
 		double,
+		"DoubleVectorData",
 		"double")
-
+		
 	BIND_FULL_OPERATED_VECTOR_TYPEDDATA(
 		int,
+		"IntVectorData",
 		"int")
-
+		
 	BIND_FULL_OPERATED_VECTOR_TYPEDDATA(
 		unsigned int,
+		"UIntVectorData",
 		"unsigned int")
-
+		
 	BIND_FULL_OPERATED_VECTOR_TYPEDDATA(
 		char,
+		"CharVectorData",
 		"char")
-
+		
 	BIND_FULL_OPERATED_VECTOR_TYPEDDATA(
 		unsigned char,
+		"UCharVectorData",
 		"unsigned char")
-
+		
 	BIND_FULL_OPERATED_VECTOR_TYPEDDATA(
 		short,
+		"ShortVectorData",
 		"short")
-
+		
 	BIND_FULL_OPERATED_VECTOR_TYPEDDATA(
 		unsigned short,
+		"UShortVectorData",
 		"unsigned short")
-
+		
 	BIND_FULL_OPERATED_VECTOR_TYPEDDATA(
 		int64_t,
+		"Int64VectorData",
 		"int64_t")
-
+		
 	BIND_FULL_OPERATED_VECTOR_TYPEDDATA(
 		uint64_t,
-		"uint64_t")
-
+		"UInt64VectorData",
+		"uint64_t")		
+		
 	BIND_VECTOR_TYPEDDATA (
 		std::string,
+		"StringVectorData",
 		"string")
-
+	
 	// Imath types
 	bindImathMatrixVectorTypedData();
 	bindImathVecVectorTypedData();

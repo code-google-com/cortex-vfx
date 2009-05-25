@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,8 +36,7 @@
 #define IE_CORE_PARTICLEREADER_H
 
 #include "IECore/Reader.h"
-#include "IECore/SimpleTypedParameter.h"
-#include "IECore/VectorTypedParameter.h"
+#include "IECore/TypedParameter.h"
 #include "IECore/NumericParameter.h"
 
 namespace IECore
@@ -55,7 +54,7 @@ class ParticleReader : public Reader
 		IE_CORE_DECLARERUNTIMETYPED( ParticleReader, Reader );
 
 		ParticleReader( const std::string &name, const std::string &description );
-
+		
 		/// An enum for the values accepted by realTypeParameter().
 		enum RealType
 		{
@@ -63,7 +62,7 @@ class ParticleReader : public Reader
 			Float = 1,
 			Double = 2,
 		};
-
+	
 		//! @name Parameter accessors
 		/// These provide more convenient access to parameters than
 		/// by searching the parameters() structure by hand.
@@ -78,7 +77,7 @@ class ParticleReader : public Reader
 		IntParameterPtr realTypeParameter();
 		ConstIntParameterPtr realTypeParameter() const;
 		//@}
-
+		
 		//! @name Particle specific reading functions.
 		/// These allow more controlled reading than the read()
 		/// method alone. These functions are still affected
@@ -99,9 +98,9 @@ class ParticleReader : public Reader
 		/// particle data.
 		virtual DataPtr readAttribute( const std::string &name ) = 0;
 		//@}
-
+		
 	protected :
-
+			
 		/// Returns a PointsPrimitive object containing all the
 		/// attributes requested filtered by the percentage
 		/// requested. This is implemented using the virtual methods
@@ -121,7 +120,7 @@ class ParticleReader : public Reader
 		StringVectorParameterPtr m_attributesParameter;
 		RealType realType() const;
 		IntParameterPtr m_realTypeParameter;
-
+		
 };
 
 IE_CORE_DECLAREPTR( ParticleReader );

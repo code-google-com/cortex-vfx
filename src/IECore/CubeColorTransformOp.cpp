@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,19 +46,17 @@
 using namespace IECore;
 using namespace Imath;
 
-IE_CORE_DEFINERUNTIMETYPED( CubeColorTransformOp );
-
-CubeColorTransformOp::CubeColorTransformOp()
+CubeColorTransformOp::CubeColorTransformOp() 
 	:	ColorTransformOp( "name", "description" ), m_data( 0 )
 {
 	m_cubeParameter = new CubeColorLookupfParameter(
 		"cube",
 		"cube description",
-
+		
 		new CubeColorLookupfData()
 	);
 
-	parameters()->addParameter( m_cubeParameter );
+	parameters()->addParameter( m_cubeParameter );			
 }
 
 CubeColorTransformOp::~CubeColorTransformOp()
@@ -67,18 +65,18 @@ CubeColorTransformOp::~CubeColorTransformOp()
 
 CubeColorLookupfParameterPtr CubeColorTransformOp::cubeParameter()
 {
-	return m_cubeParameter;
+	return m_cubeParameter;	
 }
 
 ConstCubeColorLookupfParameterPtr CubeColorTransformOp::cubeParameter() const
 {
-	return m_cubeParameter;
+	return m_cubeParameter;	
 }
 
 void CubeColorTransformOp::begin( ConstCompoundObjectPtr operands )
 {
 	assert( operands );
-
+	
 	m_data = operands->member<CubeColorLookupfData>( "cube" );
 }
 

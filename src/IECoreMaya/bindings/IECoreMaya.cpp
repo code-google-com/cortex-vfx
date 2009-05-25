@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -65,24 +65,13 @@
 #include "IECoreMaya/bindings/FromMayaMeshConverterBinding.h"
 #include "IECoreMaya/bindings/FromMayaTransformConverterBinding.h"
 #include "IECoreMaya/bindings/CallbackIdBinding.h"
-#include "IECoreMaya/bindings/PlaybackFrameListBinding.h"
-#include "IECoreMaya/bindings/MStringFromPython.h"
-#include "IECoreMaya/bindings/ViewportPostProcessBinding.h"
-#include "IECoreMaya/bindings/ImageViewportPostProcessBinding.h"
-#include "IECoreMaya/bindings/ViewportPostProcessCallbackBinding.h"
-#include "IECoreMaya/bindings/FromMayaGroupConverterBinding.h"
-#include "IECoreMaya/bindings/FromMayaUnitPlugConverterBinding.h"
-#include "IECoreMaya/bindings/FromMayaNumericPlugConverterBinding.h"
-#include "IECoreMaya/bindings/FromMayaArrayDataConverterBinding.h"
-#include "IECoreMaya/bindings/FromMayaCompoundNumericPlugConverterBinding.h"
-#include "IECoreMaya/bindings/FromMayaTransformationMatrixConverterBinding.h"
 
 using namespace IECore;
 using namespace IECoreMaya;
 
 using namespace boost::python;
 
-/// Maya is built with 4-byte Unicode characters, so we need to ensure that we're doing
+/// Maya is built with 4-byte Unicode characters, so we need to ensure that we're doing 
 /// the same so that all external symbols resolve correctly at runtime.
 #if ( MAYA_API_VERSION >= 2008 )
 /// \todo Assert for earlier versions too, once installations of Python 2.5 for gcc4.0.2
@@ -92,22 +81,22 @@ BOOST_STATIC_ASSERT(sizeof(Py_UNICODE) == 4);
 
 BOOST_PYTHON_MODULE(_IECoreMaya)
 {
-	bindMayaPythonUtil();
+	bindMayaPythonUtil();		
 	bindFnParameterisedHolder();
 	bindFromMayaConverter();
 	bindFromMayaPlugConverter();
 	bindFromMayaObjectConverter();
-	bindFromMayaDagNodeConverter();
+	bindFromMayaDagNodeConverter();	
 	bindFromMayaCameraConverter();
 	bindMayaMeshBuilder();
 	bindTypeId();
 	bindFromMayaShapeConverter();
 	bindFromMayaCurveConverter();
 	bindFromMayaParticleConverter();
-	bindStandalone();
+	bindStandalone();	
 	bindMPlugFromPython();
 	bindMObjectFromPython();
-	bindMDagPathFromPython();
+	bindMDagPathFromPython();	
 	bindToMayaConverter();
 	bindToMayaPlugConverter();
 	bindToMayaObjectConverter();
@@ -115,15 +104,4 @@ BOOST_PYTHON_MODULE(_IECoreMaya)
 	bindFromMayaMeshConverter();
 	bindFromMayaTransformConverter();
 	bindCallbackId();
-	bindPlaybackFrameList();
-	bindMStringFromPython();
-	bindViewportPostProcess();
-	bindImageViewportPostProcess();
-	bindViewportPostProcessCallback();
-	bindFromMayaGroupConverter();
-	bindFromMayaUnitPlugConverter();
-	bindFromMayaNumericPlugConverter();
-	bindFromMayaArrayDataConverter();
-	bindFromMayaCompoundNumericPlugConverter();
-	bindFromMayaTransformationMatrixConverter();
 }

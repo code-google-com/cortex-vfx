@@ -37,6 +37,7 @@
 
 #include "IECore/CompoundParameter.h"
 #include "IECore/TransformationMatrixData.h"
+#include "IECore/ClassData.h"
 
 #include "maya/MTransformationMatrix.h"
 #include "maya/MFnMatrixData.h"
@@ -45,20 +46,29 @@
 
 using namespace IECoreMaya;
 
-IE_CORE_DEFINERUNTIMETYPED( FromMayaTransformConverter );
-
 static const MFn::Type fromTypes[] = { MFn::kTransform };
 static const IECore::TypeId toTypes[] = { IECore::TransformationMatrixdData::staticTypeId() };
 
 FromMayaDagNodeConverter::Description<FromMayaTransformConverter> FromMayaTransformConverter::g_description( fromTypes, toTypes );
 
+/// \todo Move this into the main class for the next major version
+struct FromMayaTransformConverterExtraMembers
+{
+	MEulerRotation lastRotation;
+	bool lastRotationValid;
+	IECore::BoolParameterPtr eulerFilterParameter;
+	IECore::BoolParameterPtr zeroPivotsParameter;
+};
+
+static IECore::ClassData<FromMayaTransformConverter, FromMayaTransformConverterExtraMembers> g_extraMembers;
+
 FromMayaTransformConverter::FromMayaTransformConverter( const MDagPath &dagPath )
 	:	FromMayaDagNodeConverter( staticTypeName(), "Converts transform nodes.",  dagPath )
 {
-
-	IECore::IntParameter::PresetsContainer spacePresets;
-	spacePresets.push_back( IECore::IntParameter::Preset( "Local", Local ) );
-	spacePresets.push_back( IECore::IntParameter::Preset( "World", World ) );
+	
+	IECore::IntParameter::PresetsMap spacePresets;
+	spacePresets["Local"] = Local;	
+	spacePresets["World"] = World;		
 	m_spaceParameter = new IECore::IntParameter(
 		"space",
 		"The space in which the transform is converted.",
@@ -70,9 +80,10 @@ FromMayaTransformConverter::FromMayaTransformConverter( const MDagPath &dagPath 
 	);
 
 	parameters()->addParameter( m_spaceParameter );
-
-	m_lastRotationValid = false;
-	m_eulerFilterParameter = new IECore::BoolParameter(
+	
+	FromMayaTransformConverterExtraMembers &extraMembers = g_extraMembers.create( this );
+	extraMembers.lastRotationValid = false;
+	extraMembers.eulerFilterParameter = new IECore::BoolParameter(
 		"eulerFilter",
 		"If this parameter is on, then rotations are filtered so as to be as "
 		"close as possible to the previously converted rotation. This allows "
@@ -80,21 +91,21 @@ FromMayaTransformConverter::FromMayaTransformConverter( const MDagPath &dagPath 
 		"of transformations which will interpolate smoothly.",
 		false
 	);
-
-	parameters()->addParameter( m_eulerFilterParameter );
-
+	
+	parameters()->addParameter( extraMembers.eulerFilterParameter );
+	
 	/// \todo We need this parameter because we're finding that our conversion of the maya
 	/// MTransformationMatrix class to our TransformationMatrix classes isn't yielding the same
 	/// results when the pivot is non-zero. We should figure out the real reason for that rather
 	/// than use this parameter as a crutch.
-	m_zeroPivotsParameter = new IECore::BoolParameter(
+	extraMembers.zeroPivotsParameter = new IECore::BoolParameter(
 		"zeroPivots",
 		"If this parameter is on, then the scale and rotate pivots are reset to zero, "
 		"adjusting the transform to maintain the same positioning.",
 		false
 	);
-
-	parameters()->addParameter( m_zeroPivotsParameter );
+	
+	parameters()->addParameter( extraMembers.zeroPivotsParameter );
 }
 
 IECore::IntParameterPtr FromMayaTransformConverter::spaceParameter()
@@ -109,28 +120,28 @@ IECore::ConstIntParameterPtr FromMayaTransformConverter::spaceParameter() const
 
 IECore::BoolParameterPtr FromMayaTransformConverter::eulerFilterParameter()
 {
-	return m_eulerFilterParameter;
+	return g_extraMembers[this].eulerFilterParameter;
 }
 
 IECore::ConstBoolParameterPtr FromMayaTransformConverter::eulerFilterParameter() const
 {
-	return m_eulerFilterParameter;
+	return g_extraMembers[this].eulerFilterParameter;
 }
 
 IECore::BoolParameterPtr FromMayaTransformConverter::zeroPivotsParameter()
 {
-	return m_zeroPivotsParameter;
+	return g_extraMembers[this].zeroPivotsParameter;
 }
 
 IECore::ConstBoolParameterPtr FromMayaTransformConverter::zeroPivotsParameter() const
 {
-	return m_zeroPivotsParameter;
+	return g_extraMembers[this].zeroPivotsParameter;
 }
-
+				
 IECore::ObjectPtr FromMayaTransformConverter::doConversion( const MDagPath &dagPath, IECore::ConstCompoundObjectPtr operands ) const
-{
+{	
 	MTransformationMatrix transform;
-
+	
 	if( m_spaceParameter->getNumericValue()==Local )
 	{
 		MFnTransform fnT( dagPath );
@@ -139,34 +150,36 @@ IECore::ObjectPtr FromMayaTransformConverter::doConversion( const MDagPath &dagP
 	else
 	{
 		unsigned instIndex = dagPath.instanceNumber();
-
+	
 		MObject dagNode = dagPath.node();
 		MFnDependencyNode fnN( dagNode );
-
+		
 		MPlug plug = fnN.findPlug( "worldMatrix" );
 		MPlug instPlug = plug.elementByLogicalIndex( instIndex );
-
+		
 		MObject matrix;
 		instPlug.getValue( matrix );
-
+		
 		MFnMatrixData fnM( matrix );
 		transform = fnM.transformation();
 	}
-
-	if( m_zeroPivotsParameter->getTypedValue() )
+	
+	FromMayaTransformConverterExtraMembers &extraMembers = g_extraMembers[this];
+	
+	if( extraMembers.zeroPivotsParameter->getTypedValue() )
 	{
 		transform.setScalePivot( MPoint( 0, 0, 0 ), MSpace::kTransform, true );
 		transform.setRotatePivot( MPoint( 0, 0, 0 ), MSpace::kTransform, true );
 	}
-
-	if( m_eulerFilterParameter->getTypedValue() && m_lastRotationValid )
+	
+	if( extraMembers.eulerFilterParameter->getTypedValue() && extraMembers.lastRotationValid )
 	{
-		transform.rotateTo( transform.eulerRotation().closestSolution( m_lastRotation ) );
+		transform.rotateTo( transform.eulerRotation().closestSolution( extraMembers.lastRotation ) );
 	}
-
-	m_lastRotation = transform.eulerRotation();
-	m_lastRotationValid = true;
-
+	
+	extraMembers.lastRotation = transform.eulerRotation();
+	extraMembers.lastRotationValid = true;
+	
 	return new IECore::TransformationMatrixdData( IECore::convert<IECore::TransformationMatrixd, MTransformationMatrix>( transform ) );
 }
-
+			

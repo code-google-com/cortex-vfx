@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,7 @@
 #ifndef IE_CORE_VALIDATEDSTRINGPARAMETER_H
 #define IE_CORE_VALIDATEDSTRINGPARAMETER_H
 
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/TypedParameter.h"
 
 namespace IECore
 {
@@ -45,12 +45,12 @@ namespace IECore
 class ValidatedStringParameter : public StringParameter
 {
 	public :
-
-		IE_CORE_DECLAREOBJECT( ValidatedStringParameter, StringParameter );
-
+	
+		IE_CORE_DECLARERUNTIMETYPED( ValidatedStringParameter, StringParameter );
+	
 		ValidatedStringParameter( const std::string &name, const std::string &description,
 			const std::string &regex, const std::string &regexDescription = "", const std::string &defaultValue = "", bool allowEmptyString = true,
-			const StringParameter::PresetsContainer &presets = StringParameter::PresetsContainer(), bool presetsOnly = false, ConstCompoundObjectPtr userData = 0 );
+			const StringParameter::PresetsMap &presets = StringParameter::PresetsMap(), bool presetsOnly = false, ConstCompoundObjectPtr userData = 0 );
 
 		const std::string &regex() const;
 		const std::string &regexDescription() const;
@@ -60,20 +60,12 @@ class ValidatedStringParameter : public StringParameter
 		/// the contained string matches the regular expression specified in the constructor.
 		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
 
-	protected :
-
-		ValidatedStringParameter();
-
 	private :
-
-		friend class TypeDescription<ValidatedStringParameter>;
-
+	
 		std::string m_regex;
 		std::string m_regexDescription;
 		bool m_allowEmptyString;
-
-		static const unsigned int g_ioVersion;
-
+		
 };
 
 IE_CORE_DECLAREPTR( ValidatedStringParameter )

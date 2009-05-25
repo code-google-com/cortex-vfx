@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,8 +37,6 @@
 
 #include "IECore/Reader.h"
 
-#include "IECoreRI/TypeIds.h"
-
 namespace IECoreRI
 {
 
@@ -47,22 +45,20 @@ class SLOReader : public IECore::Reader
 
 	public :
 
-		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreRI::SLOReader, SLOReaderTypeId, IECore::Reader );
-
 		SLOReader();
 		SLOReader( const std::string &fileName );
 		virtual ~SLOReader();
 
 		static bool canRead( const std::string &fileName );
-
+	
 	protected :
-
+				
 		virtual IECore::ObjectPtr doOperation( IECore::ConstCompoundObjectPtr operands );
-
+	
 	private :
-
+		
 		static const ReaderDescription<SLOReader> m_readerDescription;
-
+	
 };
 
 IE_CORE_DECLAREPTR( SLOReader );

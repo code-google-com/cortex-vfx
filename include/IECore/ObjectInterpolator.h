@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -53,6 +53,9 @@ namespace IECore
 
 /// Utility function that applies linear interpolation on objects. Returns a "null" pointer if the Object cannot be interpolated.
 ObjectPtr linearObjectInterpolation( const ObjectPtr &y0, const ObjectPtr &y1, double x );
+
+/// Utility function that applies cosine interpolation on objects. Returns a "null" pointer if the Object cannot be interpolated.
+ObjectPtr cosineObjectInterpolation( const ObjectPtr &y0, const ObjectPtr &y1, double x );
 
 /// Utility function that applies cubic interpolation on objects. Returns a "null" pointer if the Object cannot be interpolated.
 ObjectPtr cubicObjectInterpolation( const ObjectPtr &y0, const ObjectPtr &y1, const ObjectPtr &y2, const ObjectPtr &y3, double x );
@@ -202,7 +205,7 @@ bool ObjectInterpolator( const ObjectPtr &y0, const ObjectPtr & y1, double x, Ob
 
 		default :
 
-			// unknown types.
+			// unknown types.			
 			return false;
 	}
 	return true;
@@ -399,7 +402,7 @@ bool ObjectInterpolator( const ObjectPtr &y0, const ObjectPtr & y1, const Object
 
 		default :
 
-			// unknown types.
+			// unknown types.			
 			return false;
 	}
 	return true;

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,8 +42,6 @@ using namespace IECoreGL;
 using namespace Imath;
 using namespace std;
 
-IE_CORE_DEFINERUNTIMETYPED( QuadPrimitive );
-
 QuadPrimitive::QuadPrimitive( float width, float height )
 	:	m_width( width ), m_height( height )
 {
@@ -73,14 +71,14 @@ float QuadPrimitive::getHeight() const
 {
 	return m_height;
 }
-
+				
 void QuadPrimitive::render( ConstStatePtr state, IECore::TypeId style ) const
 {
-
+	
 	glBegin( GL_QUADS );
-
+	
 		glNormal3f( 0, 0, 1.0f );
-
+	
 		glTexCoord2f( 0.0f, 0.0f );
 		glVertex2f( -m_width/2, -m_height/2 );
 		glTexCoord2f( 1.0f, 0.0f );

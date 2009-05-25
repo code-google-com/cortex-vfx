@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,8 +42,6 @@
 
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPED( TriangulateOp );
-
 TriangulateOp::TriangulateOp() : MeshPrimitiveOp( staticTypeName(), "A MeshPrimitiveOp to triangulate a mesh" )
 {
 	m_toleranceParameter = new FloatParameter(
@@ -52,16 +50,16 @@ TriangulateOp::TriangulateOp() : MeshPrimitiveOp( staticTypeName(), "A MeshPrimi
 		1.e-6f,
 		0.0f
 	);
-
+	
 	m_throwExceptionsParameter = new BoolParameter(
 		"throwExceptions",
 		"When enabled, exceptions are thrown when invalid geometry is encountered (e.g. non-planar or concave faces).",
 		true
 	);
-
-
+	
+	
 	parameters()->addParameter( m_toleranceParameter );
-	parameters()->addParameter( m_throwExceptionsParameter );
+	parameters()->addParameter( m_throwExceptionsParameter );	
 }
 
 TriangulateOp::~TriangulateOp()
@@ -92,7 +90,7 @@ ConstBoolParameterPtr TriangulateOp::throwExceptionsParameter() const
 struct TriangleDataRemap
 {
 	typedef size_t ReturnType;
-
+	
 	TriangleDataRemap( const std::vector<int> &indices ) : m_indices( indices )
 	{
 	}
@@ -114,7 +112,7 @@ struct TriangleDataRemap
 		{
 			data->writable().push_back( otherData->readable()[ *it ] );
 		}
-
+		
 		assert( data->readable().size() == m_indices.size() );
 
 		return data->readable().size();
@@ -126,23 +124,23 @@ struct TriangleDataRemap
 struct TriangulateOp::TriangulateFn
 {
 	typedef void ReturnType;
-
+	
 	MeshPrimitivePtr m_mesh;
 	float m_tolerance;
 	bool m_throwExceptions;
-
+	
 	TriangulateFn( MeshPrimitivePtr mesh, float tolerance, bool throwExceptions )
 	: m_mesh( mesh ), m_tolerance( tolerance ), m_throwExceptions( throwExceptions )
 	{
 	}
-
+	
 	template<typename T>
 	ReturnType operator()( typename T::Ptr p )
 	{
 		typedef typename T::ValueType::value_type Vec;
-
+		
 		MeshPrimitivePtr meshCopy = m_mesh->copy();
-
+	
 		ConstIntVectorDataPtr verticesPerFace = m_mesh->verticesPerFace();
 		ConstIntVectorDataPtr vertexIds = m_mesh->vertexIds();
 
@@ -161,11 +159,11 @@ struct TriangulateOp::TriangulateFn
 			int numFaceVerts = *it;
 
 			if ( numFaceVerts > 3 )
-			{
+			{		
 				/// For the time being, just do a simple triangle fan.
 
 				const int i0 = faceVertexIdStart + 0;
-				const int v0 = vertexIds->readable()[ i0 ];
+				const int v0 = vertexIds->readable()[ i0 ]; 
 
 				int i1 = faceVertexIdStart + 1;
 				int i2 = faceVertexIdStart + 2;
@@ -180,13 +178,13 @@ struct TriangulateOp::TriangulateFn
 					for (int i = 0; i < numFaceVerts - 1; i++)
 					{
 						const int edgeStartIndex = faceVertexIdStart + i + 0;
-						const int edgeStart = vertexIds->readable()[ edgeStartIndex ];
+						const int edgeStart = vertexIds->readable()[ edgeStartIndex ];				
 
 						const int edgeEndIndex = faceVertexIdStart + i + 1;
-						const int edgeEnd = vertexIds->readable()[ edgeEndIndex ];
+						const int edgeEnd = vertexIds->readable()[ edgeEndIndex ];								
 
 						const Vec edge = p->readable()[ edgeEnd ] -  p->readable()[ edgeStart ];
-						const float edgeLength = edge.length();
+						const float edgeLength = edge.length();				
 
 						if (edgeLength > m_tolerance)
 						{
@@ -194,13 +192,13 @@ struct TriangulateOp::TriangulateFn
 
 							/// Construct a plane whose normal is perpendicular to both the edge and the polygon's normal
 							const Vec planeNormal = edgeDirection.cross( firstTriangleNormal );
-							const float planeConstant = planeNormal.dot( p->readable()[ edgeStart ] );
+							const float planeConstant = planeNormal.dot( p->readable()[ edgeStart ] );	
 
 							int sign = 0;
 							bool first = true;
 							for (int j = 0; j < numFaceVerts; j++)
 							{
-								const int testVertexIndex = faceVertexIdStart + j;
+								const int testVertexIndex = faceVertexIdStart + j;						
 								const int testVertex = vertexIds->readable()[ testVertexIndex ];
 
 								if ( testVertex != edgeStart && testVertex != edgeEnd )
@@ -208,14 +206,14 @@ struct TriangulateOp::TriangulateFn
 									float signedDistance = planeNormal.dot( p->readable()[ testVertex ] ) - planeConstant;
 
 									if ( fabs(signedDistance) > m_tolerance)
-									{
+									{						
 										int thisSign = 1;
 										if ( signedDistance < 0.0 )
 										{
 											thisSign = -1;
 										}
 										if (first)
-										{
+										{						
 											sign = thisSign;
 											first = false;
 										}
@@ -236,7 +234,7 @@ struct TriangulateOp::TriangulateFn
 					i1 = faceVertexIdStart + ( (i + 0) % numFaceVerts );
 					i2 = faceVertexIdStart + ( (i + 1) % numFaceVerts );
 					v1 = vertexIds->readable()[ i1 ];
-					v2 = vertexIds->readable()[ i2 ];
+					v2 = vertexIds->readable()[ i2 ];						
 
 					if ( m_throwExceptions && fabs( triangleNormal( p->readable()[ v0 ], p->readable()[ v1 ], p->readable()[ v2 ] ).dot( firstTriangleNormal ) - 1.0 ) > m_tolerance )
 					{
@@ -255,7 +253,7 @@ struct TriangulateOp::TriangulateFn
 					faceVaryingIndices.push_back( i0 );
 					faceVaryingIndices.push_back( i1 );
 					faceVaryingIndices.push_back( i2 );
-
+					
 					uniformIndices.push_back( faceIdx );
 				}
 			}
@@ -278,8 +276,8 @@ struct TriangulateOp::TriangulateFn
 				faceVaryingIndices.push_back( i0 );
 				faceVaryingIndices.push_back( i1 );
 				faceVaryingIndices.push_back( i2 );
-
-				uniformIndices.push_back( faceIdx );
+				
+				uniformIndices.push_back( faceIdx );				
 			}
 
 			faceVertexIdStart += numFaceVerts;
@@ -319,17 +317,17 @@ struct TriangulateOp::TriangulateFn
 			}
 		}
 
-		assert( m_mesh->arePrimitiveVariablesValid() );
+		assert( m_mesh->arePrimitiveVariablesValid() );	
 	}
-
+	
 	struct ErrorHandler
 	{
 		template<typename T, typename F>
 		void operator()( typename T::ConstPtr data, const F& functor )
 		{
 			assert( data );
-
-			throw InvalidArgumentException( ( boost::format( "TriangulateOp: Invalid data type \"%s\" for primitive variable \"P\"." ) % Object::typeNameFromTypeId( data->typeId() ) ).str() );
+                
+			throw InvalidArgumentException( ( boost::format( "TriangulateOp: Invalid data type \"%s\" for primitive variable \"P\"." ) % Object::typeNameFromTypeId( data->typeId() ) ).str() );            
                 }
         };
 };
@@ -357,20 +355,20 @@ void TriangulateOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundOb
 	{
 		return;
 	}
-
+	
 	const float tolerance = toleranceParameter()->getNumericValue();
 	bool throwExceptions = boost::static_pointer_cast<const BoolData>(throwExceptionsParameter()->getValue())->readable();
-
+	
 	PrimitiveVariableMap::const_iterator pvIt = mesh->variables.find("P");
 	if (pvIt != mesh->variables.end())
 	{
 		const DataPtr &verticesData = pvIt->second.data;
 		assert( verticesData );
-
+		
 		TriangulateFn fn( mesh, tolerance, throwExceptions );
-
-		despatchTypedData<
-                        TriangulateFn,
+		
+		despatchTypedData<      
+                        TriangulateFn, 
                         TypeTraits::IsVec3VectorTypedData,
                         TriangulateFn::ErrorHandler
                 >( verticesData, fn );

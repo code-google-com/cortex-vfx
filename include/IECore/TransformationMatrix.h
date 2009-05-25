@@ -68,7 +68,7 @@ class TransformationMatrix
 		TransformationMatrix();
 
 		/// Basic constructor for setting common parameters: scale, rotate and translate.
-		TransformationMatrix( const Imath::Vec3< T > &s, const Imath::Euler< T > &r, const Imath::Vec3< T > &t );
+		TransformationMatrix( const Imath::Vec3< T > s, const Imath::Euler< T > r, const Imath::Vec3< T > t );
 
 		/// Copy constructor
 		TransformationMatrix( const TransformationMatrix &cp );
@@ -77,7 +77,7 @@ class TransformationMatrix
 		Imath::Matrix44<T> transform( ) const;
 
 		bool operator == (const TransformationMatrix &t) const;
-
+		
 };
 
 template<class T>

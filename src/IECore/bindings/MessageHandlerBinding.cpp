@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/MessageHandler.h"
 #include "IECore/NullMessageHandler.h"
@@ -41,8 +41,9 @@
 #include "IECore/FilteredMessageHandler.h"
 #include "IECore/LevelFilteredMessageHandler.h"
 #include "IECore/bindings/MessageHandlerBinding.h"
-#include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/Wrapper.h"
+#include "IECore/bindings/WrapperToPython.h"
 
 using namespace boost::python;
 
@@ -55,9 +56,9 @@ class MessageHandlerWrap : public MessageHandler, public Wrapper<MessageHandler>
 
 		MessageHandlerWrap( PyObject *self ) : Wrapper<MessageHandler>( self, this ) {}
 
-		virtual void handle( MessageHandler::Level level, const std::string &context, const std::string &message )
+		virtual void handle( MessageHandler::Level level, const std::string &context, const std::string &message ) 
 		{
-			this->get_override( "handle" )( level, context, message );
+			this->get_override( "handle" )( level, context, message ); 
 		}
 
 };
@@ -81,10 +82,11 @@ static LevelFilteredMessageHandlerPtr levelFilteredMessageHandlerConstructor(Mes
 
 void bindMessageHandler()
 {
-
+	
 	def( "msg", (void (*)( MessageHandler::Level, const std::string &, const std::string &))&msg );
-
-	object mh = RefCountedClass<MessageHandler, RefCounted, MessageHandlerWrapPtr>( "MessageHandler" )
+	
+	typedef class_<MessageHandler, boost::noncopyable, MessageHandlerWrapPtr, bases<RefCounted> > MessageHandlerPyClass;
+	object mh = MessageHandlerPyClass( "MessageHandler", no_init )
 		.def( init<>() )
 		.def( "handle", pure_virtual( &MessageHandler::handle ) )
 		.def( "pushHandler", &MessageHandler::pushHandler )
@@ -98,31 +100,48 @@ void bindMessageHandler()
 		.def( "stringAsLevel", MessageHandler::stringAsLevel )
 		.staticmethod( "stringAsLevel" )
 	;
+	
+	WrapperToPython<MessageHandlerPtr>();
 
-	RefCountedClass<NullMessageHandler, MessageHandler>( "NullMessageHandler" )
-	.	def( init<>() )
+	INTRUSIVE_PTR_PATCH( MessageHandler, MessageHandlerPyClass );
+	
+	typedef class_<NullMessageHandler, boost::noncopyable, NullMessageHandlerPtr, bases<MessageHandler> > NullMessageHandlerPyClass;
+	NullMessageHandlerPyClass( "NullMessageHandler" )
 	;
-
-	RefCountedClass<OStreamMessageHandler, MessageHandler>( "OStreamMessageHandler" )
+	INTRUSIVE_PTR_PATCH( NullMessageHandler, NullMessageHandlerPyClass );
+	implicitly_convertible<NullMessageHandlerPtr, MessageHandlerPtr>();
+	
+	typedef class_<OStreamMessageHandler, boost::noncopyable, OStreamMessageHandlerPtr, bases<MessageHandler> > OStreamMessageHandlerPyClass;
+	OStreamMessageHandlerPyClass( "OStreamMessageHandler", no_init )
 		.def( "cErrHandler", &OStreamMessageHandler::cErrHandler )
 		.staticmethod( "cErrHandler" )
 		.def( "cOutHandler", &OStreamMessageHandler::cOutHandler )
 		.staticmethod( "cOutHandler" )
 	;
-
-	RefCountedClass<CompoundMessageHandler, MessageHandler>( "CompoundMessageHandler" )
-		.def( init<>() )
+	INTRUSIVE_PTR_PATCH( OStreamMessageHandler, OStreamMessageHandlerPyClass );
+	implicitly_convertible<OStreamMessageHandlerPtr, MessageHandlerPtr>();
+	
+	typedef class_<CompoundMessageHandler, boost::noncopyable, CompoundMessageHandlerPtr, bases<MessageHandler> > CompoundMessageHandlerPyClass;
+	CompoundMessageHandlerPyClass( "CompoundMessageHandler" )
 		.def( "addHandler", &addHandler )
 		.def( "removeHandler", &removeHandler )
 	;
-
-	RefCountedClass<FilteredMessageHandler, MessageHandler>( "FilteredMessageHandler" )
+	INTRUSIVE_PTR_PATCH( CompoundMessageHandler, CompoundMessageHandlerPyClass );
+	implicitly_convertible<CompoundMessageHandlerPtr, MessageHandlerPtr>();
+	
+	typedef class_<FilteredMessageHandler, boost::noncopyable, FilteredMessageHandlerPtr, bases<MessageHandler> > FilteredMessageHandlerPyClass;
+	FilteredMessageHandlerPyClass( "FilteredMessageHandler", no_init )
 	;
+	INTRUSIVE_PTR_PATCH( FilteredMessageHandler, FilteredMessageHandlerPyClass );
+	implicitly_convertible<FilteredMessageHandlerPtr, MessageHandlerPtr>();
 
-	RefCountedClass<LevelFilteredMessageHandler, FilteredMessageHandler>( "LevelFilteredMessageHandler" )
+	typedef class_<LevelFilteredMessageHandler, boost::noncopyable, LevelFilteredMessageHandlerPtr, bases<FilteredMessageHandler> > LevelFilteredMessageHandlerPyClass;
+	LevelFilteredMessageHandlerPyClass( "LevelFilteredMessageHandler", no_init )
 		.def( "__init__", make_constructor( &levelFilteredMessageHandlerConstructor ) )
 		.def( "defaultLevel", &LevelFilteredMessageHandler::defaultLevel ).staticmethod( "defaultLevel" )
 	;
+	INTRUSIVE_PTR_PATCH( LevelFilteredMessageHandler, LevelFilteredMessageHandlerPyClass );
+	implicitly_convertible<LevelFilteredMessageHandlerPtr, FilteredMessageHandlerPtr>();
 
 	scope mhS( mh );
 
@@ -133,7 +152,7 @@ void bindMessageHandler()
 		.value( "Debug", MessageHandler::Debug )
 		.value( "Invalid", MessageHandler::Invalid )
 	;
-
+		
 }
 
 }

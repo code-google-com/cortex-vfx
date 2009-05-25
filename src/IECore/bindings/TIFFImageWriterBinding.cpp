@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/TIFFImageWriter.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 #include "tiffio.h"
@@ -48,17 +49,22 @@ namespace IECore
 
 void bindTIFFImageWriter()
 {
-	scope tiffImageWriterScope = RunTimeTypedClass<TIFFImageWriter>()
-		.def( init<>() )
+	typedef class_<TIFFImageWriter, TIFFImageWriterPtr, boost::noncopyable, bases<ImageWriter> > TIFFImageWriterPyClass;
+	object tiffImageWriter = TIFFImageWriterPyClass("TIFFImageWriter", init<>())
 		.def( init<ObjectPtr, const std::string &>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( TIFFImageWriter )
 	;
-
+	
+	scope tiffImageWriterScope( tiffImageWriter );
 	enum_<int>( "Compression" )
 		.value( "Deflate", COMPRESSION_DEFLATE )
 		.value( "LZW",     COMPRESSION_LZW )
 		.value( "None",    COMPRESSION_NONE )
 		.value( "JPEG",    COMPRESSION_JPEG )
 	;
+
+	INTRUSIVE_PTR_PATCH( TIFFImageWriter, TIFFImageWriterPyClass );
+	implicitly_convertible<TIFFImageWriterPtr, TIFFImageWriterPtr>();
 }
 
 } // namespace IECore

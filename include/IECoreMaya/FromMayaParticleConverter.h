@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,7 +37,7 @@
 
 #include "IECoreMaya/FromMayaShapeConverter.h"
 
-#include "IECore/VectorTypedParameter.h"
+#include "IECore/TypedParameter.h"
 
 class MFnParticleSystem;
 
@@ -47,30 +47,30 @@ namespace IECoreMaya
 /// Converts Maya particleShape objects into IECore::PointsPrimitive objects.
 class FromMayaParticleConverter : public FromMayaShapeConverter
 {
-
+	
 	public :
 
 		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( FromMayaParticleConverter, FromMayaParticleConverterTypeId, FromMayaShapeConverter );
-
+		
 		FromMayaParticleConverter( const MObject &object );
 		FromMayaParticleConverter( const MDagPath &dagPath );
-
+		
 		IECore::StringVectorParameterPtr attributeNamesParameter();
-		IECore::ConstStringVectorParameterPtr attributeNamesParameter() const;
-
+		IECore::ConstStringVectorParameterPtr attributeNamesParameter() const;		
+				
 	protected :
-
+	
 		virtual IECore::PrimitivePtr doPrimitiveConversion( const MObject &object, IECore::ConstCompoundObjectPtr operands ) const;
 		virtual IECore::PrimitivePtr doPrimitiveConversion( const MDagPath &dagPath, IECore::ConstCompoundObjectPtr operands ) const;
-
+		
 		IECore::StringVectorParameterPtr m_attributeNamesParameter;
 
 	private :
-
+	
 		void constructCommon();
-
+	
 		IECore::PrimitivePtr doPrimitiveConversion( MFnParticleSystem &fnParticle ) const;
-
+	
 		static Description<FromMayaParticleConverter> m_description;
 
 };

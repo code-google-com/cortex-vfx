@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,14 +52,12 @@ using namespace Imath;
 static const MFn::Type fromTypes[] = { MFn::kTransform, MFn::kInvalid };
 static const IECore::TypeId toTypes[] = { GroupTypeId, InvalidTypeId };
 
-IE_CORE_DEFINERUNTIMETYPED( FromMayaGroupConverter );
-
 FromMayaDagNodeConverter::Description<FromMayaGroupConverter> FromMayaGroupConverter::m_description( fromTypes, toTypes );
 
 FromMayaGroupConverter::FromMayaGroupConverter( const MDagPath &dagPath )
 	:	FromMayaDagNodeConverter( staticTypeName(), "Converts transforms to Group objects.", dagPath )
 {
-
+	
 	/// \todo I see no need for this to be a parameter. Surely it should be a given that we ignore intermediates?
 	BoolParameterPtr ignoreIntermediateObjects = new BoolParameter(
 		"ignoreIntermediateObjects",
@@ -73,7 +71,7 @@ FromMayaGroupConverter::FromMayaGroupConverter( const MDagPath &dagPath )
 	parameters()->addParameter( m_meshParameters );
 
 }
-
+		
 IECore::ObjectPtr FromMayaGroupConverter::doConversion( const MDagPath &dagPath, IECore::ConstCompoundObjectPtr operands ) const
 {
 	bool ignoreIntermediate = false;
@@ -86,10 +84,10 @@ IECore::ObjectPtr FromMayaGroupConverter::doConversion( const MDagPath &dagPath,
 	if( dagPath.apiType()==MFn::kTransform )
 	{
 		MFnDagNode fnDagNode( dagPath );
-
-	 	GroupPtr result = new Group();
+		
+	 	GroupPtr result = new Group();		
 		result->setTransform( new MatrixTransform( matConvert<MMatrix, M44f>( fnDagNode.transformationMatrix() ) ) );
-
+		
 		unsigned int n = dagPath.childCount();
 		for( unsigned int i=0; i<n; i++ )
 		{
@@ -126,7 +124,7 @@ IECore::ObjectPtr FromMayaGroupConverter::doConversion( const MDagPath &dagPath,
 		{
 			c = FromMayaShapeConverter::create( dagPath, VisibleRenderable::staticTypeId() );
 		}
-
+		
 		if( c )
 		{
 			return c->convert();

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,11 +32,12 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include <sstream>
 
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 #include <exception>
@@ -49,10 +50,10 @@ namespace IECore
 {
 
 static std::string repr( CompoundObject &o )
-{
+{	
 	std::stringstream s;
 
-	s << "IECore." << o.typeName() << "(";
+	s << "IECore." << o.typeName() << "(";		
 
 	bool added = false;
 	for (
@@ -69,7 +70,7 @@ static std::string repr( CompoundObject &o )
 			if ( !added )
 			{
 				added = true;
-				s << "{";
+				s << "{";	
 			}
 			else
 			{
@@ -79,7 +80,7 @@ static std::string repr( CompoundObject &o )
 			s << "'";
 			s << key;
 			s << "':";
-			s << v;
+			s << v;					
 		}
 	}
 
@@ -98,7 +99,7 @@ static unsigned int len( const CompoundObject &o )
 	return o.members().size();
 }
 
-static ObjectPtr getItem( const CompoundObject &o, const char *n )
+static ObjectPtr getItem( const CompoundObject &o, const std::string &n )
 {
 	CompoundObject::ObjectMap::const_iterator it = o.members().find( n );
 	if( it==o.members().end() )
@@ -111,26 +112,6 @@ static ObjectPtr getItem( const CompoundObject &o, const char *n )
 static void setItem( CompoundObject &o, const std::string &n, Object &v )
 {
 	o.members()[n] = &v;
-}
-
-static ObjectPtr getAttr( const CompoundObject &o, const char *n )
-{
-	if( PyErr_WarnEx( PyExc_DeprecationWarning, "Access to CompoundObject children as attributes is deprecated - please use item style access instead.", 1 ) )
-	{
-		// warning converted to exception;
-		throw error_already_set();
-	}
-	return getItem( o, n );
-}
-
-static void setAttr( CompoundObject &o, const std::string &n, Object &v )
-{
-	if( PyErr_WarnEx( PyExc_DeprecationWarning, "Access to CompoundObject children as attributes is deprecated - please use item style access instead.", 1 ) )
-	{
-		// warning converted to exception;
-		throw error_already_set();
-	}
-	setItem( o, n, v );
 }
 
 static void delItem( CompoundObject &o, const std::string &n )
@@ -159,18 +140,18 @@ static bool has_key( const CompoundObject &o, const std::string n)
 	return ( it != o.members().end() );
 }
 
-static boost::python::list keys( const CompoundObject &o )
+static boost::python::list keys( CompoundObject &o )
 {
 	boost::python::list result;
 	CompoundObject::ObjectMap::const_iterator it;
 	for( it = o.members().begin(); it!=o.members().end(); it++ )
 	{
-		result.append( it->first.value() );
+		result.append( it->first );
 	}
 	return result;
 }
 
-static boost::python::list values( const CompoundObject &o )
+static boost::python::list values( CompoundObject &o )
 {
 	boost::python::list result;
 	CompoundObject::ObjectMap::const_iterator it;
@@ -181,130 +162,99 @@ static boost::python::list values( const CompoundObject &o )
 	return result;
 }
 
-class CompoundObjectFromPythonDict
+static CompoundObjectPtr compoundObjectFromDict( dict v )
 {
-	public :
-
-		CompoundObjectFromPythonDict()
+	CompoundObjectPtr x = new CompoundObject;
+	list values = v.values();
+	list keys = v.keys();
+		
+	for (int i = 0; i < keys.attr("__len__")(); i++)
+	{
+		object key(keys[i]);
+		object value(values[i]);
+		extract< const std::string > keyElem(key);
+		if (!keyElem.check()) 
 		{
-			converter::registry::push_back(
-				&convertible,
-				&construct,
-				type_id<CompoundObjectPtr> ()
-			);
+			PyErr_SetString(PyExc_TypeError, "Incompatible key type. Only strings accepted.");
+			throw_error_already_set();
 		}
-
-	private :
-
-		static void *convertible( PyObject *obj_ptr )
+		
+		extract< Object& > valueElem(value);
+		if (valueElem.check())
 		{
-			if ( !PyDict_Check( obj_ptr ) )
-			{
-				return 0;
-			}
-			return obj_ptr;
+			setItem( *x, keyElem(), valueElem() );
+			continue;
 		}
-
-		static void construct(
-	        	PyObject *obj_ptr,
-	        	converter::rvalue_from_python_stage1_data *data )
+		extract<dict> dictValueE( value );
+		if( dictValueE.check() )
 		{
-			assert( obj_ptr );
-			assert( PyDict_Check( obj_ptr ) );
-
-			handle<> h( obj_ptr );
-			dict d( h );
-
-			void* storage = (( converter::rvalue_from_python_storage<CompoundObjectPtr>* ) data )->storage.bytes;
-			new( storage ) CompoundObjectPtr( compoundObjectFromDict( d ) );
-			data->convertible = storage;
+			ObjectPtr co = compoundObjectFromDict( dictValueE() );
+			setItem( *x, keyElem(), *co );
+			continue;
 		}
-
-		static CompoundObjectPtr compoundObjectFromDict( const dict &v )
+		else 
 		{
-			CompoundObjectPtr x = new CompoundObject();
-			list values = v.values();
-			list keys = v.keys();
-
-			for (int i = 0; i < keys.attr("__len__")(); i++)
-			{
-				object key(keys[i]);
-				object value(values[i]);
-				extract< const std::string > keyElem(key);
-				if (!keyElem.check())
-				{
-					PyErr_SetString(PyExc_TypeError, "Incompatible key type. Only strings accepted.");
-					throw_error_already_set();
-				}
-
-				extract< Object& > valueElem(value);
-				if (valueElem.check())
-				{
-					setItem( *x, keyElem(), valueElem() );
-					continue;
-				}
-				extract<dict> dictValueE( value );
-				if( dictValueE.check() )
-				{
-					CompoundObjectPtr sub = compoundObjectFromDict( dictValueE() );
-					setItem( *x, keyElem(), *sub );
-					continue;
-				}
-				else
-				{
-					PyErr_SetString(PyExc_TypeError, "Incompatible value type - must be Object or dict.");
-					throw_error_already_set();
-				}
-			}
-
-			return x;
+			PyErr_SetString(PyExc_TypeError, "Incompatible value type - must be Object or dict.");
+			throw_error_already_set();
 		}
-};
+	}
+	return x;
+}
 
 /// binding for update method
-static void update( CompoundObject &x, ConstCompoundObjectPtr y )
+static void
+update1(CompoundObject &x, CompoundObject &y)
 {
-	assert( y );
-	CompoundObject::ObjectMap::const_iterator it = y->members().begin();
+	CompoundObject::ObjectMap::const_iterator it = y.members().begin();
 
-	for (; it != y->members().end(); it++)
+	for (; it != y.members().end(); it++) 
 	{
 		setItem( x, it->first, *it->second );
 	}
 }
-
-/// copy constructor
-static CompoundObjectPtr copyConstructor( ConstCompoundObjectPtr other )
+	
+/// binding for update method
+static void
+update2(CompoundObject &x, dict v)
 {
-	assert( other );
-	CompoundObjectPtr r = new CompoundObject();
-	update( *r, other );
-	return r;
+	CompoundObjectPtr vv = compoundObjectFromDict( v );
+	update1( x, *vv );
+}
+
+/// constructor that receives a python map object
+static CompoundObjectPtr 
+compoundObjectConstructor(dict v) 
+{
+	return compoundObjectFromDict( v );
 }
 
 void bindCompoundObject()
 {
+	typedef class_< CompoundObject , CompoundObjectPtr, boost::noncopyable, bases<Object> > CompoundObjectPyClass;
 
-	RunTimeTypedClass<CompoundObject>()
-		.def( init<>() )
-		.def("__init__", make_constructor(&copyConstructor), "Copy constructor.")
+	CompoundObjectPyClass ( "CompoundObject" )
+		.def("__init__", make_constructor(&compoundObjectConstructor), "Copy constructor that accepts a python dict containing Object instances.")
 		.def( "__repr__", &repr )
 		.def( "__len__", &len )
 		.def( "__getitem__", &getItem )
 		.def( "__setitem__", &setItem )
-		/// \todo Remove attribute access in major version 5.
-		.def( "__getattr__", &getAttr )
-		.def( "__setattr__", &setAttr )
+		/// \todo I don't believe we should be having children represented as attributes like this - we should use the
+		/// item syntax only. See associated todo in CompoundParameterBinding.cpp.
+		.def( "__getattr__", &getItem )
+		.def( "__setattr__", &setItem )
 		.def( "__delitem__", &delItem )
 		.def( "__contains__", &contains )
 		.def( "has_key", &has_key )
 		.def( "keys", &keys )
 		.def( "values", &values )
-		.def( "update", &update )
+		.def( "update", &update1 )
+		.def( "update", &update2 )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( CompoundObject )
 	;
 
-	CompoundObjectFromPythonDict();
+	INTRUSIVE_PTR_PATCH( CompoundObject, CompoundObjectPyClass );
 
+	implicitly_convertible<CompoundObjectPtr, ObjectPtr>();
 }
 
 } // namespace IECore

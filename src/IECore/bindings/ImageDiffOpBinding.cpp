@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,13 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/ImageDiffOp.h"
 #include "IECore/Parameter.h"
 #include "IECore/Object.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -48,9 +49,13 @@ namespace IECore
 
 void bindImageDiffOp()
 {
-	RunTimeTypedClass<ImageDiffOp>()
-		.def( init<>() )
+	typedef class_< ImageDiffOp, ImageDiffOpPtr, boost::noncopyable, bases<Op> > ImageDiffOpPyClass;
+	ImageDiffOpPyClass( "ImageDiffOp" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(ImageDiffOp)
 	;
+	
+	INTRUSIVE_PTR_PATCH( ImageDiffOp, ImageDiffOpPyClass );
+	implicitly_convertible<ImageDiffOpPtr, OpPtr>();	
 
 }
 

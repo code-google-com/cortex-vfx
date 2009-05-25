@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -38,16 +38,13 @@ from IECore import *
 
 class TestFrameList( unittest.TestCase ) :
 
-	def test( self ) :
-
+	def test( self ) :	
+	
 		f = FrameList.parse( "" )
 		self.assert_( isinstance( f, EmptyFrameList ) )
-		self.assertEqual( len( f.asList() ), 0 )
-		self.assertEqual( repr( f ), "IECore.EmptyFrameList()" )
-
+		
 		f = FrameList.parse( " " )
 		self.assert_( isinstance( f, EmptyFrameList ) )
-		self.assertEqual( len( f.asList() ), 0 )
-
+		
 if __name__ == "__main__":
         unittest.main()

@@ -40,6 +40,7 @@
 #include "datetime.h"
 
 #include "IECore/TimePeriodData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/bindings/IECoreBinding.h"
 
@@ -68,7 +69,7 @@ static int cmp( T &x, T &y )
 }
 
 template<>
-std::string repr<TimePeriodData>( TimePeriodData &x )
+static std::string repr<TimePeriodData>( TimePeriodData &x )
 {
 	object item( x.readable() );
 
@@ -84,7 +85,7 @@ std::string repr<TimePeriodData>( TimePeriodData &x )
 }
 
 template<>
-std::string str<TimePeriodData>( TimePeriodData &x )
+static std::string str<TimePeriodData>( TimePeriodData &x )
 {
 	return posix_time::to_simple_string( x.readable() );
 }
@@ -104,15 +105,22 @@ static const TimePeriod &getValue( TimePeriodDataPtr data )
 void bindTimePeriodData()
 {
 	PyDateTime_IMPORT;
-
-	RunTimeTypedClass<TimePeriodData>()
+		
+	typedef class_< TimePeriodData, TimePeriodDataPtr, noncopyable, bases<Data> > TimePeriodDataPyClass;
+	TimePeriodDataPyClass( "TimePeriodData", no_init )
 		.def( init<>() )
 		.def( init<const TimePeriodData::ValueType &>() )
 		.add_property( "value", make_function( &getValue, return_value_policy<copy_const_reference>() ), &setValue )
 		.def( "__repr__", &repr<TimePeriodData> )
 		.def( "__str__", &str<TimePeriodData> )
 		.def( "__cmp__", &str<TimePeriodData> )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( TimePeriodData );
 	;
+
+	INTRUSIVE_PTR_PATCH( TimePeriodData, TimePeriodDataPyClass );
+
+	implicitly_convertible<TimePeriodDataPtr, DataPtr>();
+	implicitly_convertible<TimePeriodDataPtr, ConstTimePeriodDataPtr >();
 }
 
 } // namespace IECore

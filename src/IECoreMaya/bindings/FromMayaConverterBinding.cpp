@@ -42,6 +42,7 @@
 #include "IECoreMaya/StatusException.h"
 #include "IECoreMaya/bindings/FromMayaConverterBinding.h"
 
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 #include "IECore/Object.h"
@@ -56,7 +57,7 @@ static IECoreMaya::FromMayaConverterPtr create( const char *n, IECore::TypeId re
 {
 	MSelectionList l;
 	StatusException::throwIfError( l.add( MString( n ) ) );
-
+	
 	MDagPath p;
 	MStatus s;
 
@@ -87,7 +88,7 @@ static IECoreMaya::FromMayaConverterPtr create( const char *n, IECore::TypeId re
 				return c;
 			}
 		}
-
+	
 		MObject o;
 		s = l.getDependNode( 0, o );
 		if( s )
@@ -99,13 +100,19 @@ static IECoreMaya::FromMayaConverterPtr create( const char *n, IECore::TypeId re
 			}
 		}
 	}
-
+	
 	return 0;
 }
 
 void IECoreMaya::bindFromMayaConverter()
 {
-	IECore::RunTimeTypedClass<FromMayaConverter>()
+	typedef class_<FromMayaConverter, FromMayaConverterPtr, boost::noncopyable, bases<IECore::ToCoreConverter> > FromMayaConverterPyClass;
+
+	FromMayaConverterPyClass( "FromMayaConverter", no_init )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( FromMayaConverter )
 		.def( "create", &create, ( arg_( "object" ), arg_( "resultType" ) = IECore::InvalidTypeId ) ).staticmethod( "create" )
 	;
+	
+	INTRUSIVE_PTR_PATCH( FromMayaConverter, FromMayaConverterPyClass );
+	implicitly_convertible<FromMayaConverterPtr, IECore::ToCoreConverterPtr>();
 }

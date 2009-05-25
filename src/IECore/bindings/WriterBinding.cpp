@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Writer.h"
 #include "IECore/Object.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -56,27 +57,16 @@ static list supportedExtensions()
 	return result;
 }
 
-static list supportedExtensions( TypeId typeId )
-{
-	list result;
-	std::vector<std::string> e;
-	Writer::supportedExtensions( typeId, e );
-	for( unsigned int i=0; i<e.size(); i++ )
-	{
-		result.append( e[i] );
-	}
-	return result;
-}
-
 void bindWriter()
 {
-	RunTimeTypedClass<Writer>()
+	typedef class_< Writer , WriterPtr, boost::noncopyable, bases<Op> > WriterPyClass;
+	WriterPyClass ( "Writer", no_init )
 		.def( "write", &Writer::write )
 		.def( "create", &Writer::create ).staticmethod( "create" )
-		.def( "supportedExtensions", ( list(*)( ) )&supportedExtensions )
-		.def( "supportedExtensions", ( list(*)( TypeId ) )&supportedExtensions )
-		.staticmethod( "supportedExtensions" )
+		.def( "supportedExtensions", &supportedExtensions ).staticmethod( "supportedExtensions" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(Writer)
 	;
+	INTRUSIVE_PTR_PATCH( Writer, WriterPyClass );
 }
 
 } // namespace IECore

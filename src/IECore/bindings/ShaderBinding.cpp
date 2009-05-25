@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Shader.h"
 #include "IECore/bindings/ShaderBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -44,13 +45,16 @@ namespace IECore
 {
 	void bindShader()
 	{
-		RunTimeTypedClass<Shader>()
-			.def( init<>() )
+		typedef class_<Shader, ShaderPtr, bases<StateRenderable>, boost::noncopyable> ShaderPyClass;
+		ShaderPyClass( "Shader" )
 			.def( init<optional<const std::string &, const std::string &, const CompoundDataMap &> >() )
 			.add_property( "name", make_function( &Shader::getName, return_value_policy<copy_const_reference>() ), &Shader::setName )
 			.add_property( "type", make_function( &Shader::getType, return_value_policy<copy_const_reference>() ), &Shader::setType )
 			.add_property( "parameters", &Shader::parametersData )
+			.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(Shader)
 		;
+		INTRUSIVE_PTR_PATCH( Shader, ShaderPyClass );
+		implicitly_convertible<ShaderPtr, StateRenderablePtr>();
 	}
-
+	
 }

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,14 +32,15 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/ModifyOp.h"
 #include "IECore/Parameter.h"
 #include "IECore/Object.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
+#include "IECore/bindings/WrapperToPython.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
-#include "IECore/bindings/Wrapper.h"
 
 using namespace boost;
 using namespace boost::python;
@@ -49,14 +50,17 @@ namespace IECore {
 class ModifyOpWrap : public ModifyOp, public Wrapper<ModifyOp>
 {
 	public :
-
+		
 		ModifyOpWrap( PyObject *self, const std::string name, const std::string description, ParameterPtr resultParameter, ParameterPtr inputParameter )
 			: ModifyOp( name, description, resultParameter, inputParameter ), Wrapper<ModifyOp>( self, this )
 		{
 		};
-
+		
 		virtual void modify( ObjectPtr object, ConstCompoundObjectPtr operands )
 		{
+			//// \todo We may want to call operands->copy() here instead of casting away the constness. If the Python code being called
+			/// here actually attempts to change the CompoundObject, then any C++ calling code might get confused when a suposedly const value
+			/// changes unexpectedly. Check any performance overhead of the copy.
 			this->get_override( "modify" )( object, const_pointer_cast<CompoundObject>( operands ) );
 		};
 
@@ -65,9 +69,17 @@ IE_CORE_DECLAREPTR( ModifyOpWrap );
 
 void bindModifyOp()
 {
-	RunTimeTypedClass<ModifyOp, ModifyOpWrapPtr>()
+	typedef class_< ModifyOp, ModifyOpWrapPtr, boost::noncopyable, bases<Op> > ModifyOpPyClass;
+	ModifyOpPyClass( "ModifyOp", no_init )
 		.def( init< const std::string, const std::string, ParameterPtr, ParameterPtr >() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(ModifyOp)
 	;
+	
+	WrapperToPython<ModifyOpPtr>();
+
+	INTRUSIVE_PTR_PATCH( ModifyOp, ModifyOpPyClass );
+	implicitly_convertible<ModifyOpPtr, OpPtr>();	
+
 }
 
 } // namespace IECore

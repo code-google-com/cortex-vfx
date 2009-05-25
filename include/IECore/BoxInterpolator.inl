@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,9 +37,9 @@
 template<typename T>
 struct LinearInterpolator< Imath::Box<T> >
 {
-	void operator()(const Imath::Box<T> &y0,
+	void operator()(const Imath::Box<T> &y0, 
 			const Imath::Box<T> &y1,
-			double x,
+			double x, 
 			Imath::Box<T> &result) const
 	{
 		LinearInterpolator< T >()( y0.min, y1.min, x, result.min );
@@ -49,13 +49,27 @@ struct LinearInterpolator< Imath::Box<T> >
 
 // Partially specialize for Imath::Box.
 template<typename T>
+struct CosineInterpolator< Imath::Box<T> >
+{
+	void operator()(const Imath::Box<T> &y0, 
+			const Imath::Box<T> &y1,
+			double x, 
+			Imath::Box<T> &result) const
+	{		
+		CosineInterpolator< T >()( y0.min, y1.min, x, result.min );
+		CosineInterpolator< T >()( y0.max, y1.max, x, result.max );
+	}
+};
+
+// Partially specialize for Imath::Box.
+template<typename T>
 struct CubicInterpolator< Imath::Box< T > >
 {
-	void operator()(const Imath::Box< T > &y0,
+	void operator()(const Imath::Box< T > &y0, 
 			const Imath::Box< T > &y1,
 			const Imath::Box< T > &y2,
 			const Imath::Box< T > &y3,
-			double x,
+			double x, 
 			Imath::Box< T > &result) const
 	{
 		CubicInterpolator< T >()( y0.min, y1.min, y2.min, y3.min, x, result.min );

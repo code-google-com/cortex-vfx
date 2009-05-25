@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -49,8 +49,6 @@ using namespace IECore;
 using namespace boost;
 using namespace boost::filesystem;
 
-IE_CORE_DEFINERUNTIMETYPED( Writer )
-
 Writer::Writer( const std::string &name, const std::string &description, TypeId writableType )
 	:	Op( name, description, new ObjectParameter( "output", "A pass through of the input object", new NullObject, writableType ) )
 {
@@ -93,20 +91,15 @@ ObjectPtr Writer::doOperation( ConstCompoundObjectPtr operands )
 	return m_objectParameter->getValue();
 }
 
-void Writer::registerWriter( const std::string &extensions, CanWriteFn canWrite, CreatorFn creator, TypeId typeId )
+void Writer::registerWriter( const std::string &extensions, CanWriteFn canWrite, CreatorFn creator )
 {
-	assert( canWrite );
-	assert( creator );
-	assert( typeId != InvalidTypeId );
-
 	ExtensionsToFnsMap *m = extensionsToFns();
 	assert( m );
 	vector<string> splitExt;
 	split( splitExt, extensions, is_any_of( " " ) );
-	WriterFns w;
-	w.creator = creator;
+	WriterFns w; 
+	w.creator = creator; 
 	w.canWrite = canWrite;
-	w.typeId = typeId;
 	for( vector<string>::const_iterator it=splitExt.begin(); it!=splitExt.end(); it++ )
 	{
 		m->insert( ExtensionsToFnsMap::value_type( "." + *it, w ) );
@@ -116,7 +109,7 @@ void Writer::registerWriter( const std::string &extensions, CanWriteFn canWrite,
 WriterPtr Writer::create( ObjectPtr object, const std::string &fileName )
 {
 	string ext = extension(boost::filesystem::path(fileName));
-
+	
 	ExtensionsToFnsMap *m = extensionsToFns();
 	assert( m );
 	ExtensionsToFnsMap::const_iterator it = m->find( ext );
@@ -133,7 +126,7 @@ WriterPtr Writer::create( ObjectPtr object, const std::string &fileName )
 			if( it->second.canWrite( object, fileName ) )
 			{
 				return it->second.creator( object, fileName );
-			}
+			}				
 		}
 	}
 
@@ -142,29 +135,11 @@ WriterPtr Writer::create( ObjectPtr object, const std::string &fileName )
 
 void Writer::supportedExtensions( std::vector<std::string> &extensions )
 {
-	extensions.clear();
 	ExtensionsToFnsMap *m = extensionsToFns();
-	assert( m );
+	assert( m );	
 	for( ExtensionsToFnsMap::const_iterator it=m->begin(); it!=m->end(); it++ )
 	{
 		extensions.push_back( it->first.substr( 1 ) );
-	}
-}
-
-void Writer::supportedExtensions( TypeId typeId, std::vector<std::string> &extensions )
-{
-	extensions.clear();
-	ExtensionsToFnsMap *m = extensionsToFns();
-	assert( m );
-
-	const std::set< TypeId > &derivedTypes = RunTimeTyped::derivedTypeIds( typeId );
-
-	for( ExtensionsToFnsMap::const_iterator it=m->begin(); it!=m->end(); it++ )
-	{
-		if ( it->second.typeId == typeId || std::find( derivedTypes.begin(), derivedTypes.end(), it->second.typeId ) != derivedTypes.end() )
-		{
-			extensions.push_back( it->first.substr( 1 ) );
-		}
 	}
 }
 

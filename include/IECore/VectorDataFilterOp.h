@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,7 +36,7 @@
 #define IE_CORE_VECTORDATAFILTEROP_H
 
 #include "IECore/ModifyOp.h"
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/TypedParameter.h"
 
 namespace IECore
 {
@@ -48,20 +48,20 @@ IE_CORE_FORWARDDECLARE( ObjectParameter )
 class VectorDataFilterOp : public ModifyOp
 {
 	public :
-
+		
 		IE_CORE_DECLARERUNTIMETYPED( VectorDataFilterOp, ModifyOp );
-
+		
 		VectorDataFilterOp();
 		virtual ~VectorDataFilterOp();
-
+		
 	protected :
-
+				
 		virtual void modify( ObjectPtr object, ConstCompoundObjectPtr operands );
-
+	
 		ObjectParameterPtr m_filterParameter;
 		BoolParameterPtr m_invertFilterParameter;
 		BoolParameterPtr m_clipParameter;
-
+		
 };
 
 IE_CORE_DECLAREPTR( VectorDataFilterOp );

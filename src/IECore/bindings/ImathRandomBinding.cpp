@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
 #include "boost/python.hpp"
 
@@ -50,7 +50,7 @@ using namespace boost::python;
 using namespace boost;
 using namespace Imath;
 
-namespace IECore
+namespace IECore 
 {
 
 template<typename R>
@@ -77,7 +77,7 @@ struct Vectoriser
 	typedef typename ResultType::Ptr ResultTypePtr;
 	typedef typename ResultType::ValueType ValueType;
 	typedef typename ValueType::iterator Iterator;
-
+	
 	static ResultTypePtr vectorise( R &r, size_t size )
 	{
 		ResultTypePtr result = new ResultType;
@@ -89,7 +89,7 @@ struct Vectoriser
 		}
 		return result;
 	};
-
+	
 	template<typename S>
 	static ResultTypePtr vectoriseSeededT( R &r, typename S::ConstPtr seeds )
 	{
@@ -105,7 +105,7 @@ struct Vectoriser
 		}
 		return result;
 	}
-
+	
 	static ResultTypePtr vectoriseSeeded( R &r, ConstDataPtr seeds )
 	{
 		switch( seeds->typeId() )
@@ -117,7 +117,7 @@ struct Vectoriser
 			case IntVectorDataTypeId :
 				return vectoriseSeededT<IntVectorData>( r, static_pointer_cast<const IntVectorData>( seeds ) );
 			case UIntVectorDataTypeId :
-				return vectoriseSeededT<UIntVectorData>( r, static_pointer_cast<const UIntVectorData>( seeds ) );
+				return vectoriseSeededT<UIntVectorData>( r, static_pointer_cast<const UIntVectorData>( seeds ) );		
 			default :
 				throw Exception( "Unsupported type for seeds parameter." );
 		}
@@ -128,7 +128,7 @@ struct Vectoriser
 
 template<typename T, typename F>
 void bindRand( const char *className )
-{
+{	
 
 	class_<T>( className )
 		.def( init<unsigned long int>() )
@@ -137,70 +137,70 @@ void bindRand( const char *className )
 		.def( "nexti", &T::nexti )
 		.def( "nextf", (F (T::*)())&T::nextf )
 		.def( "nextf", (F (T::*)( F, F ))&T::nextf )
-		.def( "fVector",  &Vectoriser<T, float, &nextFloat<T> >::vectoriseSeeded )
 		.def( "fVector",  &Vectoriser<T, float, &nextFloat<T> >::vectorise )
+		.def( "fVector",  &Vectoriser<T, float, &nextFloat<T> >::vectoriseSeeded )
 		.def( "nextV2f", &nextVec<V2f, T> )
 		.def( "nextV3f", &nextVec<V3f, T> )
 		.def( "nextV2d", &nextVec<V2d, T> )
 		.def( "nextV3d", &nextVec<V3d, T> )
-		.def( "v2fVector", &Vectoriser<T, V2f, &nextVec<V2f, T> >::vectoriseSeeded )
 		.def( "v2fVector", &Vectoriser<T, V2f, &nextVec<V2f, T> >::vectorise )
-		.def( "v2dVector", &Vectoriser<T, V2d, &nextVec<V2d, T> >::vectoriseSeeded )
+		.def( "v2fVector", &Vectoriser<T, V2f, &nextVec<V2f, T> >::vectoriseSeeded )
 		.def( "v2dVector", &Vectoriser<T, V2d, &nextVec<V2d, T> >::vectorise )
-		.def( "v3fVector", &Vectoriser<T, V3f, &nextVec<V3f, T> >::vectoriseSeeded )
+		.def( "v2dVector", &Vectoriser<T, V2d, &nextVec<V2d, T> >::vectoriseSeeded )
 		.def( "v3fVector", &Vectoriser<T, V3f, &nextVec<V3f, T> >::vectorise )
-		.def( "v3dVector", &Vectoriser<T, V3d, &nextVec<V3d, T> >::vectoriseSeeded )
+		.def( "v3fVector", &Vectoriser<T, V3f, &nextVec<V3f, T> >::vectoriseSeeded )
 		.def( "v3dVector", &Vectoriser<T, V3d, &nextVec<V3d, T> >::vectorise )
+		.def( "v3dVector", &Vectoriser<T, V3d, &nextVec<V3d, T> >::vectoriseSeeded )
 		.def( "nextColor3f", &nextVec<Color3f, T> )
-		.def( "color3fVector", &Vectoriser<T, Color3f, &nextVec<Color3f, T> >::vectoriseSeeded )
 		.def( "color3fVector", &Vectoriser<T, Color3f, &nextVec<Color3f, T> >::vectorise )
+		.def( "color3fVector", &Vectoriser<T, Color3f, &nextVec<Color3f, T> >::vectoriseSeeded )
 		.def( "gauss", &gaussRand<T> )
-		.def( "gaussVector", &Vectoriser<T, float, &gaussRand<T> >::vectoriseSeeded )
 		.def( "gaussVector", &Vectoriser<T, float, &gaussRand<T> >::vectorise )
+		.def( "gaussVector", &Vectoriser<T, float, &gaussRand<T> >::vectoriseSeeded )
 		.def( "solidCirclef", &solidSphereRand<V2f,T> )
 		.def( "solidCircled", &solidSphereRand<V2d,T> )
-		.def( "solidCirclefVector", &Vectoriser<T, V2f, &solidSphereRand<V2f, T> >::vectoriseSeeded )
 		.def( "solidCirclefVector", &Vectoriser<T, V2f, &solidSphereRand<V2f, T> >::vectorise )
-		.def( "solidCircledVector", &Vectoriser<T, V2d, &solidSphereRand<V2d, T> >::vectoriseSeeded )
+		.def( "solidCirclefVector", &Vectoriser<T, V2f, &solidSphereRand<V2f, T> >::vectoriseSeeded )
 		.def( "solidCircledVector", &Vectoriser<T, V2d, &solidSphereRand<V2d, T> >::vectorise )
+		.def( "solidCircledVector", &Vectoriser<T, V2d, &solidSphereRand<V2d, T> >::vectoriseSeeded )
 		.def( "solidSpheref", &solidSphereRand<V3f,T> )
 		.def( "solidSphered", &solidSphereRand<V3d,T> )
-		.def( "solidSpherefVector", &Vectoriser<T, V3f, &solidSphereRand<V3f, T> >::vectoriseSeeded )
 		.def( "solidSpherefVector", &Vectoriser<T, V3f, &solidSphereRand<V3f, T> >::vectorise )
-		.def( "solidSpheredVector", &Vectoriser<T, V3d, &solidSphereRand<V3d, T> >::vectoriseSeeded )
+		.def( "solidSpherefVector", &Vectoriser<T, V3f, &solidSphereRand<V3f, T> >::vectoriseSeeded )
 		.def( "solidSpheredVector", &Vectoriser<T, V3d, &solidSphereRand<V3d, T> >::vectorise )
+		.def( "solidSpheredVector", &Vectoriser<T, V3d, &solidSphereRand<V3d, T> >::vectoriseSeeded )
 		.def( "hollowCirclef", &hollowSphereRand<V2f,T> )
 		.def( "hollowCircled", &hollowSphereRand<V2d,T> )
-		.def( "hollowCirclefVector", &Vectoriser<T, V2f, &hollowSphereRand<V2f, T> >::vectoriseSeeded )
 		.def( "hollowCirclefVector", &Vectoriser<T, V2f, &hollowSphereRand<V2f, T> >::vectorise )
-		.def( "hollowCircledVector", &Vectoriser<T, V2d, &hollowSphereRand<V2d, T> >::vectoriseSeeded )
+		.def( "hollowCirclefVector", &Vectoriser<T, V2f, &hollowSphereRand<V2f, T> >::vectoriseSeeded )
 		.def( "hollowCircledVector", &Vectoriser<T, V2d, &hollowSphereRand<V2d, T> >::vectorise )
+		.def( "hollowCircledVector", &Vectoriser<T, V2d, &hollowSphereRand<V2d, T> >::vectoriseSeeded )
 		.def( "hollowSpheref", &hollowSphereRand<V3f,T> )
 		.def( "hollowSphered", &hollowSphereRand<V3d,T> )
-		.def( "hollowSpherefVector", &Vectoriser<T, V3f, &hollowSphereRand<V3f, T> >::vectoriseSeeded )
 		.def( "hollowSpherefVector", &Vectoriser<T, V3f, &hollowSphereRand<V3f, T> >::vectorise )
-		.def( "hollowSpheredVector", &Vectoriser<T, V3d, &hollowSphereRand<V3d, T> >::vectoriseSeeded )
+		.def( "hollowSpherefVector", &Vectoriser<T, V3f, &hollowSphereRand<V3f, T> >::vectoriseSeeded )
 		.def( "hollowSpheredVector", &Vectoriser<T, V3d, &hollowSphereRand<V3d, T> >::vectorise )
+		.def( "hollowSpheredVector", &Vectoriser<T, V3d, &hollowSphereRand<V3d, T> >::vectoriseSeeded )
 		.def( "gaussCirclef", &gaussSphereRand<V2f,T> )
 		.def( "gaussCircled", &gaussSphereRand<V2d,T> )
-		.def( "gaussCirclefVector", &Vectoriser<T, V2f, &gaussSphereRand<V2f, T> >::vectoriseSeeded )
 		.def( "gaussCirclefVector", &Vectoriser<T, V2f, &gaussSphereRand<V2f, T> >::vectorise )
-		.def( "gaussCircledVector", &Vectoriser<T, V2d, &gaussSphereRand<V2d, T> >::vectoriseSeeded )
+		.def( "gaussCirclefVector", &Vectoriser<T, V2f, &gaussSphereRand<V2f, T> >::vectoriseSeeded )
 		.def( "gaussCircledVector", &Vectoriser<T, V2d, &gaussSphereRand<V2d, T> >::vectorise )
+		.def( "gaussCircledVector", &Vectoriser<T, V2d, &gaussSphereRand<V2d, T> >::vectoriseSeeded )
 		.def( "gaussSpheref", &gaussSphereRand<V3f,T> )
 		.def( "gaussSphered", &gaussSphereRand<V3d,T> )
-		.def( "gaussSpherefVector", &Vectoriser<T, V2f, &gaussSphereRand<V2f, T> >::vectoriseSeeded )
 		.def( "gaussSpherefVector", &Vectoriser<T, V2f, &gaussSphereRand<V2f, T> >::vectorise )
-		.def( "gaussSpheredVector", &Vectoriser<T, V2d, &gaussSphereRand<V2d, T> >::vectoriseSeeded )
+		.def( "gaussSpherefVector", &Vectoriser<T, V2f, &gaussSphereRand<V2f, T> >::vectoriseSeeded )
 		.def( "gaussSpheredVector", &Vectoriser<T, V2d, &gaussSphereRand<V2d, T> >::vectorise )
+		.def( "gaussSpheredVector", &Vectoriser<T, V2d, &gaussSphereRand<V2d, T> >::vectoriseSeeded )
 		.def( "cosineHemispheref", &cosineHemisphereRand<V3f,T> )
 		.def( "cosineHemisphered", &cosineHemisphereRand<V3d,T> )
-		.def( "cosineHemispherefVector", &Vectoriser<T, V3f, &cosineHemisphereRand<V3f, T> >::vectoriseSeeded )
 		.def( "cosineHemispherefVector", &Vectoriser<T, V3f, &cosineHemisphereRand<V3f, T> >::vectorise )
-		.def( "cosineHemispheredVector", &Vectoriser<T, V3d, &cosineHemisphereRand<V3d, T> >::vectoriseSeeded )
+		.def( "cosineHemispherefVector", &Vectoriser<T, V3f, &cosineHemisphereRand<V3f, T> >::vectoriseSeeded )
 		.def( "cosineHemispheredfVector", &Vectoriser<T, V3d, &cosineHemisphereRand<V3d, T> >::vectorise )
+		.def( "cosineHemispheredVector", &Vectoriser<T, V3d, &cosineHemisphereRand<V3d, T> >::vectoriseSeeded )
 	;
-
+	
 }
 
 void bindImathRandom()

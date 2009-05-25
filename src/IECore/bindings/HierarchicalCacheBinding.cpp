@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -34,14 +34,14 @@
 
 // This include needs to be the very first to prevent problems with warnings
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include <string>
 
-#include "IECore/IndexedIO.h"
-#include "IECore/HierarchicalCache.h"
+#include <IECore/IndexedIO.h>
+#include <IECore/HierarchicalCache.h>
 #include "IECore/CompoundObject.h"
-#include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using namespace boost::python;
 using namespace IECore;
@@ -53,37 +53,37 @@ struct HierarchicalCacheHelper
 {
 	typedef std::vector<HierarchicalCache::HeaderHandle> HeaderHandleVector;
 	typedef std::vector<HierarchicalCache::ObjectHandle> ObjectHandleVector;
-	typedef std::vector<HierarchicalCache::AttributeHandle> AttributeHandleVector;
-
+	typedef std::vector<HierarchicalCache::AttributeHandle> AttributeHandleVector;	
+	
 	static list objects(HierarchicalCachePtr cache)
 	{
 		list objects;
-
+		
 		ObjectHandleVector o;
 		cache->objects(o);
 		for (ObjectHandleVector::const_iterator it = o.begin(); it != o.end(); ++it)
 		{
 			objects.append<std::string>(*it);
 		}
-
-
+		
+		
 		return objects;
 	}
 
 	static list headers(HierarchicalCachePtr cache)
 	{
 		list headers;
-
+		
 		HeaderHandleVector o;
 		cache->headers(o);
 		for (HeaderHandleVector::const_iterator it = o.begin(); it != o.end(); ++it)
 		{
 			headers.append<std::string>(*it);
 		}
-
+		
 		return headers;
 	}
-
+	
 	static list attributes(HierarchicalCachePtr cache, const HierarchicalCache::ObjectHandle &obj, object regex)
 	{
 		list attributes;
@@ -110,10 +110,10 @@ struct HierarchicalCacheHelper
 		{
 			attributes.append<std::string>(*it);
 		}
-
+		
 		return attributes;
 	}
-
+	
 	static list children(HierarchicalCachePtr cache, const HierarchicalCache::ObjectHandle &obj)
 	{
 		list children;
@@ -124,7 +124,7 @@ struct HierarchicalCacheHelper
 		{
 			children.append<std::string>(*it);
 		}
-
+		
 		return children;
 	}
 };
@@ -132,11 +132,12 @@ struct HierarchicalCacheHelper
 void bindHierarchicalCache()
 {
 	const char *bindName = "HierarchicalCache";
-
+	
 	bool (HierarchicalCache::*containsObj)(const HierarchicalCache::ObjectHandle &) = &HierarchicalCache::contains;
 	bool (HierarchicalCache::*containsObjAttr)(const HierarchicalCache::ObjectHandle &, const HierarchicalCache::AttributeHandle &) = &HierarchicalCache::contains;
-
-	RefCountedClass<HierarchicalCache, RefCounted>( bindName )
+	
+	typedef class_< HierarchicalCache, HierarchicalCachePtr > HierarchicalCachePyClass;
+	HierarchicalCachePyClass ( bindName, no_init )
 		.def( init<const std::string &, IndexedIO::OpenMode>() )
 		.def("write", (void (HierarchicalCache::*)( const HierarchicalCache::ObjectHandle &, const HierarchicalCache::AttributeHandle &, ObjectPtr ))&HierarchicalCache::write)
 		.def("writeHeader", &HierarchicalCache::writeHeader)
@@ -145,7 +146,7 @@ void bindHierarchicalCache()
 		.def("readHeader", (ObjectPtr (HierarchicalCache::*) ( const HierarchicalCache::HeaderHandle & ))&HierarchicalCache::readHeader)
 		.def("readHeader", (CompoundObjectPtr (HierarchicalCache::*)())&HierarchicalCache::readHeader)
 		.def("contains", containsObj)
-		.def("contains", containsObjAttr)
+		.def("contains", containsObjAttr)		
 		.def("objects", &HierarchicalCacheHelper::objects)
 		.def("headers", &HierarchicalCacheHelper::headers)
 		.def("attributes", make_function( &HierarchicalCacheHelper::attributes, default_call_policies(), ( boost::python::arg_( "obj" ), boost::python::arg_( "regex" ) = object() ) ) )
@@ -172,5 +173,6 @@ void bindHierarchicalCache()
 		.staticmethod( "rootName" )
 	;
 
+	INTRUSIVE_PTR_PATCH( HierarchicalCache, HierarchicalCachePyClass );
 }
 }

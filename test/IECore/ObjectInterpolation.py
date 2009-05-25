@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -38,7 +38,7 @@ from IECore import *
 class TestObjectInterpolation( unittest.TestCase ) :
 
 	def testSimpleLinearInterpolation( self ) :
-
+	
 		self.assertEqual( linearObjectInterpolation( IntData(1), IntData(2), 0.5 ), None )
 		self.assertEqual( linearObjectInterpolation( FloatData(1), FloatData(2), 0.5 ), FloatData(1.5) )
 		self.assertEqual( linearObjectInterpolation( DoubleData(1), DoubleData(2), 0.5 ), DoubleData(1.5) )
@@ -84,8 +84,9 @@ class TestObjectInterpolation( unittest.TestCase ) :
 		data2 = self.__buildTree( CompoundData, 2 )
 		data3 = self.__buildTree( CompoundData, 3 )
 		self.assertEqual( linearObjectInterpolation( data1, data2, 0.5 ), self.__buildTree( CompoundData, 1.5 ) )
+		self.assertEqual( cosineObjectInterpolation( data1, data2, 0.5 ), self.__buildTree( CompoundData, 1.5 ) )
 		self.assertEqual( cubicObjectInterpolation( data0, data1, data2, data3, 0.5 ), self.__buildTree( CompoundData, 1.5 ) )
-
+		
 	def testCompoundObjectInterpolation( self ):
 
 		data0 = self.__buildTree( CompoundObject, 0 )
@@ -93,10 +94,32 @@ class TestObjectInterpolation( unittest.TestCase ) :
 		data2 = self.__buildTree( CompoundObject, 2 )
 		data3 = self.__buildTree( CompoundObject, 3 )
 		self.assertEqual( linearObjectInterpolation( data1, data2, 0.5 ), self.__buildTree( CompoundObject, 1.5 ) )
+		self.assertEqual( cosineObjectInterpolation( data1, data2, 0.5 ), self.__buildTree( CompoundObject, 1.5 ) )
 		self.assertEqual( cubicObjectInterpolation( data0, data1, data2, data3, 0.5 ), self.__buildTree( CompoundObject, 1.5 ) )
 
-	def testSimpleCubicInterpolation( self ) :
 
+	def testSimpleCosineInterpolation( self ) :
+	
+		self.assertEqual( cosineObjectInterpolation( IntData(1), IntData(2), 0.5 ), None )
+		self.assertEqual( cosineObjectInterpolation( FloatData(1), FloatData(2), 0.5 ), FloatData(1.5) )
+		self.assertEqual( cosineObjectInterpolation( DoubleData(1), DoubleData(2), 0.5 ), DoubleData(1.5) )
+		self.assertEqual( cosineObjectInterpolation( V2fData( V2f(1) ), V2fData( V2f(2) ), 0.5 ), V2fData( V2f(1.5) ) )
+		self.assertEqual( cosineObjectInterpolation( V3fData( V3f(1) ), V3fData( V3f(2) ), 0.5 ), V3fData( V3f(1.5) ) )
+		self.assertEqual( cosineObjectInterpolation( V2dData( V2d(1) ), V2dData( V2d(2) ), 0.5 ), V2dData( V2d(1.5) ) )
+		self.assertEqual( cosineObjectInterpolation( V3dData( V3d(1) ), V3dData( V3d(2) ), 0.5 ), V3dData( V3d(1.5) ) )
+
+	def testVectorCosineInterpolation( self ):
+
+		self.assertEqual( cosineObjectInterpolation( IntVectorData( [1] ), IntVectorData( [2] ), 0.5 ), None )
+		self.assertEqual( cosineObjectInterpolation( FloatVectorData( [1]), FloatVectorData( [2] ), 0.5 ), FloatVectorData([1.5]) )
+		self.assertEqual( cosineObjectInterpolation( DoubleVectorData( [1]), DoubleVectorData( [2] ), 0.5 ), DoubleVectorData([1.5]) )
+		self.assertEqual( cosineObjectInterpolation( V2fVectorData( [V2f(1)] ), V2fVectorData( [V2f(2)] ), 0.5 ), V2fVectorData( [V2f(1.5)] ) )
+		self.assertEqual( cosineObjectInterpolation( V3fVectorData( [V3f(1)] ), V3fVectorData( [V3f(2)] ), 0.5 ), V3fVectorData( [V3f(1.5)] ) )
+		self.assertEqual( cosineObjectInterpolation( V2dVectorData( [V2d(1)] ), V2dVectorData( [V2d(2)] ), 0.5 ), V2dVectorData( [V2d(1.5)] ) )
+		self.assertEqual( cosineObjectInterpolation( V3dVectorData( [V3d(1)] ), V3dVectorData( [V3d(2)] ), 0.5 ), V3dVectorData( [V3d(1.5)] ) )
+
+	def testSimpleCubicInterpolation( self ) :
+	
 		self.assertEqual( cubicObjectInterpolation( IntData(1), IntData(2), IntData(3), IntData(4), 0.5 ), None )
 		self.assertEqual( cubicObjectInterpolation( FloatData(1), FloatData(2), FloatData(3), FloatData(4), 0.5 ), FloatData(2.5) )
 		self.assertEqual( cubicObjectInterpolation( DoubleData(1), DoubleData(2), DoubleData(3), DoubleData(4), 0.5 ), DoubleData(2.5) )
@@ -114,7 +137,7 @@ class TestObjectInterpolation( unittest.TestCase ) :
 		self.assertEqual( cubicObjectInterpolation( V3fVectorData( [V3f(1)] ), V3fVectorData( [V3f(2)] ), V3fVectorData( [V3f(3)] ), V3fVectorData( [V3f(4)] ), 0.5 ), V3fVectorData( [V3f(2.5)] ) )
 		self.assertEqual( cubicObjectInterpolation( V2dVectorData( [V2d(1)] ), V2dVectorData( [V2d(2)] ), V2dVectorData( [V2d(3)] ), V2dVectorData( [V2d(4)] ), 0.5 ), V2dVectorData( [V2d(2.5)] ) )
 		self.assertEqual( cubicObjectInterpolation( V3dVectorData( [V3d(1)] ), V3dVectorData( [V3d(2)] ), V3dVectorData( [V3d(3)] ), V3dVectorData( [V3d(4)] ), 0.5 ), V3dVectorData( [V3d(2.5)] ) )
-
+		
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main()   

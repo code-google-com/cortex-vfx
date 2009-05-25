@@ -38,6 +38,7 @@
 #include "IECoreMaya/StatusException.h"
 #include "IECoreMaya/bindings/FromMayaPlugConverterBinding.h"
 
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 #include "maya/MSelectionList.h"
@@ -48,8 +49,14 @@ using namespace boost::python;
 
 void IECoreMaya::bindFromMayaPlugConverter()
 {
-	IECore::RunTimeTypedClass<FromMayaPlugConverter>()
+	typedef class_<FromMayaPlugConverter, FromMayaPlugConverterPtr, boost::noncopyable, bases<FromMayaConverter> > FromMayaPlugConverterPyClass;
+
+	FromMayaPlugConverterPyClass( "FromMayaPlugConverter", no_init )
 		.def( "convert", &FromMayaPlugConverter::convert )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( FromMayaPlugConverter )
 		.def( "create", &FromMayaPlugConverter::create, ( arg_( "plug" ), arg_( "resultType" ) = IECore::InvalidTypeId ) ).staticmethod( "create" )
 	;
+	
+	INTRUSIVE_PTR_PATCH( FromMayaPlugConverter, FromMayaPlugConverterPyClass );
+	implicitly_convertible<FromMayaPlugConverterPtr, FromMayaConverterPtr>();
 }

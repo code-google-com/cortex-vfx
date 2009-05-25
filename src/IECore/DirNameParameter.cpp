@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,15 +46,9 @@ using namespace boost;
 using namespace std;
 using namespace IECore;
 
-IE_CORE_DEFINEOBJECTTYPEDESCRIPTION( DirNameParameter );
-
-DirNameParameter::DirNameParameter()
-{
-}
-
 DirNameParameter::DirNameParameter( const std::string &name, const std::string &description,
 			const std::string &defaultValue, bool allowEmptyString,  PathParameter::CheckType check,
-			const StringParameter::PresetsContainer &presets, bool presetsOnly, ConstCompoundObjectPtr userData )
+			const StringParameter::PresetsMap &presets, bool presetsOnly, ConstCompoundObjectPtr userData )
 	:	PathParameter( name, description, defaultValue, allowEmptyString, check, presets, presetsOnly, userData )
 {
 }
@@ -65,7 +59,7 @@ bool DirNameParameter::valueValid( ConstObjectPtr value, std::string *reason ) c
 	{
 		return false;
 	}
-
+	
 	ConstStringDataPtr s = static_pointer_cast<const StringData>( value );
 
 	// empty check
@@ -75,7 +69,7 @@ bool DirNameParameter::valueValid( ConstObjectPtr value, std::string *reason ) c
 		// skip the other checks
 		return true;
 	}
-
+	
 	// dir type check
 	if( boost::filesystem::exists(boost::filesystem::path(s->readable())) &&
 		 !boost::filesystem::is_directory(boost::filesystem::path(s->readable())))
@@ -87,33 +81,4 @@ bool DirNameParameter::valueValid( ConstObjectPtr value, std::string *reason ) c
 		return false;
 	}
 	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Object implementation
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void DirNameParameter::copyFrom( ConstObjectPtr other, CopyContext *context )
-{
-	PathParameter::copyFrom( other, context );
-}
-
-void DirNameParameter::save( SaveContext *context ) const
-{
-	PathParameter::save( context );
-}
-
-void DirNameParameter::load( LoadContextPtr context )
-{
-	PathParameter::load( context );
-}
-
-bool DirNameParameter::isEqualTo( ConstObjectPtr other ) const
-{
-	return PathParameter::isEqualTo( other );
-}
-
-void DirNameParameter::memoryUsage( Object::MemoryAccumulator &a ) const
-{
-	PathParameter::memoryUsage( a );
 }

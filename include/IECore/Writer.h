@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -58,10 +58,10 @@ class Writer : public Op
 
 		/// Creates and returns a Writer appropriate for saving the
 		/// specified object to the specified file (the file extension is
-		/// used to determine format).
+		/// used to determine format). 
 		/// Throws an Exception if no suitable writer can be found.
 		static WriterPtr create( ObjectPtr object, const std::string &fileName );
-
+		
 		/// Returns the name of the file this Writer
 		/// is set to create. This is just a convenience returning the equivalent of
 		/// parameters()->parameter<FileNameParameter>( "fileName" )->getTypedValue().
@@ -70,50 +70,46 @@ class Writer : public Op
 		/// to write the file. This is just a convenience returning the equivalent of
 		/// parameters()->parameter<Parameter>( "object" )->getValue().
 		ConstObjectPtr object() const;
-
+		
 		/// Writes object() to fileName(). This just calls operate() and is provided
 		/// for backwards compatibility and pretty syntax.
 		void write();
-
+						
 		/// Fills the passed vector with all the extensions for which a Writer is
 		/// available. Extensions are of the form "tif" - ie without a preceding '.'.
 		static void supportedExtensions( std::vector<std::string> &extensions );
-
-		/// Fills the passed vector with all the extensions for which a Writer of, or inherited from, the given type is
-		/// available. Extensions are of the form "tif" - ie without a preceding '.'.
-		static void supportedExtensions( TypeId typeId, std::vector<std::string> &extensions );
-
+		
 	protected :
-
+	
 		Writer( const std::string &name, const std::string &description, TypeId writableType );
 		Writer( const std::string &name, const std::string &description, const ObjectParameter::TypeIdSet &writableTypes );
-
+	
 		/// Implemented to call doWrite(), so derived classes need only implement that.
 		ObjectPtr doOperation( ConstCompoundObjectPtr operands );
-
+		
 		/// Must be implemented by subclasses to write object() to fileName(). Implementation
 		/// should throw an Exception on failure.
 		/// \todo Surely doWrite should be passed the operands that are passed to doOperation?
 		virtual void doWrite() = 0;
-
+	
 		/// Definition of a function which can create a Writer when
 		/// given an object and fileName.
 		typedef WriterPtr (*CreatorFn)( ObjectPtr object, const std::string &fileName );
 		/// Definition of a function  to answer the
 		/// question can this object be written to this file?
 		typedef bool (*CanWriteFn)( ConstObjectPtr object, const std::string &fileName );
-
+		
 		/// Registers a Writer type which is capable of writing files ending with
 		/// the space separated extensions specified (e.g. "tif tiff"). Before creating a Writer the canWrite function
 		/// will be called as a final check that the Writer is appropriate for the given Object type - if this returns true
 		/// then the creator function will then be called. Typically
 		/// you will not call this function directly to register a writer type - you will instead use
 		/// the registration utility class below.
-		static void registerWriter( const std::string &extensions, CanWriteFn canWrite, CreatorFn creator, TypeId typeId );
-
+		static void registerWriter( const std::string &extensions, CanWriteFn canWrite, CreatorFn creator );
+	
 		/// This utility class is provided to help with Writer registration. By having a private static
 		/// const instance of one of these in your class, it will call registerWriter() for you when
-		/// it is constructed. It assumes your Writer class has a constructor taking a ConstObjectPtr and a fileName as
+		/// it is constructed. It assumes your Writer class has a constructor taking a ConstObjectPtr and a fileName as 
 		/// const std::string and also has a static canWrite function matching the CanWriteFn type.
 		template<class T>
 		class WriterDescription
@@ -123,21 +119,20 @@ class Writer : public Op
 			private :
 				static WriterPtr creator( ObjectPtr object, const std::string &fileName );
 		};
-
+		
 		ParameterPtr m_objectParameter;
 		FileNameParameterPtr m_fileNameParameter;
-
+	
 	private :
-
+		
 		struct WriterFns
 		{
 			CreatorFn creator;
 			CanWriteFn canWrite;
-			TypeId typeId;
 		};
 		typedef std::multimap<std::string, WriterFns> ExtensionsToFnsMap;
 		static ExtensionsToFnsMap *extensionsToFns();
-
+		
 		void constructParameters( void );
 };
 

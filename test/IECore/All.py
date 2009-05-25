@@ -32,12 +32,6 @@
 #
 ##########################################################################
 
-import warnings
-warnings.filterwarnings( "error", "Access to Parameters as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Access to CompoundObject children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Access to CompoundParameter children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Specifying presets as a dictionary is deprecated - pass a tuple of tuples instead.", DeprecationWarning )
-
 import unittest
 import IECore
 import sys
@@ -98,7 +92,6 @@ from ReversedFrameList import *
 from BinaryFrameList import *
 from PointsExpressionOp import *
 from FrameList import *
-from FrameListParameter import *
 from Struct import *
 from Enum import *
 from HeaderGenerator import *
@@ -193,13 +186,6 @@ from TimeDurationDataTest import *
 from TimePeriodDataTest import *
 from PatchMeshPrimitiveTest import *
 from CurveExtrudeOp import *
-from ParameterisedProceduralTest import *
-from LevenbergMarquardtTest import *
-from TypedDataTest import *
-from DataTraitsTest import *
-from ColorSpaceTransformOpTest import *
-from TGAImageReaderTest import *
-from TGAImageWriterTest import *
 
 if IECore.withTIFF() :
 	from TIFFImageReader import *
@@ -208,19 +194,19 @@ if IECore.withTIFF() :
 if IECore.withJPEG() :
 	from JPEGImageReader import *
 	from JPEGImageWriter import *
-
+	
 if IECore.withFreeType() :
 	from FontTest import *
 
 class SplitStream :
 
 	def __init__( self ) :
-
-		self.__f = open( "test/IECore/resultsPython.txt", 'w' )
+	
+		self.__f = open( "test/IECore/resultsPython.txt", 'w' )		
 
 	def write( self, l ) :
 
 		sys.stderr.write( l )
 		self.__f.write( l )
 
-unittest.TestProgram( testRunner = unittest.TextTestRunner( stream = SplitStream(), verbosity = 2 ) )
+unittest.TestProgram( testRunner = unittest.TextTestRunner( stream = SplitStream(), verbosity = 2 ) )		

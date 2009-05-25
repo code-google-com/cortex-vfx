@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/bindings/PatchMeshPrimitiveBinding.h"
 #include "IECore/PatchMeshPrimitive.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -45,17 +46,22 @@ namespace IECore
 
 void bindPatchMeshPrimitive()
 {
-	RunTimeTypedClass<PatchMeshPrimitive>()
+	typedef class_<PatchMeshPrimitive, PatchMeshPrimitivePtr, bases<Primitive>, boost::noncopyable> PatchMeshPrimitivePyClass;
+	PatchMeshPrimitivePyClass( "PatchMeshPrimitive", no_init )
 		.def( init< unsigned int, unsigned int , optional<const CubicBasisf &, const CubicBasisf &, bool, bool, ConstV3fVectorDataPtr> >() )
 		.def( "uBasis", &PatchMeshPrimitive::uBasis, return_value_policy<copy_const_reference>() )
 		.def( "vBasis", &PatchMeshPrimitive::vBasis, return_value_policy<copy_const_reference>() )
 		.def( "uPoints", &PatchMeshPrimitive::uPoints )
-		.def( "vPoints", &PatchMeshPrimitive::vPoints )
+		.def( "vPoints", &PatchMeshPrimitive::vPoints )	
 		.def( "uPatches", &PatchMeshPrimitive::uPatches )
-		.def( "vPatches", &PatchMeshPrimitive::vPatches )
+		.def( "vPatches", &PatchMeshPrimitive::vPatches )		
 		.def( "uPeriodic", &PatchMeshPrimitive::uPeriodic )
-		.def( "vPeriodic", &PatchMeshPrimitive::vPeriodic )
+		.def( "vPeriodic", &PatchMeshPrimitive::vPeriodic )		
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( PatchMeshPrimitive )
 	;
+	INTRUSIVE_PTR_PATCH( PatchMeshPrimitive, PatchMeshPrimitivePyClass );
+	implicitly_convertible<PatchMeshPrimitivePtr, PrimitivePtr>();
+	implicitly_convertible<PatchMeshPrimitivePtr, ConstPatchMeshPrimitivePtr>();
 }
-
+	
 } // namespace IECore

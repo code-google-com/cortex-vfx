@@ -51,7 +51,7 @@ using namespace IECoreMaya;
 const MString ObjectData::typeName( "ieObjectData" );
 const MTypeId ObjectData::id( ObjectDataId );
 
-ObjectData::ObjectData() : m_copyMode( Deep ), m_object( 0 )
+ObjectData::ObjectData() : m_object( 0 )
 {
 }
 
@@ -109,13 +109,13 @@ MStatus ObjectData::readASCII( const MArgList &argList, unsigned int &endOfTheLa
 }
 
 MStatus ObjectData::readBinary( istream& in, unsigned length )
-{
+{	
 	CharVectorDataPtr buf = new CharVectorData( );
 	buf->writable().resize( length );
 	CharVectorData::ValueType &data = buf->writable();
 
 	in.read( &data[0], length );
-
+	
 	try
 	{
 		MemoryIndexedIOPtr io = new MemoryIndexedIO( buf, "/", IndexedIO::Exclusive | IndexedIO::Read );
@@ -173,7 +173,7 @@ MStatus ObjectData::writeBinary( ostream& out )
 			const CharVectorData::ValueType &data = buf->readable();
 
 			int sz = data.size();
-			out.write( &data[0], sz );
+			out.write( &data[0], sz );			
 		}
 		catch ( std::exception &e )
 		{
@@ -185,28 +185,12 @@ MStatus ObjectData::writeBinary( ostream& out )
 	return MS::kSuccess;
 }
 
-void ObjectData::setCopyMode( CopyMode mode )
-{
-	m_copyMode = mode;
-}
-
-ObjectData::CopyMode ObjectData::getCopyMode() const
-{
-	return m_copyMode;
-}
-
 void ObjectData::copy( const MPxData &other )
 {
 	const ObjectData *otherData = dynamic_cast<const ObjectData *>( &other );
-	if( otherData->m_copyMode==Deep )
-	{
-		m_object = otherData->m_object ? otherData->m_object->copy() : 0;
-	}
-	else
-	{
-		m_object = otherData->m_object;
-	}
-	m_copyMode = otherData->m_copyMode;
+	assert( otherData );
+
+	setObject( otherData->getObject() );
 }
 
 MTypeId ObjectData::typeId() const
@@ -229,7 +213,14 @@ ConstObjectPtr ObjectData::getObject() const
 	return m_object;
 }
 
-void ObjectData::setObject( ObjectPtr otherObject )
+void ObjectData::setObject( ConstObjectPtr otherObject )
 {
-	m_object = otherObject;
+	if ( otherObject )
+	{
+		m_object = otherObject->copy();
+	}
+	else
+	{
+		m_object = 0;
+	}
 }

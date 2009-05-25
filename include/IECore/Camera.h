@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,11 +45,11 @@ IE_CORE_FORWARDDECLARE( Transform )
 class Camera : public PreWorldRenderable
 {
 	public:
-
+	
 		Camera( const std::string &name = "default",
 			TransformPtr transform = 0, CompoundDataPtr parameters = new CompoundData );
 		virtual ~Camera();
-
+				
 		IE_CORE_DECLAREOBJECT( Camera, PreWorldRenderable );
 
 		void setName( const std::string &name );
@@ -59,7 +59,7 @@ class Camera : public PreWorldRenderable
 		/// May return 0 if no transform has been applied.
 		TransformPtr getTransform();
 		ConstTransformPtr getTransform() const;
-
+		
 		CompoundDataMap &parameters();
 		const CompoundDataMap &parameters() const;
 		/// This is mostly of use for the binding - the parameters()
@@ -73,14 +73,14 @@ class Camera : public PreWorldRenderable
 		/// parameters will be computed based on the existing parameters.
 		void addStandardParameters();
 
-		virtual void render( RendererPtr renderer ) const;
-
+		virtual void render( RendererPtr renderer );
+			
 	private:
-
+	
 		std::string m_name;
 		TransformPtr m_transform;
 		CompoundDataPtr m_parameters;
-
+	
 		static const unsigned int m_ioVersion;
 };
 

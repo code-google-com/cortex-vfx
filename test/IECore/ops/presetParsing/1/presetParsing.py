@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -35,32 +35,32 @@
 from IECore import *
 
 class presetParsing( Op ) :
-
+	
 	def __init__( self ) :
-
+	
 		Op.__init__( self,
 			"presetParsing",
 			"An Op to test the parsing of parameter presets.",
-			IntParameter(
+			IntParameter( 
 				name = "result",
 				description = "d",
 				defaultValue = 2,
 			)
 		)
-
+		
 		self.parameters().addParameters(
-
-			[
-
+		
+			[	
+			
 				V3fParameter(
 					name = "h",
 					description = "a v3f",
 					defaultValue = V3fData(),
-					presets = (
-						( "x", V3f( 1, 0, 0 ) ),
-						( "y", V3f( 0, 1, 0 ) ),
-						( "z", V3f( 0, 0, 1 ) )
-					)
+					presets = {
+						"x" : V3f( 1, 0, 0 ),
+						"y" : V3f( 0, 1, 0 ),
+						"z" : V3f( 0, 0, 1 )
+					}
 				),
 
 				V2dParameter(
@@ -80,39 +80,39 @@ class presetParsing( Op ) :
 							name = "j",
 							description = "a v3d",
 							defaultValue = V3dData(),
-							presets = (
-								( "one", V3d( 1 ) ),
-								( "two", V3d( 2 ) )
-							)
+							presets = {
+								"one" : V3d( 1 ),
+								"two" : V3d( 2 )
+							}
 						),
 
 						M44fParameter(
 							name = "k",
 							description = "an m44f",
 							defaultValue = M44fData(),
-							presets = (
-								( "one", M44f( 1 ) ),
-								( "two", M44f( 2 ) )
-							)
+							presets = {
+								"one" : M44f( 1 ),
+								"two" : M44f( 2 )
+							}
 						),
 
 					]
 
 				)
-
+					
 			]
 		)
-
+	
 	def doOperation( self, operands ) :
-
-		assert operands["h"] == V3fData( V3f( 1, 0, 0 ) )
-
-		assert operands["i"] == V2dData( V2d( 0 ) )
-
+		
+		assert operands.h == V3fData( V3f( 1, 0, 0 ) )
+		
+		assert operands.i == V2dData( V2d( 0 ) )
+	
 		compoundPreset = CompoundObject()
-		compoundPreset["j"] = V3dData( V3d( 1 ) )
-		compoundPreset["k"] = M44fData( M44f( 1 ) )
-		assert operands["compound"] == compoundPreset
-
+		compoundPreset.j = V3dData( V3d( 1 ) )
+		compoundPreset.k = M44fData( M44f( 1 ) )
+		assert operands.compound == compoundPreset
+	
 		return IntData( 1 )
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,9 +41,8 @@
 #include <iostream>
 #include <vector>
 #include <string>
-
-#include "boost/test/unit_test.hpp"
-#include "boost/test/floating_point_comparison.hpp"
+#include <boost/test/unit_test.hpp>
+#include <boost/test/floating_point_comparison.hpp>
 #include "boost/random.hpp"
 
 #include "IECore/RadixSort.h"
@@ -61,15 +60,15 @@ struct RadixSortTest
 	void test()
 	{
 		unsigned seed = 42;
-		boost::mt19937 generator( static_cast<boost::mt19937::result_type>( seed ) );
-
+		boost::mt19937 generator( seed );
+		
 		boost::uniform_real<> uni_dist( std::numeric_limits<T>::min(), std::numeric_limits<T>::max() );
 		boost::variate_generator<boost::mt19937&, boost::uniform_real<> > uni( generator, uni_dist );
 
 		// Run 50 tests, each sorting 100000 numbers
 		const unsigned numTests = 50u;
 		const unsigned numValuesPerTest = 100000u;
-
+		
 		for ( unsigned i = 0; i < numTests; i ++ )
 		{
 			std::vector<T> input;

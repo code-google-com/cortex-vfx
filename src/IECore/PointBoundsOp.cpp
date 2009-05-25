@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -34,7 +34,6 @@
 
 #include "IECore/PointBoundsOp.h"
 #include "IECore/VectorTypedData.h"
-#include "IECore/SimpleTypedParameter.h"
 #include "IECore/ObjectParameter.h"
 #include "IECore/CompoundParameter.h"
 #include "IECore/TypedParameter.h"
@@ -46,8 +45,6 @@ using namespace IECore;
 using namespace Imath;
 using namespace std;
 using namespace boost;
-
-IE_CORE_DEFINERUNTIMETYPED( PointBoundsOp );
 
 static TypeId pointAndVelocityTypes[] = { V3fVectorDataTypeId, V3dVectorDataTypeId, InvalidTypeId };
 static TypeId radiusTypes[] = { FloatVectorDataTypeId, DoubleVectorDataTypeId, InvalidTypeId };
@@ -157,7 +154,7 @@ static Box3fDataPtr bound3( typename P::ConstPtr pData, typename R::ConstPtr rDa
 		rLength = rData->readable().size();
 		r = &(rData->readable()[0]);
 	}
-
+	
 	size_t i = 0;
 	for( typename P::ValueType::const_iterator pIt = pVector.begin(); pIt!=pVector.end(); pIt++ )
 	{
@@ -172,7 +169,7 @@ static Box3fDataPtr bound3( typename P::ConstPtr pData, typename R::ConstPtr rDa
 			Point rr( r[i] * rMult );
 			b.min -= rr;
 			b.max += rr;
-
+			
 		}
 		result.extendBy( b );
 		i++;

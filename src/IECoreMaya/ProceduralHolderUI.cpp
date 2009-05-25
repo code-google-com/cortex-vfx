@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,8 +47,10 @@
 #include "IECoreMaya/ProceduralHolderUI.h"
 #include "IECoreMaya/ProceduralHolder.h"
 #include "IECoreMaya/Convert.h"
+#include "IECoreMaya/DisplayStyle.h"
 
 #include "IECore/MessageHandler.h"
+#include "IECore/ClassData.h"
 
 #include "maya/MGlobal.h"
 #include "maya/MDrawData.h"
@@ -65,13 +67,24 @@
 using namespace IECoreMaya;
 using namespace std;
 
+
+struct ProceduralHolderUI::MemberData
+{
+	mutable StateMap m_stateMap;
+	DisplayStyle m_displayStyle;
+};
+
+static IECore::ClassData< ProceduralHolderUI, ProceduralHolderUI::MemberData > g_classData;
+
 ProceduralHolderUI::ProceduralHolderUI()
 	:	m_boxPrimitive( new IECoreGL::BoxPrimitive( Imath::Box3f() ) )
 {
+	g_classData.create( this );
 }
 
 ProceduralHolderUI::~ProceduralHolderUI()
 {
+	g_classData.erase( this );
 }
 
 void *ProceduralHolderUI::creator()
@@ -90,16 +103,16 @@ void ProceduralHolderUI::getDrawRequests( const MDrawInfo &info, bool objectAndA
 
 	// the node we're meant to be drawing
 	ProceduralHolder *proceduralHolder = (ProceduralHolder *)surfaceShape();
-
+	
 	// draw data encapsulating that node
 	MDrawData drawData;
 	getDrawData( proceduralHolder, drawData );
-
+	
 	// a request for the bound if necessary
 	MPlug pDrawBound( proceduralHolder->thisMObject(), ProceduralHolder::aDrawBound );
 	bool drawBound = true;
 	pDrawBound.getValue( drawBound );
-
+	
 	if( drawBound )
 	{
 		MDrawRequest request = info.getPrototype( *this );
@@ -109,7 +122,7 @@ void ProceduralHolderUI::getDrawRequests( const MDrawInfo &info, bool objectAndA
 		setWireFrameColors( request, info.displayStatus() );
 		requests.add( request );
 	}
-
+	
 	// requests for the scene if necessary
 	MPlug pGLPreview( proceduralHolder->thisMObject(), ProceduralHolder::aGLPreview );
 	bool glPreview = false;
@@ -147,7 +160,7 @@ void ProceduralHolderUI::getDrawRequests( const MDrawInfo &info, bool objectAndA
 				bool transparent = false;
 				pT.getValue( transparent );
 			}
-			solidRequest.setIsTransparent( transparent );
+			solidRequest.setIsTransparent( transparent );		
 			solidRequest.setToken( SceneDrawMode );
 			requests.add( solidRequest );
 			// and add another request for wireframe drawing if we're selected
@@ -159,10 +172,10 @@ void ProceduralHolderUI::getDrawRequests( const MDrawInfo &info, bool objectAndA
 				wireRequest.setToken( SceneDrawMode );
 				setWireFrameColors( wireRequest, info.displayStatus() );
 				wireRequest.setComponent( MObject::kNullObj );
-
-				if ( !objectAndActiveOnly )
+				
+				if ( !objectAndActiveOnly ) 
 				{
-
+					
 					if ( proceduralHolder->hasActiveComponents() )
 					{
 						MObjectArray components = proceduralHolder->activeComponents();
@@ -170,7 +183,7 @@ void ProceduralHolderUI::getDrawRequests( const MDrawInfo &info, bool objectAndA
 		   				wireRequest.setComponent( component );
 					}
 				}
-
+			
 				requests.add( wireRequest );
 			}
 		}
@@ -180,12 +193,12 @@ void ProceduralHolderUI::getDrawRequests( const MDrawInfo &info, bool objectAndA
 			request.setDrawData( drawData );
 			setWireFrameColors( request, info.displayStatus() );
 			request.setToken( SceneDrawMode );
-
+			
 			request.setComponent( MObject::kNullObj );
-
-			if ( !objectAndActiveOnly )
-			{
-
+				
+			if ( !objectAndActiveOnly ) 
+			{	
+				
 				if ( proceduralHolder->hasActiveComponents() )
 				{
 					MObjectArray components = proceduralHolder->activeComponents();
@@ -193,10 +206,10 @@ void ProceduralHolderUI::getDrawRequests( const MDrawInfo &info, bool objectAndA
 		   			request.setComponent( component );
 				}
 			}
-
+			
 			requests.add( request );
 		}
-	}
+	}	
 }
 
 void ProceduralHolderUI::setWireFrameColors( MDrawRequest &request, M3dView::DisplayStatus status )
@@ -216,7 +229,7 @@ void ProceduralHolderUI::setWireFrameColors( MDrawRequest &request, M3dView::Dis
 			request.setColor( 8, M3dView::kActiveColors );
 			break;
 		case M3dView::kHilite :
-			request.setColor( 17, M3dView::kActiveColors );
+			request.setColor( 17, M3dView::kActiveColors );	
 			break;
 		case M3dView::kTemplate :
 			request.setColor( 2, M3dView::kDormantColors );
@@ -237,22 +250,22 @@ void ProceduralHolderUI::draw( const MDrawRequest &request, M3dView &view ) cons
 	MDrawData drawData = request.drawData();
 	ProceduralHolder *proceduralHolder = (ProceduralHolder *)drawData.geometry();
 	assert( proceduralHolder );
-
+	
 	view.beginGL();
-
+	
 		// maya can sometimes leave an error from it's own code,
 		// and we don't want that to confuse us in our drawing code.
 		while( glGetError()!=GL_NO_ERROR )
 		{
 		}
-
+	
 		try
 		{
 
 			// draw the bound if asked
 			if( request.token()==BoundDrawMode )
 			{
-				IECoreGL::ConstStatePtr wireframeState = m_displayStyle.baseState( M3dView::kWireFrame );
+				IECoreGL::ConstStatePtr wireframeState = g_classData[this].m_displayStyle.baseState( M3dView::kWireFrame );
 				m_boxPrimitive->setBox( IECore::convert<Imath::Box3f>( proceduralHolder->boundingBox() ) );
 				glPushAttrib( wireframeState->mask() );
 					(boost::static_pointer_cast<IECoreGL::Renderable>( m_boxPrimitive ))->render( wireframeState );
@@ -263,10 +276,10 @@ void ProceduralHolderUI::draw( const MDrawRequest &request, M3dView &view ) cons
 			if( request.token()==SceneDrawMode )
 			{
 				resetHilites();
-
+			
 				IECoreGL::ConstScenePtr scene = proceduralHolder->scene();
 				if( scene )
-				{
+				{									
 					bool popTexture = false;
 					if( request.displayStyle()==M3dView::kGouraudShaded || request.displayStyle()==M3dView::kFlatShaded )
 					{
@@ -283,72 +296,72 @@ void ProceduralHolderUI::draw( const MDrawRequest &request, M3dView &view ) cons
 						}
 					}
 
-					IECoreGL::ConstStatePtr displayState = m_displayStyle.baseState( (M3dView::DisplayStyle)request.displayStyle() );
+					IECoreGL::ConstStatePtr displayState = g_classData[this].m_displayStyle.baseState( (M3dView::DisplayStyle)request.displayStyle() );
 
 					if ( request.component() != MObject::kNullObj )
-					{
+					{								
 						MDoubleArray col;
 						s = MGlobal::executeCommand( "colorIndex -q 21", col );
 						assert( s );
 						IECoreGL::WireframeColorStateComponentPtr hilite = new IECoreGL::WireframeColorStateComponent( Imath::Color4f( col[0], col[1], col[2], 1.0f ) );
-
+																						
 						MFnSingleIndexedComponent fnComp( request.component(), &s );
 						assert( s );
-
-						int len = fnComp.elementCount( &s );
+			
+						int len = fnComp.elementCount( &s ); 
 						assert( s );
-						for ( int j = 0; j < len; j++ )
-						{
+						for ( int j = 0; j < len; j++ ) 
+						{ 
 							int compId = fnComp.element(j);
 
-							assert( proceduralHolder->m_componentToGroupMap.find( compId ) != proceduralHolder->m_componentToGroupMap.end() );
+							assert( proceduralHolder->componentToGroupMap().find( compId ) != proceduralHolder->componentToGroupMap().end() );
 
-							hiliteGroups(
-								proceduralHolder->m_componentToGroupMap[compId],
+							hiliteGroups( 
+								proceduralHolder->componentToGroupMap()[compId], 
 								hilite,
 								boost::const_pointer_cast<IECoreGL::WireframeColorStateComponent>( displayState->get< IECoreGL::WireframeColorStateComponent >() )
-							);
-						}
+							);								
+						} 
 					}
-
+					
 					scene->render( displayState );
 					if( popTexture )
 					{
 						glPopAttrib();
 					}
 				}
-			}
+			}	
 		}
 		catch( const IECoreGL::Exception &e )
 		{
 			// much better to catch and report this than to let the application die
 			IECore::msg( IECore::Msg::Error, "ProceduralHolderUI::draw", boost::format( "IECoreGL Exception : %s" ) % e.what() );
 		}
-
+		
 	view.endGL();
 }
 
 bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &selectionList, MPointArray &worldSpaceSelectPts ) const
 {
 	MStatus s;
-
+	
 	M3dView view = selectInfo.view();
-
+	
 	ProceduralHolder *proceduralHolder = static_cast<ProceduralHolder *>( surfaceShape() );
 	assert( proceduralHolder );
-
+		
 	bool hilited = (selectInfo.displayStatus() == M3dView::kHilite);
-
+				
 	static const unsigned int selectBufferSize = 20000; // enough to select 5000 distinct objects
 	static GLuint selectBuffer[selectBufferSize];
 
 	IECoreGL::ConstScenePtr scene = proceduralHolder->scene();
 	if( scene )
-	{
+	{		
 		view.beginSelect( &selectBuffer[0], selectBufferSize );
 		glInitNames();
 		glPushName( 0 );
-		scene->render( m_displayStyle.baseState( selectInfo.displayStyle() ) );
+		scene->render( g_classData[this].m_displayStyle.baseState( selectInfo.displayStyle() ) );
 	}
 	else
 	{
@@ -358,7 +371,7 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 	int numHits = view.endSelect();
 
 	// Get the hits out of the select buffer.
-	typedef std::list<IECoreGL::HitRecord> HitRecordList;
+	typedef std::list<IECoreGL::HitRecord> HitRecordList;		
 	HitRecordList hits;
 	GLuint *hitRecord = selectBuffer;
 	for( int i=0; i<numHits; i++ )
@@ -371,7 +384,7 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 	/// Process the hits
 	bool selected = false;
 	MFnSingleIndexedComponent fnComponent;
-	MObject component = fnComponent.create( MFn::kMeshPolygonComponent, &s );
+	MObject component = fnComponent.create( MFn::kMeshPolygonComponent, &s );	
 	assert( s );
 	bool foundClosest = false;
 	int closestCompId = -1;
@@ -380,10 +393,10 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 	{
 		const std::string &hitName = it->name.value();
 		selected = true;
-
-		ProceduralHolder::ComponentsMap::const_iterator compIt = proceduralHolder->m_componentsMap.find( hitName );
-		assert( compIt != proceduralHolder->m_componentsMap.end() );
-
+		
+		ProceduralHolder::ComponentsMap::const_iterator compIt = proceduralHolder->componentsMap().find( hitName );
+		assert( compIt != proceduralHolder->componentsMap().end() );
+				
 		int compId = compIt->second.first;
 
 		if ( selectInfo.singleSelection()  )
@@ -405,28 +418,28 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 		}
 		else
 		{
-			assert( proceduralHolder->m_componentToGroupMap.find( compId ) != proceduralHolder->m_componentToGroupMap.end() );
-
-			const ProceduralHolder::ComponentToGroupMap::mapped_type &groups = proceduralHolder->m_componentToGroupMap[compId];
+			assert( proceduralHolder->componentToGroupMap().find( compId ) != proceduralHolder->componentToGroupMap().end() );
+			
+			const ProceduralHolder::ComponentToGroupMap::mapped_type &groups = proceduralHolder->componentToGroupMap()[compId];			
 			for ( ProceduralHolder::ComponentToGroupMap::mapped_type::const_iterator jit = groups.begin(); jit != groups.end(); ++jit )
-			{
+			{			
 				const IECoreGL::GroupPtr &group = jit->second;
-
+				
 				MPoint pt = IECore::convert< MPoint > ( group->bound().center() );
 				pt *= selectInfo.selectPath().inclusiveMatrix();
-
-				worldSpaceSelectPts.append( pt );
+						
+				worldSpaceSelectPts.append( pt );				
 			}
-
+			
 			fnComponent.addElement( compId );
-		}
+		}		
 	}
-
+	
 	if ( !selected )
 	{
 		return false;
 	}
-
+	
 	MPoint selectionPoint( 0, 0, 0, 1 );
 	if ( hilited )
 	{
@@ -434,25 +447,25 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 		{
 			assert( foundClosest );
 			assert( closestCompId >= 0 );
-
-			assert( proceduralHolder->m_componentToGroupMap.find( closestCompId ) != proceduralHolder->m_componentToGroupMap.end() );
-
-			const ProceduralHolder::ComponentToGroupMap::mapped_type &groups = proceduralHolder->m_componentToGroupMap[closestCompId];
+			
+			assert( proceduralHolder->componentToGroupMap().find( closestCompId ) != proceduralHolder->componentToGroupMap().end() );
+			
+			const ProceduralHolder::ComponentToGroupMap::mapped_type &groups = proceduralHolder->componentToGroupMap()[closestCompId];
 			for ( ProceduralHolder::ComponentToGroupMap::mapped_type::const_iterator jit = groups.begin(); jit != groups.end(); ++jit )
-			{
+			{			
 				const IECoreGL::GroupPtr &group = jit->second;
-
+				
 				MPoint pt = IECore::convert< MPoint > ( group->bound().center() );
 				pt *= selectInfo.selectPath().inclusiveMatrix();
-
-				worldSpaceSelectPts.append( pt );
+				
+				worldSpaceSelectPts.append( pt );				
 			}
-
+			
 			fnComponent.addElement( closestCompId );
 		}
-
+	
 		const MDagPath &path = selectInfo.multiPath();
-
+			
 		MSelectionList item;
 		item.add( path, component );
 
@@ -460,24 +473,24 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 		selectInfo.addSelection(
 			item, selectionPoint,
 			selectionList, worldSpaceSelectPts,
-			MSelectionMask::kSelectObjectsMask,
+			MSelectionMask::kSelectObjectsMask, 
 			true );
 	}
 	else
 	{
-		MSelectionList item;
+		MSelectionList item;		
 		item.add( selectInfo.selectPath() );
-
+		
 		if ( selectInfo.singleSelection() )
 		{
 			/// \todo Find a way of creating a PrimitiveEvaluator to fire the selection ray at
 			selectionPoint = proceduralHolder->boundingBox().center();
 			selectionPoint *= selectInfo.selectPath().inclusiveMatrix();
 		}
-
-		selectInfo.addSelection(
-			item, selectionPoint,
-			selectionList, worldSpaceSelectPts,
+		
+		selectInfo.addSelection( 
+			item, selectionPoint, 
+			selectionList, worldSpaceSelectPts, 
 			MSelectionMask::kSelectObjectsMask,
 			false );
 	}
@@ -490,21 +503,23 @@ void ProceduralHolderUI::hiliteGroups( const ProceduralHolder::ComponentToGroupM
 	assert( base );
 	for( ProceduralHolder::ComponentToGroupMap::mapped_type::const_iterator it = groups.begin(); it != groups.end(); ++it )
 	{
-		unhiliteGroupChildren( it->first, it->second, base );
+		unhiliteGroupChildren( it->first, it->second, base );		
 	}
-
+	
+	StateMap &m_stateMap = g_classData[this].m_stateMap;
+		
 	for( ProceduralHolder::ComponentToGroupMap::mapped_type::const_iterator it = groups.begin(); it != groups.end(); ++it )
 	{
 		IECoreGL::GroupPtr group = it->second;
-		assert( group );
+		assert( group );		
 
 		if ( m_stateMap.find( group.get() ) == m_stateMap.end() )
 		{
 			IECoreGL::StatePtr oldState = new IECoreGL::State( *(group->getState()) );
-			assert( oldState );
+			assert( oldState );		
 			m_stateMap[ group.get() ] = oldState;
 		}
-
+	
 		group->getState()->add( hilite );
 	}
 }
@@ -513,7 +528,9 @@ void ProceduralHolderUI::unhiliteGroupChildren( const std::string &name, IECoreG
 {
 	assert( base );
 	assert( group );
-
+	
+	StateMap &m_stateMap = g_classData[this].m_stateMap;	
+	
 	/// Add state so that the group hilite state doesn't propogate down the hierarchy past the given name
 	IECoreGL::ConstNameStateComponentPtr n = group->getState()->get< IECoreGL::NameStateComponent >();
 	if ( n && n->name() != name )
@@ -521,34 +538,36 @@ void ProceduralHolderUI::unhiliteGroupChildren( const std::string &name, IECoreG
 		if ( m_stateMap.find( group.get() ) == m_stateMap.end() )
 		{
 			IECoreGL::StatePtr oldState = new IECoreGL::State( *(group->getState()) );
-			assert( oldState );
+			assert( oldState );		
 			m_stateMap[ group.get() ] = oldState;
 		}
 
 		group->getState()->add( base );
-		return;
+		return;		
 	}
-
+	
 	const IECoreGL::Group::ChildContainer &children = group->children();
 	for ( IECoreGL::Group::ChildContainer::const_iterator it = children.begin(); it != children.end(); ++it )
 	{
 		assert( *it );
-
-		IECoreGL::GroupPtr childGroup = IECore::runTimeCast< IECoreGL::Group >( *it );
+		
+		IECoreGL::GroupPtr childGroup = IECore::runTimeCast< IECoreGL::Group >( *it );		
 		if ( childGroup )
-		{
-			unhiliteGroupChildren( name, childGroup, base );
+		{		
+			unhiliteGroupChildren( name, childGroup, base );			
 		}
 	}
 }
 
 void ProceduralHolderUI::resetHilites() const
 {
+	StateMap &m_stateMap = g_classData[this].m_stateMap;
+	
 	for ( StateMap::iterator it = m_stateMap.begin(); it != m_stateMap.end(); ++it )
 	{
 		it->first->setState( it->second );
 	}
-
+	
 	m_stateMap.clear();
 }
 

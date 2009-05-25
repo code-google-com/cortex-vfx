@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,8 +52,6 @@ using namespace IECore;
 using namespace Imath;
 using namespace std;
 
-IE_CORE_DEFINERUNTIMETYPED( MappedRandomPointDistributionOp );
-
 MappedRandomPointDistributionOp::MappedRandomPointDistributionOp()
 		:	UniformRandomPointDistributionOp(
 		        staticTypeName(),
@@ -66,12 +64,12 @@ MappedRandomPointDistributionOp::MappedRandomPointDistributionOp()
 	        new ImagePrimitive()
 	);
 
-	StringParameter::PresetsContainer channelNamePresets;
-	channelNamePresets.push_back( StringParameter::Preset( "R", "R" ) );
-	channelNamePresets.push_back( StringParameter::Preset( "G", "G" ) );
-	channelNamePresets.push_back( StringParameter::Preset( "B", "B" ) );
-	channelNamePresets.push_back( StringParameter::Preset( "A", "A" ) );
-	channelNamePresets.push_back( StringParameter::Preset( "Y", "Y" ) );
+	StringParameter::PresetsMap channelNamePresets;
+	channelNamePresets["R"] = "R";
+	channelNamePresets["G"] = "G";
+	channelNamePresets["B"] = "B";
+	channelNamePresets["A"] = "A";
+	channelNamePresets["Y"] = "Y";
 
 	m_channelNameParameter = new StringParameter(
 	        "channelName",
@@ -115,32 +113,32 @@ float MappedRandomPointDistributionOp::density( ConstMeshPrimitivePtr mesh, cons
 	assert( m_imageEvaluator->primitive() );
 	assert( runTimeCast<const ImagePrimitive>( m_imageEvaluator->primitive() ) );
 	assert( m_channelIterator != runTimeCast<const ImagePrimitive>( m_imageEvaluator->primitive() )->variables.end() );
-
+	
 	/// \todo Texture repeat
 	float repeatU = 1.0;
 	float repeatV = 1.0;
-
-	/// \todo Wrap modes
+	
+	/// \todo Wrap modes	
 	bool wrapU = true;
 	bool wrapV = true;
-
+	
 	Imath::V2f placedUv(
 		uv.x * repeatU,
 		uv.y * repeatV
 	);
-
+	
 	if ( wrapU )
 	{
 		placedUv.x = fmod( (double)placedUv.x, 1.0 );
 	}
-
+	
 	if ( wrapV )
 	{
 		placedUv.y = fmod( (double)placedUv.y, 1.0 );
-	}
-
+	}	
+	
 	bool found = m_imageEvaluator->pointAtUV( placedUv, m_result );
-
+		
 	if ( found )
 	{
 		return m_result->floatPrimVar( m_channelIterator->second );

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,14 +39,12 @@
 #define IE_CORE_DISPLAYDRIVER_H
 
 #include <vector>
+#include <boost/function.hpp>
+#include <boost/thread/mutex.hpp>
+#include <OpenEXR/ImathBox.h>
 
-#include "boost/function.hpp"
-#include "boost/thread/mutex.hpp"
-
-#include "OpenEXR/ImathBox.h"
-
-#include "IECore/RunTimeTyped.h"
-#include "IECore/CompoundData.h"
+#include <IECore/RunTimeTyped.h>
+#include <IECore/CompoundData.h>
 
 namespace IECore
 {
@@ -54,9 +52,12 @@ namespace IECore
 
 IE_CORE_FORWARDDECLARE( DisplayDriver );
 
-
-/// Abstract base class for generic image display drivers.
-/// Derived classes should implement the virtual methods that are used as callbacks for opening a new pass, updating an image block and closing the image.
+/*
+* Abstract base class for generic image display drivers.
+* Derived classes should implement the virtual methods that are used as callbacks for opening a new pass, updating an image block and closing the image.
+* \todo derive from RunTimeTyped
+* \todo factory function
+*/
 class DisplayDriver : public RunTimeTyped
 {
 	public:
@@ -102,7 +103,7 @@ class DisplayDriver : public RunTimeTyped
 		};
 		IE_CORE_DECLAREPTR( DisplayDriverCreator )
 
-		// factory function for display drivers.
+		// factory function for display drivers. 
 		static DisplayDriverPtr create( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, const std::vector<std::string> &channelNames, ConstCompoundDataPtr parameters );
 
 		// Registers a factory function for display drivers.

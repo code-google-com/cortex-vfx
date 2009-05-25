@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,15 +46,13 @@
 using namespace IECoreMaya;
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPED( FromMayaObjectConverter );
-
 FromMayaObjectConverter::FromMayaObjectConverter( const std::string &name, const std::string &description, const MObject &object )
 	:	FromMayaConverter( name, description ), m_objectHandle( object )
 {
 
-	StringParameter::PresetsContainer blindDataAttrPrefixPresets;
-	blindDataAttrPrefixPresets.push_back( StringParameter::Preset( "ie", "ie" ) );
-	blindDataAttrPrefixPresets.push_back( StringParameter::Preset( "None", "" ) );
+	StringParameter::PresetsMap blindDataAttrPrefixPresets;
+	blindDataAttrPrefixPresets["ie"] = "ie";
+	blindDataAttrPrefixPresets["None"] = "";
 	m_blindDataAttrPrefixParameter = new StringParameter(
 		"blindDataAttrPrefix",
 		"Any attribute names beginning with this prefix will be added to the blindData dictionary on the converted object. "
@@ -71,10 +69,10 @@ FromMayaObjectConverter::FromMayaObjectConverter( const std::string &name, const
 		"will be removed from the name before saving.",
 		true
 	);
-
+	
 	parameters()->addParameter( m_blindDataAttrPrefixParameter );
 	parameters()->addParameter( m_blindDataRemoveNamespaceParameter );
-
+	
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -99,7 +97,7 @@ bool FromMayaObjectConverter::objectIsAlive() const
 /////////////////////////////////////////////////////////////////////////////////
 // Conversion
 /////////////////////////////////////////////////////////////////////////////////
-
+		
 IECore::ObjectPtr FromMayaObjectConverter::doConversion( IECore::ConstCompoundObjectPtr operands ) const
 {
 	if( !objectIsAlive() )
@@ -124,9 +122,9 @@ void FromMayaObjectConverter::addBlindData( const MObject &object, IECore::Objec
 	{
 		return;
 	}
-
+	
 	CompoundDataMap &blindData = blindDataHolder->blindData()->writable();
-
+	
 	MString blindPrefix = m_blindDataAttrPrefixParameter->getTypedValue().c_str();
 	bool ignoreNamespace = m_blindDataRemoveNamespaceParameter->getTypedValue();
 
@@ -144,7 +142,7 @@ void FromMayaObjectConverter::addBlindData( const MObject &object, IECore::Objec
 		}
 	}
 	blindData[ "name" ] = new StringData( objectName );
-
+	
 	if (blindPrefix == "")
 	{
 		// empty string matches no attributes.
@@ -164,10 +162,10 @@ void FromMayaObjectConverter::addBlindData( const MObject &object, IECore::Objec
 				continue; // we don't want to pick up the children of compound numeric attributes
 			}
 			MString plugName = plug.name();
-
-			// find a converter for the plug
+			
+			// find a converter for the plug		
 			FromMayaConverterPtr converter = FromMayaPlugConverter::create( plug );
-
+			
 			// run the conversion and check we've got data as a result
 			DataPtr data = 0;
 			if( converter )
@@ -182,7 +180,7 @@ void FromMayaObjectConverter::addBlindData( const MObject &object, IECore::Objec
 			blindData[ attrName.asChar() ] = data;
 		}
 	}
-
+	
 
 }
 
@@ -216,7 +214,7 @@ IECore::ConstBoolParameterPtr FromMayaObjectConverter::blindDataRemoveNamespaceP
 FromMayaObjectConverterPtr FromMayaObjectConverter::create( const MObject &object, IECore::TypeId resultType )
 {
 	const TypesToFnsMap *m = typesToFns();
-
+	
 	TypesToFnsMap::const_iterator it = m->find( Types( object.apiType(), resultType ) );
 	if( it!=m->end() )
 	{

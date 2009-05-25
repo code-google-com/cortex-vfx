@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,8 +38,6 @@
 
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPED( Renderer );
-
 Renderer::Renderer()
 {
 }
@@ -48,10 +46,23 @@ Renderer::~Renderer()
 {
 }
 
-Renderer::Procedural::Procedural()
+Renderer::Procedural::Procedural( const std::string &name, const std::string &description )
+	:	Parameterised( name, description )
 {
 }
 
 Renderer::Procedural::~Procedural()
 {
+}
+
+Imath::Box3f Renderer::Procedural::bound() const
+{
+	ConstCompoundObjectPtr args = parameters()->getTypedValidatedValue<CompoundObject>();
+	return doBound( args );
+}	
+
+void Renderer::Procedural::render( RendererPtr renderer ) const
+{
+	ConstCompoundObjectPtr args = parameters()->getTypedValidatedValue<CompoundObject>();
+	doRender( renderer, args );
 }
