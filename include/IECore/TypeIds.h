@@ -319,6 +319,9 @@ enum TypeId
 	PatchMeshPrimitiveTypeId = 276,
 	CurvesPrimitiveParameterTypeId = 277,
 	CurveExtrudeOpTypeId = 278,
+	// TypeIds 279-294 reserved for future version
+	BINParticleReaderTypeId = 295,		
+	BINParticleWriterTypeId = 296,	
 	
 	// Remember to update TypeIdBinding.cpp !!!
 	
