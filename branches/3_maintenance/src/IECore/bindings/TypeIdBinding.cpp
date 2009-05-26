@@ -318,6 +318,8 @@ void bindTypeId()
 		.value("PatchMeshPrimitive", PatchMeshPrimitiveTypeId )
 		.value("CurvesPrimitiveParameter", CurvesPrimitiveParameterTypeId )
 		.value("CurveExtrudeOp", CurveExtrudeOpTypeId )
+		.value( "BINParticleReader", BINParticleReaderTypeId )		
+		.value( "BINParticleWriter", BINParticleWriterTypeId )			
 	;
 }
 

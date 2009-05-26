@@ -186,6 +186,7 @@ from TimeDurationDataTest import *
 from TimePeriodDataTest import *
 from PatchMeshPrimitiveTest import *
 from CurveExtrudeOp import *
+from BINParticleWriterTest import *
 
 if IECore.withTIFF() :
 	from TIFFImageReader import *

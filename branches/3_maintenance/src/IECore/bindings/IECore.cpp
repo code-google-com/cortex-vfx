@@ -223,6 +223,7 @@
 #include "IECore/bindings/TimePeriodDataBinding.h"
 #include "IECore/bindings/PatchMeshPrimitiveBinding.h"
 #include "IECore/bindings/CurveExtrudeOpBinding.h"
+#include "IECore/bindings/BINParticleWriterBinding.h"
 #include "IECore/IECore.h"
 
 using namespace IECore;
@@ -431,6 +432,7 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindTimePeriodData();
 	bindPatchMeshPrimitive();
 	bindCurveExtrudeOp();
+	bindBINParticleWriter();
 
 	def( "majorVersion", &IECore::majorVersion );
 	def( "minorVersion", &IECore::minorVersion );
