@@ -322,6 +322,7 @@ enum TypeId
 	// TypeIds 279-294 reserved for future version
 	BINParticleReaderTypeId = 295,		
 	BINParticleWriterTypeId = 296,	
+	BINMeshReaderTypeId = 297,
 	
 	// Remember to update TypeIdBinding.cpp !!!
 	

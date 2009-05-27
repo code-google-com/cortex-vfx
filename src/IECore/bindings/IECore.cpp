@@ -224,6 +224,7 @@
 #include "IECore/bindings/PatchMeshPrimitiveBinding.h"
 #include "IECore/bindings/CurveExtrudeOpBinding.h"
 #include "IECore/bindings/BINParticleWriterBinding.h"
+#include "IECore/bindings/BINMeshReaderBinding.h"
 #include "IECore/IECore.h"
 
 using namespace IECore;
@@ -433,6 +434,7 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindPatchMeshPrimitive();
 	bindCurveExtrudeOp();
 	bindBINParticleWriter();
+	bindBINMeshReader();
 
 	def( "majorVersion", &IECore::majorVersion );
 	def( "minorVersion", &IECore::minorVersion );
