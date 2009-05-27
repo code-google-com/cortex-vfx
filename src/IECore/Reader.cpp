@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,12 +41,12 @@
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/filesystem/convenience.hpp"
 
+#include <iostream>
+
 using namespace std;
 using namespace IECore;
 using namespace boost;
 using namespace boost::filesystem;
-
-IE_CORE_DEFINERUNTIMETYPED( Reader );
 
 Reader::Reader(  const std::string &name, const std::string &description, ParameterPtr resultParameter )
 	: 	Op( name, description, resultParameter ? resultParameter : new Parameter( "result", "The loaded object.", new NullObject ) )
@@ -58,14 +58,13 @@ Reader::Reader(  const std::string &name, const std::string &description, Parame
 CompoundObjectPtr Reader::readHeader()
 {
 	CompoundObjectPtr header = new CompoundObject();
-
+	
 	return header;
 }
 
 ObjectPtr Reader::read()
 {
 	/// \todo Perhaps we should append the fileName() to any exceptions thrown by operate() before re-raising them?
-	/// Use of boost.exception might make this easier.
 	return operate();
 }
 
@@ -115,44 +114,22 @@ ReaderPtr Reader::create( const std::string &fileName )
 void Reader::supportedExtensions( std::vector<std::string> &extensions )
 {
 	ExtensionsToFnsMap *m = extensionsToFns();
-	assert( m );
+	assert( m );	
 	for( ExtensionsToFnsMap::const_iterator it=m->begin(); it!=m->end(); it++ )
 	{
 		extensions.push_back( it->first.substr( 1 ) );
 	}
 }
 
-void Reader::supportedExtensions( TypeId typeId, std::vector<std::string> &extensions )
+void Reader::registerReader( const std::string &extensions, CanReadFn canRead, CreatorFn creator )
 {
-	extensions.clear();
 	ExtensionsToFnsMap *m = extensionsToFns();
-	assert( m );
-
-	const std::set< TypeId > &derivedTypes = RunTimeTyped::derivedTypeIds( typeId );
-
-	for( ExtensionsToFnsMap::const_iterator it=m->begin(); it!=m->end(); it++ )
-	{
-		if ( it->second.typeId == typeId || std::find( derivedTypes.begin(), derivedTypes.end(), it->second.typeId ) != derivedTypes.end() )
-		{
-			extensions.push_back( it->first.substr( 1 ) );
-		}
-	}
-}
-
-void Reader::registerReader( const std::string &extensions, CanReadFn canRead, CreatorFn creator, TypeId typeId )
-{
-	assert( canRead );
-	assert( creator );
-	assert( typeId != InvalidTypeId );
-
-	ExtensionsToFnsMap *m = extensionsToFns();
-	assert( m );
+	assert( m );	
 	vector<string> splitExt;
 	split( splitExt, extensions, is_any_of( " " ) );
 	ReaderFns r;
 	r.creator = creator;
 	r.canRead = canRead;
-	r.typeId = typeId;
 	for( vector<string>::const_iterator it=splitExt.begin(); it!=splitExt.end(); it++ )
 	{
 		m->insert( ExtensionsToFnsMap::value_type( "." + *it, r ) );

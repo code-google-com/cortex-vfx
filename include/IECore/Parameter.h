@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,36 +35,35 @@
 #ifndef IE_CORE_PARAMETER_H
 #define IE_CORE_PARAMETER_H
 
-#include "IECore/Object.h"
-#include "IECore/Interned.h"
+#include "IECore/RunTimeTyped.h"
 
 #include <map>
-#include <vector>
 #include <string>
 
 namespace IECore
 {
 
+IE_CORE_FORWARDDECLARE( Object );
 IE_CORE_FORWARDDECLARE( CompoundObject );
 
 /// The Parameter base class represents a means of describing data to be passed
 /// to some process.
-class Parameter : public Object
+class Parameter : public RunTimeTyped
 {
 	public :
-
-		IE_CORE_DECLAREOBJECT( Parameter, Object );
-
-		/// A type which associates a value for the Parameter with
-		/// a name.
-		typedef std::pair<std::string, ObjectPtr> Preset;
-		/// A type to store a bunch of preset values for the Parameter.
-		typedef std::vector<Preset> PresetsContainer;
-
+	
+		IE_CORE_DECLARERUNTIMETYPED( Parameter, RunTimeTyped );
+	
+		/// A typedef used to map from preset names to preset values.
+		/// \todo This mapping also needs to maintain order of insertion - it's maddening
+		/// that drop down menus based on the presets have totally misleading orders. We should
+		/// probably use some sort of boost multi-indexed container.
+		typedef std::map<std::string, ObjectPtr> PresetsMap;
+	
 		/// Creates a new Parameter. If presetsOnly is true then the parameter acts somewhat
 		/// like an enum and only accepts values if they are present in the presets map.
 		Parameter( const std::string &name, const std::string &description, ObjectPtr defaultValue,
-			const PresetsContainer &presets = PresetsContainer(), bool presetsOnly = false, ConstCompoundObjectPtr userData=0 );
+			const PresetsMap &presets = PresetsMap(), bool presetsOnly = false, ConstCompoundObjectPtr userData=0 );
 
 		virtual ~Parameter();
 
@@ -73,13 +72,12 @@ class Parameter : public Object
 		//@{
 		/// Returns the name of this parameter.
 		const std::string &name() const;
-		inline const InternedString &internedName() const;
 		/// Returns the description for this parameter.
 		const std::string &description() const;
 		/// Returns the default value for this parameter.
 		virtual ConstObjectPtr defaultValue() const;
 		/// Returns the presets for this parameter.
-		virtual const PresetsContainer &presets() const;
+		virtual const PresetsMap &presets() const;
 		/// Returns true if this parameter only accepts
 		/// parameters present as presets.
 		virtual bool presetsOnly() const;
@@ -88,7 +86,7 @@ class Parameter : public Object
 		/// Read only version of the above.
 		ConstCompoundObjectPtr userData() const;
 		//@}
-
+		
 		//! @name Validation
 		/// The Parameter class defines the concept of whether or not
 		/// a value is valid. This is used to provide guarantees about
@@ -114,12 +112,12 @@ class Parameter : public Object
 		bool valueValid( std::string *reason = 0 ) const;
 		/// Throws an Exception if valueValid( getValue() ) is false, otherwise
 		/// does nothing.
-		void validate() const;
+		void validate() const;		
 		/// Throws an Exception if valueValid( value ) is false, otherwise
 		/// does nothing.
 		void validate( ConstObjectPtr value ) const;
 		//@}
-
+		
 		//! @name Value setting
 		/// These functions set the Parameter value, with or without
 		/// validation.
@@ -137,7 +135,7 @@ class Parameter : public Object
 		/// preset.
 		void setValue( const std::string &presetName );
 		//@}
-
+		
 		//! @name Value getting
 		/// These functions provide access to the Parameter value, with or without
 		/// validation.
@@ -174,28 +172,18 @@ class Parameter : public Object
 		std::string getCurrentPresetName() const;
 		//@}
 
-	protected :
+	private :	
 
-		// constructor for use during load/copy
-		Parameter();
-
-	private :
-
-		friend class TypeDescription<Parameter>;
-
-		InternedString m_name;
-		InternedString m_description;
+		std::string m_name;
+		std::string m_description;
 
 		ObjectPtr m_value;
 		ConstObjectPtr m_defaultValue;
-
-		PresetsContainer m_presets;
+		
+		PresetsMap m_presets;
 		bool m_presetsOnly;
 
-		mutable CompoundObjectPtr m_userData;
-
-		static const unsigned int g_ioVersion;
-
+		CompoundObjectPtr m_userData;
 };
 
 IE_CORE_DECLAREPTR( Parameter );

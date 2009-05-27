@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Exception.h"
-#include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/MeshPrimitiveImplicitSurfaceFunction.h"
 
 using namespace boost::python;
@@ -45,9 +45,14 @@ namespace IECore
 
 void bindMeshPrimitiveImplicitSurfaceFunction()
 {
-	RefCountedClass<MeshPrimitiveImplicitSurfaceFunction, PrimitiveImplicitSurfaceFunction>( "MeshPrimitiveImplicitSurfaceFunction" )
-		.def( init< MeshPrimitivePtr > () )
+	typedef class_< MeshPrimitiveImplicitSurfaceFunction, MeshPrimitiveImplicitSurfaceFunction::Ptr, bases< PrimitiveImplicitSurfaceFunction >, boost::noncopyable > MeshPrimitiveImplicitSurfaceFunctionPyClass;
+
+	MeshPrimitiveImplicitSurfaceFunctionPyClass( "MeshPrimitiveImplicitSurfaceFunction", no_init )
+		.def( init< MeshPrimitivePtr > () )		
 	;
+	
+	implicitly_convertible< MeshPrimitiveImplicitSurfaceFunction::Ptr, PrimitiveImplicitSurfaceFunction::Ptr>();
+	INTRUSIVE_PTR_PATCH( MeshPrimitiveImplicitSurfaceFunction, MeshPrimitiveImplicitSurfaceFunctionPyClass );	
 }
 
 } // namespace IECore

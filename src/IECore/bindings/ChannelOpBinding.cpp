@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,6 +37,7 @@
 
 #include "IECore/ChannelOp.h"
 #include "IECore/bindings/ChannelOpBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -46,9 +47,14 @@ namespace IECore
 
 void bindChannelOp()
 {
-
-	RunTimeTypedClass<ChannelOp>()
+	
+	typedef class_<ChannelOp, ChannelOpPtr, boost::noncopyable, bases<ImagePrimitiveOp> > ChannelOpPyClass;
+	ChannelOpPyClass( "ChannelOp", no_init )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( ChannelOp )
 	;
+	
+	INTRUSIVE_PTR_PATCH( ChannelOp, ChannelOpPyClass );
+	implicitly_convertible<ChannelOpPtr, ImagePrimitiveOpPtr>();	
 
 }
 

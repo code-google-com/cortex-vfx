@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/ParticleReader.h"
 #include "IECore/VectorTypedData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -53,11 +54,16 @@ static StringVectorDataPtr attributeNames( ParticleReader &that )
 
 void bindParticleReader()
 {
-	RunTimeTypedClass<ParticleReader>()
+	typedef class_< ParticleReader , ParticleReaderPtr, boost::noncopyable, bases<Reader> > ParticleReaderPyClass;
+	ParticleReaderPyClass( "ParticleReader", no_init )
 		.def( "numParticles", &ParticleReader::numParticles )
 		.def( "attributeNames", &attributeNames )
 		.def( "readAttribute", &ParticleReader::readAttribute )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( ParticleReader )
 	;
+
+	INTRUSIVE_PTR_PATCH( ParticleReader, ParticleReaderPyClass );
+	implicitly_convertible<ParticleReaderPtr, ReaderPtr>();
 }
 
 } // namespace IECore

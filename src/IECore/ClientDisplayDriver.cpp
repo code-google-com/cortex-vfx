@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/bind.hpp"
+#include <boost/bind.hpp>
 
 #include "IECore/ClientDisplayDriver.h"
 #include "IECore/DisplayDriverServer.h"
@@ -45,9 +45,7 @@ using namespace Imath;
 using namespace IECore;
 using boost::asio::ip::tcp;
 
-IE_CORE_DEFINERUNTIMETYPED( ClientDisplayDriver );
-
-ClientDisplayDriver::ClientDisplayDriver( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, const std::vector<std::string> &channelNames, IECore::ConstCompoundDataPtr parameters ) :
+ClientDisplayDriver::ClientDisplayDriver( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, const std::vector<std::string> &channelNames, IECore::ConstCompoundDataPtr parameters ) : 
 		DisplayDriver( displayWindow, dataWindow, channelNames, parameters ),
 		m_service(), m_host(""), m_port(""), m_scanLineOrderOnly(false), m_socket( m_service )
 {
@@ -73,7 +71,7 @@ ClientDisplayDriver::ClientDisplayDriver( const Imath::Box2i &displayWindow, con
 	{
 		// for backward compatibility...
 		it = parameters->readable().find("port");
-	}
+	}	
 	if ( it == parameters->readable().end() )
 	{
 		throw Exception( "Could not find 'port' parameter!" );
@@ -162,7 +160,7 @@ size_t ClientDisplayDriver::receiveHeader( DisplayDriverServer::MessageType msg 
 		throw Exception( "Invalid display driver header block on socket package." );
 	}
 	size_t bytesAhead = header.getDataSize();
-
+	
 	if ( header.messageType() == DisplayDriverServer::exception )
 	{
 		vector<char> txt;

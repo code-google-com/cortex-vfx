@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,9 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/ObjectInterpolator.h"
 #include "IECore/bindings/ObjectInterpolatorBinding.h"
@@ -46,10 +46,9 @@ namespace IECore
 
 void bindObjectInterpolator()
 {
-	using boost::python::arg;
-
-	def("linearObjectInterpolation", &linearObjectInterpolation, ( arg( "y0" ), arg( "y1" ), arg( "x" ) ) );
-	def("cubicObjectInterpolation", &cubicObjectInterpolation, ( arg( "y0" ), arg( "y1" ), arg( "y2" ), arg( "y3" ), arg( "x" ) ) );
+	def("linearObjectInterpolation", &linearObjectInterpolation, args( "y0", "y1", "x" ) );
+	def("cosineObjectInterpolation", &cosineObjectInterpolation, args( "y0", "y1", "x" ) );
+	def("cubicObjectInterpolation", &cubicObjectInterpolation, args( "y0", "y1", "y2", "y3", "x" ) );
 }
 
 } // namespace IECore

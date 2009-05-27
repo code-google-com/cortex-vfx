@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
-#include "boost/python/make_constructor.hpp"
+#include <boost/python.hpp>
+#include <boost/python/make_constructor.hpp>
 
 #include "IECore/CubeColorLookupData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/bindings/IECoreBinding.h"
 
@@ -52,19 +53,19 @@ namespace IECore
 
 template<class T>
 static std::string repr( T &x )
-{
+{	
 	std::stringstream s;
-
+			
 	s << "IECore." << x.typeName() << "( ";
-
+	
 	object item( x.readable() );
-
+	
 	assert( item.attr( "__repr__" ) != object() );
-
+			
 	s << call_method< std::string >( item.ptr(), "__repr__" );
-
+	
 	s << " )";
-
+	
 	return s.str();
 }
 
@@ -81,20 +82,26 @@ static typename T::ValueType &getValue( T &that )
 }
 
 template< typename T >
-void bindCubeColorLookupData()
+void bindCubeColorLookupData( const char *bindName )
 {
-	RunTimeTypedClass<T>()
-		.def( init<>() )
+	typedef class_<T, typename T::Ptr, boost::noncopyable, bases<Data> > PyClass;
+	PyClass( bindName )
 		.def( init<const typename T::ValueType &>() )
 		.add_property( "value", make_function( &getValue<T>, return_internal_reference<>() ), &setValue<T> )
 		.def( "__repr__", &repr<T> )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( T )
 	;
+
+	INTRUSIVE_PTR_PATCH( T, typename PyClass );
+
+	implicitly_convertible<typename T::Ptr , DataPtr>();
+	implicitly_convertible<typename T::Ptr, typename T::ConstPtr >();
 }
 
 void bindCubeColorLookupData()
 {
-	bindCubeColorLookupData<CubeColorLookupfData>();
-	bindCubeColorLookupData<CubeColorLookupdData>();
+	bindCubeColorLookupData<CubeColorLookupfData>( "CubeColorLookupfData" );
+	bindCubeColorLookupData<CubeColorLookupdData>( "CubeColorLookupdData" );
 }
 
 } // namespace IECore

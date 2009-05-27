@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,13 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/UniformRandomPointDistributionOp.h"
 #include "IECore/Parameter.h"
 #include "IECore/Object.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/bindings/Wrapper.h"
 
@@ -48,25 +49,25 @@ namespace IECore
 {
 
 
-class UniformRandomPointDistributionOpWrap :
+class UniformRandomPointDistributionOpWrap : 
 	public UniformRandomPointDistributionOp, public Wrapper<UniformRandomPointDistributionOp>
 {
 	public :
 
 		IE_CORE_DECLAREMEMBERPTR( UniformRandomPointDistributionOpWrap );
-
+				
 		UniformRandomPointDistributionOpWrap( PyObject *self ) : UniformRandomPointDistributionOp(), Wrapper<UniformRandomPointDistributionOp>( self, this )
 		{
 		}
-
+		
 		UniformRandomPointDistributionOpWrap( PyObject *self, const std::string &name, const std::string &description ) : UniformRandomPointDistributionOp( name, description ), Wrapper<UniformRandomPointDistributionOp>( self, this )
 		{
 		}
-
+		
 		virtual ~UniformRandomPointDistributionOpWrap()
 		{
 		}
-
+		
 		virtual float density( ConstMeshPrimitivePtr mesh, const Imath::V3f &point, const Imath::V2f &uv ) const
 		{
 			override o = this->get_override( "density" );
@@ -84,11 +85,17 @@ class UniformRandomPointDistributionOpWrap :
 
 void bindUniformRandomPointDistributionOp()
 {
-	RunTimeTypedClass<UniformRandomPointDistributionOp, UniformRandomPointDistributionOpWrap::Ptr>()
+	typedef class_< UniformRandomPointDistributionOp, UniformRandomPointDistributionOpWrap::Ptr, boost::noncopyable, bases<Op> > UniformRandomPointDistributionOpPyClass;
+	UniformRandomPointDistributionOpPyClass( "UniformRandomPointDistributionOp", no_init )
 		.def( init<>() )
 		.def( init< const std::string &, const std::string &>() )
 		.def( "density", &UniformRandomPointDistributionOpWrap::density )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(UniformRandomPointDistributionOp)
 	;
+	
+	INTRUSIVE_PTR_PATCH( UniformRandomPointDistributionOp, UniformRandomPointDistributionOpPyClass );
+	implicitly_convertible<UniformRandomPointDistributionOpPtr, OpPtr>();	
+
 }
 
 } // namespace IECore

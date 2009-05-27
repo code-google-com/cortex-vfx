@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,14 +36,13 @@
 #define IE_CORE_IMAGEREADER_H
 
 #include "IECore/Reader.h"
-#include "IECore/SimpleTypedParameter.h"
-#include "IECore/VectorTypedParameter.h"
+#include "IECore/TypedParameter.h"
 
 namespace IECore
 {
 
 IE_CORE_FORWARDDECLARE( ImagePrimitive );
-
+	
 
 /// The ImageReader class defines an abstract base class for reading sampled images.
 /// ImageReader's main purpose is to define a standard set of parameters
@@ -76,11 +75,11 @@ class ImageReader : public Reader
 		/// The parameter specifying the channels to load.
 		StringVectorParameterPtr channelNamesParameter();
 		ConstStringVectorParameterPtr channelNamesParameter() const;
-		//@}
-
+		//@}	
+		
 		//! @name Image specific reading functions
 		///////////////////////////////////////////////////////////////
-		//@{
+		//@{	
 		/// Fills the passed vector with the names of all channels within the file.
 		virtual void channelNames( std::vector<std::string> &names ) = 0;
 		/// Returns true if the file is complete. Implementations of this function should
@@ -96,42 +95,37 @@ class ImageReader : public Reader
 		/// Reads the specified channel. This function obeys the dataWindowParameter(), so
 		/// that a subsection of the channel will be loaded if requested.
 		DataPtr readChannel( const std::string &name );
-
-		/// Returns the name of the colorspace in which the image is stored. For example,
-		/// this would usually be "srgb" for a JPEG file or "linear" for an EXR file.
-		virtual std::string sourceColorSpace() const = 0;
-
 		//@}
-
+	
 	protected:
-
+		
 		/// Fills the passed vector with the intersection of channelNames() and
 		/// the channels requested by the user in channelNamesParameter().
 		void channelsToRead( std::vector<std::string> &names );
 		/// Returns the data window that should be loaded, throwing an Exception if it
 		/// isn't wholly inside the available dataWindow().
 		Imath::Box2i dataWindowToRead();
-
+		
 		/// Implemented using displayWindow(), dataWindow(), channelNames() and readChannel().
 		/// Derived classes should implement those methods rather than reimplement this function.
 		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
-
+	
 		/// Read the specified area from the channel with the specified name - this is called
 		/// by the public readChannel() method and the doOperation() method, and must be implemented
 		/// in all derived classes. It is guaranteed that this function will not be called with
 		/// invalid names or dataWindows which are not wholly within the dataWindow in the file.
 		virtual DataPtr readChannel( const std::string &name, const Imath::Box2i &dataWindow ) = 0;
-
+	
 	private :
-
+	
 		Box2iParameterPtr m_dataWindowParameter;
 		Box2iParameterPtr m_displayWindowParameter;
 		StringVectorParameterPtr m_channelNamesParameter;
-
+	
 };
-
+	
 IE_CORE_DECLAREPTR(ImageReader);
-
+	
 } // namespace IECore
 
 #endif // IE_CORE_IMAGEREADER_H

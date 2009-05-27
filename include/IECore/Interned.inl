@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,8 +35,6 @@
 #ifndef IECORE_INTERNED_INL
 #define IECORE_INTERNED_INL
 
-#include "boost/static_assert.hpp"
-
 namespace IECore
 {
 
@@ -53,36 +51,10 @@ Interned<T, Hash>::Interned( const Interned<T, Hash> &other )
 {
 }
 
-template<typename T, typename Hash>
-template<typename S>
-Interned<T, Hash>::Interned( const S &value )
-{
-	HashSet *h = hashSet();
-	m_value = &(*(h->insert( T( value ) ).first ) );
-}
-
-template<typename T, typename Hash>
-Interned<T, Hash>::Interned( const char *value )
-{
-	// this constructor is only intended for specialisation by InternedString
-	BOOST_STATIC_ASSERT( sizeof( T )==0  );
-}
-
-// specialisation of construction from const char * for InternedString. This avoids the
-// creation of a temporary std::string in the case that the string is already in the HashSet.
-// this is implemented in Interned.cpp.
-template<>
-InternedString::Interned( const char *value );
 
 template<typename T, typename Hash>
 Interned<T, Hash>::~Interned()
 {
-}
-
-template<typename T, typename Hash>
-inline bool Interned<T, Hash>::operator != ( const Interned<T, Hash> &other ) const
-{
-	return m_value!=other.m_value;
 }
 
 template<typename T, typename Hash>
@@ -98,7 +70,7 @@ inline bool Interned<T, Hash>::operator < ( const Interned<T, Hash> &other ) con
 }
 
 template<typename T, typename Hash>
-inline Interned<T, Hash>::operator const T & () const
+inline Interned<T, Hash>::operator T () const
 {
 	return *m_value;
 }
@@ -114,7 +86,7 @@ size_t Interned<T, Hash>::size()
 {
 	return hashSet()->size();
 };
-
+ 
 template<typename T, typename Hash>
 typename Interned<T, Hash>::HashSet *Interned<T, Hash>::hashSet()
 {

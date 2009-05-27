@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,11 +32,93 @@
 #
 ##########################################################################
 
-# \todo Remove in major version 5
+import IECore
+
+## Registers a type id for an extension class. This makes TypeId.className
+# available and also checks that no other type is trying to use the same id.
+# It raises a RuntimeError if a conflicting type is already registered.
+def registerTypeId( className, typeId ) :
+
+
+	# check this type hasn't been registered already
+	if hasattr( IECore.TypeId, className ):
+		if getattr( IECore.TypeId, className ) != typeId:
+			raise RuntimeError( "Type \"%s\" is already registered." % className )
+			
+		return	
+
+	if typeId in IECore.TypeId.values :
+		raise RuntimeError( "TypeId \"%d\" is already registered as \"%s\"." % (typeId, IECore.TypeId.values[typeId] ) )
+		
+	# register the new type id
+	setattr( IECore.TypeId, className, IECore.TypeId( typeId ) )
+	IECore.TypeId.values[ typeId ] = className
+
+## This function adds the necessary function definitions to a python
+# class for it to properly implement the RunTimeTyped interface. It should
+# be called once for all python classes inheriting from RunTimeTyped. It also
+# calls registerTypeId() for you.
 def makeRunTimeTyped( typ, typId, baseClass ) :
 
-	import warnings
-	from IECore import registerRunTimeTyped
+	registerTypeId( typ.__name__, typId )
 
-	warnings.warn( "makeRunTimeTyped is deprecated - please use registerRunTimeTyped instead.", DeprecationWarning, 2 )
-	registerRunTimeTyped( typ, typId, baseClass )
+	# add the typeId and typeName method overrides
+	typ.typeId = lambda x : typId
+	typ.typeName = lambda x: typ.__name__
+
+	# add the staticTypeId and staticTypeName overrides
+	typ.staticTypeId = staticmethod( lambda : typId )
+	typ.staticTypeName = staticmethod( lambda : typ.__name__ )
+	
+	# add the inheritsFrom method override
+	def inheritsFrom( t, baseClass ) :
+	
+		if type( t ) is str :
+			if type( baseClass ) is list :
+				for base in baseClass :
+					if base.staticTypeName() == t :
+						return True
+			else:
+				if baseClass.staticTypeName() == t :
+					return True
+		elif type(t) is IECore.TypeId :
+			if type( baseClass ) is list :
+				for base in baseClass :
+					if base.staticTypeId() == t :
+						return True
+			else:
+				if baseClass.staticTypeId() == t :
+					return True
+		else:
+			raise TypeError( "Invalid type specifier ( %s )" % str( t ) )
+			
+		if type( baseClass ) is list :
+			for base in baseClass:
+				if base.inheritsFrom( t ):
+					return True
+		else:	
+			return baseClass.inheritsFrom( t )
+			
+		return False	
+		
+	typ.inheritsFrom = staticmethod( lambda t : inheritsFrom( t, baseClass ) )
+		
+		
+	# add the isInstanceOf method override
+	def isInstanceOf( self, t, baseClass ) :
+				
+		if type( t ) is str :
+			if self.staticTypeName() == t :
+				return True
+		elif type( t ) is IECore.TypeId :
+			if self.staticTypeId() == t :
+				return True				
+		else :
+			raise TypeError( "Invalid type specifier ( %s )" % str( t ) )
+		
+		return inheritsFrom( t, baseClass )
+		
+	typ.isInstanceOf = lambda self, t : isInstanceOf( self, t, baseClass )
+	
+	
+__all__ = [ "registerTypeId", "makeRunTimeTyped" ]

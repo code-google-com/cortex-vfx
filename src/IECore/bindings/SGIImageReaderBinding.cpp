@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/SGIImageReader.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -46,11 +47,16 @@ namespace IECore
 
 void bindSGIImageReader()
 {
-	RunTimeTypedClass<SGIImageReader>()
-		.def( init<>())
+	typedef class_<SGIImageReader, SGIImageReaderPtr, boost::noncopyable, bases<ImageReader> > SGIImageReaderPyClass;
+
+	SGIImageReaderPyClass("SGIImageReader", init<>())
 		.def(  init<const std::string &>() )
 		.def( "canRead", &SGIImageReader::canRead).staticmethod( "canRead" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(SGIImageReader)
 	;
+
+	INTRUSIVE_PTR_PATCH( SGIImageReader, SGIImageReaderPyClass );
+	implicitly_convertible<SGIImageReaderPtr, ImageReaderPtr>();
 }
 
 } // namespace IECore

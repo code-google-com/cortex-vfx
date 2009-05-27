@@ -41,8 +41,8 @@ import re
 EnsureSConsVersion( 0, 97 )
 SConsignFile()
 
-ieCoreMajorVersion=4
-ieCoreMinorVersion=0
+ieCoreMajorVersion=3
+ieCoreMinorVersion=45
 ieCorePatchVersion=0
 
 ###########################################################################################
@@ -125,14 +125,6 @@ o.Add(
 	"The path to the OpenEXR lib directory.",
 	"/usr/local/lib",
 )
-
-o.Add(
-	"OPENEXR_LIB_SUFFIX",
-	"The suffix appended to the names of the OpenEXR libraries. You can modify this "
-	"to link against libraries installed with non-default names",
-	"",
-)
-
 
 # JPEG options
 
@@ -629,18 +621,18 @@ if doConfigure :
 		sys.stderr.write( "ERROR : unable to find the boost libraries - check BOOST_LIB_PATH.\n" )
 		Exit( 1 )
 
-	if not c.CheckLibWithHeader( "Iex" + env["OPENEXR_LIB_SUFFIX"], "OpenEXR/ImfInputFile.h", "C++" ) :
+	if not c.CheckLibWithHeader( "Iex", "OpenEXR/ImfInputFile.h", "C++" ) :
 		sys.stderr.write( "ERROR : unable to find the OpenEXR libraries - check OPENEXR_INCLUDE_PATH and OPENEXR_LIB_PATH.\n" )
 		Exit( 1 )
 		
 	c.Finish()
 		
 env.Append( LIBS = [
-		"Half" + env["OPENEXR_LIB_SUFFIX"],
-		"Iex" + env["OPENEXR_LIB_SUFFIX"],
-		"Imath" + env["OPENEXR_LIB_SUFFIX"],
-		"IlmImf" + env["OPENEXR_LIB_SUFFIX"],
-		"IlmThread" + env["OPENEXR_LIB_SUFFIX"],
+		"Half",
+		"Iex",
+		"Imath",
+		"IlmImf",
+		"IlmThread",
 		"z",
 	]
 )
@@ -715,8 +707,6 @@ if testEnv["TEST_LIBPATH"] != "" :
 
 testEnv["ENV"][testEnv["TEST_LIBRARY_PATH_ENV_VAR"]] = testEnvLibPath
 testEnv["ENV"]["DYLD_LIBRARY_PATH" if Environment()["PLATFORM"]=="darwin" else "LD_LIBRARY_PATH"] = testEnvLibPath
-testEnv["ENV"]["IECORE_PROCEDURAL_PATHS"] = "test/IECore/procedurals"
-testEnv["ENV"]["IECORE_OP_PATHS"] = "test/IECore/ops"
 
 if env["PLATFORM"]=="darwin" :	
 	# Special workaround for suspected gcc issue - see BoostUnitTestTest for more information
@@ -832,7 +822,7 @@ if doConfigure :
 		sys.stderr.write( "WARNING: no TIFF library found, no TIFF support, check TIFF_INCLUDE_PATH and TIFF_LIB_PATH.\n" )
 		coreSources.remove( "src/IECore/TIFFImageWriter.cpp" )
 		coreSources.remove( "src/IECore/TIFFImageReader.cpp" )
-		coreSources.remove( "src/IECore/ScopedTIFFErrorHandler.cpp" )		
+		coreSources.remove( "src/IECore/ScopedTIFFExceptionTranslator.cpp" )		
 		corePythonSources.remove( "src/IECore/bindings/TIFFImageReaderBinding.cpp" )
 		corePythonSources.remove( "src/IECore/bindings/TIFFImageWriterBinding.cpp" )
 		
@@ -952,7 +942,7 @@ if doConfigure :
 
 	c = Configure( riEnv )
 
-	if not c.CheckLibWithHeader( "3delight", "ri.h", "CXX" ) :
+	if not c.CheckLibWithHeader( "3delight", "ri.h", "C" ) :
 		sys.stderr.write( "WARNING : no 3delight library found, not building IECoreRI - check RMAN_ROOT.\n" )
 		c.Finish()
 
@@ -1501,10 +1491,10 @@ if doConfigure :
 truelightEnv = env.Copy( IECORE_NAME = "IECoreTruelight" )
 truelightEnv.Append( LIBS = [ "truelight" ] )
 
-# Remove all the boost and OpenEXR libs for the configure state- if we don't do this then the configure test can fail for some compilers. 
+# Remove all the boost libs for the configure state- if we don't do this then the configure test can fail for some compilers. 
 # \todo Need to establish exactly what is going on here.
 oldTruelightLibs = list( truelightEnv["LIBS"] )
-truelightEnv["LIBS"] = [ x for x in truelightEnv["LIBS"] if ( x.find( "boost_" ) == -1 and x.find( "Ilm" ) == -1 and x.find( "Iex" ) == -1 and x.find( "Half" )==-1 and x.find( "Imath" )==-1 ) ] 
+truelightEnv["LIBS"] = [ x for x in truelightEnv["LIBS"] if x.find( "boost_" ) == -1 ] 
 
 truelightEnv.Append( CPPPATH = [ "$TRUELIGHT_ROOT/include" ] )
 truelightEnv.Prepend( LIBPATH = [

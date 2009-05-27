@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,8 +47,6 @@
 
 using namespace IECoreGL;
 
-IE_CORE_DEFINERUNTIMETYPED( ToGLCameraConverter );
-
 ToGLCameraConverter::ToGLCameraConverter( IECore::ConstCameraPtr toConvert )
 	:	ToGLConverter( staticTypeName(), "Converts IECore::Camera objects to IECoreGL::Camera objects.", IECore::CameraTypeId )
 {
@@ -63,7 +61,7 @@ IECore::RunTimeTypedPtr ToGLCameraConverter::doConversion( IECore::ConstObjectPt
 {
 	IECore::CameraPtr camera = boost::static_pointer_cast<const IECore::Camera>( src )->copy(); // safe because the parameter validated it for us
 	camera->addStandardParameters(); // now all parameters should be there and have appropriate types - so we can avoid performing checks below
-
+	
 	CameraPtr result = 0;
 	const std::string &projection = boost::static_pointer_cast<const IECore::StringData>( camera->parameters()["projection"] )->readable();
 	if( projection=="orthographic" )
@@ -81,16 +79,16 @@ IECore::RunTimeTypedPtr ToGLCameraConverter::doConversion( IECore::ConstObjectPt
 	{
 		throw IECore::Exception( ( boost::format( "Unsupported projection type \"%s\"" ) % projection ).str() );
 	}
-
+	
 	result->setResolution( boost::static_pointer_cast<const IECore::V2iData>( camera->parameters()["resolution"] )->readable() );
 	result->setScreenWindow( boost::static_pointer_cast<const IECore::Box2fData>( camera->parameters()["screenWindow"] )->readable() );
 	result->setClippingPlanes( boost::static_pointer_cast<const IECore::V2fData>( camera->parameters()["clippingPlanes"] )->readable() );
-
+	
 	IECore::TransformPtr t = camera->getTransform();
 	if( t )
 	{
 		result->setTransform( t->transform() );
 	}
-
+	
 	return result;
 }

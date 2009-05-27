@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -34,13 +34,13 @@
 
 // This include needs to be the very first to prevent problems with warnings
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include <string>
 
-#include "IECore/InterpolatedCache.h"
+#include <IECore/InterpolatedCache.h>
 #include "IECore/CompoundObject.h"
-#include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using namespace boost::python;
 using namespace IECore;
@@ -52,38 +52,38 @@ struct InterpolatedCacheHelper
 {
 	typedef std::vector<InterpolatedCache::HeaderHandle> HeaderHandleVector;
 	typedef std::vector<InterpolatedCache::ObjectHandle> ObjectHandleVector;
-	typedef std::vector<InterpolatedCache::AttributeHandle> AttributeHandleVector;
-
-	static list objects(ConstInterpolatedCachePtr cache)
+	typedef std::vector<InterpolatedCache::AttributeHandle> AttributeHandleVector;	
+	
+	static list objects(InterpolatedCachePtr cache)
 	{
 		list objects;
-
+		
 		ObjectHandleVector o;
 		cache->objects(o);
 		for (ObjectHandleVector::const_iterator it = o.begin(); it != o.end(); ++it)
 		{
 			objects.append<std::string>(*it);
 		}
-
-
+		
+		
 		return objects;
 	}
 
-	static list headers(ConstInterpolatedCachePtr cache)
+	static list headers(InterpolatedCachePtr cache)
 	{
 		list headers;
-
+		
 		HeaderHandleVector o;
 		cache->headers(o);
 		for (HeaderHandleVector::const_iterator it = o.begin(); it != o.end(); ++it)
 		{
 			headers.append<std::string>(*it);
 		}
-
+		
 		return headers;
 	}
-
-	static list attributes(ConstInterpolatedCachePtr cache, const InterpolatedCache::ObjectHandle &obj, object regex)
+	
+	static list attributes(InterpolatedCachePtr cache, const InterpolatedCache::ObjectHandle &obj, object regex)
 	{
 		list attributes;
 
@@ -109,57 +109,65 @@ struct InterpolatedCacheHelper
 		{
 			attributes.append<std::string>(*it);
 		}
-
+		
 		return attributes;
+	}
+	
+	static list currentCaches(InterpolatedCachePtr cache)
+	{
+		list caches;
+		InterpolatedCache::CacheVector a = cache->currentCaches();
+		for (InterpolatedCache::CacheVector::const_iterator it = a.begin(); it != a.end(); ++it)
+		{
+			caches.append<AttributeCachePtr>(*it);
+		}
+		return caches;
 	}
 };
 
 void bindInterpolatedCache()
 {
-	bool (InterpolatedCache::*containsObj)(const InterpolatedCache::ObjectHandle &) const = &InterpolatedCache::contains;
-	bool (InterpolatedCache::*containsObjAttr)(const InterpolatedCache::ObjectHandle &, const InterpolatedCache::AttributeHandle &) const = &InterpolatedCache::contains;
-
+	const char *bindName = "InterpolatedCache";
+	
+	bool (InterpolatedCache::*containsObj)(const InterpolatedCache::ObjectHandle &) = &InterpolatedCache::contains;
+	bool (InterpolatedCache::*containsObjAttr)(const InterpolatedCache::ObjectHandle &, const InterpolatedCache::AttributeHandle &) = &InterpolatedCache::contains;
+	
 	typedef class_< InterpolatedCache, InterpolatedCachePtr > InterpolatedCachePyClass;
 
-	RefCountedClass<InterpolatedCache, RefCounted> interpolatedCacheClass( "InterpolatedCache" );
+	InterpolatedCachePyClass interpolatedCacheClass( bindName, no_init );
 	{
 		// define enum before functions.
 		scope varScope = interpolatedCacheClass;
 		enum_<InterpolatedCache::Interpolation>( "Interpolation" )
 			.value( "None", InterpolatedCache::None )
 			.value( "Linear", InterpolatedCache::Linear )
+			.value( "Cosine", InterpolatedCache::Cosine )
 			.value( "Cubic", InterpolatedCache::Cubic )
 		;
 	}
 	interpolatedCacheClass
-		.def(
-			init< optional< const std::string &, double, InterpolatedCache::Interpolation, const OversamplesCalculator & > >
-			(
-				(
-					arg( "pathTemplate" ) = std::string(""),
-					arg( "frame" ) = double(0.0),
-					arg( "interpolation" ) = InterpolatedCache::None,
-					arg( "oversamplesCalculator" ) = OversamplesCalculator()
-				)
-			)
-		)
+		.def( init< optional<const std::string &, double, InterpolatedCache::Interpolation, int, double > >( args("pathTemplate", "frame", "interpolation", "oversamples", "frameRate") ) )
 		.def("setPathTemplate", &InterpolatedCache::setPathTemplate )
-		.def("getPathTemplate", &InterpolatedCache::getPathTemplate, return_value_policy<copy_const_reference>() )
+		.def("getPathTemplate", &InterpolatedCache::getPathTemplate )
 		.def("setFrame", &InterpolatedCache::setFrame )
 		.def("getFrame", &InterpolatedCache::getFrame )
 		.def("setInterpolation", &InterpolatedCache::setInterpolation )
 		.def("getInterpolation", &InterpolatedCache::getInterpolation )
-		.def("setOversamplesCalculator", &InterpolatedCache::setOversamplesCalculator )
-		.def("getOversamplesCalculator", &InterpolatedCache::getOversamplesCalculator )
-		.def("read", (ObjectPtr (InterpolatedCache::*)( const InterpolatedCache::ObjectHandle &, const InterpolatedCache::AttributeHandle & ) const )&InterpolatedCache::read)
-		.def("read", (CompoundObjectPtr (InterpolatedCache::*)( const InterpolatedCache::ObjectHandle & ) const )&InterpolatedCache::read)
-		.def("readHeader", (ObjectPtr (InterpolatedCache::*) ( const InterpolatedCache::HeaderHandle & ) const )&InterpolatedCache::readHeader)
-		.def("readHeader", (CompoundObjectPtr (InterpolatedCache::*)() const )&InterpolatedCache::readHeader)
+		.def("setOversamples", &InterpolatedCache::setOversamples )
+		.def("getOversamples", &InterpolatedCache::getOversamples )
+		.def("setFrameRate", &InterpolatedCache::setFrameRate )
+		.def("getFrameRate", &InterpolatedCache::getFrameRate )
+		.def("read", (ObjectPtr (InterpolatedCache::*)( const InterpolatedCache::ObjectHandle &, const InterpolatedCache::AttributeHandle & ) )&InterpolatedCache::read)
+		.def("read", (CompoundObjectPtr (InterpolatedCache::*)( const InterpolatedCache::ObjectHandle & ))&InterpolatedCache::read)
+		.def("readHeader", (ObjectPtr (InterpolatedCache::*) ( const InterpolatedCache::HeaderHandle & ))&InterpolatedCache::readHeader)
+		.def("readHeader", (CompoundObjectPtr (InterpolatedCache::*)())&InterpolatedCache::readHeader)
 		.def("contains", containsObj)
-		.def("contains", containsObjAttr)
+		.def("contains", containsObjAttr)		
 		.def("objects", &InterpolatedCacheHelper::objects)
 		.def("headers", &InterpolatedCacheHelper::headers)
 		.def("attributes", make_function( &InterpolatedCacheHelper::attributes, default_call_policies(), ( boost::python::arg_( "obj" ), boost::python::arg_( "regex" ) = object() ) ) )
+		.def("currentCaches", make_function( &InterpolatedCacheHelper::currentCaches, default_call_policies() ) )
 	;
+	INTRUSIVE_PTR_PATCH( InterpolatedCache, InterpolatedCachePyClass );
 }
 }

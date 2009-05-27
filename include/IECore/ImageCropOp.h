@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,8 +35,8 @@
 #ifndef IE_CORE_IMAGECROPOP_H
 #define IE_CORE_IMAGECROPOP_H
 
-#include "IECore/TypedPrimitiveOp.h"
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/ModifyOp.h"
+#include "IECore/TypedParameter.h"
 
 namespace IECore
 {
@@ -44,39 +44,42 @@ namespace IECore
 /// The ImageCropOp performs cropping over ImagePrimitive objects.
 /// The operation results on an ImagePrimitive with displayWindow equal to the given crop box.
 /// If matchDataWindow if On then the dataWindow will match displayWindow. Otherwise it will be intersected against the given crop box.
-class ImageCropOp : public ImagePrimitiveOp
+/// \todo This should derive from ImagePrimitiveOp
+class ImageCropOp : public ModifyOp
 {
 	public :
-
-		IE_CORE_DECLARERUNTIMETYPED( ImageCropOp, ImagePrimitiveOp );
-
+		
+		IE_CORE_DECLARERUNTIMETYPED( ImageCropOp, ModifyOp );
+		
 		ImageCropOp();
 		virtual ~ImageCropOp();
-
+		
 		Box2iParameterPtr cropBoxParameter();
 		ConstBox2iParameterPtr cropBoxParameter() const;
-
+		
 		BoolParameterPtr matchDataWindowParameter();
-		ConstBoolParameterPtr matchDataWindowParameter() const;
-
+		ConstBoolParameterPtr matchDataWindowParameter() const;		
+		
 		BoolParameterPtr resetOriginParameter();
 		ConstBoolParameterPtr resetOriginParameter() const;
-
+		
 		BoolParameterPtr intersectParameter();
-		ConstBoolParameterPtr intersectParameter() const;
-
-	protected :
-
-		virtual void modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObjectPtr operands );
-
+		ConstBoolParameterPtr intersectParameter() const;	
+		
+		/// \todo Should be "protected", not "public"
+		virtual void modify( ObjectPtr toModify, ConstCompoundObjectPtr operands );
+		
 	private :
-
+	
 		struct ImageCropFn;
-
-		Box2iParameterPtr m_cropBoxParameter;
-		BoolParameterPtr m_matchDataWindowParameter;
-		BoolParameterPtr m_resetOriginParameter;
-		BoolParameterPtr m_intersectParameter;
+		
+		Box2iParameterPtr m_cropBox;
+		BoolParameterPtr m_matchDataWindow;
+		BoolParameterPtr m_resetOrigin;
+		
+	public:	
+		/// \todo Remove on next major version change
+		struct ExtraMembers;
 };
 
 IE_CORE_DECLAREPTR( ImageCropOp );

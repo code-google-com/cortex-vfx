@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -35,14 +35,14 @@
 from IECore import *
 import math
 
-class ReadProcedural( ParameterisedProcedural ) :
+class ReadProcedural( Renderer.Procedural ) :
 
 	def __init__( self ) :
-
-		ParameterisedProcedural.__init__( self )
-
+	
+		Renderer.Procedural.__init__( self, "ReadProcedural", "A procedural to render simple objects which can be loaded with a Reader." )
+		
 		self.parameters().addParameters(
-
+		
 			[
 				CompoundParameter(
 					name = "files",
@@ -72,7 +72,7 @@ class ReadProcedural( ParameterisedProcedural ) :
 						)
 					]
 				),
-
+				
 				CompoundParameter(
 					name = "bounds",
 					description = "Parameters controlling how the bounds are calculated for the particles.",
@@ -81,10 +81,10 @@ class ReadProcedural( ParameterisedProcedural ) :
 							name = "mode",
 							description = "How the bounds are calculated.",
 							defaultValue = "calculated",
-							presets = (
-								( "Calculated", "calculated" ),
-								( "Specified", "specified" ),
-							),
+							presets = {
+								"Calculated" : "calculated",
+								"Specified" : "specified",
+							},
 							presetsOnly = True,
 						),
 						Box3fParameter(
@@ -106,64 +106,60 @@ class ReadProcedural( ParameterisedProcedural ) :
 					]
 				),
 			]
-
+		
 		)
-
+	
 	def doBound( self, args ) :
-
-		if args["bounds"]["mode"].value=="specified" :
-
-			return args["bounds"]["specified"].value
-
+			
+		if args.bounds.mode.value=="specified" :
+		
+			return args.bounds.specified.value
+		
 		else :
-
+		
 			bound = Box3f()
 			fileNames = self.__allFileNames( args )
 			for fileName in fileNames :
-
+			
 				if type( fileName ) is str :
-
+				
 					o = self.__readFile( fileName )
 					if o :
 						bound.extendBy( o.bound() )
-
+						
 				else :
-
+				
 					o = self.__readFile( fileName[0] )
 					if o :
 						bound.extendBy( o.bound() )
-
+						
 					o = self.__readFile( fileName[1] )
 					if o :
-						bound.extendBy( o.bound() )
-
+						bound.extendBy( o.bound() )	
+						
 			return bound
-
-	def doRenderState( self, renderer, args ) :
-	
-		pass
-
+		
 	def doRender( self, renderer, args ) :
-
+			
 		fileNames = self.__allFileNames( args )
 		shutter = renderer.getOption( "shutter" ).value
 
 		for fileName in fileNames :
-
+		
 			if type( fileName ) is str :
-
+			
 				o = self.__readFile( fileName )
 				if o :
 					o.render( renderer )
-
+					
 			else :
-
+			
 				if shutter[0]==shutter[1] :
 					o = self.__readFile( fileName[0] )
 					if o :
 						o.render( renderer )
 				else :
-
+				
 					o0 = self.__readFile( fileName[0] )
 					o1 = self.__readFile( fileName[1] )
 
@@ -177,31 +173,31 @@ class ReadProcedural( ParameterisedProcedural ) :
 
 	# returns either a list of filenames (no motion blur) or a list of tuples of filenames (for motion blur)
 	def __allFileNames( self, args ) :
-
-		if args["files"]["name"].value=="" :
+	
+		if args.files.name.value=="" :
 			return []
-
-		frame = args["files"]["frame"].value
+	
+		frame = args.files.frame.value
 
 		result = []
-		if FileSequence.fileNameValidator().match( args["files"]["name"].value ) :
-			sequence = FileSequence( args["files"]["name"].value, FrameRange( frame, frame ) )
-			if args["motion"]["blur"].value :
+		if FileSequence.fileNameValidator().match( args.files.name.value ) :
+			sequence = FileSequence( args.files.name.value, FrameRange( frame, frame ) )
+			if args.motion.blur.value :
 				result.append( ( sequence.fileNameForFrame( frame ), sequence.fileNameForFrame( frame + 1 ) ) )
 			else :
 				result.append( sequence.fileNameForFrame( frame ) )
 		else :
-			result.append( args["files"]["name"].value )
-
-		if "@" in args["files"]["name"].value :
-
-			numbers = FrameList.parse( args["files"]["numbers"].value ).asList()
-
+			result.append( args.files.name.value )
+				
+		if "@" in args.files.name.value :
+		
+			numbers = FrameList.parse( args.files.numbers.value ).asList()
+			
 			newResult = []
 			for f in result :
-
+			
 				for n in numbers :
-
+				
 					if type( f ) is str :
 
 						newResult.append( f.replace( "@", str( n ) ) )
@@ -211,21 +207,21 @@ class ReadProcedural( ParameterisedProcedural ) :
 						f0 = f[0].replace( "@", str( n ) )
 						f1 = f[1].replace( "@", str( n ) )
 						newResult.append( ( f0, f1 ) )
-
+			
 		return result
-
+	
 	def __readFile( self, fileName ) :
-
+	
 		reader = Reader.create( fileName )
 		if not reader :
 			msg( Msg.Level.Error, "Read procedural", "Unable to create a Reader for '%s'." % fileName )
 			return None
-
+		
 		o = reader.read()
 		if not o or not o.isInstanceOf( "VisibleRenderable" ) :
 			msg( Msg.Level.Error, "Read procedural", "Failed to load an object of type VisibleRenderable for '%s'." % fileName )
 			return None
-
+			
 		return o
 
-registerObject( ReadProcedural, 100026, ParameterisedProcedural )
+# \todo Add RunTimeTyped id

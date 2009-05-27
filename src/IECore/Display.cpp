@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -89,7 +89,7 @@ bool Display::isEqualTo( ConstObjectPtr other ) const
 	{
 		return false;
 	}
-
+	
 	const Display *tOther = static_cast<const Display *>( other.get() );
 
 	// check name
@@ -97,25 +97,25 @@ bool Display::isEqualTo( ConstObjectPtr other ) const
 	{
 		return false;
 	}
-
+	
 	// check type
 	if( m_type!=tOther->m_type )
 	{
 		return false;
 	}
-
+	
 	// check data
 	if( m_data!=tOther->m_data )
 	{
 		return false;
 	}
-
+	
 	// check parameters
 	if( !m_parameters->isEqualTo( tOther->m_parameters ) )
 	{
 		return false;
 	}
-
+	
 	return true;
 }
 
@@ -173,7 +173,7 @@ CompoundDataPtr Display::parametersData()
 	return m_parameters;
 }
 
-void Display::render( RendererPtr renderer ) const
+void Display::render( RendererPtr renderer )
 {
 	renderer->display( m_name, m_type, m_data, m_parameters->readable() );
 }

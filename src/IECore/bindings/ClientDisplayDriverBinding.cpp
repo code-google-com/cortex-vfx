@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,13 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
-#include "boost/python/suite/indexing/container_utils.hpp"
+#include <boost/python.hpp>
+#include <boost/python/suite/indexing/container_utils.hpp>
 
 #include "IECore/ClientDisplayDriver.h"
 #include "IECore/SimpleTypedData.h"
-#include "IECore/VectorTypedData.h"
+#include "IECore/VectorTypedData.h" 
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -60,11 +61,15 @@ static ClientDisplayDriverPtr clientDisplayDriverConstructor( const Imath::Box2i
 
 void bindClientDisplayDriver()
 {
-	RunTimeTypedClass<ClientDisplayDriver>()
+	typedef class_< ClientDisplayDriver, ClientDisplayDriverPtr, boost::noncopyable, bases<DisplayDriver> > ClientDisplayDriverPyClass;
+	ClientDisplayDriverPyClass( "ClientDisplayDriver", no_init )
 		.def( "__init__", make_constructor( &clientDisplayDriverConstructor, default_call_policies(), ( boost::python::arg_( "displayWindow" ), boost::python::arg_( "dataWindow" ), boost::python::arg_( "channelNames" ), boost::python::arg_( "parameters" ) ) ) )
 		.def( "host", &ClientDisplayDriver::host )
 		.def( "port", &ClientDisplayDriver::port )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(ClientDisplayDriver)
 	;
+	INTRUSIVE_PTR_PATCH( ClientDisplayDriver, ClientDisplayDriverPyClass );
+	implicitly_convertible<ClientDisplayDriverPtr, DisplayDriverPtr>();
 }
 
 } // namespace IECore

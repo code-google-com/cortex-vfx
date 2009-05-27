@@ -37,6 +37,7 @@
 #include "IECoreMaya/FromMayaTransformConverter.h"
 #include "IECoreMaya/bindings/FromMayaTransformConverterBinding.h"
 
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace IECoreMaya;
@@ -44,12 +45,18 @@ using namespace boost::python;
 
 void IECoreMaya::bindFromMayaTransformConverter()
 {
-	scope s = IECore::RunTimeTypedClass<FromMayaTransformConverter>()
-		.def( init<const MDagPath &>() )
-	;
+	typedef class_<FromMayaTransformConverter, FromMayaTransformConverterPtr, boost::noncopyable, bases<FromMayaDagNodeConverter> > FromMayaTransformConverterPyClass;
 
+	scope s = FromMayaTransformConverterPyClass( "FromMayaTransformConverter", init<const MDagPath &>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( FromMayaTransformConverter )
+	;
+	
 	enum_<FromMayaTransformConverter::Space>( "Space" )
 		.value( "Local", FromMayaTransformConverter::Local )
 		.value( "World", FromMayaTransformConverter::World )
 	;
+	
+	
+	INTRUSIVE_PTR_PATCH( FromMayaTransformConverter, FromMayaTransformConverterPyClass );
+	implicitly_convertible<FromMayaTransformConverterPtr, FromMayaDagNodeConverterPtr>();
 }

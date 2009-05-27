@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,7 +38,7 @@
 #include "IECore/ImageWriter.h"
 #include "IECore/VectorTypedData.h"
 #include "IECore/NumericParameter.h"
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/TypedParameter.h"
 
 namespace IECore
 {
@@ -48,43 +48,43 @@ namespace IECore
 class YUVImageWriter : public ImageWriter
 {
 	public:
-
+	
 		typedef enum
 		{
 			/// Write a YUV 4:2:0 file as 3 separate image planes, Y followed by U, then V
 			YUV420P,
-
+			
 			/// Write a YUV 4:2:2 file as 3 separate image planes, Y followed by U, then V
 			YUV422P,
-
+			
 			/// Write a YUV 4:4:4 file as 3 separate image planes, Y followed by U, then V
 			YUV444P,
-
+			
 		} Format;
 
 		IE_CORE_DECLARERUNTIMETYPED( YUVImageWriter, ImageWriter )
 
 		YUVImageWriter();
 
-		/// Construct an YUVImageWriter for the given image and output filename
+		/// construct an YUVImageWriter for the given image and output filename
 		YUVImageWriter(ObjectPtr object, const std::string & fileName);
-		virtual ~YUVImageWriter();
 
-		virtual std::string destinationColorSpace() const ;
+		/// free any resources consumed in writing the associated image
+		virtual ~YUVImageWriter();
 
 		IntParameterPtr formatParameter();
 		ConstIntParameterPtr formatParameter() const;
-
+		
 		V2fParameterPtr kBkRParameter();
 		ConstV2fParameterPtr kBkRParameter() const;
-
-		Box3fParameterPtr rangeParameter();
-		ConstBox3fParameterPtr rangeParameter() const;
+		
+		Box3fParameterPtr rangeParameter();		
+		ConstBox3fParameterPtr rangeParameter() const;	
 
 	private:
 
 		static const WriterDescription<YUVImageWriter> m_writerDescription;
-
+		
 		struct ChannelConverter;
 
 		/// write the image
@@ -93,7 +93,7 @@ class YUVImageWriter : public ImageWriter
 		                         const Imath::Box2i &dw ) const;
 
 		void constructParameters();
-
+		
 		IntParameterPtr m_formatParameter;
 		V2fParameterPtr m_kBkRParameter;
 		Box3fParameterPtr m_rangeParameter;

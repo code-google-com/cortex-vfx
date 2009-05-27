@@ -43,26 +43,43 @@ struct DisplayStyle::Data
 	IECoreGL::StatePtr wireframeState;
 	IECoreGL::StatePtr shadedState;
 	IECoreGL::StatePtr pointsState;
-	IECoreGL::StatePtr boundsState;
+	IECoreGL::StatePtr boundsState;	
 };
 
-DisplayStyle::DisplayStyle()
+void DisplayStyle::constructCommon()
 {
 	m_data = new Data;
 	m_data->wireframeState = new IECoreGL::State( true );
 	m_data->shadedState = new IECoreGL::State( true );
 	m_data->pointsState = new IECoreGL::State( true );
 	m_data->boundsState = new IECoreGL::State( true );
-
+	
 	m_data->wireframeState->add( new IECoreGL::PrimitiveSolid( false ) );
 	m_data->wireframeState->add( new IECoreGL::PrimitiveWireframe( true ) );
-
+		
 	m_data->pointsState->add( new IECoreGL::PrimitiveSolid( false ) );
 	m_data->pointsState->add( new IECoreGL::PrimitivePoints( true ) );
 	m_data->pointsState->add( new IECoreGL::PrimitivePointWidth( 2.0f ) );
-
+		
 	m_data->boundsState->add( new IECoreGL::PrimitiveSolid( false ) );
 	m_data->boundsState->add( new IECoreGL::PrimitiveBound( true ) );
+}
+
+DisplayStyle::DisplayStyle()
+{
+	constructCommon();
+}
+
+DisplayStyle::DisplayStyle( const DisplayStyle &other )
+{
+	// we can't copy States or StateComponents. we construct a brand new
+	// state and then copy over any colours which may have been adjusted in it.
+	constructCommon();
+	
+	m_data->boundsState->add( new IECoreGL::BoundColorStateComponent( other.m_data->boundsState->get<IECoreGL::BoundColorStateComponent>()->value() ) );
+	m_data->wireframeState->add( new IECoreGL::WireframeColorStateComponent( other.m_data->boundsState->get<IECoreGL::WireframeColorStateComponent>()->value() ) );
+	m_data->pointsState->add( new IECoreGL::PointColorStateComponent( other.m_data->boundsState->get<IECoreGL::PointColorStateComponent>()->value() ) );
+
 }
 
 DisplayStyle::~DisplayStyle()
@@ -74,7 +91,7 @@ IECoreGL::ConstStatePtr DisplayStyle::baseState( M3dView::DisplayStyle style, bo
 {
 	switch( style )
 	{
-
+	
 		case M3dView::kBoundingBox :
 			if( transferCurrentColor )
 			{
@@ -82,11 +99,11 @@ IECoreGL::ConstStatePtr DisplayStyle::baseState( M3dView::DisplayStyle style, bo
 				m_data->boundsState->add( new IECoreGL::BoundColorStateComponent( wc ) );
 			}
 			return m_data->boundsState;
-
+	
 		case M3dView::kFlatShaded :
 		case M3dView::kGouraudShaded :
 			return m_data->shadedState;
-
+			
 		case M3dView::kWireFrame :
 			if( transferCurrentColor )
 			{
@@ -94,7 +111,7 @@ IECoreGL::ConstStatePtr DisplayStyle::baseState( M3dView::DisplayStyle style, bo
 				m_data->wireframeState->add( new IECoreGL::WireframeColorStateComponent( wc ) );
 			}
 			return m_data->wireframeState;
-
+			
 		case M3dView::kPoints :
 			if( transferCurrentColor )
 			{
@@ -102,9 +119,9 @@ IECoreGL::ConstStatePtr DisplayStyle::baseState( M3dView::DisplayStyle style, bo
 				m_data->pointsState->add( new IECoreGL::PointColorStateComponent( wc ) );
 			}
 			return m_data->pointsState;
-
+			
 		default :
 			return m_data->shadedState;
-
+	
 	}
 }

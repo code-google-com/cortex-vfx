@@ -52,8 +52,6 @@
 using namespace IECoreMaya;
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPED( FromMayaPlugConverter );
-
 FromMayaPlugConverter::FromMayaPlugConverter( const MPlug &plug )
 	:	FromMayaConverter( "FromMayaPlugConverter", "Converts the value held in a maya plug." ), m_plug( plug )
 {
@@ -103,7 +101,7 @@ void FromMayaPlugConverter::registerConverter( const MFnUnitAttribute::Type from
 FromMayaConverterPtr FromMayaPlugConverter::create( const MPlug &plug, IECore::TypeId resultType )
 {
 	MObject attribute = plug.attribute();
-
+	
 	if( attribute.hasFn( MFn::kUnitAttribute ) )
 	{
 		MFnUnitAttribute fnUAttr( attribute );
@@ -111,11 +109,10 @@ FromMayaConverterPtr FromMayaPlugConverter::create( const MPlug &plug, IECore::T
 		UnitTypesToFnsMap::const_iterator it = m->find( UnitTypePair( fnUAttr.unitType(), resultType ) );
 		if( it!=m->end() )
 		{
-			FromMayaConverterPtr result = it->second( plug );
-			return result;
+			return it->second( plug );
 		}
 	}
-
+	
 	if( attribute.hasFn( MFn::kNumericAttribute ) )
 	{
 		MFnNumericAttribute fnNAttr( attribute );
@@ -123,11 +120,10 @@ FromMayaConverterPtr FromMayaPlugConverter::create( const MPlug &plug, IECore::T
 		NumericTypesToFnsMap::const_iterator it = m->find( NumericTypePair( fnNAttr.unitType(), resultType ) );
 		if( it!=m->end() )
 		{
-			FromMayaConverterPtr result = it->second( plug );
-			return result;
+			return it->second( plug );
 		}
 	}
-
+	
 	if( attribute.hasFn( MFn::kTypedAttribute ) )
 	{
 		MFnTypedAttribute fnTAttr( attribute );
@@ -135,11 +131,10 @@ FromMayaConverterPtr FromMayaPlugConverter::create( const MPlug &plug, IECore::T
 		TypedTypesToFnsMap::const_iterator it = m->find( TypedTypePair( fnTAttr.attrType(), resultType ) );
 		if( it!=m->end() )
 		{
-			FromMayaConverterPtr result = it->second( plug );
-			return result;
+			return it->second( plug );
 		}
 	}
-
+	
 	MObject o;
 	plug.getValue( o );
 	if( resultType==IECore::InvalidTypeId )
@@ -148,6 +143,6 @@ FromMayaConverterPtr FromMayaPlugConverter::create( const MPlug &plug, IECore::T
 	}
 	else
 	{
-		return FromMayaObjectConverter::create( o, resultType );
+		return FromMayaObjectConverter::create( o, resultType );	
 	}
 }

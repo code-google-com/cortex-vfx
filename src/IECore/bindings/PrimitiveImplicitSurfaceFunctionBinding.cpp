@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,11 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Exception.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/PrimitiveImplicitSurfaceFunction.h"
-#include "IECore/bindings/RefCountedBinding.h"
 
 using namespace boost::python;
 
@@ -45,9 +45,14 @@ namespace IECore
 
 void bindPrimitiveImplicitSurfaceFunction()
 {
-	RefCountedClass<PrimitiveImplicitSurfaceFunction, ImplicitSurfaceFunctionV3ff>( "PrimitiveImplicitSurfaceFunction" )
-		.def( init< PrimitivePtr > () )
+	typedef class_< PrimitiveImplicitSurfaceFunction, PrimitiveImplicitSurfaceFunction::Ptr, bases< ImplicitSurfaceFunctionV3ff >, boost::noncopyable > PrimitiveImplicitSurfaceFunctionPyClass;
+
+	PrimitiveImplicitSurfaceFunctionPyClass( "PrimitiveImplicitSurfaceFunction", no_init )
+		.def( init< PrimitivePtr > () )		
 	;
+	
+	implicitly_convertible< PrimitiveImplicitSurfaceFunction::Ptr, ImplicitSurfaceFunctionV3ff::Ptr>();
+	INTRUSIVE_PTR_PATCH( PrimitiveImplicitSurfaceFunction, PrimitiveImplicitSurfaceFunctionPyClass );	
 }
 
 } // namespace IECore

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/format.hpp"
+#include <boost/format.hpp>
 
 #include "IECore/ImageCropOp.h"
 #include "IECore/SimpleTypedData.h"
@@ -44,6 +44,7 @@
 #include "IECore/BoxOps.h"
 #include "IECore/ImagePrimitive.h"
 #include "IECore/DespatchTypedData.h"
+#include "IECore/ClassData.h"
 
 #include <cassert>
 
@@ -52,109 +53,128 @@ using namespace Imath;
 using namespace std;
 using namespace boost;
 
-IE_CORE_DEFINERUNTIMETYPED( ImageCropOp );
+/// \todo Move this into the main class for the next major version
+struct ImageCropOp::ExtraMembers
+{	
+	IECore::BoolParameterPtr m_intersectParameter;
+};
+
+static IECore::ClassData<ImageCropOp, ImageCropOp::ExtraMembers> g_extraMembers;
 
 ImageCropOp::ImageCropOp()
-	:	ImagePrimitiveOp(
-			staticTypeName(),
-			"Performs cropping over ImagePrimitive objects.\n"
-			"The operation results on an ImagePrimitive with displayWindow equal to the intersection of the given crop box and the original image displayWindow.\n"
-			"If matchDataWindow if On then the dataWindow will match the new displayWindow (new pixels will be filled with zero). Otherwise it will only be intersected against the given crop box."
+	:	ModifyOp(
+		staticTypeName(),
+		"Performs cropping over ImagePrimitive objects.\n"
+		"The operation results on an ImagePrimitive with displayWindow equal to the intersection of the given crop box and the original image displayWindow.\n"
+		"If matchDataWindow if On then the dataWindow will match the new displayWindow (new pixels will be filled with zero). Otherwise it will only be intersected against the given crop box.",
+		new ImagePrimitiveParameter(
+			"result",
+			"Cropped image.",
+			new ImagePrimitive()
+		),
+		new ImagePrimitiveParameter(
+			"object",
+			"The vector object that will be transformed by the matrix.",
+			new ImagePrimitive()
 		)
+	)
 {
-	m_cropBoxParameter = new Box2iParameter(
+	ExtraMembers &extraMembers = g_extraMembers.create( this );
+
+	m_cropBox = new Box2iParameter(
 		"cropBox",
 		"Determines the crop coordinates to apply on the image.",
 		Box2i()
 	);
 
-	parameters()->addParameter( m_cropBoxParameter );
+	parameters()->addParameter( m_cropBox );
 
-	m_matchDataWindowParameter = new BoolParameter(
+	m_matchDataWindow = new BoolParameter(
 		"matchDataWindow",
-		"if On then the dataWindow will match displayWindow. Otherwise it will be intersected against the given crop box.",
-
+		"if On then the dataWindow will match displayWindow. Otherwise it will be intersected against the given crop box.",	
+		
 		/// \todo The original intent was that this default should be false, but when specifying "new BoolData(false)" as
 		/// the default value it seems the compiler would prefer to convert the BoolData* to a bool over a BoolData::Ptr.
 		/// Consider changing the default if required, but only on the next major version change.
 		true
 	);
 
-	parameters()->addParameter( m_matchDataWindowParameter );
+	parameters()->addParameter( m_matchDataWindow );
 
-	m_resetOriginParameter = new BoolParameter(
+	m_resetOrigin = new BoolParameter(
 		"resetOrigin",
-		"if On then the resulting image will have it's top-left corner at (0,0).",
+		"if On then the resulting image will have it's top-left corner at (0,0).",	
 		true
 	);
 
-	parameters()->addParameter( m_resetOriginParameter );
-
-	m_intersectParameter = new BoolParameter(
+	parameters()->addParameter( m_resetOrigin );
+	
+	extraMembers.m_intersectParameter = new BoolParameter(
 		"intersect",
 		"If enabled then the display window of the resultant image will be cropped against the crop reigion too",
 		true
 	);
 
-	parameters()->addParameter( m_intersectParameter );
-
-
+	parameters()->addParameter( extraMembers.m_intersectParameter );
+	
+	
 	/// \todo Add "reformat" parameter, like Nuke
 	/// Current behaviour is to reformat, so take care to set the default accordingly.
 }
 
 ImageCropOp::~ImageCropOp()
 {
+	g_extraMembers.erase( this );
 }
 
 Box2iParameterPtr ImageCropOp::cropBoxParameter()
 {
-	return m_cropBoxParameter;
+	return m_cropBox;
 }
 
 ConstBox2iParameterPtr ImageCropOp::cropBoxParameter() const
 {
-	return m_cropBoxParameter;
+	return m_cropBox;
 }
 
 BoolParameterPtr ImageCropOp::matchDataWindowParameter()
 {
-	return m_matchDataWindowParameter;
+	return m_matchDataWindow;
 }
 
 ConstBoolParameterPtr ImageCropOp::matchDataWindowParameter() const
 {
-	return m_matchDataWindowParameter;
+	return m_matchDataWindow;
 }
 
 BoolParameterPtr ImageCropOp::resetOriginParameter()
 {
-	return m_resetOriginParameter;
+	return m_resetOrigin;
 }
 
 ConstBoolParameterPtr ImageCropOp::resetOriginParameter() const
 {
-	return m_resetOriginParameter;
+	return m_resetOrigin;
 }
 
 BoolParameterPtr ImageCropOp::intersectParameter()
 {
-	return m_intersectParameter;
+	return g_extraMembers[this].m_intersectParameter;
 }
 
 ConstBoolParameterPtr ImageCropOp::intersectParameter() const
 {
-	return m_intersectParameter;
+	return g_extraMembers[this].m_intersectParameter;
 }
 
 struct ImageCropOp::ImageCropFn
 {
 	typedef DataPtr ReturnType;
-
+	
 	const Imath::Box2i m_sourceDataWindow;
 	const Imath::Box2i m_croppedDataWindow;
-	const Imath::Box2i m_targetDataWindow;
-
+	const Imath::Box2i m_targetDataWindow;	
+	
 	ImageCropFn( const Imath::Box2i &sourceDataWindow, const Imath::Box2i &croppedDataWindow, const Imath::Box2i &targetDataWindow )
 	: m_sourceDataWindow( sourceDataWindow ), m_croppedDataWindow( croppedDataWindow ), m_targetDataWindow( targetDataWindow )
 	{
@@ -164,9 +184,9 @@ struct ImageCropOp::ImageCropFn
 	ReturnType operator()( typename T::ConstPtr sourceData ) const
 	{
 		assert( sourceData );
-
+		
 		typename T::Ptr newChannel = new T();
-
+		
 		int sourceWidth = m_sourceDataWindow.max.x - m_sourceDataWindow.min.x + 1;
 
 		int targetWidth = m_targetDataWindow.max.x - m_targetDataWindow.min.x + 1;
@@ -175,11 +195,11 @@ struct ImageCropOp::ImageCropFn
 
 #ifndef NDEBUG
 		int numPixelsCopied = 0;
-#endif
+#endif		
 
 		typename T::ValueType &target = newChannel->writable();
 		target.resize( targetArea, 0 );
-
+					
 		const typename T::ValueType &source = sourceData->readable();
 
 		/// \todo Optimize
@@ -191,7 +211,7 @@ struct ImageCropOp::ImageCropFn
 				if ( m_sourceDataWindow.intersects( copyPixel ) && m_targetDataWindow.intersects( copyPixel ) )
 				{
 					assert( boxIntersection( m_sourceDataWindow, m_targetDataWindow ).intersects( copyPixel ) );
-
+				
 					int sourceOffset = sourceWidth * ( copyPixel.y - m_sourceDataWindow.min.y ) + ( copyPixel.x - m_sourceDataWindow.min.x );
 					assert( sourceOffset >= 0 );
 					assert( sourceOffset < (int)source.size() );
@@ -202,7 +222,7 @@ struct ImageCropOp::ImageCropFn
 					target[ targetOffset++ ] = source[ sourceOffset++ ];
 #ifndef NDEBUG
 					numPixelsCopied ++;
-#endif
+#endif					
 				}
 				else
 				{
@@ -210,32 +230,34 @@ struct ImageCropOp::ImageCropFn
 				}
 			}
 		}
-
+		
 		assert( (int)target.size() == targetArea );
 		assert( numPixelsCopied <= (int)target.size() );
-
-		assert( newChannel );
+		
+		assert( newChannel );			
 		return newChannel;
 	}
 
 };
 
-void ImageCropOp::modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObjectPtr operands )
-{
+void ImageCropOp::modify( ObjectPtr toModify, ConstCompoundObjectPtr operands )
+{	
+	ImagePrimitivePtr image = assertedStaticCast< ImagePrimitive >( toModify );
+
 	// Validate the input image
 	if ( !image->arePrimitiveVariablesValid() )
 	{
 		throw InvalidArgumentException( "ImageCropOp: Input image is not valid" );
 	}
 
-	const Imath::Box2i &cropBox = m_cropBoxParameter->getTypedValue();
+	const Imath::Box2i &cropBox = m_cropBox->getTypedValue();
 	if ( cropBox.isEmpty() )
 	{
 		throw InvalidArgumentException( "ImageCropOp: Specified crop box is empty" );
 	}
-
-	const bool resetOrigin = m_resetOriginParameter->getTypedValue();
-	const bool intersect = m_intersectParameter->getTypedValue();
+	
+	const bool resetOrigin = m_resetOrigin->getTypedValue();
+	const bool intersect = g_extraMembers[this].m_intersectParameter->getTypedValue();
 
 	Imath::Box2i croppedDisplayWindow;
 	if ( intersect )
@@ -247,13 +269,13 @@ void ImageCropOp::modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundOb
 		croppedDisplayWindow = cropBox;
 	}
 	const Imath::Box2i &dataWindow = image->getDataWindow();
-
+	
 	Imath::Box2i croppedDataWindow = boxIntersection( cropBox, dataWindow );
-
+	
 	Imath::Box2i newDisplayWindow = croppedDisplayWindow;
 	Imath::Box2i newDataWindow;
-
-	const bool matchDataWindow = m_matchDataWindowParameter->getTypedValue();
+	
+	const bool matchDataWindow = m_matchDataWindow->getTypedValue();
 	if ( matchDataWindow )
 	{
 		newDataWindow = newDisplayWindow;
@@ -265,14 +287,14 @@ void ImageCropOp::modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundOb
 
 	for ( PrimitiveVariableMap::iterator varIt = image->variables.begin(); varIt != image->variables.end(); varIt++ )
 	{
-		PrimitiveVariable &channel = varIt->second;
+		PrimitiveVariable &channel = varIt->second;		
 
 		switch ( channel.interpolation )
 		{
 			case PrimitiveVariable::Vertex:
 			case PrimitiveVariable::Varying:
 			case PrimitiveVariable::FaceVarying:
-				{
+				{			
 					DataPtr data = channel.data;
 					assert( data );
 					ImageCropFn fn( dataWindow, croppedDataWindow, newDataWindow );
@@ -281,7 +303,7 @@ void ImageCropOp::modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundOb
 					assert( channel.data );
 				}
 				break;
-
+			
 			default:
 				/// Nothing to do for these channel types
 				assert( channel.interpolation == PrimitiveVariable::Constant || channel.interpolation == PrimitiveVariable::Uniform );
@@ -294,22 +316,22 @@ void ImageCropOp::modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundOb
 #ifndef NDEBUG
 		V2i newDisplayWindowSize = newDisplayWindow.size();
 		V2i newDataWindowSize = newDataWindow.size();
-#endif
+#endif	
 		newDisplayWindow.max = newDisplayWindow.max - newDisplayWindow.min;
 		newDataWindow.min = newDataWindow.min - newDisplayWindow.min;
 		newDataWindow.max = newDataWindow.max - newDisplayWindow.min;
 		newDisplayWindow.min = Imath::V2i( 0, 0 );
 		assert( newDisplayWindowSize == newDisplayWindow.size() );
 		assert( newDataWindowSize == newDataWindow.size() );
-	}
+	}	
 	image->setDataWindow( newDataWindow );
 	image->setDisplayWindow( newDisplayWindow );
-
+		
 	if ( matchDataWindow )
 	{
 		assert( image->getDisplayWindow() == image->getDataWindow() );
 	}
-
+	
 	assert( image->arePrimitiveVariablesValid() );
 }
 

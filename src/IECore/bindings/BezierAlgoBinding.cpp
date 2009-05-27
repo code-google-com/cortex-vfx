@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/bindings/BezierAlgoBinding.h"
 #include "IECore/BezierAlgo.h"
@@ -73,7 +73,7 @@ void bindBezierAlgo()
 	def( "bezierSubdivide", &bezierSubdivideBinding<Imath::V2d> );
 	def( "bezierSubdivide", &bezierSubdivideBinding<Imath::V3f> );
 	def( "bezierSubdivide", &bezierSubdivideBinding<Imath::V3d> );
-
+	
 	def( "bezierSubdivide", &bezierSubdivideBindingQuadratic<Imath::V2f> );
 	def( "bezierSubdivide", &bezierSubdivideBindingQuadratic<Imath::V2d> );
 	def( "bezierSubdivide", &bezierSubdivideBindingQuadratic<Imath::V3f> );

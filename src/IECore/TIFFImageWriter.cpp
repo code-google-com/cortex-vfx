@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -63,8 +63,6 @@ using namespace std;
 using namespace Imath;
 using namespace boost;
 
-IE_CORE_DEFINERUNTIMETYPED( TIFFImageWriter )
-
 const Writer::WriterDescription<TIFFImageWriter> TIFFImageWriter::m_writerDescription("tiff tif");
 
 TIFFImageWriter::TIFFImageWriter()
@@ -83,10 +81,10 @@ TIFFImageWriter::TIFFImageWriter( ObjectPtr image, const string &fileName )
 
 void TIFFImageWriter::constructParameters()
 {
-	IntParameter::PresetsContainer bitDepthPresets;
-	bitDepthPresets.push_back( IntParameter::Preset( "8", 8 ) );
-	bitDepthPresets.push_back( IntParameter::Preset( "16", 16 ) );
-	bitDepthPresets.push_back( IntParameter::Preset( "32", 32 ) );
+	IntParameter::PresetsMap bitDepthPresets;
+	bitDepthPresets["8"] = 8;
+	bitDepthPresets["16"] = 16;
+	bitDepthPresets["32"] = 32;
 
 	m_bitDepthParameter = new IntParameter(
 	        "bitdepth",
@@ -100,11 +98,11 @@ void TIFFImageWriter::constructParameters()
 	parameters()->addParameter( m_bitDepthParameter );
 
 	// compression parameter
-	IntParameter::PresetsContainer compressionPresets;
-	compressionPresets.push_back( IntParameter::Preset( "none", COMPRESSION_NONE ) );
-	compressionPresets.push_back( IntParameter::Preset( "lzw", COMPRESSION_LZW ) );
-	compressionPresets.push_back( IntParameter::Preset( "jpeg", COMPRESSION_JPEG ) );
-	compressionPresets.push_back( IntParameter::Preset( "deflate", COMPRESSION_DEFLATE ) );
+	IntParameter::PresetsMap compressionPresets;
+	compressionPresets["none"]    = COMPRESSION_NONE;
+	compressionPresets["lzw"]     = COMPRESSION_LZW;
+	compressionPresets["jpeg"]    = COMPRESSION_JPEG;
+	compressionPresets["deflate"] = COMPRESSION_DEFLATE;
 
 	/// Verify min
 	BOOST_STATIC_ASSERT( COMPRESSION_NONE < COMPRESSION_LZW );
@@ -119,7 +117,7 @@ void TIFFImageWriter::constructParameters()
 	m_compressionParameter = new IntParameter(
 	        "compression",
 	        "TIFF compression method",
-	        COMPRESSION_LZW,
+	        compressionPresets["lzw"],
 	        COMPRESSION_NONE,
 	        COMPRESSION_DEFLATE,
 	        compressionPresets,
@@ -133,18 +131,13 @@ TIFFImageWriter::~TIFFImageWriter()
 {
 }
 
-std::string TIFFImageWriter::destinationColorSpace() const
-{
-	return "srgb";
-}
-
 template<typename ChannelData>
 struct TIFFImageWriter::ChannelConverter
 {
 	typedef typename ChannelData::Ptr ReturnType;
-
+	
 	std::string m_channelName;
-
+	
 	ChannelConverter( const std::string &channelName ) : m_channelName( channelName )
 	{
 	}
@@ -153,21 +146,21 @@ struct TIFFImageWriter::ChannelConverter
 	ReturnType operator()( typename T::Ptr data )
 	{
 		assert( data );
-
+			
 		return DataConvert < T, ChannelData, ScaledDataConversion< typename T::ValueType::value_type, typename ChannelData::ValueType::value_type> >()
 		(
 			boost::static_pointer_cast<const T>( data )
 		);
 	};
-
+	
 	struct ErrorHandler
 	{
 		template<typename T, typename F>
 		void operator()( typename T::ConstPtr data, const F& functor )
 		{
 			assert( data );
-
-			throw InvalidArgumentException( ( boost::format( "TIFFImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId( data->typeId() ) % functor.m_channelName ).str() );
+		
+			throw InvalidArgumentException( ( boost::format( "TIFFImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId( data->typeId() ) % functor.m_channelName ).str() );		
 		}
 	};
 };
@@ -186,15 +179,17 @@ void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector
 	// Build a vector in which we place all the image channels
 
 	vector<T> imageBuffer( samplesPerPixel * area, 0 );
+	
+	int dataWidth = dataWindow.size().x + 1;
 
 	// Encode each individual channel into the buffer
 	int channelOffset = 0;
 	for ( vector<string>::const_iterator i = names.begin(); i != names.end(); ++i, ++channelOffset )
-	{
+	{		
 		DataPtr dataContainer = image->variables.find(i->c_str())->second.data;
 		assert( dataContainer );
-
-		typedef TypedData< vector<T> > ChannelData;
+		
+		typedef TypedData< vector<T> > ChannelData;	
 		ChannelConverter<ChannelData> converter( *i );
 		typename ChannelData::Ptr channelData = despatchTypedData<
 			ChannelConverter<ChannelData>,
@@ -202,18 +197,22 @@ void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector
 			typename ChannelConverter<ChannelData>::ErrorHandler
 		>( dataContainer, converter );
 
-		typedef boost::multi_array_ref< const T, 2 > SourceArray2D;
-		typedef boost::multi_array_ref< T, 3 > TargetArray3D;
-
-		const SourceArray2D sourceData( &channelData->readable()[0], extents[ image->getDataWindow().size().y + 1 ][ image->getDataWindow().size().x + 1 ] );
-		TargetArray3D targetData( &imageBuffer[0], extents[ height ][ width ][ samplesPerPixel ] );
-
-		for ( int y = dataWindow.min.y; y <= dataWindow.max.y ; y++ )
+		int dataY = 0;
+		
+		for ( int y = dataWindow.min.y; y <= dataWindow.max.y; y++, dataY++ )
 		{
-			for ( int x = dataWindow.min.x; x <= dataWindow.max.x ; x++ )
-			{
-				targetData[ y - dataWindow.min.y ][ x - dataWindow.min.x ][ channelOffset ]
-					= sourceData[ y - image->getDataWindow().min.y ][ x - image->getDataWindow().min.x ];
+			int dataOffset = dataY * dataWidth;
+			assert( dataOffset >= 0 );
+
+			for ( int x = dataWindow.min.x; x <= dataWindow.max.x; x++, dataOffset++ )
+			{		
+				int pixelIdx = ( y - image->getDataWindow().min.y ) * dataWidth + ( x - image->getDataWindow().min.x );
+
+				assert( pixelIdx >= 0 );
+				assert( samplesPerPixel*dataOffset + channelOffset < (int)imageBuffer.size() );
+				assert( pixelIdx < (int)channelData->readable().size() );
+				
+				imageBuffer[ samplesPerPixel*dataOffset + channelOffset ] = channelData->readable()[pixelIdx];
 			}
 		}
 	}
@@ -239,7 +238,7 @@ void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector
 }
 
 void TIFFImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &fullDataWindow ) const
-{
+{	
 	ScopedTIFFErrorHandler errorHandler;
 	if ( setjmp( errorHandler.m_jmpBuffer ) )
 	{
@@ -256,7 +255,7 @@ void TIFFImageWriter::writeImage( const vector<string> &names, ConstImagePrimiti
 	assert( tiffImage );
 
 	try
-	{
+	{	
 		/// Get the channels RGBA at the front, in that order, if they exist
 		vector<string> desiredChannelOrder;
 		desiredChannelOrder.push_back( "R" );
@@ -332,8 +331,8 @@ void TIFFImageWriter::writeImage( const vector<string> &names, ConstImagePrimiti
 
 			TIFFSetField( tiffImage, TIFFTAG_EXTRASAMPLES, extraSamples.size(), (uint16*)&extraSamples[0] );
 		}
-
-		Box2i dataWindow = boxIntersection( fullDataWindow, boxIntersection( image->getDisplayWindow(), image->getDataWindow() ) );
+		
+		Box2i dataWindow = boxIntersection( fullDataWindow, image->getDisplayWindow() );
 
 		// compute the writebox
 		int width  = 1 + dataWindow.max.x - dataWindow.min.x;
@@ -354,7 +353,7 @@ void TIFFImageWriter::writeImage( const vector<string> &names, ConstImagePrimiti
 			compression = COMPRESSION_DEFLATE;
 		}
 
-		/// \todo Add a parameter to let us write signed images
+		/// \todo Add a parameter to let us write signed images		
 		switch ( bitDepth )
 		{
 		case 8:
@@ -379,7 +378,7 @@ void TIFFImageWriter::writeImage( const vector<string> &names, ConstImagePrimiti
 		// set the basic values
 		TIFFSetField( tiffImage, TIFFTAG_IMAGEWIDTH, (uint32)width );
 		TIFFSetField( tiffImage, TIFFTAG_IMAGELENGTH, (uint32)height );
-
+		
 		if ( dataWindow != image->getDisplayWindow() )
 		{
 			V2i position = dataWindow.min - image->getDisplayWindow().min;

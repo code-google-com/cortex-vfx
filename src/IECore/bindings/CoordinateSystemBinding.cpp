@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/CoordinateSystem.h"
 #include "IECore/bindings/CoordinateSystemBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -45,12 +46,15 @@ namespace IECore
 
 void bindCoordinateSystem()
 {
-	RunTimeTypedClass<CoordinateSystem>()
-		.def( init<>() )
+	typedef class_<CoordinateSystem, CoordinateSystemPtr, bases<StateRenderable>, boost::noncopyable> CoordinateSystemPyClass;
+	CoordinateSystemPyClass( "CoordinateSystem" )
 		.def( init<const std::string &>() )
 		.def( "getName", &CoordinateSystem::getName, return_value_policy<copy_const_reference>() )
 		.def( "setName", &CoordinateSystem::setName )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(CoordinateSystem)
 	;
+	INTRUSIVE_PTR_PATCH( CoordinateSystem, CoordinateSystemPyClass );
+	implicitly_convertible<CoordinateSystemPtr, StateRenderablePtr>();
 }
-
+	
 }

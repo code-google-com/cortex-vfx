@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,19 +42,39 @@ using namespace IECore;
 namespace IECore
 {
 
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CompoundData, CompoundDataTypeId );
+template<>
+TypeId CompoundData::typeId() const
+{
+	return CompoundDataTypeId;
+}
+
+template<>
+TypeId CompoundData::staticTypeId()
+{
+	return CompoundDataTypeId;
+}
+
+template<>
+std::string CompoundData::typeName() const
+{
+	return "CompoundData";
+}
+
+template<>
+std::string CompoundData::staticTypeName()
+{
+	return "CompoundData";
+}
 
 template<>
 void CompoundData::memoryUsage( Object::MemoryAccumulator &accumulator ) const
 {
 	Data::memoryUsage( accumulator );
 	const CompoundDataMap &data = readable();
-	accumulator.accumulate( data.size() * sizeof( CompoundDataMap::value_type ) );
-	
 	CompoundDataMap::const_iterator iter = data.begin();
 	while (iter != data.end())
 	{
-		accumulator.accumulate( iter->second );		
+		accumulator.accumulate( iter->second );
 		iter++;
 	}	
 }

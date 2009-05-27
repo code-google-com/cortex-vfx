@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,12 +32,6 @@
 #
 ##########################################################################
 
-import warnings
-warnings.filterwarnings( "error", "Access to Parameters as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Access to CompoundObject children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Access to CompoundParameter children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Specifying presets as a dictionary is deprecated - pass a tuple of tuples instead.", DeprecationWarning )
-
 import IECore
 
 from Shader import *
@@ -60,11 +54,10 @@ from AlphaTextureTest import *
 from LuminanceTextureTest import *
 from UserAttributesTest import *
 from DeferredRenderer import *
-from DiskPrimitiveTest import DiskPrimitiveTest
 
 if IECore.withFreeType() :
 
 	from TextTest import *
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main()   

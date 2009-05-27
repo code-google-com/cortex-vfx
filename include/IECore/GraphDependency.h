@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,7 @@
 #ifndef IE_CORE_GRAPHDEPENDENCY_H
 #define IE_CORE_GRAPHDEPENDENCY_H
 
-#include "IECore/RefCounted.h"
+#include <IECore/RefCounted.h>
 
 namespace IECore
 {
@@ -51,7 +51,7 @@ class GraphDependency : public RefCounted
 
 		///Triggers recursive computation on all dirty nodes.
 		virtual void update( ) = 0;
-
+				
 		///Triggers recursive computation on all dirty nodes dependent on the given node including itself.
 		virtual void update( const T &node ) = 0;
 

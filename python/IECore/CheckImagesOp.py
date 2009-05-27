@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -44,9 +44,9 @@ from IECore import *
 class CheckImagesOp( FileSequenceAnalyzerOp ) :
 
 	def __init__( self ) :
-
+	
 		FileSequenceAnalyzerOp.__init__( self, "CheckImagesOp",
-"""This Op checks an image file sequence for corrupted and missing files. It also warns of abrupt file size changes.
+"""This Op checks an image file sequence for corrupted and missing files. It also warns of abrupt file size changes. 
 The Op will raise an error if there's any missing or corrupt file.
 Otherwise it will return the number of suspicious frames (strange file sizes).""",
 			IntParameter(
@@ -56,7 +56,7 @@ Otherwise it will return the number of suspicious frames (strange file sizes).""
 			),
 			extensions = "dpx exr cin tif tiff jpeg jpg"
 		)
-
+		
 		self.userData()["UI"] = CompoundObject(
 			{
 				"infoMessages": BoolData( True ),
@@ -72,7 +72,7 @@ Otherwise it will return the number of suspicious frames (strange file sizes).""
 		missing = self.missingFrames()
 		missing.sort()
 
-		info( "Checking sequence:", args["fileSequence"].value, "..." )
+		info( "Checking sequence:", args.fileSequence.value, "..." )
 
 		if len(missing):
 			error( "Missing frames:", ','.join( map( str, missing ) ) )
@@ -89,4 +89,4 @@ Otherwise it will return the number of suspicious frames (strange file sizes).""
 
 		return IntData( len(suspicious) )
 
-registerRunTimeTyped( CheckImagesOp, 100017, FileSequenceAnalyzerOp )
+makeRunTimeTyped( CheckImagesOp, 100017, Op )

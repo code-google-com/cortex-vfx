@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Exception.h"
-#include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/CSGImplicitSurfaceFunction.h"
 
 using namespace boost::python;
@@ -47,13 +47,18 @@ template<typename T>
 void bindCSGImplicitSurfaceFunction( const char *name )
 {
 	typedef ImplicitSurfaceFunction<typename T::Point, typename T::Value> Base;
+	
+	typedef class_< T, typename T::Ptr, bases< Base >, boost::noncopyable > CSGImplicitPyClass;
 
-	object csg = RefCountedClass<T, Base>( name )
+	object csg = CSGImplicitPyClass( name, no_init )
 		.def( init< typename T::Fn::Ptr, typename T::Fn::Ptr, typename T::Mode > () )
 	;
-
+	
+	implicitly_convertible< typename T::Ptr, typename Base::Ptr>();
+	INTRUSIVE_PTR_PATCH_TEMPLATE( T, CSGImplicitPyClass );
+	
 	scope csgScope( csg );
-
+	
 	enum_< typename T::Mode> ("Mode")
 		.value("Union", T::Union)
 		.value("Intersection", T::Intersection)
@@ -67,7 +72,7 @@ void bindCSGImplicitSurfaceFunction()
 	bindCSGImplicitSurfaceFunction<CSGImplicitSurfaceFunctionV3ff>( "CSGImplicitSurfaceFunctionV3ff" );
 	bindCSGImplicitSurfaceFunction<CSGImplicitSurfaceFunctionV3fd>( "CSGImplicitSurfaceFunctionV3fd" );
 	bindCSGImplicitSurfaceFunction<CSGImplicitSurfaceFunctionV3df>( "CSGImplicitSurfaceFunctionV3df" );
-	bindCSGImplicitSurfaceFunction<CSGImplicitSurfaceFunctionV3dd>( "CSGImplicitSurfaceFunctionV3dd" );
+	bindCSGImplicitSurfaceFunction<CSGImplicitSurfaceFunctionV3dd>( "CSGImplicitSurfaceFunctionV3dd" );	
 }
 
 } // namespace IECore

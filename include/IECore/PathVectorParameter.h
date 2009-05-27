@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,18 +35,18 @@
 #ifndef IE_CORE_PATHVECTORPARAMETER_H
 #define IE_CORE_PATHVECTORPARAMETER_H
 
-#include "IECore/VectorTypedParameter.h"
+#include "IECore/PathParameter.h"
 
 namespace IECore
 {
 
-/// This class implements a StringVectorParameter object with validation
+/// This base class implements a StringVectorParameter object with validation
 /// of its elements based on it representing a list of file/directory paths.
 class PathVectorParameter : public StringVectorParameter
 {
 	public :
 
-		IE_CORE_DECLAREOBJECT( PathVectorParameter, StringVectorParameter )
+		IE_CORE_DECLARERUNTIMETYPED( PathVectorParameter, StringVectorParameter )
 
 		typedef enum
 		{
@@ -57,7 +57,7 @@ class PathVectorParameter : public StringVectorParameter
 
 		PathVectorParameter( const std::string &name, const std::string &description,
 		                     const std::vector<std::string> &defaultValue, bool allowEmptyList = true, CheckType check = PathVectorParameter::DontCare,
-		                     const StringVectorParameter::PresetsContainer &presets = StringVectorParameter::PresetsContainer(), bool presetsOnly = false, ConstCompoundObjectPtr userData=0 );
+		                     const StringVectorParameter::PresetsMap &presets = StringVectorParameter::PresetsMap(), bool presetsOnly = false, ConstCompoundObjectPtr userData=0 );
 
 		bool allowEmptyList() const;
 		bool mustExist() const;
@@ -71,18 +71,10 @@ class PathVectorParameter : public StringVectorParameter
 		/// * mustNotExist() is true and the file/dir exists.
 		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
 
-	protected :
-
-		// for io and copying
-		PathVectorParameter();
-		friend class TypeDescription<PathVectorParameter>;
-
 	private :
 
 		bool m_allowEmptyList;
 		CheckType m_check;
-
-		static const unsigned int g_ioVersion;
 
 };
 

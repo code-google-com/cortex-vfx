@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -51,16 +51,16 @@ namespace IECore
 template<typename X, typename Y>
 class Spline
 {
-
+	
 	public :
-
+	
 		typedef X XType;
 		typedef Y YType;
 		typedef boost::numeric::interval<XType> XInterval;
-
+	
 		typedef CubicBasis<XType> Basis;
 		typedef std::multimap<X, Y> PointContainer;
-
+		
 		/// The Spline is defined by a basis and a mapping from
 		/// X to Y values defining control points for the spline.
 		/// Both are public so they may be manipulated freely.
@@ -69,25 +69,27 @@ class Spline
 
 		Spline( const Basis &basis=Basis::catmullRom() );
 		Spline( const Basis &basis, const PointContainer &points );
-
+		
 		/// Returns the range of the spline in the X direction.
 		XInterval interval() const;
-
+		
 		/// Find the appropriate segment and parametric position to determine
 		/// the y value for a given x value. The parametric position is returned
 		/// and segment is set to point to the first point in the segment. This
 		/// information can then be used along with the basis matrix to calculate
 		/// the y value.
+		/// \todo I'm not convinced this is terribly stable when x values get close
+		/// together.
 		inline X solve( X x, typename PointContainer::const_iterator &segment ) const;
 		/// As above but fills the points array with the points for the segment.
 		inline X solve( X x, Y segment[4] ) const;
-
+		
 		/// Uses solve() to evaluate the y value for a given x position.
 		inline Y operator() ( X x ) const;
-
+		
 		inline bool operator==( const Spline &rhs ) const;
 		inline bool operator!=( const Spline &rhs ) const;
-
+		
 };
 
 typedef Spline<float, float> Splineff;

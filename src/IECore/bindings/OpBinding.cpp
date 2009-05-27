@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,15 +32,16 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Op.h"
 #include "IECore/Parameter.h"
 #include "IECore/CompoundParameter.h"
 #include "IECore/Object.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
+#include "IECore/bindings/WrapperToPython.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
-#include "IECore/bindings/Wrapper.h"
 
 using namespace boost;
 using namespace boost::python;
@@ -50,16 +51,19 @@ namespace IECore {
 class OpWrap : public Op, public Wrapper<Op>
 {
 	public :
-
+		
 		OpWrap( PyObject *self, const std::string name, const std::string description, ParameterPtr resultParameter ) : Op( name, description, resultParameter ), Wrapper<Op>( self, this ) {};
-
+		
 		OpWrap( PyObject *self, const std::string name, const std::string description, CompoundParameterPtr compoundParameter, ParameterPtr resultParameter ) : Op( name, description, compoundParameter, resultParameter ), Wrapper<Op>( self, this ) {};
 
-		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands )
+		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands ) 
 		{
 			override o = this->get_override( "doOperation" );
 			if( o )
 			{
+				//// \todo We may want to call operands->copy() here instead of casting away the constness. If the Python code being called
+				/// here actually attempts to change the CompoundObject, then any C++ calling code might get confused when a suposedly const value
+				/// changes unexpectedly. Check any performance overhead of the copy.
 				ObjectPtr r = o( const_pointer_cast<CompoundObject>( operands ) );
 				if( !r )
 				{
@@ -84,15 +88,20 @@ static ParameterPtr resultParameter( const Op &o )
 
 void bindOp()
 {
-	using boost::python::arg;
-
-	RunTimeTypedClass<Op, OpWrapPtr>()
-		.def( init< const std::string, const std::string, ParameterPtr >( ( arg( "name" ), arg( "description" ), arg( "resultParameter") ) ) )
-		.def( init< const std::string, const std::string, CompoundParameterPtr, ParameterPtr >( ( arg( "name" ), arg( "description" ), arg( "compoundParameter" ), arg( "resultParameter") ) ) )
+	typedef class_< Op, OpWrapPtr, boost::noncopyable, bases<Parameterised> > OpPyClass;
+	OpPyClass( "Op", no_init )
+		.def( init< const std::string, const std::string, ParameterPtr >( args( "name", "description", "resultParameter") ) )
+		.def( init< const std::string, const std::string, CompoundParameterPtr, ParameterPtr >( args( "name", "description", "compoundParameter", "resultParameter") ) )
 		.def( "resultParameter", &resultParameter )
 		.def( "operate", &Op::operate )
 		.def( "__call__", &Op::operate )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(Op)
 	;
+	
+	WrapperToPython<OpPtr>();
+
+	INTRUSIVE_PTR_PATCH( Op, OpPyClass );
+	implicitly_convertible<OpPtr, ParameterisedPtr>();	
 
 }
 

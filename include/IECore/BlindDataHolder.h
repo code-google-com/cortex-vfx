@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,8 +35,8 @@
 #ifndef IE_CORE_BLINDDATAHOLDER_H
 #define IE_CORE_BLINDDATAHOLDER_H
 
-#include "IECore/Object.h"
-#include "IECore/CompoundData.h"
+#include <IECore/Object.h>
+#include <IECore/CompoundData.h>
 
 namespace IECore
 {
@@ -45,26 +45,26 @@ namespace IECore
 class BlindDataHolder : public Object
 {
 	public:
-
+	
 		BlindDataHolder();
 		BlindDataHolder(CompoundDataPtr data);
-
+		
 		BlindDataHolder( const BlindDataHolder &other );
-
+		
 		virtual ~BlindDataHolder();
-
+		
 		IE_CORE_DECLAREOBJECT( BlindDataHolder, Object );
-
+		
 		/// Return the blind data for modification.
 		CompoundDataPtr blindData() const;
-
+		
 	protected:
-
+	
 		CompoundDataPtr m_data;
-
+		
 	private :
 
-		static const unsigned int m_ioVersion;
+		static const unsigned int m_ioVersion;	
 
 };
 

@@ -37,7 +37,6 @@
 
 #include "IECore/ChannelOp.h"
 #include "IECore/NumericParameter.h"
-#include "IECore/ColorSpaceTransformOp.h"
 
 namespace IECore
 {
@@ -60,20 +59,16 @@ class LinearToCineonOp : public ChannelOp
 
 		IntParameterPtr refBlackValParameter();
 		ConstIntParameterPtr refBlackValParameter() const;
-
+	
 	protected :
-
+	
 		virtual void modifyChannels( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, ChannelVector &channels );
-
+	
 		FloatParameterPtr m_filmGamma;
 		IntParameterPtr m_refWhiteVal;
 		IntParameterPtr m_refBlackVal;
 
 		struct Converter;
-
-	private :
-
-		static ColorSpaceTransformOp::ColorSpaceDescription<LinearToCineonOp> g_colorSpaceDescription;
 
 };
 

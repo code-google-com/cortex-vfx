@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,7 @@
 #ifndef IECORE_MESHTANGENTSOP_H
 #define IECORE_MESHTANGENTSOP_H
 
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/TypedParameter.h"
 #include "IECore/TypedPrimitiveOp.h"
 
 namespace IECore
@@ -48,35 +48,35 @@ class MeshTangentsOp : public MeshPrimitiveOp
 
 		MeshTangentsOp();
 		virtual ~MeshTangentsOp();
-
+		
 		StringParameterPtr uPrimVarNameParameter();
-		ConstStringParameterPtr uPrimVarNameParameter() const;
-
-		StringParameterPtr vPrimVarNameParameter();
-		ConstStringParameterPtr vPrimVarNameParameter() const;
-
+		ConstStringParameterPtr uPrimVarNameParameter() const;		
+		
+		StringParameterPtr vPrimVarNameParameter();		
+		ConstStringParameterPtr vPrimVarNameParameter() const;	
+		
 		StringParameterPtr uTangentPrimVarNameParameter();
-		ConstStringParameterPtr uTangentPrimVarNameParameter() const;
-
-		StringParameterPtr vTangentPrimVarNameParameter();
-		ConstStringParameterPtr vTangentPrimVarNameParameter() const;
+		ConstStringParameterPtr uTangentPrimVarNameParameter() const;		
+		
+		StringParameterPtr vTangentPrimVarNameParameter();		
+		ConstStringParameterPtr vTangentPrimVarNameParameter() const;			
 
 		IE_CORE_DECLARERUNTIMETYPED( MeshTangentsOp, MeshPrimitiveOp );
 
 	protected:
-
+	
 		virtual void modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands );
-
+	
 	private :
-
+		
 		StringParameterPtr m_uPrimVarNameParameter;
-		StringParameterPtr m_vPrimVarNameParameter;
+		StringParameterPtr m_vPrimVarNameParameter;	
 		StringParameterPtr m_uTangentPrimVarNameParameter;
-		StringParameterPtr m_vTangentPrimVarNameParameter;
-
-		struct CalculateTangents;
+		StringParameterPtr m_vTangentPrimVarNameParameter;		
+	
+		struct CalculateTangents;	
 		struct HandleErrors;
-
+		
 };
 
 IE_CORE_DECLAREPTR( MeshTangentsOp );

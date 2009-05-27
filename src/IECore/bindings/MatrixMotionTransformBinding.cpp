@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/MatrixMotionTransform.h"
 #include "IECore/bindings/MatrixMotionTransformBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -105,9 +106,9 @@ static boost::python::list values( MatrixMotionTransform &p )
 
 
 void bindMatrixMotionTransform()
-{
-	RunTimeTypedClass<MatrixMotionTransform>()
-		.def( init<>() )
+{	
+	typedef class_< MatrixMotionTransform, MatrixMotionTransformPtr, bases<Transform>, boost::noncopyable > MatrixMotionTransformPyClass;
+	MatrixMotionTransformPyClass( "MatrixMotionTransform" )
 		.def( "__len__", &len )
 		.def( "__getitem__", &getItem )
 		.def( "__setitem__", &setItem )
@@ -115,7 +116,10 @@ void bindMatrixMotionTransform()
 		.def( "__contains__", &contains )
 		.def( "keys", &keys )
 		.def( "values", &values )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(MatrixMotionTransform)
 	;
+	INTRUSIVE_PTR_PATCH( MatrixMotionTransform, MatrixMotionTransformPyClass );
+	implicitly_convertible<MatrixMotionTransformPtr, TransformPtr>();
 }
 
 }

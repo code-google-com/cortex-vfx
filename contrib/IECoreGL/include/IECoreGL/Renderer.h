@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -59,7 +59,7 @@ class Renderer : public IECore::Renderer
 		///
 		/// \par Implementation specific options supported :
 		///
-		/// "gl:mode" StringData
+		/// "gl:mode" StringData 
 		/// Valid values are "immediate" or "deferred". In immediate mode rendering is
 		/// performed in a streaming fashion, drawing each primitive as it is
 		/// specified. In deferred mode rendering is performed by building a Scene
@@ -192,7 +192,7 @@ class Renderer : public IECore::Renderer
 		/// The color of the points drawn.
 		///
 		/// \li <b>"gl:primitive:sortForTransparency" BoolData true</b><br>
-		/// Causes the individual components of a
+		/// Causes the individual components of a 
 		/// primitive to be sorted in depth when the "gl:shade:transparent"
 		/// attribute is true.
 		/// This is currently supported only by the
@@ -293,7 +293,7 @@ class Renderer : public IECore::Renderer
 		virtual void setAttribute( const std::string &name, IECore::ConstDataPtr value );
 		virtual IECore::ConstDataPtr getAttribute( const std::string &name ) const;
 		/// Supports only shader type "surface" or "gl:surface", looking for "name.vert" and  "name.frag" GLSL source files
-		/// in the paths defined by the "searchPath:shader" option. Alternatively if the parameter list contains
+		/// in the paths defined by the "searchPath:shader" option. Alternatively if the parameter list contains 
 		/// "gl:vertexSource" and/or a "gl:fragmentSource" StringData then a new shader is created using the source provided.
 		/// For shaders with sampler2D parameters, texture files for these parameters may be specified by passing the filename
 		/// to an image as StringData.
@@ -302,7 +302,7 @@ class Renderer : public IECore::Renderer
 		virtual void shader( const std::string &type, const std::string &name, const IECore::CompoundDataMap &parameters );
 		virtual void light( const std::string &name, const IECore::CompoundDataMap &parameters );
 
-		virtual void motionBegin( const std::set<float> &times );
+		virtual void motionBegin( const std::set<float> times );
 		virtual void motionEnd();
 
 		/// Supports the following primitive variables :
@@ -331,7 +331,7 @@ class Renderer : public IECore::Renderer
 		///		sizes of the spheres.
 		///
 		///	Constant FloatData "constantwidth"
-		///
+		/// 
 		/// Vertex|Varying FloatVectorData "width"
 		///
 		/// Constant|Vertex|Varying FloatData|FloatVectorData "patchaspectratio"
@@ -365,7 +365,6 @@ class Renderer : public IECore::Renderer
 		/// \todo Support normals and st.
 		virtual void mesh( IECore::ConstIntVectorDataPtr vertsPerFace, IECore::ConstIntVectorDataPtr vertIds, const std::string &interpolation, const IECore::PrimitiveVariableMap &primVars );
 		virtual void nurbs( int uOrder, IECore::ConstFloatVectorDataPtr uKnot, float uMin, float uMax, int vOrder, IECore::ConstFloatVectorDataPtr vKnot, float vMin, float vMax, const IECore::PrimitiveVariableMap &primVars );
-		virtual void patchMesh( const IECore::CubicBasisf &uBasis, const IECore::CubicBasisf &vBasis, int nu, bool uPeriodic, int nv, bool vPeriodic, const IECore::PrimitiveVariableMap &primVars );
 		/// Supports the following geometry types with the specified topology data :
 		///
 		/// "sphere"
@@ -385,11 +384,11 @@ class Renderer : public IECore::Renderer
 		virtual IECore::DataPtr command( const std::string &name, const IECore::CompoundDataMap &parameters );
 
 		struct MemberData;
-
+		
 	private :
-
+	
 		MemberData *m_data;
-
+		
 };
 
 IE_CORE_DECLAREPTR( Renderer );

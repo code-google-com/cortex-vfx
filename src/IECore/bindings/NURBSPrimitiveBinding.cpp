@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,31 +32,32 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/NURBSPrimitive.h"
 #include "IECore/bindings/NURBSPrimitiveBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
 
 namespace IECore
 {
-
+	
 	static FloatVectorDataPtr uKnot( const NURBSPrimitive &p )
 	{
 		return p.uKnot()->copy();
 	}
-
+	
 	static FloatVectorDataPtr vKnot( const NURBSPrimitive &p )
 	{
 		return p.vKnot()->copy();
 	}
-
+	
 	void bindNURBSPrimitive()
 	{
-		RunTimeTypedClass<NURBSPrimitive>()
-			.def( init<>() )
+		typedef class_<NURBSPrimitive, NURBSPrimitivePtr, bases<Primitive>, boost::noncopyable> NURBSPrimitivePyClass;
+		NURBSPrimitivePyClass( "NURBSPrimitive" )
 			.def( init<int, ConstFloatVectorDataPtr, float, float, int, ConstFloatVectorDataPtr, float, float, optional<V3fVectorDataPtr> >() )
 			.def( "uOrder", &NURBSPrimitive::uOrder )
 			.def( "uKnot", &uKnot )
@@ -71,7 +72,10 @@ namespace IECore
 			.def( "vVertices", &NURBSPrimitive::vVertices )
 			.def( "vSegments", &NURBSPrimitive::vSegments )
 			.def( "setTopology", &NURBSPrimitive::setTopology )
+			.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( NURBSPrimitive )
 		;
+		INTRUSIVE_PTR_PATCH( NURBSPrimitive, NURBSPrimitivePyClass );
+		implicitly_convertible<NURBSPrimitivePtr, PrimitivePtr>();
 	}
-
+	
 }

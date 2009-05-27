@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -51,11 +51,11 @@ class JPEGImageWriter : public ImageWriter
 
 		JPEGImageWriter();
 
-		/// Construct an JPEGImageWriter for the given image and output filename
+		/// construct an JPEGImageWriter for the given image and output filename
 		JPEGImageWriter(ObjectPtr object, const std::string & fileName);
-		virtual ~JPEGImageWriter();
 
-		virtual std::string destinationColorSpace() const ;
+		/// free any resources consumed in writing the associated image
+		virtual ~JPEGImageWriter();
 
 		IntParameterPtr qualityParameter();
 		ConstIntParameterPtr qualityParameter() const;
@@ -63,7 +63,7 @@ class JPEGImageWriter : public ImageWriter
 	private:
 
 		static const WriterDescription<JPEGImageWriter> m_writerDescription;
-
+		
 		struct ChannelConverter;
 
 		/// write the image
@@ -72,7 +72,7 @@ class JPEGImageWriter : public ImageWriter
 		                         const Imath::Box2i &dw ) const;
 
 		void constructParameters();
-
+		
 		IntParameterPtr m_qualityParameter;
 
 };

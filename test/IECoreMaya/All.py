@@ -32,12 +32,6 @@
 #
 ##########################################################################
 
-import warnings
-warnings.filterwarnings( "error", "Access to Parameters as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Access to CompoundObject children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Access to CompoundParameter children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Specifying presets as a dictionary is deprecated - pass a tuple of tuples instead.", DeprecationWarning )
-
 import unittest
 
 from ConverterHolder import *
@@ -62,8 +56,6 @@ from FromMayaTransformConverterTest import *
 from CallbackIdTest import *
 from TemporaryAttributeValuesTest import *
 from SplineParameterHandlerTest import *
-from DAGPathParametersTest import *
-from PythonTest import *
 
 import MayaUnitTest
 

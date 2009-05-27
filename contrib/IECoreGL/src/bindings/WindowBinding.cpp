@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,8 +38,9 @@
 #include "IECoreGL/bindings/WindowBinding.h"
 
 #include "IECore/MessageHandler.h"
-#include "IECore/bindings/RefCountedBinding.h"
-#include "IECore/bindings/Wrapper.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
+#include "IECore/bindings/WrapperToPython.h"
+#include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
 
@@ -50,12 +51,12 @@ class WindowWrap : public Window, public IECore::Wrapper<Window>
 {
 
 	public :
-
+	
 		WindowWrap( PyObject *self, const std::string &title )
 			:	Window( title ), IECore::Wrapper<Window>( self, this )
 		{
 		}
-
+		
 		virtual void display()
 		{
 			try
@@ -83,7 +84,7 @@ class WindowWrap : public Window, public IECore::Wrapper<Window>
 				IECore::msg( IECore::Msg::Error, "WindowWrap::display", "Caught unknown exception" );
 			}
 		}
-
+		
 		virtual void reshape( int width, int height )
 		{
 			try
@@ -110,8 +111,8 @@ class WindowWrap : public Window, public IECore::Wrapper<Window>
 			{
 				IECore::msg( IECore::Msg::Error, "WindowWrap::reshape", "Caught unknown exception" );
 			}
-		}
-
+		}		
+		
 
 };
 
@@ -119,14 +120,19 @@ IE_CORE_DECLAREPTR( WindowWrap );
 
 void bindWindow()
 {
-	IECore::RefCountedClass<Window, IECore::RefCounted, WindowWrapPtr>( "Window" )
-		.def( init<std::string>() )
+	typedef class_< Window, boost::noncopyable, WindowWrapPtr, bases< IECore::RefCounted > > WindowPyClass;
+	WindowPyClass( "Window", init<std::string>() )
 		.def( "setTitle", &Window::setTitle )
 		.def( "getTitle", &Window::getTitle, return_value_policy<copy_const_reference>() )
 		.def( "setVisibility", &Window::setVisibility )
 		.def( "getVisibility", &Window::getVisibility )
 		.def( "start", &Window::start ).staticmethod( "start" )
 	;
+	IECore::WrapperToPython<WindowPtr>();
+	INTRUSIVE_PTR_PATCH( Window, WindowPyClass );
+	implicitly_convertible<WindowWrapPtr, WindowPtr>();
+	implicitly_convertible<WindowPtr, IECore::RefCountedPtr>();
+
 }
 
 } // namespace IECoreGL

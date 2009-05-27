@@ -36,7 +36,7 @@
 #define IECORE_ENVMAPSAMPLER_H
 
 #include "IECore/Op.h"
-#include "IECore/TypedPrimitiveParameter.h"
+#include "IECore/TypedObjectParameter.h"
 #include "IECore/NumericParameter.h"
 
 namespace IECore
@@ -48,27 +48,27 @@ namespace IECore
 class EnvMapSampler : public Op
 {
 	public :
-
+		
 		IE_CORE_DECLARERUNTIMETYPED( EnvMapSampler, Op );
-
+		
 		EnvMapSampler();
 		virtual ~EnvMapSampler();
-
+		
 		ImagePrimitiveParameterPtr imageParameter();
 		ConstImagePrimitiveParameterPtr imageParameter() const;
-
+		
 		IntParameterPtr subdivisionDepthParameter();
-		ConstIntParameterPtr subdivisionDepthParameter() const;
+		ConstIntParameterPtr subdivisionDepthParameter() const;	
 
 	protected :
 
 		ObjectPtr doOperation( ConstCompoundObjectPtr operands );
-
+		
 	private :
-
+		
 		ImagePrimitiveParameterPtr m_imageParameter;
 		IntParameterPtr m_subdivisionDepthParameter;
-
+		
 };
 
 IE_CORE_DECLAREPTR( EnvMapSampler );

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,14 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Parameter.h"
 #include "IECore/bindings/ParameterBinding.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/Wrapper.h"
+#include "IECore/bindings/WrapperToPython.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace std;
@@ -63,34 +65,24 @@ static ObjectPtr defaultValue( Parameter &that )
 static dict presets( Parameter &that )
 {
 	dict result;
-	const Parameter::PresetsContainer &p = that.presets();
-	for( Parameter::PresetsContainer::const_iterator it=p.begin(); it!=p.end(); it++ )
+	const Parameter::PresetsMap &p = that.presets();
+	for( Parameter::PresetsMap::const_iterator it=p.begin(); it!=p.end(); it++ )
 	{
 		result[it->first] = it->second->copy();
 	}
 	return result;
 }
 
-static boost::python::tuple presetNames( const Parameter &that )
+Parameter::PresetsMap parameterPresetsFromDict( const dict &presets )
 {
-	boost::python::list result;
-	const Parameter::PresetsContainer &p = that.presets();
-	for( Parameter::PresetsContainer::const_iterator it=p.begin(); it!=p.end(); it++ )
+	Parameter::PresetsMap p;
+	boost::python::list keys = presets.keys();
+	boost::python::list values = presets.values();
+	for( int i = 0; i<keys.attr( "__len__" )(); i++ )
 	{
-		result.append( it->first );
+		p.insert( Parameter::PresetsMap::value_type( extract<string>( keys[i] )(), extract<ObjectPtr>( values[i] )() ) );
 	}
-	return boost::python::tuple( result );
-}
-
-static boost::python::tuple presetValues( const Parameter &that )
-{
-	boost::python::list result;
-	const Parameter::PresetsContainer &p = that.presets();
-	for( Parameter::PresetsContainer::const_iterator it=p.begin(); it!=p.end(); it++ )
-	{
-		result.append( it->second->copy() );
-	}
-	return boost::python::tuple( result );
+	return p;
 }
 
 class ParameterWrap : public Parameter, public Wrapper<Parameter>
@@ -98,11 +90,11 @@ class ParameterWrap : public Parameter, public Wrapper<Parameter>
 	public:
 
 		ParameterWrap( PyObject *self, const std::string &name, const std::string &description, ObjectPtr defaultValue,
-						const object &presets = boost::python::tuple(), bool presetsOnly = false, CompoundObjectPtr userData = 0 ) :
-				Parameter( name, description, defaultValue, parameterPresets<Parameter::PresetsContainer>( presets ), presetsOnly, userData ), Wrapper< Parameter >( self, this ) {};
+						const dict & presets = dict(), bool presetsOnly = false, CompoundObjectPtr userData = 0 ) :
+				Parameter( name, description, defaultValue, parameterPresetsFromDict( presets ), presetsOnly, userData ), Wrapper< Parameter >( self, this ) {};
 
 		ParameterWrap( PyObject *self, const std::string &name, const std::string &description, ObjectPtr defaultValue, CompoundObjectPtr userData ) :
-				Parameter( name, description, defaultValue, Parameter::PresetsContainer(), false, userData ), Wrapper< Parameter >( self, this ) {};
+				Parameter( name, description, defaultValue, Parameter::PresetsMap(), false, userData ), Wrapper< Parameter >( self, this ) {};
 
 		IE_COREPYTHON_PARAMETERWRAPPERFNS( Parameter );
 
@@ -112,22 +104,10 @@ IE_CORE_DECLAREPTR( ParameterWrap );
 
 void bindParameter()
 {
-	using boost::python::arg;
-
-	RunTimeTypedClass<Parameter, ParameterWrapPtr>()
-		.def(
-			init< const std::string &, const std::string &, ObjectPtr, boost::python::optional<const boost::python::object &, bool, CompoundObjectPtr > >
-			(
-				(
-					arg( "name" ),
-					arg( "description" ),
-					arg( "defaultValue" ),
-					arg( "presets" ) = boost::python::tuple(),
-					arg( "presetsOnly" ) = false ,
-					arg( "userData" ) = CompoundObject::Ptr( 0 )
-				)
-			)
-		)
+	typedef class_< Parameter, ParameterWrapPtr, boost::noncopyable, bases<RunTimeTyped> > ParameterPyClass;
+	ParameterPyClass( "Parameter", no_init )
+		.def( init< const std::string &, const std::string &, ObjectPtr, optional<const dict &, bool, CompoundObjectPtr > >( args( "name", "description", "defaultValue", "presets", "presetsOnly", "userData") ) )
+		.def( init< const std::string &, const std::string &, ObjectPtr, CompoundObjectPtr >( args( "name", "description", "defaultValue", "userData") ) )
 		.add_property( "name", make_function( &Parameter::name, return_value_policy<copy_const_reference>() ) )
 		.add_property( "description", make_function( &Parameter::description, return_value_policy<copy_const_reference>() ) )
 		.add_property( "defaultValue", &defaultValue )
@@ -142,10 +122,14 @@ void bindParameter()
 		.def( "validate", (void (Parameter::*)( ConstObjectPtr ) const)&Parameter::validate )
 		.add_property( "presetsOnly", &Parameter::presetsOnly )
 		.def( "presets", &presets, "Returns a dictionary containing presets for the parameter." )
-		.def( "presetNames", &presetNames, "Returns a tuple containing the names of all presets for the parameter." )
-		.def( "presetValues", &presetValues, "Returns a tuple containing the values of all presets for the parameter." )
 		.def( "userData", (CompoundObjectPtr (Parameter::*)())&Parameter::userData )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(Parameter)
 	;
+	
+	WrapperToPython<ParameterPtr>();
+	INTRUSIVE_PTR_PATCH( Parameter, ParameterPyClass );
+	implicitly_convertible<ParameterPtr, RunTimeTypedPtr>();
+	implicitly_convertible<ParameterPtr, ConstParameterPtr>();
 
 }
 

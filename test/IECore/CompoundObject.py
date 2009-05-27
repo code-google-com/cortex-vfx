@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -38,7 +38,7 @@ import IECore
 class testCompoundObject( unittest.TestCase ) :
 
 	def test( self ) :
-
+	
 		o = IECore.CompoundObject()
 		self.assertEqual( len( o ), 0 )
 		self.assertEqual( len( o.keys() ), 0 )
@@ -47,6 +47,7 @@ class testCompoundObject( unittest.TestCase ) :
 		o["a"] = IECore.IntData( 1 )
 		self.assertEqual( len( o ), 1 )
 		self.assertEqual( o["a"], IECore.IntData( 1 ) )
+		self.assertEqual( o.a, IECore.IntData( 1 ) )
 		self.assertEqual( len( o.keys() ), 1 )
 		self.assertEqual( len( o.values() ), 1 )
 		self.assert_( "a" in o.keys() )
@@ -54,6 +55,7 @@ class testCompoundObject( unittest.TestCase ) :
 		o["b"] = IECore.IntData( 2 )
 		self.assertEqual( len( o ), 2 )
 		self.assertEqual( o["b"], IECore.IntData( 2 ) )
+		self.assertEqual( o.b, IECore.IntData( 2 ) )
 		self.assertEqual( len( o.keys() ), 2 )
 		self.assertEqual( len( o.values() ), 2 )
 		self.assert_( "a" in o.keys() )
@@ -63,7 +65,9 @@ class testCompoundObject( unittest.TestCase ) :
 		o = IECore.CompoundObject( { "a": IECore.IntData( 1 ), "b": IECore.FloatData( 1.0 ) } )
 		self.assertEqual( len( o ), 2 )
 		self.assertEqual( o["a"], IECore.IntData( 1 ) )
+		self.assertEqual( o.a, IECore.IntData( 1 ) )
 		self.assertEqual( o["b"], IECore.FloatData( 1.0 ) )
+		self.assertEqual( o.b, IECore.FloatData( 1.0 ) )
 		self.assertEqual( len( o.keys() ), 2 )
 		self.assertEqual( len( o.values() ), 2 )
 		self.assert_( "a" in o.keys() )
@@ -71,9 +75,9 @@ class testCompoundObject( unittest.TestCase ) :
 		self.assert_( o.has_key("a") )
 		self.assert_( o.has_key("b") )
 		self.assert_( not o.has_key("c") )
-
+		
 	def testDictConstructorRecursion( self ) :
-
+	
 		o = IECore.CompoundObject( {
 				"a" : IECore.IntData( 1 ),
 				"b" : IECore.IntData( 2 ),
@@ -82,15 +86,15 @@ class testCompoundObject( unittest.TestCase ) :
 				}
 			}
 		)
-
+		
 		self.assertEqual( o["a"], IECore.IntData( 1 ) )
 		self.assertEqual( o["b"], IECore.IntData( 2 ) )
 		self.assertEqual( o["c"], IECore.CompoundObject( { "d" : IECore.IntData( 3 ) } ) )
 		self.assertEqual( o["c"]["d"], IECore.IntData( 3 ) )
-
+		
 	def testRepr(self):
-		"""Test repr"""
-
+		"""Test repr"""			
+		
 		v1 = IECore.CompoundObject( {
 				"a" : IECore.IntData( 1 ),
 				"b" : IECore.IntData( 2 ),
@@ -99,17 +103,11 @@ class testCompoundObject( unittest.TestCase ) :
 				}
 			}
 		)
-
+		
 		r1 = repr(v1)
-
-		self.assertEqual( eval(repr(v1)), v1 )
-
-	def testDeprecatedAttributeAccess( self ) :
-
-		v = IECore.CompoundObject( { "a" : IECore.IntData( 1 ) } )
-
-		self.assertRaises( DeprecationWarning, getattr, v, "a" )
-
+		
+		self.assertEqual( eval(repr(v1)), v1 )		
+		
 if __name__ == "__main__":
         unittest.main()
 

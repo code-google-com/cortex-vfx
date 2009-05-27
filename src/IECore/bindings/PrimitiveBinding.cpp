@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Primitive.h"
 #include "IECore/bindings/PrimitiveBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -101,8 +102,9 @@ static void delItem( Primitive &p, const std::string &n )
 }
 
 void bindPrimitive()
-{
-	RunTimeTypedClass<Primitive>()
+{	
+	typedef class_< Primitive, PrimitivePtr, bases<VisibleRenderable>, boost::noncopyable > PrimitivePyClass;
+	PrimitivePyClass( "Primitive", no_init )
 		.def( "variableSize", &Primitive::variableSize )
 		.def( "__len__", &len )
 		.def( "__getitem__", &getItem, "Returns a shallow copy of the requested PrimitiveVariable object." )
@@ -113,9 +115,13 @@ void bindPrimitive()
 		.def( "values", &values, "Returns a list containing shallow copies of the PrimitiveVariable objects held." )
 		.def( "isPrimitiveVariableValid", &Primitive::isPrimitiveVariableValid)
 		.def( "arePrimitiveVariablesValid", &Primitive::arePrimitiveVariablesValid)
-		.def( "inferInterpolation", (PrimitiveVariable::Interpolation (Primitive::*)( ConstDataPtr ) const)&Primitive::inferInterpolation )
 		.def( "inferInterpolation", (PrimitiveVariable::Interpolation (Primitive::*)( size_t ) const)&Primitive::inferInterpolation )
+		.def( "inferInterpolation", (PrimitiveVariable::Interpolation (Primitive::*)( ConstDataPtr ) const)&Primitive::inferInterpolation )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(Primitive)		
 	;
+	INTRUSIVE_PTR_PATCH( Primitive, PrimitivePyClass );
+	implicitly_convertible<PrimitivePtr, VisibleRenderablePtr>();
+	
 }
 
 }

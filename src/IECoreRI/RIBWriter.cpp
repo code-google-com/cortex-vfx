@@ -45,8 +45,6 @@ using namespace IECoreRI;
 using namespace std;
 using namespace boost;
 
-IE_CORE_DEFINERUNTIMETYPED( RIBWriter );
-
 const IECore::Writer::WriterDescription<RIBWriter> RIBWriter::g_writerDescription( "rib" );
 
 RIBWriter::RIBWriter()
@@ -79,9 +77,9 @@ IECore::ConstBoolParameterPtr RIBWriter::worldBlockParameter() const
 }
 
 void RIBWriter::doWrite()
-{
+{	
 	RendererPtr renderer = new Renderer( fileName() );
-
+	
 	IECore::RenderablePtr renderable = static_pointer_cast<IECore::Renderable>( const_pointer_cast<IECore::Object>( object() ) );
 	if( !m_worldBlockParameter->getTypedValue() )
 	{

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 #include <cassert>
 
 #include "boost/static_assert.hpp"
@@ -53,44 +53,44 @@ static const char *typeName()
 }
 
 template<>
-const char *typeName<LineSegment2f>()
+static const char *typeName<LineSegment2f>()
 {
 	return "LineSegment2f";
 }
 
 template<>
-const char *typeName<LineSegment2d>()
+static const char *typeName<LineSegment2d>()
 {
 	return "LineSegment2d";
 }
 
 template<>
-const char *typeName<LineSegment3f>()
+static const char *typeName<LineSegment3f>()
 {
 	return "LineSegment3f";
 }
 
 template<>
-const char *typeName<LineSegment3d>()
+static const char *typeName<LineSegment3d>()
 {
 	return "LineSegment3d";
 }
 
 template<class L>
 static std::string repr( L &x )
-{
+{	
 	std::stringstream s;
 
 	s << "IECore." << typeName<L>() << "( ";
-
+	
 	object item0( x.p0 );
 	assert( item0.attr( "__repr__" ) != object() );
 	s << call_method< std::string >( item0.ptr(), "__repr__" ) << ", ";
-
-	object item1( x.p1 );
-	assert( item1.attr( "__repr__" ) != object() );
-	s << call_method< std::string >( item1.ptr(), "__repr__" ) << " )";
-
+	
+	object item1( x.p1 );	
+	assert( item1.attr( "__repr__" ) != object() );	
+	s << call_method< std::string >( item1.ptr(), "__repr__" ) << " )";	
+	
 	return s.str();
 }
 
@@ -100,22 +100,6 @@ static tuple closestPoints( const L &l, const L &l2 )
 	typename L::Point a, b;
 	a = l.closestPoints( l2, b );
 	return make_tuple( a, b );
-}
-
-template<class L>
-static tuple intersect(  const L &l, const Imath::Plane3< typename L::BaseType > &plane )
-{
-	typename L::Point pt;
-	bool hit = l.intersect( plane, pt );
-	return make_tuple( hit, pt );
-}
-
-template<class L>
-static tuple intersectT(  const L &l, const Imath::Plane3< typename L::BaseType > &plane )
-{
-	typename L::BaseType d;
-	bool hit = l.intersectT( plane, d );
-	return make_tuple( hit, d );
 }
 
 template<typename Vec>
@@ -144,12 +128,11 @@ static void bind3D()
 		.def( "distanceTo", (typename L::BaseType (L::*)( const L & ) const)&L::distanceTo )
 		.def( "distance2To", (typename L::BaseType (L::*)( const Vec & ) const)&L::distance2To )
 		.def( "distance2To", (typename L::BaseType (L::*)( const L & ) const)&L::distance2To )
-		.def( "intersect", &intersect< L > )
-		.def( "intersectT", &intersectT< L > )
 		.def( self *= M() )
 		.def( self * M() )
 		.def( self == self )
 		.def( self != self )
+		/// \todo Bind the intersect methods when we have a binding for ImathPlane
 	;
 
 }
@@ -175,8 +158,8 @@ static void bind2D()
 		.def( "length", &L::length )
 		.def( "length2", &L::length2 )
 		.def( "closestPointTo", &L::closestPointTo )
-		.def( "distanceTo", (typename L::BaseType (L::*)( const Vec & ) const)&L::distanceTo )
-		.def( "distance2To", (typename L::BaseType (L::*)( const Vec & ) const)&L::distance2To )
+		.def( "distanceTo", (typename L::BaseType (L::*)( const Vec & ) const)&L::distanceTo )	
+		.def( "distance2To", (typename L::BaseType (L::*)( const Vec & ) const)&L::distance2To )		
 		.def( self *= M() )
 		.def( self * M() )
 		.def( self == self )

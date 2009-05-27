@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,8 +45,6 @@
 
 using namespace IECoreMaya;
 
-IE_CORE_DEFINERUNTIMETYPED( FromMayaShapeConverter );
-
 FromMayaShapeConverter::FromMayaShapeConverter( const std::string &name, const std::string &description, const MObject &object )
 	:	FromMayaObjectConverter( name, description, object )
 {
@@ -58,13 +56,13 @@ FromMayaShapeConverter::FromMayaShapeConverter( const std::string &name, const s
 {
 	constructCommon();
 }
-
+	
 void FromMayaShapeConverter::constructCommon()
 {
 
-	IECore::IntParameter::PresetsContainer spacePresets;
-	spacePresets.push_back( IECore::IntParameter::Preset( "Object", Object ) );
-	spacePresets.push_back( IECore::IntParameter::Preset( "World", World ) );
+	IECore::IntParameter::PresetsMap spacePresets;
+	spacePresets["Object"] = Object;	
+	spacePresets["World"] = World;		
 	m_spaceParameter = new IECore::IntParameter(
 		"space",
 		"The space in which the object is exported.",
@@ -75,10 +73,10 @@ void FromMayaShapeConverter::constructCommon()
 		true
 	);
 
-	IECore::StringParameter::PresetsContainer primVarAttrPrefixPresets;
-	primVarAttrPrefixPresets.push_back( IECore::StringParameter::Preset( "MTOR", "rman" ) );
-	primVarAttrPrefixPresets.push_back( IECore::StringParameter::Preset( "3Delight", "delight" ) );
-	primVarAttrPrefixPresets.push_back( IECore::StringParameter::Preset( "None", "" ) );
+	IECore::StringParameter::PresetsMap primVarAttrPrefixPresets;
+	primVarAttrPrefixPresets["MTOR"] = "rman";
+	primVarAttrPrefixPresets["3Delight"] = "delight";
+	primVarAttrPrefixPresets["None"] = "";
 	m_primVarAttrPrefixParameter = new IECore::StringParameter(
 		"primVarAttrPrefix",
 		"Any attribute names beginning with this prefix are considered to represent primitive variables and are converted as such."
@@ -87,7 +85,7 @@ void FromMayaShapeConverter::constructCommon()
 		"delight", // compatibility with 3delight by default
 		primVarAttrPrefixPresets
 	);
-
+	
 	parameters()->addParameter( m_spaceParameter );
 	parameters()->addParameter( m_primVarAttrPrefixParameter );
 
@@ -112,11 +110,11 @@ IECore::ConstStringParameterPtr FromMayaShapeConverter::primVarAttrPrefixParamet
 {
 	return m_primVarAttrPrefixParameter;
 }
-
+		
 IECore::ObjectPtr FromMayaShapeConverter::doConversion( const MObject &object, IECore::ConstCompoundObjectPtr operands ) const
 {
 	IECore::PrimitivePtr p = 0;
-
+	
 	const MDagPath *d = dagPath( true );
 	if( d )
 	{
@@ -140,7 +138,7 @@ void FromMayaShapeConverter::addPrimVars( const MObject &object, IECore::Primiti
 	{
 		return;
 	}
-
+	
 	MString prefix = m_primVarAttrPrefixParameter->getTypedValue().c_str();
 	unsigned int n = fnNode.attributeCount();
 	for( unsigned int i=0; i<n; i++ )
@@ -156,8 +154,8 @@ void FromMayaShapeConverter::addPrimVars( const MObject &object, IECore::Primiti
 				continue; // we don't want to pick up the children of compound numeric attributes
 			}
 			MString plugName = plug.name();
-
-			// find a converter for the plug, asking for conversion to float types by preference
+			
+			// find a converter for the plug, asking for conversion to float types by preference			
 			FromMayaConverterPtr converter = FromMayaPlugConverter::create( plug, IECore::FloatDataTypeId );
 			if( !converter )
 			{
@@ -175,7 +173,7 @@ void FromMayaShapeConverter::addPrimVars( const MObject &object, IECore::Primiti
 			{
 				converter = FromMayaPlugConverter::create( plug );
 			}
-
+			
 			// run the conversion and check we've got data as a result
 			IECore::DataPtr data = 0;
 			if( converter )
@@ -187,14 +185,14 @@ void FromMayaShapeConverter::addPrimVars( const MObject &object, IECore::Primiti
 				IECore::msg( IECore::Msg::Warning, "FromMayaShapeConverter::addPrimVars", boost::format( "Attribute \"%s\" could not be converted to Data." ) % plugName.asChar() );
 				continue;
 			}
-
+			
 			// convert V3fData to Color3fData if attribute has usedAsColor() set.
 			if( IECore::V3fDataPtr vData = IECore::runTimeCast<IECore::V3fData>( data ) )
 			{
 				if( fnAttr.isUsedAsColor() )
 				{
 					Imath::V3f v = vData->readable();
-					data = new IECore::Color3fData( Imath::Color3f( v.x, v.y, v.z ) );
+					data = new IECore::Color3fData( Imath::Color3f( v.x, v.y, v.z ) ); 
 				}
 			}
 
@@ -237,7 +235,7 @@ void FromMayaShapeConverter::addPrimVars( const MObject &object, IECore::Primiti
 			{
 				interpolation = primitive->inferInterpolation( data );
 			}
-
+			
 			if( interpolation==IECore::PrimitiveVariable::Invalid )
 			{
 				IECore::msg( IECore::Msg::Warning, "FromMayaShapeConverter::addPrimVars", boost::format( "Attribute \"%s\" has unsuitable size." ) % plugName.asChar() );
@@ -273,12 +271,12 @@ const MDagPath *FromMayaShapeConverter::dagPath( bool emitSpaceWarnings ) const
 	{
 		return &m_dagPath;
 	}
-
+	
 	if( emitSpaceWarnings && !object().hasFn( MFn::kData ) && space()==MSpace::kWorld )
 	{
 		IECore::msg( IECore::Msg::Warning, "FromMayaShapeConverter", "World space requested but no dag path provided." );
 	}
-
+	
 	return 0;
 }
 
@@ -292,7 +290,7 @@ FromMayaShapeConverterPtr FromMayaShapeConverter::create( const MDagPath &dagPat
 	}
 	return 0;
 }
-
+	
 void FromMayaShapeConverter::registerShapeConverter( const MFn::Type fromType, IECore::TypeId resultType, ShapeCreatorFn creator )
 {
 	ShapeTypesToFnsMap *m = shapeTypesToFns();

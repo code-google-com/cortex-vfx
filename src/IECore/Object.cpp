@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,8 +42,6 @@
 using namespace IECore;
 using namespace std;
 
-IE_CORE_DEFINERUNTIMETYPED( Object );
-
 const Object::AbstractTypeDescription<Object> Object::m_typeDescription;
 const unsigned int Object::m_ioVersion = 0;
 
@@ -67,12 +65,10 @@ Object::~Object()
 
 struct Object::TypeInformation
 {
-	typedef std::pair< CreatorFn, void *> CreatorAndData;
-	typedef std::map< TypeId, CreatorAndData > TypeIdsToCreatorsMap;
-	typedef std::map< std::string, CreatorAndData > TypeNamesToCreatorsMap;
-
-	TypeIdsToCreatorsMap typeIdsToCreators;
-	TypeNamesToCreatorsMap typeNamesToCreators;
+	std::map<TypeId, CreatorFn> typeIdsToCreators;
+	std::map<TypeId, std::string> typeIdsToTypeNames;
+	std::map<std::string, CreatorFn> typeNamesToCreators;
+	std::map<std::string, TypeId> typeNamesToTypeIds;
 };
 
 Object::TypeInformation *Object::typeInformation()
@@ -101,12 +97,12 @@ Object::SaveContext::SaveContext( IndexedIOInterfacePtr ioInterface, const Index
 	:	m_ioInterface( ioInterface ), m_root( root ), m_savedObjects( savedObjects ), m_containerRoots( containerRoots )
 {
 }
-
+					
 IndexedIOInterfacePtr Object::SaveContext::container( const std::string &typeName, unsigned int ioVersion )
 {
-
+		
 	m_ioInterface->chdir( m_root );
-
+		
 		m_ioInterface->mkdir( typeName );
 		m_ioInterface->chdir( typeName );
 			m_ioInterface->write( "ioVersion", ioVersion );
@@ -114,7 +110,7 @@ IndexedIOInterfacePtr Object::SaveContext::container( const std::string &typeNam
 			m_ioInterface->chdir( "data" );
 				IndexedIOInterfacePtr container = m_ioInterface->resetRoot();
 				(*m_containerRoots)[container] = m_ioInterface->pwd();
-
+							 
 	return container;
 }
 
@@ -138,9 +134,9 @@ void Object::SaveContext::save( ConstObjectPtr toSave, IndexedIOInterfacePtr con
 
 		container->mkdir( name );
 		container->chdir( name );
-
+		
 			(*m_savedObjects)[toSave] = (*m_containerRoots)[container] + container->pwd();
-
+			
 			container->write( "type", toSave->typeName() );
 			container->mkdir( "data" );
 			container->chdir( "data" );
@@ -173,7 +169,7 @@ Object::LoadContext::LoadContext( IndexedIOInterfacePtr ioInterface, const Index
 IndexedIOInterfacePtr Object::LoadContext::container( const std::string &typeName, unsigned int &ioVersion )
 {
 	m_ioInterface->chdir( m_root );
-
+	
 		m_ioInterface->chdir( typeName );
 			unsigned int v;
 			m_ioInterface->read( "ioVersion", v );
@@ -185,7 +181,7 @@ IndexedIOInterfacePtr Object::LoadContext::container( const std::string &typeNam
 			m_ioInterface->chdir( "data" );
 				IndexedIOInterfacePtr container = m_ioInterface->resetRoot();
 				(*m_containerRoots)[container] = m_ioInterface->pwd();
-
+	
 	return container;
 }
 
@@ -207,7 +203,7 @@ ObjectPtr Object::LoadContext::loadObjectOrReference( IndexedIOInterfacePtr cont
 	else
 	{
 		IndexedIOPath path( (*m_containerRoots)[container] );
-		path.append( container->pwd() );
+		path.append( container->pwd() ); 
 		path.append( name );
 		return loadObject( path.fullPath() );
 	}
@@ -216,28 +212,28 @@ ObjectPtr Object::LoadContext::loadObjectOrReference( IndexedIOInterfacePtr cont
 // this function can only load concrete objects. it can't load references to
 // objects. path is relative to the root of m_ioInterface
 ObjectPtr Object::LoadContext::loadObject( const IndexedIO::EntryID &path )
-{
+{	
 	LoadedObjectMap::iterator it = m_loadedObjects->find( path );
 	if( it!=m_loadedObjects->end() )
 	{
 		return it->second;
 	}
-
+			
 	ObjectPtr result = 0;
-
+	
 	m_ioInterface->chdir( m_root );
-
+	
 		m_ioInterface->chdir( path );
 			string type = "";
 			m_ioInterface->read( "type", type );
-			m_ioInterface->chdir( "data" );
-
+			m_ioInterface->chdir( "data" );	
+		
 				result = create( type );
 				LoadContextPtr context = new LoadContext( m_ioInterface, m_ioInterface->pwd(), m_loadedObjects, m_containerRoots );
 				result->load( context );
-
+		
 			(*m_loadedObjects)[path] = result;
-
+					
 	return result;
 }
 
@@ -277,15 +273,16 @@ size_t Object::MemoryAccumulator::total() const
 {
 	return m_total;
 }
-
+	
 //////////////////////////////////////////////////////////////////////////////////////////
 // object interface stuff
 //////////////////////////////////////////////////////////////////////////////////////////
 
 ObjectPtr Object::copy() const
 {
-	boost::shared_ptr<CopyContext> c( new CopyContext );
+	CopyContext *c = new CopyContext;
 	ObjectPtr result = c->copy( ConstObjectPtr( this ) );
+	delete c;
 	return result;
 }
 
@@ -330,7 +327,7 @@ bool Object::operator!=( const Object &other ) const
 {
 	return isNotEqualTo( ConstObjectPtr( &other ) );
 }
-
+		
 void Object::save( SaveContext *context ) const
 {
 }
@@ -360,7 +357,7 @@ bool Object::isType( TypeId typeId )
 	TypeInformation *i = typeInformation();
 	return i->typeIdsToCreators.find( typeId )!=i->typeIdsToCreators.end();
 }
-
+		 
 bool Object::isType( const std::string &typeName )
 {
 	TypeInformation *i = typeInformation();
@@ -370,66 +367,84 @@ bool Object::isType( const std::string &typeName )
 bool Object::isAbstractType( TypeId typeId )
 {
 	TypeInformation *i = typeInformation();
-	TypeInformation::TypeIdsToCreatorsMap::const_iterator it = i->typeIdsToCreators.find( typeId );
+	std::map<TypeId, Object::CreatorFn>::const_iterator it = i->typeIdsToCreators.find( typeId );
 	if( it==i->typeIdsToCreators.end() )
 	{
 		return false;
 	}
-	return !it->second.first;
+	return !it->second;
 }
 
 bool Object::isAbstractType( const std::string &typeName )
 {
 	TypeInformation *i = typeInformation();
-	TypeInformation::TypeNamesToCreatorsMap::const_iterator it = i->typeNamesToCreators.find( typeName );
+	std::map<std::string, Object::CreatorFn>::const_iterator it = i->typeNamesToCreators.find( typeName );
 	if( it==i->typeNamesToCreators.end() )
 	{
 		return false;
 	}
-	return !it->second.first;
+	return !it->second;
 }
 
-void Object::registerType( TypeId typeId, const std::string &typeName, CreatorFn creator, void *data )
+void Object::registerType( TypeId typeId, const std::string typeName, CreatorFn creator )
 {
 	TypeInformation *i = typeInformation();
-	i->typeIdsToCreators[typeId] = TypeInformation::CreatorAndData( creator, data );
-	i->typeNamesToCreators[typeName] = TypeInformation::CreatorAndData( creator, data );
+	i->typeIdsToCreators[typeId] = creator;
+	i->typeIdsToTypeNames[typeId] = typeName;
+	i->typeNamesToCreators[typeName] = creator;
+	i->typeNamesToTypeIds[typeName] = typeId;
 }
 
 ObjectPtr Object::create( TypeId typeId )
 {
 	TypeInformation *i = typeInformation();
-	TypeInformation::TypeIdsToCreatorsMap::const_iterator it = i->typeIdsToCreators.find( typeId );
+	std::map<TypeId, Object::CreatorFn>::const_iterator it = i->typeIdsToCreators.find( typeId );
 	if( it==i->typeIdsToCreators.end() )
 	{
 		throw Exception( ( boost::format( "Type %d is not a registered Object type." ) % typeId ).str() );
 	}
-	const TypeInformation::CreatorAndData &creatorAndData = it->second;
-
-	if( !creatorAndData.first )
+	if( !it->second )
 	{
 		throw Exception( ( boost::format( "Type %d is an abstract type." ) % typeId ).str() );
 	}
-
-	return creatorAndData.first( creatorAndData.second );
+	return it->second();
 }
 
 ObjectPtr Object::create( const std::string &typeName )
 {
 	TypeInformation *i = typeInformation();
-	TypeInformation::TypeNamesToCreatorsMap::const_iterator it = i->typeNamesToCreators.find( typeName );
+	std::map<std::string, Object::CreatorFn>::const_iterator it = i->typeNamesToCreators.find( typeName );
 	if( it==i->typeNamesToCreators.end() )
 	{
 		throw Exception( ( boost::format( "Type \"%s\" is not a registered Object type." ) % typeName ).str() );
 	}
-	const TypeInformation::CreatorAndData &creatorAndData = it->second;
-
-	if( !creatorAndData.first )
+	if( !it->second )
 	{
-		throw Exception( ( boost::format( "Type \"%s\" is an abstract type." ) % typeName ).str() );
+		throw Exception( ( boost::format( "Type \"%d\" is an abstract type." ) % typeName ).str() );
 	}
+	return it->second();
+}
 
-	return creatorAndData.first( creatorAndData.second );
+TypeId Object::typeIdFromTypeName( const std::string &typeName )
+{
+	TypeInformation *i = typeInformation();
+	std::map<std::string, TypeId>::const_iterator it = i->typeNamesToTypeIds.find( typeName );
+	if( it==i->typeNamesToTypeIds.end() )
+	{
+		return InvalidTypeId;
+	}
+	return it->second;
+}
+
+std::string Object::typeNameFromTypeId( TypeId typeId )
+{
+	TypeInformation *i = typeInformation();
+	std::map<TypeId, std::string>::const_iterator it = i->typeIdsToTypeNames.find( typeId );
+	if( it==i->typeIdsToTypeNames.end() )
+	{
+		return "";
+	}
+	return it->second;
 }
 
 ObjectPtr Object::load( IndexedIOInterfacePtr ioInterface, const IndexedIO::EntryID &name )
@@ -438,7 +453,7 @@ ObjectPtr Object::load( IndexedIOInterfacePtr ioInterface, const IndexedIO::Entr
 	// from always having to balance chdirs() to return to the original
 	// directory after an operation. this results in fewer chdir calls and faster
 	// loading.
-
+	
 	IndexedIOInterfacePtr i = ioInterface->resetRoot();
 	LoadContextPtr context( new LoadContext( i ) );
 	ObjectPtr result = context->load<Object>( i, name );

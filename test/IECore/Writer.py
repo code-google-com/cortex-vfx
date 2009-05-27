@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -36,41 +36,22 @@ import unittest
 import IECore
 
 class TestWriter( unittest.TestCase ) :
-
+    
 	def testSupportedExtensions( self ) :
-
+	
 		e = IECore.Writer.supportedExtensions()
 		for ee in e :
 			self.assert_( type( ee ) is str )
-
-		expectedExtensions = [ "exr", "pdc", "cin", "dpx", "cob", "tga" ]
+		
+		expectedExtensions = [ "exr", "pdc", "cin", "dpx", "cob" ]
 		if IECore.withTIFF() :
 			expectedExtensions += [ "tif", "tiff" ]
 		if IECore.withJPEG() :
 			expectedExtensions += [ "jpg", "jpeg" ]
-
+						
 		for ee in expectedExtensions :
 			self.assert_( ee in e )
 
-		self.assert_( not "obj" in expectedExtensions )
-
-		e = IECore.Writer.supportedExtensions( IECore.TypeId.ImageWriter )
-		for ee in e :
-			self.assert_( type( ee ) is str )
-		expectedImageWriterExtensions = [ "exr", "cin", "dpx", "yuv", "tga" ]
-		if IECore.withTIFF() :
-			expectedImageWriterExtensions += [ "tif", "tiff" ]
-		if IECore.withJPEG() :
-			expectedImageWriterExtensions += [ "jpg", "jpeg" ]
-
-		self.assertEqual( set( expectedImageWriterExtensions ), set( e ) )
-
-		self.assert_( not "pdc" in expectedImageWriterExtensions )
-		self.assert_( not "cob" in expectedImageWriterExtensions )
-
-
-
-
 if __name__ == "__main__":
-	unittest.main()
-
+	unittest.main()   
+	        

@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -37,7 +37,7 @@ from IECore import *
 class SequenceConvertOp( Op ) :
 
 	def __init__( self ) :
-
+	
 		Op.__init__( self, "SequenceConvertOp",
 			"This Op converts file sequences from one format to another. "
 			"It supports all input formats for which a reader is available "
@@ -55,7 +55,7 @@ class SequenceConvertOp( Op ) :
 				allowEmptyString = True,
 			)
 		)
-
+		
 		self.parameters().addParameters(
 			[
 				FileSequenceParameter(
@@ -78,23 +78,23 @@ class SequenceConvertOp( Op ) :
 		)
 
 	def doOperation( self, operands ) :
-
+	
 		src = self.parameters()["src"].getFileSequenceValue()
 		dst = src.copy()
-		dst.fileName = operands["dst"].value
+		dst.fileName = operands.dst.value
 
 		# compare extensions, if extensions match, simply copy
 		if src.fileName.split('.')[-1] == dst.fileName.split('.')[-1]:
 			cpOp = SequenceCpOp()
-			cpOp['src'] = operands["src"]
-			cpOp['dst'] = operands["dst"]
+			cpOp['src'] = operands.src
+			cpOp['dst'] = operands.dst
 			cpOp()
 		else:
 			# if extensions don't match, read and write
 			for (sf, df) in zip(src.fileNames(), dst.fileNames()):
 				img = Reader.create(sf).read()
 				Writer.create(img, df).write()
-
+			
 		return StringData(dst.fileName)
 
-registerRunTimeTyped( SequenceConvertOp, 100014, Op )
+makeRunTimeTyped( SequenceConvertOp, 100014, Op )

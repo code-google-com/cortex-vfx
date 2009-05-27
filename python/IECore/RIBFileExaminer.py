@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -33,7 +33,8 @@
 ##########################################################################
 
 from FileExaminer import FileExaminer
-from IECore import findSequences
+from FrameRange import FrameRange
+from FileSequenceFunctions import findSequences
 import os
 
 ## The RIBFileExaminer class implements the FileExaminer interface for
@@ -42,9 +43,9 @@ import os
 class RIBFileExaminer( FileExaminer ) :
 
 	def __init__( self, fileName ) :
-
+	
 		FileExaminer.__init__( self, fileName )
-
+		
 	def dependencies( self ) :
 
 		pipe = os.popen( "ribdepends \"%s\"" % self.getFileName(), 'r' )
@@ -52,19 +53,19 @@ class RIBFileExaminer( FileExaminer ) :
 		status = pipe.close()
 		if status :
 			raise RuntimeError( "Error running ribdepends" )
-
-		goodIdentifiers = [ 's', 't', 'x', 'u', 'c' ]
+		
+		goodIdentifiers = [ 's', 't', 'x', 'u', 'c' ]	
 		files = []
 		for line in lines :
 			if len( line ) > 4 :
 				if line[0]=='[' and line[2:4]=="] " and line[1] in goodIdentifiers :
-
+				
 					files.append( line[4:].strip() )
-
+		
 		result = set()
 		for f in files :
 			result.add( f )
-
+		
 		return result
-
+				
 FileExaminer.registerExaminer( [ "rib" ], RIBFileExaminer )

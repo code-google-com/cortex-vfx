@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,7 +37,6 @@
 #include "IECore/Shader.h"
 #include "IECore/MessageHandler.h"
 #include "IECore/SimpleTypedData.h"
-#include "IECore/VectorTypedData.h"
 #include "IECore/FileNameParameter.h"
 #include "IECore/ObjectParameter.h"
 #include "IECore/NullObject.h"
@@ -55,7 +54,7 @@ const Reader::ReaderDescription<SLOReader> SLOReader::m_readerDescription( "sdl"
 
 SLOReader::SLOReader()
 	:	Reader( "SLOReader", "Reads compiled renderman shaders.", new ObjectParameter( "result", "The loaded shader", new NullObject, Shader::staticTypeId() ) )
-{
+{	
 }
 
 SLOReader::SLOReader( const std::string &fileName )
@@ -88,15 +87,15 @@ ObjectPtr SLOReader::doOperation( ConstCompoundObjectPtr operands )
 	string name = Slo_GetName();
 	string type = Slo_TypetoStr( Slo_GetType() );
 	ShaderPtr result = new Shader( name, type );
-
+	
 	CompoundDataPtr typeHints = new CompoundData;
 	result->blindData()->writable().insert( pair<string, DataPtr>( "ri:parameterTypeHints", typeHints ) );
-
+	
 	int numArgs = Slo_GetNArgs();
 	for( int i=1; i<=numArgs; i++ )
 	{
 		DataPtr data = 0;
-
+		
 		SLO_VISSYMDEF *arg = Slo_GetArgById( i );
 		switch( arg->svd_type )
 		{
@@ -131,7 +130,7 @@ ObjectPtr SLOReader::doOperation( ConstCompoundObjectPtr operands )
 					typeHints->writable().insert( pair<string, DataPtr>( arg->svd_name, new StringData( Slo_TypetoStr( arg->svd_type ) ) ) );
 					break;
 				}
-
+				
 			case SLO_TYPE_COLOR :
 				{
 					if( arg->svd_arraylen==0 )
@@ -160,7 +159,7 @@ ObjectPtr SLOReader::doOperation( ConstCompoundObjectPtr operands )
 					}
 				}
 				break;
-
+				
 			case SLO_TYPE_SCALAR :
 				{
 					if( arg->svd_arraylen==0 )
@@ -186,9 +185,9 @@ ObjectPtr SLOReader::doOperation( ConstCompoundObjectPtr operands )
 							vData->writable().push_back( *(a->svd_default.scalarval) );
 						}
 					}
-				}
+				}	
 				break;
-
+		
 			case SLO_TYPE_STRING :
 				{
 					if( arg->svd_arraylen==0 )
@@ -220,7 +219,7 @@ ObjectPtr SLOReader::doOperation( ConstCompoundObjectPtr operands )
 					}
 				}
 				break;
-
+				
 			case SLO_TYPE_MATRIX :
 				{
 					if( arg->svd_arraylen==0 )
@@ -257,17 +256,17 @@ ObjectPtr SLOReader::doOperation( ConstCompoundObjectPtr operands )
 					}
 				}
 				break;
-
+	
 			default :
-
+			
 				msg( Msg::Warning, "SLOReader::read", format( "Parameter \"%s\" has unsupported type." ) % arg->svd_name );
 		}
-
+		
 		if( data )
 		{
 			result->parameters().insert( CompoundDataMap::value_type( arg->svd_name, data ) );
 		}
-
+	
 	}
 
 	return result;

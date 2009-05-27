@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,12 +41,10 @@
 #include "maya/MFnMatrixData.h"
 #include "maya/MFnTransform.h"
 
+using namespace IECoreMaya;
 using namespace IECore;
 using namespace std;
 using namespace Imath;
-
-namespace IECoreMaya
-{
 
 static const MFn::Type fromTypes[] = { MFn::kMatrixData, MFn::kTransform, MFn::kInvalid };
 
@@ -64,7 +62,7 @@ FromMayaTransformationMatrixConverter<T>::FromMayaTransformationMatrixConverter(
 	:	FromMayaObjectConverter( "FromMayaTransformationMatrixConverter", "Converts maya matrix data to IECore::TransformationMatrixData.", object )
 {
 }
-
+		
 template<typename T>
 IECore::ObjectPtr FromMayaTransformationMatrixConverter<T>::doConversion( const MObject &object, IECore::ConstCompoundObjectPtr operands ) const
 {
@@ -86,10 +84,6 @@ IECore::ObjectPtr FromMayaTransformationMatrixConverter<T>::doConversion( const 
 	return 0;
 }
 
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( FromMayaTransformationMatrixfConverter, FromMayaTransformationMatrixfConverterTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( FromMayaTransformationMatrixdConverter, FromMayaTransformationMatrixdConverterTypeId )
-
 template class FromMayaTransformationMatrixConverter<TransformationMatrixfData>;
 template class FromMayaTransformationMatrixConverter<TransformationMatrixdData>;
 
-} // namespace IECoreMaya

@@ -39,7 +39,7 @@
 
 #include "IECore/ParticleWriter.h"
 #include "IECore/VectorTypedData.h"
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/TypedParameter.h"
 #include "IECore/NumericParameter.h"
 
 namespace IECore

@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -50,31 +50,23 @@ class TestParameterised( unittest.TestCase ) :
 	def testSubclass( self ) :
 		""" Test Parameterised subclassing """
 		b = derived()
-
+		
 	def testUserData( self ) :
-
+	
 		a = Parameterised( "name", "description" )
 		self.assertEqual( a.userData(), CompoundObject() )
 
 	def testSmartAssignment( self ):
-
+		
 		b = derived()
 		b.anotherAttribute = [ 1, "lala", 1.2 ]
+		b.number = 20
 		b.objectAttribute1 = 2
 		self.assert_( isinstance( b.anotherAttribute, list ) )
+		self.assertEqual( b.number.getTypedValue(), 20 )
 		self.assertEqual( b.objectAttribute1, 2 )
 		b["number"] = 30
-		self.assertEqual( b["number"].getTypedValue(), 30 )
-
-	def testAttributeDeprecation( self ) :
-
-		b = derived()
-		
-		self.assert_( hasattr( b, "objectAttribute1" ) )
-		self.failIf( hasattr( b, "doesNotExist" ) )
-		
-		self.assertRaises( DeprecationWarning, getattr, b, "number" )
-		self.assertRaises( DeprecationWarning, setattr, b, "number", 10 )
+		self.assertEqual( b.number.getTypedValue(), 30 )
 
 if __name__ == "__main__":
         unittest.main()

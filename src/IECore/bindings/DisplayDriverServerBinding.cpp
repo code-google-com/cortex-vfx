@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
-#include "boost/python/suite/indexing/container_utils.hpp"
+#include <boost/python.hpp>
+#include <boost/python/suite/indexing/container_utils.hpp>
 
 #include "IECore/DisplayDriverServer.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -45,12 +46,13 @@ namespace IECore {
 
 void bindDisplayDriverServer()
 {
-	using boost::python::arg;
-
-	RunTimeTypedClass<DisplayDriverServer>()
-		.def( init< int >( ( arg( "portNumber" ) ) ) )
+	typedef class_< DisplayDriverServer, DisplayDriverServerPtr, boost::noncopyable, bases<RunTimeTyped> > DisplayDriverServerPyClass;
+	DisplayDriverServerPyClass( "DisplayDriverServer", no_init )
+		.def( init< int >( args( "portNumber" ) ) )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(DisplayDriverServer)
 	;
-
+	INTRUSIVE_PTR_PATCH( DisplayDriverServer, DisplayDriverServerPyClass );
+	implicitly_convertible<DisplayDriverServerPtr, RunTimeTypedPtr>();
 }
 
 } // namespace IECore

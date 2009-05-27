@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,14 +32,15 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/PrimitiveOp.h"
 #include "IECore/Parameter.h"
 #include "IECore/Object.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
+#include "IECore/bindings/WrapperToPython.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
-#include "IECore/bindings/Wrapper.h"
 
 using namespace boost;
 using namespace boost::python;
@@ -49,11 +50,15 @@ namespace IECore {
 class PrimitiveOpWrap : public PrimitiveOp, public Wrapper<PrimitiveOp>
 {
 	public :
-
+		
 		PrimitiveOpWrap( PyObject *self, const std::string name, const std::string description ) : PrimitiveOp( name, description ), Wrapper<PrimitiveOp>( self, this ) {};
-
+		
 		virtual void modifyPrimitive( PrimitivePtr object, ConstCompoundObjectPtr operands )
 		{
+			//// \todo We may want to call operands->copy() here instead of casting away the constness. If the Python code being called
+			/// here actually attempts to change the CompoundObject, then any C++ calling code might get confused when a suposedly const value
+			/// changes unexpectedly. Check any performance overhead of the copy. 
+			
 			this->get_override( "modifyPrimitive" )( object, const_pointer_cast<CompoundObject>( operands ) );
 		}
 
@@ -62,9 +67,17 @@ IE_CORE_DECLAREPTR( PrimitiveOpWrap );
 
 void bindPrimitiveOp()
 {
-	RunTimeTypedClass<PrimitiveOp, PrimitiveOpWrapPtr>()
+	typedef class_< PrimitiveOp, PrimitiveOpWrapPtr, boost::noncopyable, bases<ModifyOp> > PrimitiveOpPyClass;
+	PrimitiveOpPyClass( "PrimitiveOp", no_init )
 		.def( init< const std::string, const std::string>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( PrimitiveOp )
 	;
+	
+	WrapperToPython<PrimitiveOpPtr>();
+
+	INTRUSIVE_PTR_PATCH( PrimitiveOp, PrimitiveOpPyClass );
+	implicitly_convertible<PrimitiveOpPtr, ModifyOpPtr>();	
+
 }
 
 } // namespace IECore

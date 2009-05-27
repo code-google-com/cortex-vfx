@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,52 +32,32 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/RunTimeTyped.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using namespace boost::python;
 
 namespace IECore
 {
 
-static list baseTypeIds( TypeId typeId )
-{
-	list result;
-
-	const std::vector<TypeId> &ids = RunTimeTyped::baseTypeIds( typeId );
-	for( std::vector<TypeId>::const_iterator it = ids.begin(); it != ids.end(); ++it )
-	{
-		result.append( *it );
-	}
-
-	return result;
-}
-
-static list derivedTypeIds( TypeId typeId )
-{
-	list result;
-	const std::set<TypeId> &ids = RunTimeTyped::derivedTypeIds( typeId );
-	for( std::set<TypeId>::const_iterator it = ids.begin(); it != ids.end(); ++it )
-	{
-		result.append( *it );
-	}
-
-	return result;
-}
-
 void bindRunTimeTyped()
 {
-	RunTimeTypedClass<RunTimeTyped>()
-		.def( "baseTypeIds", &baseTypeIds ).staticmethod( "baseTypeIds" )
-		.def( "derivedTypeIds", &derivedTypeIds ).staticmethod( "derivedTypeIds" )
-		.def( "typeIdFromTypeName", &RunTimeTyped::typeIdFromTypeName )
-		.staticmethod( "typeIdFromTypeName" )
-		.def( "typeNameFromTypeId", &RunTimeTyped::typeNameFromTypeId )
-		.staticmethod( "typeNameFromTypeId" )
-		.def( "registerType",  &RunTimeTyped::registerType ).staticmethod( "registerType" )
+	typedef class_<RunTimeTyped, boost::noncopyable, RunTimeTypedPtr, bases<RefCounted> > RunTimeTypedPyClass;
+	RunTimeTypedPyClass( "RunTimeTyped", no_init )
+		.def( "typeName", &RunTimeTyped::typeName )
+		.def( "typeId", &RunTimeTyped::typeId )
+		.def( "isInstanceOf", (bool (RunTimeTyped::*)( const std::string &) const)&RunTimeTyped::isInstanceOf )
+		.def( "isInstanceOf", (bool (RunTimeTyped::*)( TypeId ) const)&RunTimeTyped::isInstanceOf )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( RunTimeTyped )
 	;
+	
+	INTRUSIVE_PTR_PATCH( RunTimeTyped, RunTimeTypedPyClass );
+
+	implicitly_convertible<RunTimeTypedPtr, RefCountedPtr>();
+	implicitly_convertible<RunTimeTypedPtr, ConstRunTimeTypedPtr>();
 
 }
 

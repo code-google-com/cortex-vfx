@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,7 +45,7 @@
 using namespace IECore;
 
 template<typename T>
-TypedPrimitiveOp<T>::TypedPrimitiveOp( const std::string &name, const std::string &description )
+TypedPrimitiveOp<T>::TypedPrimitiveOp( const std::string name, const std::string description )
 	:	ModifyOp( name, description, new ObjectParameter( "result", "The result", new T(), T::staticTypeId() ), new ObjectParameter( "input", "The Primitive to modify", new T(), T::staticTypeId() ) )
 {
 }
@@ -59,24 +59,89 @@ template<typename T>
 void TypedPrimitiveOp<T>::modify( ObjectPtr primitive, ConstCompoundObjectPtr operands )
 {
 	typename T::Ptr typedPrimitive = boost::dynamic_pointer_cast<T>( primitive );
-
+	
 	// Parameter validation should ensure that this is object is of the correct type, hence the assertion
 	assert( typedPrimitive );
 
 	modifyTypedPrimitive( typedPrimitive, operands );
 }
 
+template <typename T> 
+TypeId TypedPrimitiveOp<T>::typeId() const
+{
+	return staticTypeId();
+}
+
+template <typename T> 
+TypeId TypedPrimitiveOp<T>::staticTypeId()
+{
+	BOOST_STATIC_ASSERT( sizeof(T) == 0 ); // this function must be specialised for each type!
+	return InvalidTypeId;
+}
+
+template <typename T> 
+std::string TypedPrimitiveOp<T>::typeName() const
+{
+	return staticTypeName();
+}
+
+template <typename T> 
+std::string TypedPrimitiveOp<T>::staticTypeName()
+{
+	BOOST_STATIC_ASSERT( sizeof(T) == 0 ); // this function must be specialised for each type!
+	return "";
+}
+
 template<typename T>
-const RunTimeTyped::TypeDescription< TypedPrimitiveOp<T> > TypedPrimitiveOp<T>::g_typeDescription;
+bool TypedPrimitiveOp<T>::isInstanceOf( TypeId typeId ) const
+{
+	if( typeId==staticTypeId() )
+	{
+		return true;
+	}
+	return ModifyOp::isInstanceOf( typeId );
+}
+
+template<typename T>
+bool TypedPrimitiveOp<T>::isInstanceOf( const std::string &typeName ) const
+{
+	if( typeName==staticTypeName() )
+	{
+		return true;
+	}
+	return ModifyOp::isInstanceOf( typeName );
+}
+
+template<typename T>
+bool TypedPrimitiveOp<T>::inheritsFrom( TypeId typeId )
+{
+	return ModifyOp::staticTypeId()==typeId ? true : ModifyOp::inheritsFrom( typeId );
+}
+
+template<typename T>
+bool TypedPrimitiveOp<T>::inheritsFrom( const std::string &typeName )
+{
+	return ModifyOp::staticTypeName()==typeName ? true : ModifyOp::inheritsFrom( typeName );
+}
 
 #define IE_CORE_DEFINETYPEDPRIMITIVEOPSPECIALISATION( T, TNAME ) \
-	\
-	IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( TNAME, TNAME##TypeId );\
-	\
+ \
+	template<> \
+	TypeId TypedPrimitiveOp<T>::staticTypeId() \
+	{ \
+		return TNAME ## TypeId; \
+	} \
+ \
+	template<> \
+	std::string TypedPrimitiveOp<T>::staticTypeName() \
+	{ \
+		return # TNAME; \
+	} \
+ \
 	template class TypedPrimitiveOp<T>;
-
+	
 namespace IECore
 {
 IE_CORE_DEFINETYPEDPRIMITIVEOPSPECIALISATION( MeshPrimitive, MeshPrimitiveOp );
 IE_CORE_DEFINETYPEDPRIMITIVEOPSPECIALISATION( ImagePrimitive, ImagePrimitiveOp );
-}
+}	

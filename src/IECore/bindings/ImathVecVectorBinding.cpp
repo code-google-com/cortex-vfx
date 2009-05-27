@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,15 +32,19 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
-#include "boost/python/make_constructor.hpp"
-#include "boost/python/suite/indexing/container_utils.hpp"
-#include "boost/numeric/conversion/cast.hpp"
-#include "boost/python/implicit.hpp"
+// System includes
 
-#include "OpenEXR/ImathVec.h"
+// External includes
+#include <boost/python.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/suite/indexing/container_utils.hpp>
+#include <boost/numeric/conversion/cast.hpp>
+#include <boost/python/implicit.hpp>
+
+#include <OpenEXR/ImathVec.h>
 
 #include "IECore/VectorTypedData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/VectorTypedDataBinding.inl"
 
 using namespace std;
@@ -60,12 +64,12 @@ IE_COREPYTHON_DEFINEVECTORDATASTRSPECIALISATION( V3i )
 
 void bindImathVecVectorTypedData()
 {
-	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec2< float >, "V2f")
-	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec2< double >, "V2d")
-	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec2< int >, "V2i")
-	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec3< float >,	"V3f")
-	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec3< double >, "V3d")
-	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec3< int >, "V3i")
+	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec2< float >,	 "V2fVectorData", "V2f")
+	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec2< double >, "V2dVectorData", "V2d")
+	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec2< int >, "V2iVectorData", "V2i")
+	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec3< float >,	 "V3fVectorData", "V3f")
+	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec3< double >, "V3dVectorData", "V3d")
+	BIND_OPERATED_VECTOR_TYPEDDATA ( Vec3< int >, "V3iVectorData", "V3i")
 }
 
 } // namespace IECore

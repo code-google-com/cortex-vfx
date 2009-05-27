@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,7 @@
 
 #include "IECore/TypedPrimitiveOp.h"
 #include "IECore/NumericParameter.h"
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/TypedParameter.h"
 
 namespace IECore
 {
@@ -55,22 +55,22 @@ class TriangulateOp : public TypedPrimitiveOp<MeshPrimitive>
 		virtual ~TriangulateOp();
 
 		IE_CORE_DECLARERUNTIMETYPED( TriangulateOp, MeshPrimitiveOp );
-
+		
 		BoolParameterPtr throwExceptionsParameter();
-		ConstBoolParameterPtr throwExceptionsParameter() const;
-
+		ConstBoolParameterPtr throwExceptionsParameter() const;		
+		
 		FloatParameterPtr toleranceParameter();
 		ConstFloatParameterPtr toleranceParameter() const;
 
 	protected:
-
+	
 		struct TriangulateFn;
-
+	
 		virtual void modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands );
-
+		
 		BoolParameterPtr m_throwExceptionsParameter;
 		FloatParameterPtr m_toleranceParameter;
-
+	
 };
 
 IE_CORE_DECLAREPTR( TriangulateOp );

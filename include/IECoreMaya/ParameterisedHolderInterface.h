@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,34 +43,29 @@
 namespace IECoreMaya
 {
 
-/// A base class from which nodes to hold IECore::ParameterisedInterface objects
+/// A base class from which nodes to hold IECore::Parametised objects
 /// should multiply inherit (for example, Maya RI procedurals).
-class ParameterisedHolderInterface
+class ParameterisedHolderInterface 
 {
 
 	public:
-
+	
 		ParameterisedHolderInterface();
 		virtual ~ParameterisedHolderInterface();
-
+		
 		/// Sets the Parameterised object this node is holding. An IECore.ClassLoader object will be
 		/// used with searchpaths obtained from the specified environment variable to actually load
 		/// the Parameterised object. This mechanism is used rather than passing a ParameterisedPtr
 		/// as it allows the Parameterised object to be loaded again when a maya scene is opened.
 		virtual MStatus setParameterised( const std::string &className, int classVersion, const std::string &searchPathEnvVar ) = 0;
 		/// Sets the Parameterised object this node is holding, directly.
-		virtual MStatus setParameterised( IECore::RunTimeTypedPtr p ) = 0;
-		/// Updates the node to reflect any changes to the currently held Parameterised object. This should be called if Parameters have
-		/// been added to or removed from the Parameterised object.
-		virtual MStatus updateParameterised() = 0;
+		virtual MStatus setParameterised( IECore::ParameterisedPtr p ) = 0;
 		/// Returns the held Parameterised object, loading it if necessary. May return 0 if loading
 		/// fails. Note that this doesn't update the values of the parameters - you can use the
 		/// separate setParameterisedValues() call for that. If provided, the optional className,
 		/// classVersion and searchPathEnvVar are updated to reflect the last values passed to
 		/// setParameterised - in the case of a 0 return value these values are left unchanged.
-		virtual IECore::RunTimeTypedPtr getParameterised( std::string *className = 0, int *classVersion = 0, std::string *searchPathEnvVar = 0 ) = 0;
-		/// Convenience method to return dynamic_cast<IECore::ParameterisedInterface *>( getParameterised().get() )
-		IECore::ParameterisedInterface *getParameterisedInterface();
+		virtual IECore::ParameterisedPtr getParameterised( std::string *className = 0, int *classVersion = 0, std::string *searchPathEnvVar = 0 ) = 0;
 		/// Sets the attributes of the node to reflect the current values
 		/// of the parameters in the held Parameterised object. Performs validation
 		/// of the parameter values and will return kFailure if any one is not valid.
@@ -78,15 +73,15 @@ class ParameterisedHolderInterface
 		/// Sets the attribute of the node to reflect the current value
 		/// of the specified parameter in the held Parameterised object. Performs validation
 		/// of the parameter values and will return kFailure if any one is not valid.
-		virtual MStatus setNodeValue( IECore::ParameterPtr pa ) = 0;
+		virtual MStatus setNodeValue( IECore::ParameterPtr pa ) = 0;		
 		/// Sets the values of the parameters of the held Parameterised object
 		/// to reflect the values of the attributes of the node. Performs validation
 		/// of the parameter values and will return kFailure if any one in not valid.
 		virtual MStatus setParameterisedValues() = 0;
 		/// Sets the value of the specified parameter of the held Parameterised object
 		/// to reflect the value of the corresponding attribute on the node. Performs validation
-		/// of the parameter values and will return kFailure if any one in not valid.
-		virtual MStatus setParameterisedValue( IECore::ParameterPtr pa ) = 0;
+		/// of the parameter values and will return kFailure if any one in not valid.		
+		virtual MStatus setParameterisedValue( IECore::ParameterPtr pa ) = 0;		
 		/// Returns the plug used to represent the specified parameter, which should
 		/// be a child of getParameterised()->parameters(). On failure returns a plug
 		/// for which plug.isNull() returns true.
@@ -94,7 +89,7 @@ class ParameterisedHolderInterface
 		/// Returns the parameter represented by the specified plug, returning 0
 		/// if no such parameter exists.
 		virtual IECore::ParameterPtr plugParameter( const MPlug &plug ) = 0;
-
+	
 };
 
 }

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,10 +38,10 @@
 #include <iostream>
 #include <algorithm>
 
-#include "boost/test/unit_test.hpp"
+#include <boost/test/unit_test.hpp>
 
-#include "OpenEXR/ImathVec.h"
-#include "OpenEXR/ImathRandom.h"
+#include <OpenEXR/ImathVec.h>
+#include <OpenEXR/ImathRandom.h>
 
 #include <IECore/KDTree.h>
 
@@ -49,38 +49,38 @@ namespace IECore
 {
 
 void addKDTreeTest(boost::unit_test::test_suite* test);
-
+	
 template<typename T>
 class KDTreeTest
 {
 	public:
 		KDTreeTest(unsigned int numPoints);
 		virtual ~KDTreeTest();
-
+	
 		void testNearestNeighour();
 		void testNearestNeighours();
 		void testNearestNNeighours();
-
+	
 	private:
-
+		
 		/// Some typedefs for convenience
 		typedef std::vector<T> PointVector;
 		typedef KDTree<typename PointVector::const_iterator> Tree;
 		typedef std::vector< typename Tree::Iterator > NeighbourVector;
-
+	
 		std::vector<T> m_points;
 		Tree *m_tree;
 		Imath::Rand32 m_randGen;
 		unsigned int m_numPoints;
-
+	
 		typename  Tree::Iterator randomPoint();
-
+		
 };
 
 template<unsigned int N>
 struct KDTreeTestSuite : public boost::unit_test::test_suite
 {
-
+	
 	KDTreeTestSuite() : boost::unit_test::test_suite("KDTreeTestSuite")
 	{
 		addTest<Imath::V3f>();
@@ -88,12 +88,12 @@ struct KDTreeTestSuite : public boost::unit_test::test_suite
 		addTest<Imath::V2f>();
 		addTest<Imath::V2d>();
 	}
-
+	
 	template<typename T>
-	void addTest()
-	{
+	void addTest()		
+	{	
 		static boost::shared_ptr<KDTreeTest<T> > instance(new KDTreeTest<T>(N));
-
+	
 		add( BOOST_CLASS_TEST_CASE( &KDTreeTest<T>::testNearestNeighour, instance ) );
 		add( BOOST_CLASS_TEST_CASE( &KDTreeTest<T>::testNearestNeighours, instance ) );
 		add( BOOST_CLASS_TEST_CASE( &KDTreeTest<T>::testNearestNNeighours, instance ) );

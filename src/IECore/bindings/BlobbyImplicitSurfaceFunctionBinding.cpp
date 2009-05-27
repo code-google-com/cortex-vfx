@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,11 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Exception.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/BlobbyImplicitSurfaceFunction.h"
-#include "IECore/bindings/RefCountedBinding.h"
 
 using namespace boost::python;
 
@@ -47,11 +47,15 @@ template<typename T>
 void bindBlobbyImplicitSurfaceFunction( const char *name )
 {
 	typedef ImplicitSurfaceFunction<typename T::Point, typename T::Value> Base;
+	
+	typedef class_< T, typename T::Ptr, bases< Base >, boost::noncopyable > BlobbyImplicitPyClass;
 
-	RefCountedClass<T, Base>( name )
-		.def( init< typename T::PointVectorData::ConstPtr, ConstDoubleVectorDataPtr, ConstDoubleVectorDataPtr > () )
+	BlobbyImplicitPyClass( name, no_init )
+		.def( init< typename T::PointVectorData::ConstPtr, ConstDoubleVectorDataPtr, ConstDoubleVectorDataPtr > () )		
 	;
-
+	
+	implicitly_convertible< typename T::Ptr, typename Base::Ptr>();
+	INTRUSIVE_PTR_PATCH_TEMPLATE( T, BlobbyImplicitPyClass );	
 }
 
 void bindBlobbyImplicitSurfaceFunction()
@@ -59,7 +63,7 @@ void bindBlobbyImplicitSurfaceFunction()
 	bindBlobbyImplicitSurfaceFunction<BlobbyImplicitSurfaceFunctionV3ff>( "BlobbyImplicitSurfaceFunctionV3ff" );
 	bindBlobbyImplicitSurfaceFunction<BlobbyImplicitSurfaceFunctionV3fd>( "BlobbyImplicitSurfaceFunctionV3fd" );
 	bindBlobbyImplicitSurfaceFunction<BlobbyImplicitSurfaceFunctionV3df>( "BlobbyImplicitSurfaceFunctionV3df" );
-	bindBlobbyImplicitSurfaceFunction<BlobbyImplicitSurfaceFunctionV3dd>( "BlobbyImplicitSurfaceFunctionV3dd" );
+	bindBlobbyImplicitSurfaceFunction<BlobbyImplicitSurfaceFunctionV3dd>( "BlobbyImplicitSurfaceFunctionV3dd" );	
 }
 
 } // namespace IECore

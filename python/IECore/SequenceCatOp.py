@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -37,16 +37,16 @@ from IECore import *
 class SequenceCatOp( Op ) :
 
 	def __init__( self ) :
-
+	
 		Op.__init__( self, "SequenceCatOp", "Concatenates file sequences to stdout.",
 			IntParameter(
 				name = "result",
 				description = "The number of files .",
-				defaultValue = 0,
+				defaultValue = 0,				
 			)
 		)
-
-		self.parameters().addParameter(
+		
+		self.parameters().addParameter(			
 			FileSequenceParameter(
 				name = "src",
 				description = "The source file sequence.",
@@ -57,11 +57,11 @@ class SequenceCatOp( Op ) :
 		)
 
 	def doOperation( self, operands ) :
-
+	
 		src = self.parameters()["src"].getFileSequenceValue()
-
+				
 		cat( src )
 
 		return IntData( len( src.fileNames() ) )
 
-registerRunTimeTyped( SequenceCatOp, 100023, Op )
+makeRunTimeTyped( SequenceCatOp, 100023, Op )

@@ -40,6 +40,7 @@
 #include "datetime.h"
 
 #include "IECore/DateTimeData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/bindings/IECoreBinding.h"
 
@@ -55,9 +56,9 @@ static int getMicroseconds( const posix_time::time_duration &dur )
 {
 	static long ticksPerSecond = posix_time::time_duration::ticks_per_second();
 	long fractionalSeconds = dur.fractional_seconds();
-
+	
 	static const int oneMillion = 1000000;
-
+	
 	/// Prevent over/underflow
 	if ( ticksPerSecond > oneMillion )
 	{
@@ -127,7 +128,7 @@ struct ptime_to_python
 			PyErr_SetString(PyExc_ValueError, "Cannot convert out-of-range ptime to datetime");
 			throw_error_already_set();
 		}
-
+		
 		gregorian::date date = t.date();
 		posix_time::time_duration dur = t.time_of_day();
 		return PyDateTime_FromDateAndTime(
@@ -143,7 +144,7 @@ struct ptime_to_python
 };
 
 template<>
-std::string repr<DateTimeData>( DateTimeData &x )
+static std::string repr<DateTimeData>( DateTimeData &x )
 {
 	object item( x.readable() );
 
@@ -159,7 +160,7 @@ std::string repr<DateTimeData>( DateTimeData &x )
 }
 
 template<>
-std::string str<DateTimeData>( DateTimeData &x )
+static std::string str<DateTimeData>( DateTimeData &x )
 {
 	return posix_time::to_simple_string( x.readable() );
 }
@@ -183,13 +184,20 @@ void bindDateTimeData()
 	ptime_from_python_datetime();
 	to_python_converter<posix_time::ptime, ptime_to_python > ();
 
-	RunTimeTypedClass<DateTimeData>()
+	typedef class_< DateTimeData, DateTimeDataPtr, noncopyable, bases<Data> > DateTimeDataPyClass;
+	DateTimeDataPyClass( "DateTimeData", no_init )
 		.def( init<>() )
 		.def( init<const DateTimeData::ValueType &>() )
 		.add_property( "value", make_function( &getValue, return_value_policy<copy_const_reference>() ), &setValue )
 		.def( "__repr__", &repr<DateTimeData> )
 		.def( "__str__", &str<DateTimeData> )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( DateTimeData );
 	;
+
+	INTRUSIVE_PTR_PATCH( DateTimeData, DateTimeDataPyClass );
+
+	implicitly_convertible<DateTimeDataPtr, DataPtr>();
+	implicitly_convertible<DateTimeDataPtr, ConstDateTimeDataPtr >();
 }
 
 } // namespace IECore

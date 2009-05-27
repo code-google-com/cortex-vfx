@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -59,7 +59,7 @@ IE_CORE_FORWARDDECLARE( Group );
 /// conversion to MeshPrimitives and ImagePrimitives.
 class Font : public RunTimeTyped
 {
-
+	
 	public :
 
 		IE_CORE_DECLARERUNTIMETYPED( Font, RunTimeTyped );
@@ -81,38 +81,41 @@ class Font : public RunTimeTyped
 		/// equal to one em.
 		void setCurveTolerance( float tolerance );
 		float getCurveTolerance() const;
-
+		
 		/// Sets the resolution used in converting
 		/// glyphs into images.
 		void setResolution( float pixelsPerEm );
 		float getResolution() const;
 
+		/// \todo All these methods should be const. The internal cache
+		/// is an implementation detail which is irrelevant to clients
+		/// of the class.
 		/// Returns a mesh for the specified character, using
 		/// the current curve tolerance. This returns a reference
 		/// into an internal cache and hence the resulting mesh
 		/// is const.
-		ConstMeshPrimitivePtr mesh( char c ) const;
+		ConstMeshPrimitivePtr mesh( char c );
 		/// Returns a mesh representing the specified string,
 		/// using the current curve tolerance and kerning.
-		MeshPrimitivePtr mesh( const std::string &text ) const;
+		MeshPrimitivePtr mesh( const std::string &text );
 		/// Returns a group representing the specified string,
 		/// using the current curve tolerance and kerning.
-		GroupPtr meshGroup( const std::string &text ) const;
+		GroupPtr meshGroup( const std::string &text );
 		/// Returns the necessary appropriate offset between the
 		/// origins of the first and second characters, taking
 		/// into account the current kerning.
-		Imath::V2f advance( char first, char second ) const;
+		Imath::V2f advance( char first, char second );
 		/// Returns a bounding box guaranteed to be large enough
 		/// to contain all characters from the font. 1 unit in this
 		/// bound is equal to 1 em.
-		Imath::Box2f bound() const;
+		Imath::Box2f bound();
 		/// Returns the bounding box for the specified character -
 		/// units are as above.
-		Imath::Box2f bound( char c ) const;
+		Imath::Box2f bound( char c );
 		/// Returns the bounding box for the specified string taking
 		/// into account the current kerning settings - units are as
 		/// above.
-		Imath::Box2f bound( const std::string &text ) const;
+		Imath::Box2f bound( const std::string &text );
 		/// Returns an ImagePrimitive to represent the specified
 		/// character, using the current resolution. The image will have
 		/// a single channel named "Y". The display window is the same for all
@@ -122,38 +125,33 @@ class Font : public RunTimeTyped
 		/// origin of the character on the baseline - bear in mind that image coordinates
 		/// increase from top to bottom, so the top of the character will typically
 		/// have a negative y coordinate in pixel space.
-		ConstImagePrimitivePtr image( char c ) const;
+		ConstImagePrimitivePtr image( char c );
 		/// Returns an image containing a grid of 16x8 characters containing
 		/// all the chars from 0-127 inclusive. This too has a single "Y" channel.
-		ImagePrimitivePtr image() const;
-
+		ImagePrimitivePtr image();
+		
 	private :
 
 		Imath::Box2i boundingWindow() const;
 
 		class Mesher;
-
+		
 		static FT_Library library();
-
-		std::string m_fileName;
 
 		FT_Face m_face;
 		float m_kerning;
 		float m_curveTolerance;
 		float m_pixelsPerEm;
-
+		
 		struct Mesh;
 		typedef boost::shared_ptr<Mesh> MeshPtr;
 		typedef boost::shared_ptr<const Mesh> ConstMeshPtr;
 		typedef std::map<char, ConstMeshPtr> MeshMap;
-		mutable MeshMap m_meshes;
-
-		typedef std::map<char, ConstImagePrimitivePtr> ImageMap;
-		mutable ImageMap m_images;
-
-		ConstMeshPtr cachedMesh( char c ) const;
-		ConstImagePrimitivePtr cachedImage( char c ) const;
-
+		MeshMap m_meshes;
+				
+		ConstMeshPtr cachedMesh( char c );
+		ConstImagePrimitivePtr cachedImage( char c );
+		
 };
 
 IE_CORE_DECLAREPTR( Font );

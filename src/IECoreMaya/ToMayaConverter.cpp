@@ -38,13 +38,11 @@
 
 using namespace IECoreMaya;
 
-IE_CORE_DEFINERUNTIMETYPED( ToMayaConverter );
-
 ToMayaConverter::ToMayaConverter( const std::string &name, const std::string &description, IECore::TypeId supportedType )
 	:	IECore::FromCoreConverter( name, description, supportedType )
 {
 }
-
+		
 ToMayaConverter::~ToMayaConverter()
 {
 }

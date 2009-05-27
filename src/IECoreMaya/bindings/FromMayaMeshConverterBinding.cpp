@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,6 +37,7 @@
 #include "IECoreMaya/FromMayaMeshConverter.h"
 #include "IECoreMaya/bindings/FromMayaMeshConverterBinding.h"
 
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace IECoreMaya;
@@ -44,10 +45,21 @@ using namespace boost::python;
 
 void IECoreMaya::bindFromMayaMeshConverter()
 {
-	IECore::RunTimeTypedClass<FromMayaMeshConverter>()
-		.def( "points", &FromMayaMeshConverter::points )
-		.def( "normals", &FromMayaMeshConverter::normals )
-		.def( "s", &FromMayaMeshConverter::s )
-		.def( "t", &FromMayaMeshConverter::t )
+	typedef class_<FromMayaMeshConverter, FromMayaMeshConverterPtr, boost::noncopyable, bases<FromMayaShapeConverter> > FromMayaMeshConverterPyClass;
+
+	FromMayaMeshConverterPyClass( "FromMayaMeshConverter", no_init )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( FromMayaMeshConverter )
+		/// \todo All of these should be replaced by bindings with the trailing underscore removed.
+		/// They're only bound this way because the names currently conflict with the names of parameters.
+		/// Once we've done the todo in CompoundParameterBinding (get rid of the __getattr__ for child access)
+		/// we can convert these to the proper form and they won't mask parameters any more (parameters will be
+		/// accessed using [] syntax instead).
+		.def( "points_", &FromMayaMeshConverter::points )
+		.def( "normals_", &FromMayaMeshConverter::normals )
+		.def( "s_", &FromMayaMeshConverter::s )
+		.def( "t_", &FromMayaMeshConverter::t )
 	;
+	
+	INTRUSIVE_PTR_PATCH( FromMayaMeshConverter, FromMayaMeshConverterPyClass );
+	implicitly_convertible<FromMayaMeshConverterPtr, FromMayaShapeConverterPtr>();
 }

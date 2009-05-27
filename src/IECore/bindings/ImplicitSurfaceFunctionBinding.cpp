@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,13 +32,14 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Exception.h"
 
+#include "IECore/bindings/IntrusivePtrPatch.h"
+#include "IECore/bindings/WrapperToPython.h"
+
 #include "IECore/ImplicitSurfaceFunction.h"
-#include "IECore/bindings/Wrapper.h"
-#include "IECore/bindings/RefCountedBinding.h"
 
 
 using namespace boost;
@@ -49,22 +50,22 @@ namespace IECore
 
 
 template<typename T>
-class ImplicitWrap :
-	public ImplicitSurfaceFunction<typename T::Point, typename T::Value>,
+class ImplicitWrap : 
+	public ImplicitSurfaceFunction<typename T::Point, typename T::Value>, 
 	public Wrapper<ImplicitSurfaceFunction<typename T::Point, typename T::Value> >
 {
 	public :
 
 		IE_CORE_DECLAREMEMBERPTR( ImplicitWrap<T> );
-
+				
 		ImplicitWrap( PyObject *self ) : ImplicitSurfaceFunction<typename T::Point, typename T::Value >(), Wrapper<ImplicitSurfaceFunction< typename T::Point, typename T::Value> >( self, this )
 		{
 		}
-
+		
 		virtual ~ImplicitWrap()
 		{
 		}
-
+		
 		virtual typename T::Value getValue( const typename T::Point &p )
 		{
 			override o = this->get_override( "getValue" );
@@ -83,10 +84,16 @@ class ImplicitWrap :
 template<typename T>
 void bindImplicit( const char *name )
 {
-	RefCountedClass<T, RefCounted, typename ImplicitWrap<T>::Ptr >( name )
+	typedef class_< T, typename ImplicitWrap<T>::Ptr, bases<RefCounted>, boost::noncopyable > ImplicitPyClass;
+
+	ImplicitPyClass( name, no_init )
 		.def( init<> () )
-		.def( "getValue", pure_virtual( &T::getValue ) )
+		.def( "getValue", pure_virtual( &T::getValue ) )		
 	;
+	WrapperToPython< typename ImplicitWrap<T>::Ptr >();
+	INTRUSIVE_PTR_PATCH_TEMPLATE( T, ImplicitPyClass );
+	implicitly_convertible< typename ImplicitWrap<T>::Ptr, typename T::Ptr >();
+	implicitly_convertible< typename T::Ptr, RefCountedPtr>();
 }
 
 void bindImplicitSurfaceFunction()
@@ -94,7 +101,7 @@ void bindImplicitSurfaceFunction()
 	bindImplicit<ImplicitSurfaceFunctionV3ff>( "ImplicitSurfaceFunctionV3ff" );
 	bindImplicit<ImplicitSurfaceFunctionV3fd>( "ImplicitSurfaceFunctionV3fd" );
 	bindImplicit<ImplicitSurfaceFunctionV3df>( "ImplicitSurfaceFunctionV3df" );
-	bindImplicit<ImplicitSurfaceFunctionV3dd>( "ImplicitSurfaceFunctionV3dd" );
+	bindImplicit<ImplicitSurfaceFunctionV3dd>( "ImplicitSurfaceFunctionV3dd" );	
 }
 
 } // namespace IECore
