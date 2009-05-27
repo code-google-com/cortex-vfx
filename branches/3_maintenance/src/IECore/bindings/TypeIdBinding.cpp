@@ -320,6 +320,7 @@ void bindTypeId()
 		.value("CurveExtrudeOp", CurveExtrudeOpTypeId )
 		.value( "BINParticleReader", BINParticleReaderTypeId )		
 		.value( "BINParticleWriter", BINParticleWriterTypeId )			
+		.value( "BINMeshReader", BINMeshReaderTypeId )			
 	;
 }
 
