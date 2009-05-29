@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,13 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/StateRenderable.h"
 #include "IECore/bindings/StateRenderableBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -47,8 +48,12 @@ namespace IECore
 
 void bindStateRenderable()
 {
-	RunTimeTypedClass<StateRenderable>( "An abstract class to define objects which are renderable but which only modify renderer state." )
+	typedef class_< StateRenderable, boost::noncopyable, StateRenderablePtr, bases<Renderable> > StateRenderablePyClass;
+	StateRenderablePyClass("StateRenderable", "An abstract class to define objects which are renderable but which only modify renderer state.", no_init)
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(StateRenderable)
 	;
+	INTRUSIVE_PTR_PATCH( StateRenderable, StateRenderablePyClass );
+	implicitly_convertible<StateRenderablePtr, RenderablePtr>();
 }
 
 }

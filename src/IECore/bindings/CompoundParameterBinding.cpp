@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,13 +32,14 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
-#include "boost/python/suite/indexing/container_utils.hpp"
+#include <boost/python.hpp>
+#include <boost/python/suite/indexing/container_utils.hpp>
 
 #include "IECore/CompoundParameter.h"
-#include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/ParameterBinding.h"
 #include "IECore/bindings/Wrapper.h"
+#include "IECore/bindings/WrapperToPython.h"
 
 using namespace boost;
 using namespace boost::python;
@@ -49,10 +50,12 @@ namespace IECore
 class CompoundParameterWrap : public CompoundParameter, public Wrapper< CompoundParameter >
 {
 	public:
-
+	
 		IE_CORE_DECLAREMEMBERPTR( CompoundParameterWrap );
 
 	protected:
+	
+		
 
 		static std::vector<ParameterPtr> getMembers( const object &members )
 		{
@@ -64,6 +67,83 @@ class CompoundParameterWrap : public CompoundParameter, public Wrapper< Compound
 				m.push_back( &p );
 			}
 			return m;
+		}
+
+		static CompoundObjectPtr compoundObjectFromDict( const dict &v )
+		{
+			CompoundObjectPtr x = new CompoundObject;
+			list values = v.values();
+			list keys = v.keys();
+		
+			for (int i = 0; i < keys.attr("__len__")(); i++)
+			{
+				object key(keys[i]);
+				object value(values[i]);
+				extract< const std::string > keyElem(key);
+				if (!keyElem.check()) 
+				{
+					PyErr_SetString(PyExc_TypeError, "Incompatible key type. Only strings accepted.");
+					throw_error_already_set();
+				}
+		
+				extract< Object& > valueElem(value);
+				if (valueElem.check())
+				{
+					x->members()[ keyElem() ] = &valueElem();
+					continue;
+				}
+				extract<dict> dictValueE( value );
+				if( dictValueE.check() )
+				{
+					ObjectPtr co = compoundObjectFromDict( dictValueE() );
+					x->members()[ keyElem() ] =  co;
+					continue;
+				}
+				else 
+				{
+					PyErr_SetString(PyExc_TypeError, "Incompatible value type - must be Object or dict.");
+					throw_error_already_set();
+				}
+			}
+			return x;
+		}
+
+		static ConstCompoundObjectPtr getUserData( const object & userData )
+		{
+			// get the optional userData parameter.
+			ConstCompoundObjectPtr ptrUserData = 0;
+			if (userData != object())
+			{
+
+				// get userData from python dict.
+				extract<dict> listElem(userData);
+				if (listElem.check())
+				{
+					return compoundObjectFromDict( listElem() );
+				}
+
+				extract<CompoundObjectPtr> elem(userData);
+				// try if elem is an exact CompoundObjectPtr
+				if (elem.check())
+				{
+					ptrUserData = elem();
+				}
+				else
+				{
+					// now try for ConstCompoundObjectPtr
+					extract<ConstCompoundObjectPtr> elem(userData);
+					if (elem.check())
+					{
+						ptrUserData = elem();
+					} 
+					else
+					{
+					   	PyErr_SetString(PyExc_TypeError, "Parameter userData is not an instance of CompoundObject nor a dictionary!");
+					  	throw_error_already_set();
+					}
+				}
+			}
+			return ptrUserData;
 		}
 
 		void addParametersFromMembers( const object &members )
@@ -78,8 +158,20 @@ class CompoundParameterWrap : public CompoundParameter, public Wrapper< Compound
 
 	public :
 
-		CompoundParameterWrap( PyObject *self, const std::string &name = "", const std::string &description = "", const list &members = list(), CompoundObjectPtr userData = 0 )
-			:	CompoundParameter( name, description, userData ), Wrapper< CompoundParameter >( self, this )
+		CompoundParameterWrap( PyObject *self, const std::string &name, const std::string &description, const list &members = list(), const object &userData = object() )
+			:	CompoundParameter( name, description, getUserData( userData ) ), Wrapper< CompoundParameter >( self, this ) 
+		{
+			addParametersFromMembers( members );
+		}
+
+		CompoundParameterWrap( PyObject *self, const std::string &name, const list &members, const object & userData = object() )
+			:	CompoundParameter( name, "", getUserData( userData ) ), Wrapper< CompoundParameter >( self, this )
+		{
+			addParametersFromMembers( members );
+		}
+		
+		CompoundParameterWrap( PyObject *self, const list &members, const object & userData = object() )
+			:	CompoundParameter( "", "", getUserData( userData ) ), Wrapper< CompoundParameter >( self, this )
 		{
 			addParametersFromMembers( members );
 		}
@@ -92,26 +184,14 @@ static unsigned int compoundParameterLen( const CompoundParameter &o )
 	return o.parameters().size();
 }
 
-static ParameterPtr compoundParameterGetItem( CompoundParameter &o, const char *n )
+static ParameterPtr compoundParameterGetItem( CompoundParameter &o, const std::string &n )
 {
-	const CompoundParameter::ParameterMap &p = o.parameters();
-	CompoundParameter::ParameterMap::const_iterator it = p.find( n );
-	if( it!=p.end() )
+	ParameterPtr result = o.parameter<Parameter>( n );
+	if( !result )
 	{
-		return it->second;
+		throw Exception( std::string("Bad index: ") + n );
 	}
-
-	throw Exception( std::string("Bad index: ") + n );
-}
-
-static ParameterPtr compoundParameterGetAttr( CompoundParameter &o, const char *n )
-{
-	if( PyErr_WarnEx( PyExc_DeprecationWarning, "Access to CompoundParameter children as attributes is deprecated - please use item style access instead.", 1 ) )
-	{
-		// warning converted to exception;
-		throw error_already_set();
-	}
-	return compoundParameterGetItem( o, n );
+	return result;
 }
 
 static bool compoundParameterContains( const CompoundParameter &o, const std::string &n )
@@ -148,38 +228,20 @@ static void compoundParameterAddParameters( CompoundParameter &o, const boost::p
 	o.addParameters( pp.begin(), pp.end() );
 }
 
-static boost::python::list parameterPath( CompoundParameter &o, ConstParameterPtr child )
-{
-	std::vector<std::string> p;
-	o.parameterPath( child, p );
-	boost::python::list result;
-	for( std::vector<std::string>::const_iterator it=p.begin(); it!=p.end(); it++ )
-	{
-		result.append( *it );
-	}
-	return result;
-}
-
 void bindCompoundParameter()
 {
-	using boost::python::arg ;
 
-	RunTimeTypedClass<CompoundParameter, CompoundParameterWrap::Ptr>()
-		.def(
-			init< const std::string &, const std::string &, boost::python::optional<const list &, CompoundObjectPtr > >
-			(
-				(
-					arg( "name" ) = std::string(""),
-					arg( "description" ) = std::string(""),
-					arg( "members" ) = list(),
-					arg( "userData" ) = CompoundObject::Ptr( 0 )
-				)
-			)
-		)
+	typedef class_< CompoundParameter, CompoundParameterWrap::Ptr, boost::noncopyable, bases<Parameter> > CompoundParameterPyClass;
+	CompoundParameterPyClass( "CompoundParameter", no_init )
+		.def( init< const std::string &, const std::string &, optional<const list &,  const object & > >( args( "name", "description", "members", "userData") ) )
+		.def( init< const std::string &, const list &, optional<  const object & > >( args( "name", "members", "userData") ) )
+		.def( init< const list &, optional<  const object & > >( args( "members", "userData") ) )
 		.def( "__len__", &compoundParameterLen )
 		.def( "__getitem__", &compoundParameterGetItem )
-		/// \todo Remove attribute style access in major version 5.
-		.def( "__getattr__", &compoundParameterGetAttr )
+		/// \todo This __getattr__ is causing problems because we can have parameter names and method names fighting over the same namespace.
+		/// It would be better to use only  __getitem__ for children. This would have a massive effect on existing scripts however, as they are all using the parameter.child
+		/// syntax in preference to parameter["child"].
+		.def( "__getattr__", &compoundParameterGetItem )
 		.def( "__contains__", &compoundParameterContains )
 		.def( "keys", &compoundParameterKeys )
 		.def( "values", &compoundParameterValues )
@@ -189,10 +251,15 @@ void bindCompoundParameter()
 		.IE_COREPYTHON_DEFPARAMETERWRAPPERFNS( CompoundParameter )
 		.def( "insertParameter", &CompoundParameter::insertParameter )
 		.def( "removeParameter", (void (CompoundParameter::*)(ParameterPtr)) &CompoundParameter::removeParameter )
-		.def( "removeParameter", (void (CompoundParameter::*)(const std::string&)) &CompoundParameter::removeParameter )
-		.def( "parameter", (ParameterPtr (CompoundParameter::*)(const std::string&)) &CompoundParameter::parameter<Parameter> )
-		.def( "parameterPath", &parameterPath )
+		.def( "removeParameter", (void (CompoundParameter::*)(const std::string&)) &CompoundParameter::removeParameter )				
+		.def( "parameter", (ParameterPtr (CompoundParameter::*)(const std::string&)) &CompoundParameter::parameter<Parameter> )				
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( CompoundParameter )
 	;
+
+	WrapperToPython< CompoundParameterPtr >();
+
+	INTRUSIVE_PTR_PATCH( CompoundParameter, CompoundParameterPyClass );
+	implicitly_convertible<CompoundParameterPtr, ParameterPtr>();
 
 }
 

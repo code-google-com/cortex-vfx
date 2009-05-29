@@ -32,14 +32,15 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
-#include "IECore/bindings/TypedObjectParameterBinding.h"
+#include "IECore/bindings/ParameterBinding.h"
 #include "IECore/bindings/Wrapper.h"
 #include "IECore/TypedObjectParameter.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/WrapperToPython.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
-#include "IECore/bindings/Wrapper.h"
 
 #include "IECore/Renderable.h"
 #include "IECore/StateRenderable.h"
@@ -52,6 +53,7 @@
 #include "IECore/Group.h"
 #include "IECore/MotionPrimitive.h"
 #include "IECore/Primitive.h"
+#include "IECore/ImagePrimitive.h"
 #include "IECore/MeshPrimitive.h"
 #include "IECore/CurvesPrimitive.h"
 #include "IECore/PointsPrimitive.h"
@@ -65,46 +67,75 @@ namespace IECore
 {
 
 template<typename T>
-static void bindTypedObjectParameter()
+class TypedObjectParameterWrap : public TypedObjectParameter<T>, public Wrapper< TypedObjectParameter<T> >
 {
-	using boost::python::arg;
+	public:
+		
+		IE_CORE_DECLAREMEMBERPTR( TypedObjectParameterWrap<T> );
 	
-	RunTimeTypedClass<TypedObjectParameter<T>, typename TypedObjectParameterWrap<T>::Ptr >()
-		.def(
-			init< const std::string &, const std::string &, typename T::Ptr, boost::python::optional<const object &, bool, CompoundObjectPtr > >
-			(
-				(
-					arg( "name" ),
-					arg( "description" ),
-					arg( "defaultValue" ),
-					arg( "presets" ) = boost::python::tuple(),
-					arg( "presetsOnly" ) = false ,
-					arg( "userData" ) = CompoundObject::Ptr( 0 )
-				)
-			)
-		)
+	protected:
+
+		static typename TypedObjectParameter<T>::ObjectPresetsMap makePresets( const dict &d )
+		{
+			typename TypedObjectParameter<T>::ObjectPresetsMap p;
+			boost::python::list keys = d.keys();
+			boost::python::list values = d.values();
+			for( int i = 0; i<keys.attr( "__len__" )(); i++ )
+			{
+				extract<typename T::Ptr> e( values[i] );
+				p.insert( typename TypedObjectParameter<T>::ObjectPresetsMap::value_type( extract<string>( keys[i] )(), e() ) );			
+			}
+			return p;
+		}
+
+	public :
+
+		TypedObjectParameterWrap( PyObject *self, const std::string &n, const std::string &d, typename T::Ptr dv, const dict &p = dict(), bool po = false, CompoundObjectPtr ud = 0 )	
+			:	TypedObjectParameter<T>( n, d, dv, makePresets( p ), po, ud ), Wrapper< TypedObjectParameter<T> >( self, this ) {};
+		
+		TypedObjectParameterWrap( PyObject *self, const std::string &n, const std::string &d, typename T::Ptr dv, CompoundObjectPtr ud )	
+			:	TypedObjectParameter<T>( n, d, dv, typename TypedObjectParameter<T>::ObjectPresetsMap(), false, ud ), Wrapper< TypedObjectParameter<T> >( self, this ) {};
+
+		IE_COREPYTHON_PARAMETERWRAPPERFNS( TypedObjectParameter<T> );
+};
+
+template<typename T>
+static void bindTypedObjectParameter( const char *name )
+{
+	typedef class_< TypedObjectParameter<T>, typename TypedObjectParameterWrap< T >::Ptr , boost::noncopyable, bases<ObjectParameter> > TypedObjectParameterPyClass;
+	TypedObjectParameterPyClass( name, no_init )
+		.def( init< const std::string &, const std::string &, typename T::Ptr, boost::python::optional<const dict &, bool, CompoundObjectPtr > >( args( "name", "description", "defaultValue", "presets", "presetsOnly", "userData") ) )
+		.def( init< const std::string &, const std::string &, typename T::Ptr, CompoundObjectPtr >( args( "name", "description", "defaultValue", "userData") ) )
 		.IE_COREPYTHON_DEFPARAMETERWRAPPERFNS( TypedObjectParameter<T> )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( TypedObjectParameter<T> )
 	;
+
+	WrapperToPython< typename TypedObjectParameter<T>::Ptr >();
+
+	INTRUSIVE_PTR_PATCH( TypedObjectParameter<T>, typename TypedObjectParameterPyClass );
+	implicitly_convertible< typename TypedObjectParameter<T>::Ptr, ObjectParameterPtr>();
+
 }
 
 void bindTypedObjectParameter()
 {
-	bindTypedObjectParameter<Renderable>();
-	bindTypedObjectParameter<StateRenderable>();
-	bindTypedObjectParameter<AttributeState>();
-	bindTypedObjectParameter<Shader>();
-	bindTypedObjectParameter<Transform>();
-	bindTypedObjectParameter<MatrixMotionTransform>();
-	bindTypedObjectParameter<MatrixTransform>();
-	bindTypedObjectParameter<VisibleRenderable>();
-	bindTypedObjectParameter<Group>();
-	bindTypedObjectParameter<MotionPrimitive>();
-	bindTypedObjectParameter<Primitive>();
-	bindTypedObjectParameter<MeshPrimitive>();
-	bindTypedObjectParameter<CurvesPrimitive>();
-	bindTypedObjectParameter<PointsPrimitive>();
-	bindTypedObjectParameter<CompoundObject>();
-	bindTypedObjectParameter<ObjectVector>();
+	bindTypedObjectParameter<Renderable>( "RenderableParameter" );
+	bindTypedObjectParameter<StateRenderable>( "StateRenderableParameter" );
+	bindTypedObjectParameter<AttributeState>( "AttributeStateParameter" );
+	bindTypedObjectParameter<Shader>( "ShaderParameter" );
+	bindTypedObjectParameter<Transform>( "TransformParameter" );
+	bindTypedObjectParameter<MatrixMotionTransform>( "MatrixMotionTransformParameter" );
+	bindTypedObjectParameter<MatrixTransform>( "MatrixTransformParameter" );
+	bindTypedObjectParameter<VisibleRenderable>( "VisibleRenderableParameter" );
+	bindTypedObjectParameter<Group>( "GroupParameter" );
+	bindTypedObjectParameter<MotionPrimitive>( "MotionPrimitiveParameter" );
+	bindTypedObjectParameter<Primitive>( "PrimitiveParameter" );
+	bindTypedObjectParameter<ImagePrimitive>( "ImagePrimitiveParameter" );
+	bindTypedObjectParameter<MeshPrimitive>( "MeshPrimitiveParameter" );
+	bindTypedObjectParameter<CurvesPrimitive>( "CurvesPrimitiveParameter" );
+	bindTypedObjectParameter<PointsPrimitive>( "PointsPrimitiveParameter" );	
+	bindTypedObjectParameter<CompoundObject>( "CompoundObjectParameter" );		
+	bindTypedObjectParameter<ObjectVector>( "ObjectVectorParameter" );		
 }
 
 } // namespace IECore

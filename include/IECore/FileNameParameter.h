@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,16 +45,16 @@ namespace IECore
 class FileNameParameter : public PathParameter
 {
 	public :
-
-		IE_CORE_DECLAREOBJECT( FileNameParameter, PathParameter )
-
+	
+		IE_CORE_DECLARERUNTIMETYPED( FileNameParameter, PathParameter )
+	
 		FileNameParameter( const std::string &name, const std::string &description,
 			const std::string &extensions = "", const std::string &defaultValue = "", bool allowEmptyString = true,
 			PathParameter::CheckType check = PathParameter::DontCare,
-			const StringParameter::PresetsContainer &presets = StringParameter::PresetsContainer(), bool presetsOnly = false, ConstCompoundObjectPtr userData=0 );
+			const StringParameter::PresetsMap &presets = StringParameter::PresetsMap(), bool presetsOnly = false, ConstCompoundObjectPtr userData=0 );
 
 		const std::vector<std::string> &extensions() const;
-
+		
 		/// Returns false if :
 		///
 		/// * PathParameter.valueValid() returns false.
@@ -62,18 +62,9 @@ class FileNameParameter : public PathParameter
 		/// * The given path points to a existent directory.
 		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
 
-	protected :
-
-		// for io and copying
-		FileNameParameter();
-		friend class TypeDescription<FileNameParameter>;
-
 	private :
-
+	
 		std::vector<std::string> m_extensions;
-
-		static const unsigned int g_ioVersion;
-
 };
 
 IE_CORE_DECLAREPTR( FileNameParameter )

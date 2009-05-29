@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,15 +37,13 @@
 
 using namespace IECoreRI;
 
-IE_CORE_DEFINERUNTIMETYPED( Renderer );
-
 Renderer::Renderer()
-	:	m_implementation( new RendererImplementation( this ) )
+	:	m_implementation( new RendererImplementation() )
 {
 }
 
 Renderer::Renderer( const std::string &name )
-	:	m_implementation( new RendererImplementation( this, name ) )
+	:	m_implementation( new RendererImplementation( name ) )
 {
 }
 
@@ -67,7 +65,7 @@ void Renderer::camera( const std::string &name, const IECore::CompoundDataMap &p
 {
 	m_implementation->camera( name, parameters );
 }
-
+		
 void Renderer::display( const std::string &name, const std::string &type, const std::string &data, const IECore::CompoundDataMap &parameters )
 {
 	m_implementation->display( name, type, data, parameters );
@@ -153,7 +151,7 @@ void Renderer::light( const std::string &name, const IECore::CompoundDataMap &pa
 	m_implementation->light( name, parameters );
 }
 
-void Renderer::motionBegin( const std::set<float> &times )
+void Renderer::motionBegin( const std::set<float> times )
 {
 	m_implementation->motionBegin( times );
 }
@@ -201,11 +199,6 @@ void Renderer::mesh( IECore::ConstIntVectorDataPtr vertsPerFace, IECore::ConstIn
 void Renderer::nurbs( int uOrder, IECore::ConstFloatVectorDataPtr uKnot, float uMin, float uMax, int vOrder, IECore::ConstFloatVectorDataPtr vKnot, float vMin, float vMax, const IECore::PrimitiveVariableMap &primVars )
 {
 	m_implementation->nurbs( uOrder, uKnot, uMin, uMax, vOrder, vKnot, vMin, vMax, primVars );
-}
-
-void Renderer::patchMesh( const IECore::CubicBasisf &uBasis, const IECore::CubicBasisf &vBasis, int nu, bool uPeriodic, int nv, bool vPeriodic, const IECore::PrimitiveVariableMap &primVars )
-{
-	m_implementation->patchMesh( uBasis, vBasis, nu, uPeriodic, nv, vPeriodic, primVars );
 }
 
 void Renderer::geometry( const std::string &type, const IECore::CompoundDataMap &topology, const IECore::PrimitiveVariableMap &primVars )

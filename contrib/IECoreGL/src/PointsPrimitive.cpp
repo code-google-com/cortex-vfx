@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -53,8 +53,6 @@ using namespace IECore;
 using namespace Imath;
 using namespace std;
 
-IE_CORE_DEFINERUNTIMETYPED( PointsPrimitive );
-
 float PointsPrimitive::g_defaultWidth = 1;
 float PointsPrimitive::g_defaultHeight = 1;
 float PointsPrimitive::g_defaultRotation = 1;
@@ -73,7 +71,7 @@ PointsPrimitive::PointsPrimitive( Type type,
 	m_widths = widths ? widths->copy() : 0;
 	m_heights = heights ? heights->copy() : 0;
 	m_rotations = rotations ? rotations->copy() : 0;
-
+	
 	unsigned int wStep = 0;
 	const float *w = dataAndStride( m_widths, &g_defaultWidth, wStep );
 	unsigned int hStep = 0;
@@ -97,9 +95,9 @@ PointsPrimitive::PointsPrimitive( Type type,
 PointsPrimitive::~PointsPrimitive()
 {
 }
-
+		
 void PointsPrimitive::render( ConstStatePtr state, IECore::TypeId style ) const
-{
+{	
 	if( depthSortRequested( state ) )
 	{
 		depthSort();
@@ -109,7 +107,7 @@ void PointsPrimitive::render( ConstStatePtr state, IECore::TypeId style ) const
 	{
 		m_renderSorted = false;
 	}
-
+	
 	Type type = m_type;
 	switch( state->get<PointsPrimitiveUseGLPoints>()->value() )
 	{
@@ -125,7 +123,7 @@ void PointsPrimitive::render( ConstStatePtr state, IECore::TypeId style ) const
 			type = Point;
 			break;
 	}
-
+	
 	switch( type )
 	{
 		case Point :
@@ -139,7 +137,7 @@ void PointsPrimitive::render( ConstStatePtr state, IECore::TypeId style ) const
 			break;
 		case Sphere :
 			renderSpheres( state, style );
-	}
+	}	
 }
 
 Imath::Box3f PointsPrimitive::bound() const
@@ -185,29 +183,29 @@ const T *PointsPrimitive::dataAndStride( typename IECore::TypedData<std::vector<
 	}
 	return &data->readable()[0];
 }
-
+	
 void PointsPrimitive::renderPoints( ConstStatePtr state, IECore::TypeId style ) const
-{
+{	
 	const std::vector<V3f> &p = m_points->readable();
-
+	
 	glPointSize( state->get<PointsPrimitiveGLPointWidth>()->value() );
-
+	
 	const Color3f *c = setOrReturnColor();
 	if( style==PrimitiveSolid::staticTypeId() )
 	{
 		setVertexAttributes( state );
 	}
-
+	
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer( 3, GL_FLOAT, 0, &p[0] );
 	if( c )
 	{
 		glEnableClientState( GL_COLOR_ARRAY );
 		glColorPointer( 3, GL_FLOAT, 0, c );
-	}
-
+	}	
+	
 	glDrawArrays( GL_POINTS, 0, p.size() );
-
+	
 	glDisableClientState( GL_COLOR_ARRAY );
 	glDisableClientState( GL_VERTEX_ARRAY );
 }
@@ -215,14 +213,14 @@ void PointsPrimitive::renderPoints( ConstStatePtr state, IECore::TypeId style ) 
 void PointsPrimitive::renderDisks( ConstStatePtr state, IECore::TypeId style ) const
 {
 	DiskPrimitivePtr disk = new DiskPrimitive();
-
+	
 	V3f cameraCentre = Camera::positionInObjectSpace();
 	V3f cameraUp = Camera::upInObjectSpace();
-
+	
 	const std::vector<V3f> &p = m_points->readable();
-
+	
 	const Color3f *c = setOrReturnColor();
-
+	
 	unsigned int wStep = 0;
 	const float *w = dataAndStride( m_widths, &g_defaultWidth, wStep );
 	if( !wStep )
@@ -243,7 +241,7 @@ void PointsPrimitive::renderDisks( ConstStatePtr state, IECore::TypeId style ) c
 				glColor3f( c[i][0], c[i][1], c[i][2] );
 			}
 		}
-
+		
 		M44f aim = alignZAxisWithTargetDir( cameraCentre - p[i], cameraUp );
 		glPushMatrix();
 			glTranslatef( p[i][0], p[i][1], p[i][2] );
@@ -255,7 +253,7 @@ void PointsPrimitive::renderDisks( ConstStatePtr state, IECore::TypeId style ) c
 			disk->render( state, style );
 		glPopMatrix();
 	}
-
+	
 }
 
 void PointsPrimitive::renderQuads( ConstStatePtr state, IECore::TypeId style ) const
@@ -263,9 +261,9 @@ void PointsPrimitive::renderQuads( ConstStatePtr state, IECore::TypeId style ) c
 	QuadPrimitivePtr quad = new QuadPrimitive();
 	V3f cameraCentre = Camera::positionInObjectSpace();
 	V3f cameraUp = Camera::upInObjectSpace();
-
+	
 	const std::vector<V3f> &p = m_points->readable();
-
+	
 	const Color3f *c = setOrReturnColor();
 
 	unsigned int wStep = 0;
@@ -275,7 +273,7 @@ void PointsPrimitive::renderQuads( ConstStatePtr state, IECore::TypeId style ) c
 		quad->setWidth( *w );
 		w = 0;
 	}
-
+	
 	unsigned int hStep = 0;
 	const float *h = dataAndStride( m_heights, &g_defaultHeight, hStep );
 	if( !hStep )
@@ -283,14 +281,14 @@ void PointsPrimitive::renderQuads( ConstStatePtr state, IECore::TypeId style ) c
 		quad->setHeight( *h );
 		h = 0;
 	}
-
+	
 	unsigned int rStep = 0;
 	const float *r = dataAndStride( m_rotations, &g_defaultRotation, rStep );
-
+	
 	for( unsigned int j=0; j<p.size(); j++ )
 	{
 		unsigned int i = m_renderSorted ? m_depthOrder[j] : j;
-
+	
 		if( style==PrimitiveSolid::staticTypeId() )
 		{
 			setVertexAttributesAsUniforms( i );
@@ -317,16 +315,16 @@ void PointsPrimitive::renderQuads( ConstStatePtr state, IECore::TypeId style ) c
 			quad->render( state, style );
 		glPopMatrix();
 	}
-
+	
 }
 
 void PointsPrimitive::renderSpheres( ConstStatePtr state, IECore::TypeId style ) const
 {
 	SpherePrimitivePtr sphere = new SpherePrimitive();
 	const std::vector<V3f> &p = m_points->readable();
-
+	
 	const Color3f *c = setOrReturnColor();
-
+	
 	unsigned int wStep = 0;
 	const float *w = dataAndStride( m_widths, &g_defaultWidth, wStep );
 	if( !wStep )
@@ -338,7 +336,7 @@ void PointsPrimitive::renderSpheres( ConstStatePtr state, IECore::TypeId style )
 	for( unsigned int j=0; j<p.size(); j++ )
 	{
 		unsigned int i = m_renderSorted ? m_depthOrder[j] : j;
-
+		
 		if( style==PrimitiveSolid::staticTypeId() )
 		{
 			setVertexAttributesAsUniforms( i );
@@ -357,7 +355,7 @@ void PointsPrimitive::renderSpheres( ConstStatePtr state, IECore::TypeId style )
 			sphere->render( state, style );
 		glPopMatrix();
 	}
-
+	
 }
 
 struct SortFn
@@ -367,7 +365,7 @@ struct SortFn
 	const vector<float> &depths;
 };
 
-/// \todo Use IECore::RadixSort (might still want to use std::sort for small numbers of points - profile to check this)
+/// \todo Stick a radix sort in IECore and use that.
 void PointsPrimitive::depthSort() const
 {
 	V3f cameraDirection = Camera::viewDirectionInObjectSpace();
@@ -395,13 +393,13 @@ void PointsPrimitive::depthSort() const
 	}
 
 	m_depthCameraDirection = cameraDirection;
-
+	
 	// calculate all distances
 	for( unsigned int i=0; i<m_depths.size(); i++ )
 	{
 		m_depths[i] = points[i].dot( m_depthCameraDirection );
 	}
-
+	
 	// sort based on those distances
 	SortFn sorter( m_depths );
 	sort( m_depthOrder.begin(), m_depthOrder.end(), sorter );

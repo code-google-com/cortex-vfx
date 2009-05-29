@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -51,8 +51,6 @@ class CompoundMessageHandler : public MessageHandler
 
 	public :
 
-		IE_CORE_DECLAREMEMBERPTR( CompoundMessageHandler );
-
 		CompoundMessageHandler();
 		CompoundMessageHandler( const std::set<MessageHandlerPtr> &initialHandlers );
 
@@ -61,8 +59,8 @@ class CompoundMessageHandler : public MessageHandler
 		/// member so that it can be modified to
 		/// add and remove handlers.
 		std::set<MessageHandlerPtr> handlers;
-
-		virtual void handle( Level level, const std::string &context, const std::string &message );
+	
+		virtual void handle( Level level, const std::string &context, const std::string &message );	
 
 };
 

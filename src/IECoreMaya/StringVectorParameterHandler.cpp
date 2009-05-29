@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,7 +37,7 @@
 #include "IECoreMaya/FromMayaObjectConverter.h"
 #include "IECoreMaya/StringVectorParameterHandler.h"
 
-#include "IECore/VectorTypedParameter.h"
+#include "IECore/TypedParameter.h"
 #include "IECore/CompoundObject.h"
 
 #include "maya/MFnTypedAttribute.h"
@@ -64,23 +64,23 @@ MStatus StringVectorParameterHandler::update( IECore::ConstParameterPtr paramete
 	{
 		return MS::kFailure;
 	}
-
+	
 	MFnTypedAttribute fnTAttr( attribute );
 	if( !fnTAttr.hasObj( attribute ) )
 	{
 		return MS::kFailure;
 	}
-
+	
 	const IECore::StringVectorParameter::ValueType &value = p->typedDefaultValue();
 	MStringArray defaultValue;
-
+	
 	for (IECore::StringVectorParameter::ValueType::const_iterator it = value.begin(); it != value.end(); ++it)
 	{
 		defaultValue.append( it->c_str() );
 	}
-
-	fnTAttr.setDefault( MFnStringArrayData().create( defaultValue ) );
-
+	
+	fnTAttr.setDefault( MFnStringArrayData().create( defaultValue ) );		
+	
 	return MS::kSuccess;
 }
 
@@ -91,40 +91,40 @@ MObject StringVectorParameterHandler::create( IECore::ConstParameterPtr paramete
 	{
 		return MObject::kNullObj;
 	}
-
+	
 	const IECore::StringVectorParameter::ValueType &value = p->typedDefaultValue();
 	MStringArray defaultValue;
-
+	
 	for (IECore::StringVectorParameter::ValueType::const_iterator it = value.begin(); it != value.end(); ++it)
 	{
 		defaultValue.append( it->c_str() );
 	}
-
+	
 	MFnTypedAttribute fnTAttr;
 	MObject result = fnTAttr.create( attributeName, attributeName, MFnData::kStringArray, MFnStringArrayData().create( defaultValue ) );
 	update( parameter, result );
 	return result;
 }
-
+		
 MStatus StringVectorParameterHandler::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	IECore::ConstStringVectorParameterPtr p = IECore::runTimeCast<const IECore::StringVectorParameter>( parameter );
 	if( !p )
 	{
 		return MS::kFailure;
-	}
-
+	}		
+	
 	const IECore::StringVectorParameter::ValueType &value = p->getTypedValue();
 	MStringArray arr;
-
+	
 	for (IECore::StringVectorParameter::ValueType::const_iterator it = value.begin(); it != value.end(); ++it)
 	{
 		arr.append( it->c_str() );
 	}
-
-
+		
+	
 	MObject data = MFnStringArrayData().create( arr );
-
+		
 	return plug.setValue( data );
 }
 
@@ -135,18 +135,18 @@ MStatus StringVectorParameterHandler::setValue( const MPlug &plug, IECore::Param
 	{
 		return MS::kFailure;
 	}
-
+	
 	MStringArray arr;
 	MStatus result;
 	const IECore::ConstCompoundObjectPtr userData = parameter->userData();
 	const IECore::ConstCompoundObjectPtr maya = userData->member<const IECore::CompoundObject>("maya");
-
+		
 	bool hasValueProvider = false;
-
+	
 	if (maya)
 	{
 		const IECore::ConstStringDataPtr valueProvider = maya->member<const IECore::StringData>("valueProvider");
-
+		
 		if (valueProvider && valueProvider->readable() == "setMembers")
 		{
 			MStatus s;
@@ -155,24 +155,24 @@ MStatus StringVectorParameterHandler::setValue( const MPlug &plug, IECore::Param
 			{
 				return s;
 			}
-
+			
 			MSelectionList members;
 			s = fnSet.getMembers( members, true );
 			if (!s)
 			{
 				return s;
 			}
-
+			
 			for (unsigned i = 0; i < members.length(); ++i)
 			{
 				MObject node;
 				MPlug plug;
 				MDagPath path;
-
+				
 				if (members.getPlug(i, plug))
 				{
 					arr.append( plug.name() );
-				}
+				} 
 				else if (members.getDagPath(i, path))
 				{
 					arr.append( path.fullPathName() );
@@ -186,44 +186,39 @@ MStatus StringVectorParameterHandler::setValue( const MPlug &plug, IECore::Param
 				{
 					return MS::kFailure;
 				}
-
-			}
-
+				
+			} 
+			
 			hasValueProvider = true;
-		}
-	}
-
-	// it's essential that the fnData object is declared at the same scope as the arr object we copy
-	// the array into. this is because arr appears to become a reference into the same data as fnData
-	// holds, and when fnData goes out of scope the data appears to become unavailable and arr becomes of length 0
-	MFnStringArrayData fnData;
+		}	
+	}	
+	
 	if (!hasValueProvider)
 	{
 		MObject data;
 		result = plug.getValue( data );
-
+		
 		if( result )
-		{
-			MStatus s = fnData.setObject( data );
+		{	
+			MStatus s;
+			MFnStringArrayData fnData( data, &s );
 			if (!s)
 			{
 				return s;
 			}
-
-			arr = fnData.array();
+		
+			arr = fnData.array();	
 		}
 	}
-
-	IECore::StringVectorParameter::ObjectType::Ptr valuePtr = new IECore::StringVectorParameter::ObjectType;
-	IECore::StringVectorParameter::ValueType &value = valuePtr->writable();
-	value.reserve( arr.length() );
-
+		
+	IECore::StringVectorParameter::ValueType value;
+	
 	for (unsigned i = 0; i < arr.length(); i++)
 	{
 		value.push_back( arr[i].asChar() );
-	}
-
-	p->setValue( valuePtr );
-
+	}	
+		
+	p->setTypedValue( value );
+	
 	return result;
 }

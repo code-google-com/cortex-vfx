@@ -41,7 +41,7 @@ import os
 class TextureOrientationTest( unittest.TestCase ) :
 
 	def test( self ) :
-
+	
 		self.assertEqual( os.system( "shaderdl -o test/IECoreRI/shaders/tex.sdl test/IECoreRI/shaders/tex.sl" ), 0 )
 
 		r = IECoreRI.Renderer( "" )
@@ -53,27 +53,26 @@ class TextureOrientationTest( unittest.TestCase ) :
 		r.worldEnd()
 
 		del r
-
+		
 		r = IECoreRI.Renderer( "" )
 		r.display( "test/IECoreRI/output/testTextureOrientation2.tif", "tiff", "rgba", {} )
- 		r.setOption( "ri:searchpath:texture", IECore.StringData( "@:." ) )
 		r.worldBegin()
 		r.concatTransform( IECore.M44f.createTranslated( IECore.V3f( 0, 0, -5 ) ) )
 		r.shader( "surface", "test/IECoreRI/shaders/tex", {} )
 		IECore.MeshPrimitive.createPlane( IECore.Box2f( IECore.V2f( -1 ), IECore.V2f( 1 ) ) ).render( r )
 		r.worldEnd()
-
+		
 		ie = IECore.ImageReader.create( "test/IECoreRI/data/textureOrientationImages/expected.tif" ).read()
 		i1 = IECore.ImageReader.create( "test/IECoreRI/output/testTextureOrientation1.tif" ).read()
 		i2 = IECore.ImageReader.create( "test/IECoreRI/output/testTextureOrientation2.tif" ).read()
-
+		
 		testOp = IECore.ImageDiffOp()
-
-		self.assert_( not testOp( imageA=ie, imageB=i1, maxError=0.002 ).value )
-		self.assert_( not testOp( imageA=ie, imageB=i2, maxError=0.002 ).value )
-
+		
+		self.assert_( not testOp( imageA=ie, imageB=i1, maxError=0.002 ).value ) 
+		self.assert_( not testOp( imageA=ie, imageB=i2, maxError=0.002 ).value ) 
+			
 	def tearDown( self ) :
-
+		
 		files = [
 			"test/IECoreRI/output/testTextureOrientation1.tif",
 			"test/IECoreRI/output/testTextureOrientation2.tif",
@@ -82,6 +81,6 @@ class TextureOrientationTest( unittest.TestCase ) :
 		for f in files :
 			if os.path.exists( f ) :
 				os.remove( f )
-
+				
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main()   

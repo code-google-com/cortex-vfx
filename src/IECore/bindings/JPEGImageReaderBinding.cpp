@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/JPEGImageReader.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -42,14 +43,19 @@ using namespace boost::python;
 
 namespace IECore
 {
-
+ 
 void bindJPEGImageReader()
 {
-	RunTimeTypedClass<JPEGImageReader>()
-		.def( init<>() )
+	typedef class_<JPEGImageReader, JPEGImageReaderPtr, boost::noncopyable, bases<ImageReader> > JPEGImageReaderPyClass;
+
+	JPEGImageReaderPyClass("JPEGImageReader", init<>())
 		.def( init<const std::string &>() )
 		.def( "canRead", &JPEGImageReader::canRead).staticmethod( "canRead" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( JPEGImageReader )
 	;
+
+	INTRUSIVE_PTR_PATCH( JPEGImageReader, JPEGImageReaderPyClass );
+	implicitly_convertible<JPEGImageReaderPtr, ImageReaderPtr>();
 }
 
 } // namespace IECore

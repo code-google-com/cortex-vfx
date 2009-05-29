@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/MatrixMultiplyOp.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -44,9 +45,14 @@ namespace IECore {
 
 void bindMatrixMultiplyOp()
 {
-	RunTimeTypedClass<MatrixMultiplyOp>()
-		.def( init<>() )
+	typedef class_< MatrixMultiplyOp, MatrixMultiplyOpPtr, boost::noncopyable, bases<ModifyOp> > MatrixMultiplyOpPyClass;
+	MatrixMultiplyOpPyClass( "MatrixMultiplyOp" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( MatrixMultiplyOp )
 	;
+	
+	INTRUSIVE_PTR_PATCH( MatrixMultiplyOp, MatrixMultiplyOpPyClass );
+	implicitly_convertible<MatrixMultiplyOpPtr, ModifyOpPtr>();	
+
 }
 
 } // namespace IECore

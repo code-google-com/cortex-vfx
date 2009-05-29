@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -37,11 +37,11 @@ from IECore import *
 class stringParsing( Op ) :
 
 	def __init__( self ) :
-
+	
 		Op.__init__( self,
 			"stringParsing",
 			"test various problem cases with string parsing.",
-			IntParameter(
+			IntParameter( 
 				name = "result",
 				description = "one if everything is ok",
 				defaultValue = 0,
@@ -49,7 +49,7 @@ class stringParsing( Op ) :
 		)
 
 		self.parameters().addParameters(
-
+			
 			[
 				StringParameter(
 					name = "emptyString",
@@ -72,14 +72,14 @@ class stringParsing( Op ) :
 					defaultValue = "noSpacesHere",
 				)
 			]
-
+		
 		)
-
+		
 	def doOperation( self, args ) :
 
-		assert args["emptyString"].value == ""
-		assert args["normalString"].value == "hello"
-		assert args["stringWithSpace"].value == "hello there"
-		assert args["stringWithManySpaces"].value == "hello there old chap"
-
+		assert args.emptyString.value == ""
+		assert args.normalString.value == "hello"
+		assert args.stringWithSpace.value == "hello there"
+		assert args.stringWithManySpaces.value == "hello there old chap"
+		
 		return IntData( 1 )

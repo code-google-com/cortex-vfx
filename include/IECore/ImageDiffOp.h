@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,8 +38,8 @@
 #include "IECore/Op.h"
 #include "IECore/FileNameParameter.h"
 #include "IECore/NumericParameter.h"
-#include "IECore/SimpleTypedParameter.h"
-#include "IECore/TypedPrimitiveParameter.h"
+#include "IECore/TypedParameter.h"
+#include "IECore/TypedObjectParameter.h"
 
 namespace IECore
 {
@@ -48,41 +48,41 @@ IE_CORE_FORWARDDECLARE( ObjectParameter )
 
 /// Evaluates the root-mean-squared error between two images and returns true if it
 /// exceeds a specified threshold. Unless the "skip missing channels" parameter is
-/// enabled, it will also return true if either image contains a channel which
-/// the other doesn't.
+/// enabled, it will also return true if either image contains a channel which 
+/// the other doesn't. 
 class ImageDiffOp : public Op
 {
 	public :
-
+	
 		IE_CORE_DECLARERUNTIMETYPED( ImageDiffOp, Op );
-
+		
 		ImageDiffOp();
 		virtual ~ImageDiffOp();
-
+		
 		ImagePrimitiveParameterPtr imageAParameter();
 		ConstImagePrimitiveParameterPtr imageAParameter() const;
-
+		
 		ImagePrimitiveParameterPtr imageBParameter();
 		ConstImagePrimitiveParameterPtr imageBParameter() const;
-
+		
 		FloatParameterPtr maxErrorParameter();
-		ConstFloatParameterPtr maxErrorParameter() const;
-
+		ConstFloatParameterPtr maxErrorParameter() const;						
+		
 		BoolParameterPtr skipMissingChannels();
-		ConstBoolParameterPtr skipMissingChannels() const;
-
+		ConstBoolParameterPtr skipMissingChannels() const;						
+		
 	protected :
 
 		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
-
+	
 	private :
-
+		
 		ImagePrimitiveParameterPtr m_imageAParameter;
 		ImagePrimitiveParameterPtr m_imageBParameter;
 		FloatParameterPtr m_maxErrorParameter;
-		BoolParameterPtr m_skipMissingChannelsParameter;
-
-		class FloatConverter;
+		BoolParameterPtr m_skipMissingChannelsParameter;		
+		
+		class FloatConverter;		
 
 };
 

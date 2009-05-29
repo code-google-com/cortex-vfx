@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -61,19 +61,19 @@ ParameterList::ParameterList( const IECore::CompoundDataMap &parameters, const s
 	CompoundDataMap::const_iterator it;
 	for( it=parameters.begin(); it!=parameters.end(); it++ )
 	{
-		if( 0==it->first.value().compare( 0, prefix.size(), prefix ) )
+		if( 0==it->first.compare( 0, prefix.size(), prefix ) )
 		{
 			appendParameter( string( it->first, prefix.size() ), it->second, typeHints );
 		}
 	}
 }
-
+			
 ParameterList::ParameterList( const std::string &name, IECore::ConstDataPtr parameter, const std::map<std::string, std::string> *typeHints )
 {
 	reserve( parameter );
 	appendParameter( name, parameter, typeHints );
 }
-
+			
 int ParameterList::n()
 {
 	return m_tokens.size();
@@ -144,8 +144,8 @@ const void *ParameterList::value( IECore::ConstDataPtr d )
 		m_ints.push_back( static_pointer_cast<const BoolData>( d )->readable() );
 		return &*(m_ints.rbegin());
 	}
-
-	return despatchTypedData< TypedDataAddress, TypeTraits::IsTypedData, DespatchTypedDataIgnoreError >( boost::const_pointer_cast<Data>( d ) );
+	
+	return despatchTypedData< TypedDataAddress, TypeTraits::IsTypedData, DespatchTypedDataIgnoreError >( boost::const_pointer_cast<Data>( d ) );	
 }
 
 void ParameterList::reserve( const IECore::CompoundDataMap &parameters )

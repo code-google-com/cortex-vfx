@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/EnvMapSampler.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -46,9 +47,14 @@ namespace IECore
 
 void bindEnvMapSampler()
 {
-	RunTimeTypedClass<EnvMapSampler>()
-		.def( init<>() )
+	typedef class_< EnvMapSampler, EnvMapSamplerPtr, boost::noncopyable, bases<IECore::Op> > EnvMapSamplerPyClass;
+	EnvMapSamplerPyClass( "EnvMapSampler" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(EnvMapSampler)
 	;
+	
+	INTRUSIVE_PTR_PATCH( EnvMapSampler, EnvMapSamplerPyClass );
+	implicitly_convertible<EnvMapSamplerPtr, OpPtr>();	
+
 }
 
 } // namespace IECore

@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -56,32 +56,20 @@ if hasattr( IECoreRI, "PTCParticleReader" ):
 
 		def testRead(self):
 			r = IECoreRI.PTCParticleReader()
-			r['fileName'] = self.testfile
+			r.fileName = self.testfile
 			pointCloud = r.read()
 			self.assertEqual( type(pointCloud), IECore.PointsPrimitive )
 			self.assertEqual( pointCloud.numPoints, 2975 )
 			self.assertEqual( len( pointCloud["P"].data ), 2975 )
 			self.assertEqual( set( pointCloud.blindData()['PTCParticleIO'].keys() ), set( [ "boundingBox", "worldToEye", "worldToNdc", "variableTypes" ] ) )
-			r['percentage'] = 50
+			r.percentage = 50
 			pointCloud2 = r.read()
 			self.assertEqual( len( pointCloud2["P"].data ), 1502 )
-
-		def testColorLoading( self ) :
-		
-			r = IECoreRI.PTCParticleReader( "test/IECoreRI/data/cube.ptc" )
-			n = r.numParticles()
-			
-			p = r.read()
-			self.assertEqual( p.variableSize( IECore.PrimitiveVariable.Interpolation.Vertex ), n )
-			
-			c = p["Ci"].data
-			self.assertEqual( len( c ), n )
-			self.assert_( c.isInstanceOf( IECore.Color3fVectorData.staticTypeId() ) )
 			
 		def testCanRead(self) :
-
+		
 			self.assertEqual( IECoreRI.PTCParticleReader.canRead( "test/IECoreRI/data/test.3Dbake" ), True )
 			self.assertEqual( IECoreRI.PTCParticleReader.canRead( "test/IECoreRI/data/sphere.cob" ), False )
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main()   

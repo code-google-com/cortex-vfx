@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Interned.h"
 #include "IECore/bindings/InternedBinding.h"
@@ -44,39 +44,6 @@ using namespace boost::python;
 namespace IECore
 {
 
-struct InternedStringFromPython
-{
-	InternedStringFromPython()
-	{
-		converter::registry::push_back(
-			&convertible,
-			&construct,
-			type_id<InternedString> ()
-		);
-	}
-
-	static void *convertible( PyObject *obj_ptr )
-	{
-		if ( !PyString_Check( obj_ptr ) )
-		{
-			return 0;
-		}
-		return obj_ptr;
-	}
-
-	static void construct(
-	        PyObject *obj_ptr,
-	        converter::rvalue_from_python_stage1_data *data )
-	{
-		assert( obj_ptr );
-		assert( PyString_Check( obj_ptr ) );
-
-		void* storage = (( converter::rvalue_from_python_storage<InternedString>* ) data )->storage.bytes;
-		new( storage ) InternedString( PyString_AsString( obj_ptr ) );
-		data->convertible = storage;
-	}
-};
-
 void bindInterned()
 {
 
@@ -85,12 +52,9 @@ void bindInterned()
 		.def( "__str__", &InternedString::value, return_value_policy<copy_const_reference>() )
 		.def( "value", &InternedString::value, return_value_policy<copy_const_reference>() )
 		.def( self == self )
-		.def( self != self )
 		.def( "size", &InternedString::size ).staticmethod( "size" )
 	;
 	implicitly_convertible<InternedString, string>();
-
-	InternedStringFromPython();
 
 }
 

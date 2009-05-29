@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,7 +37,7 @@
 #include "IECore/MeshPrimitiveEvaluator.h"
 #include "IECore/bindings/MeshPrimitiveEvaluatorBinding.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
-#include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using namespace IECore;
 using namespace boost::python;
@@ -47,20 +47,27 @@ namespace IECore
 
 void bindMeshPrimitiveEvaluator()
 {
-	object m = RunTimeTypedClass<MeshPrimitiveEvaluator>()
+	typedef class_< MeshPrimitiveEvaluator, MeshPrimitiveEvaluatorPtr, bases< PrimitiveEvaluator >, boost::noncopyable > MeshPrimitiveEvaluatorPyClass;
+	
+	object m = MeshPrimitiveEvaluatorPyClass ( "MeshPrimitiveEvaluator", no_init )
 		.def( init< MeshPrimitivePtr > () )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(MeshPrimitiveEvaluator)
 	;
-
+	INTRUSIVE_PTR_PATCH( MeshPrimitiveEvaluator, MeshPrimitiveEvaluatorPyClass );
+	implicitly_convertible<MeshPrimitiveEvaluatorPtr, PrimitiveEvaluatorPtr>();
+	
 	{
 		scope ms( m );
 		typedef class_< MeshPrimitiveEvaluator::Result, MeshPrimitiveEvaluator::ResultPtr, bases< PrimitiveEvaluator::Result >, boost::noncopyable > ResultPyClass;
-
-		RefCountedClass<MeshPrimitiveEvaluator::Result, PrimitiveEvaluator::Result>( "Result" )
+		
+		ResultPyClass( "Result", no_init )
 			.def( "triangleIndex", &MeshPrimitiveEvaluator::Result::triangleIndex )
-			.def( "barycentricCoordinates", &MeshPrimitiveEvaluator::Result::barycentricCoordinates, return_value_policy<copy_const_reference>() )
-			.def( "vertexIds", &MeshPrimitiveEvaluator::Result::vertexIds, return_value_policy<copy_const_reference>() )
+			.def( "barycentricCoordinates", &MeshPrimitiveEvaluator::Result::barycentricCoordinates, return_value_policy<copy_const_reference>() )			
+			.def( "vertexIds", &MeshPrimitiveEvaluator::Result::vertexIds, return_value_policy<copy_const_reference>() )						
 		;
-
+	
+		INTRUSIVE_PTR_PATCH( MeshPrimitiveEvaluator::Result, ResultPyClass );
+		implicitly_convertible<MeshPrimitiveEvaluator::ResultPtr, PrimitiveEvaluator::ResultPtr>();	
 	}
 }
 

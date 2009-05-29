@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -36,30 +36,30 @@ import unittest
 
 from IECore import *
 
-
+	
 class TestOptionalCompoundParameter( unittest.TestCase ) :
 
 	def testAttributeAccess( self ):
 
-		p = OptionalCompoundParameter( "n", "d", members = [ StringParameter( "a", "a", "", presets = ( ( "b", StringData( "b" ) ), ), presetsOnly = True ) ] )
-		p["a"].setTypedValue( "My compound attribute" )
+		p = OptionalCompoundParameter( "n", "d", members = [ StringParameter( "a", "a", "", presets = { "b": StringData( "b" ) }, presetsOnly = True ) ] )
+		p.a = "My compound attribute"
 		p.c = "My python attribute"
 		self.assertEqual( p.c, "My python attribute" )
-		self.assertEqual( p["a"].getTypedValue(), "My compound attribute" )
+		self.assertEqual( p.a.getTypedValue(), "My compound attribute" )
 		self.assertEqual( p.userData(), CompoundObject() )
 
 	def testConstructor( self ) :
-
-		p = OptionalCompoundParameter( "n", "d", members = [ StringParameter( "a", "a", "", presets = ( ( "b", StringData( "b" ) ), ), presetsOnly = True ) ] )
+	
+		p = OptionalCompoundParameter( "n", "d", members = [ StringParameter( "a", "a", "", presets = { "b": StringData( "b" ) }, presetsOnly = True ) ] )
 		self.assertEqual( p.name, "n" )
 		self.assertEqual( p.description, "d" )
 		self.assertEqual( len( p.keys() ), 1 )
 		self.assertEqual( len( p.values() ), 1 )
 		self.assertEqual( len( p ), 1 )
 		self.assertEqual (p.userData(), CompoundObject() )
-
+	
 	def testLateValidation( self ) :
-
+	
 		p = OptionalCompoundParameter(
 			name = "c",
 			description = "d",
@@ -68,17 +68,17 @@ class TestOptionalCompoundParameter( unittest.TestCase ) :
 				FloatParameter( "f", "d", 2 )
 			]
 		)
-
+		
 		p.validate()
 		p.setValue( CompoundObject( { "i" : IntData( 10 ), "f" : FloatData( 20 ) } ) )
 		p.validate()
-		self.assertEqual( p["i"].getValue(),  IntData( 10 ) )
-		self.assertEqual( p["f"].getValue(),  FloatData( 20 ) )
-
+		self.assertEqual( p.i.getValue(),  IntData( 10 ) )
+		self.assertEqual( p.f.getValue(),  FloatData( 20 ) )
+		
 		p.setValue( CompoundObject( { "i" : IntData( 10 ) } ) )
 		self.assertRaises( RuntimeError, p.validate )
 		self.assertRaises( RuntimeError, p.getValidatedValue )
-		p["f"].setValue( FloatData( 20 ) )
+		p.f.setValue( FloatData( 20 ) )
 		p.validate()
 
 		p.setValue( CompoundObject( { "idontbelong" : IntData( 10 ), "i" : IntData( 10 ), "f" : FloatData( 20 ) } ) )
@@ -93,7 +93,7 @@ class TestOptionalCompoundParameter( unittest.TestCase ) :
 			name = "c",
 			description = "d",
 			members = [
-				IntParameter( "i", "d", 1, presets = ( ( "10", 10 ), ( "11", 11 ) ), presetsOnly = True ),
+				IntParameter( "i", "d", 1, presets = { "10": 10, "11": 11 }, presetsOnly = True ),
 				FloatParameter( "f", "d", 2 )
 			]
 		)
@@ -167,7 +167,7 @@ class TestOptionalCompoundParameter( unittest.TestCase ) :
 		self.assert_( p["i"].getTypedValue() == 20 )
 		p["i"] = IntData(30)
 		self.assert_( p["i"].getTypedValue() == 30 )
-
-
+				
+									
 if __name__ == "__main__":
         unittest.main()

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,8 +36,7 @@
 #define IE_CORE_SEARCHPATH_H
 
 #include <list>
-
-#include "boost/filesystem/path.hpp"
+#include <boost/filesystem/path.hpp>
 
 namespace IECore
 {
@@ -56,18 +55,18 @@ class SearchPath
 
 		/// A list of paths to search on. This is public and can be manipulated at will.
 		std::list<boost::filesystem::path> paths;
-
+		
 		/// Sets paths by tokenizing the paths string according to the separators specified.
 		void setPaths( const std::string &paths, const std::string &separators );
 		/// Returns the paths concatenated together by separator.
 		std::string getPaths( const std::string &separator ) const;
-
+		
 		/// Tries to find the specified file on the paths defined in the paths public member.
 		/// Use result.empty() to determine failure.
 		boost::filesystem::path find( const boost::filesystem::path &file ) const;
-
+	
 };
-
+	
 } // namespace IECore
 
 #endif // IE_CORE_SEARCHPATH_H

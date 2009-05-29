@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,8 +39,7 @@
 #include "IECoreMaya/MFnDataTypeTraits.h"
 
 #include "IECore/VectorTypedData.h"
-#include "IECore/SimpleTypedParameter.h"
-#include "IECore/VectorTypedParameter.h"
+#include "IECore/TypedParameter.h"
 #include "IECore/CompoundParameter.h"
 #include "IECore/CompoundObject.h"
 #include "IECore/ObjectParameter.h"
@@ -79,7 +78,7 @@ MStatus ObjectMFnDataParameterHandler<T, D>::update( IECore::ConstParameterPtr p
 	}
 
 	fnGAttr.addAccept( D );
-
+	
 	return MS::kSuccess;
 }
 
@@ -90,81 +89,81 @@ MObject ObjectMFnDataParameterHandler<T, D>::create( IECore::ConstParameterPtr p
 	{
 		return MObject::kNullObj;
 	}
-
+	
 	/// Use a generic attribute, so we could eventually accept other ObjectParamter types, too.
 	MStatus s;
 	MFnGenericAttribute fnGAttr;
 	MObject result = fnGAttr.create( attributeName, attributeName, &s );
-
+	
 	if ( !ObjectMFnDataParameterHandler<T, D>::update( parameter, result ) )
 	{
 		return MObject::kNullObj;
 	}
-
+	
 	return result;
 }
-
-template<typename T, MFnData::Type D>
+		
+template<typename T, MFnData::Type D>		
 MStatus ObjectMFnDataParameterHandler<T, D>::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	if (!IECore::runTimeCast<const IECore::ObjectParameter>( parameter ) && !IECore::runTimeCast<const T>( parameter ))
 	{
 		return MS::kFailure;
 	}
-
+	
 	typedef IECore::TypedData<typename T::ValueType> Data;
-
+		
 	assert( parameter->getValue() );
 	typename Data::ConstPtr v = IECore::runTimeCast<const Data>( parameter->getValue() );
-
+	
 	/// It's OK for this cast to fail, for example if a parameter type has changed from V3fVectorData to V3dVectorData. This can
 	/// happen when scenes are reopened. The ObjectParameterHandler will just try other ways of setting the value instead.
 	if (!v)
 	{
 		return MS::kFailure;
 	}
-
-	ToMayaObjectConverterPtr converter = ToMayaObjectConverter::create( v, MFnDataTypeTraits<D>::dataType() );
+	
+	ToMayaObjectConverterPtr converter = ToMayaObjectConverter::create( v, MFnDataTypeTraits<D>::dataType() ); 
 	assert( converter );
-
+	
 	MObject obj;
 	bool success = converter->convert( obj );
 	if (!success)
 	{
 		return MS::kFailure;
 	}
-
+	
 	assert( obj != MObject::kNullObj );
-
+		
 	return plug.setValue( obj );
 }
 
 template<typename T, MFnData::Type D>
 MStatus ObjectMFnDataParameterHandler<T, D>::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
-{
+{	
 	if (!IECore::runTimeCast<IECore::ObjectParameter>( parameter ) && !IECore::runTimeCast<T>( parameter ))
 	{
 		return MS::kFailure;
 	}
-
+	
 	MObject obj;
 	MStatus result = plug.getValue( obj );
 	if (!result)
 	{
 		return MS::kFailure;
 	}
-
+	
 	FromMayaObjectConverterPtr converter = FromMayaObjectConverter::create( obj, T::ObjectType::staticTypeId() );
 	/// It's OK if there's no converter - the ObjectParameterHandler will just try other ways of setting the value instead.
 	if (!converter)
 	{
 		return MS::kFailure;
 	}
-
+	
 	IECore::ObjectPtr v = converter->convert();
 	assert( v );
-
+	
 	parameter->setValue( v );
-
+	
 	return MS::kSuccess;
 }

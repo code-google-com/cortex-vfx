@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,7 +44,7 @@
 
 namespace IECore
 {
-
+	
 /// The KDTree class provides accelerated searching of pointsets. It is
 /// templated so that it can operate on a wide variety of datatypes, and uses
 /// the VectorTraits.h and VectorOps.h functionality to assist in this.
@@ -52,7 +52,7 @@ template<class PointIterator>
 class KDTree
 {
 	public :
-
+	
 		typedef PointIterator Iterator;
 		typedef typename std::iterator_traits<PointIterator>::value_type Point;
 		typedef typename VectorTraits<Point>::BaseType BaseType;
@@ -60,21 +60,12 @@ class KDTree
 		typedef std::vector<Node> NodeVector;
 		typedef typename NodeVector::size_type NodeIndex;
 
-		/// Constructs an unititialised tree - you must call init()
-		/// before using it.
-		KDTree();
-
 		/// Creates a tree for the fast searching of points.
 		/// Note that the tree does not own the passed points -
 		/// it is up to you to ensure that they remain valid and
 		/// unchanged as long as the KDTree is in use.
 		KDTree( PointIterator first, PointIterator last, int maxLeafSize=4 );
-
-		/// Builds the tree for the specified points - the iterator range
-		/// must remain valid and unchanged as long as the tree is in use.
-		/// This method can be called again to rebuild the tree at any time. 
-		void init( PointIterator first, PointIterator last, int maxLeafSize=4  );
-
+	
 		/// Returns an iterator to the nearest neighbour to the point p.
 		PointIterator nearestNeighbour( const Point &p ) const;
 		/// Returns an iterator to the nearest neighbour to the point p, and places
@@ -84,17 +75,15 @@ class KDTree
 		/// to the end of the points is returned (the "last" parameter which was passed to
 		/// the constructor).
 		PointIterator nearestNeighbour( const Point &p, BaseType &distSquared ) const;
-
+	
 		/// Populates the passed vector of iterators with the neighbours of point p which are closer than radius r. Returns the number of points found.
 		/// \todo There should be a form where nearNeighbours is an output iterator, to allow any container to be filled.
 		unsigned int nearestNeighbours( const Point &p, BaseType r, std::vector<PointIterator> &nearNeighbours ) const;
-
+		
 		/// Populates the passed vector of iterators with the N closest neighbours to p. Returns the number of points found.
 		/// \todo There should be a form where nearNeighbours is an output iterator, to allow any container to be filled.
 		unsigned int nearestNNeighbours( const Point &p, unsigned int numNeighbours, std::vector<PointIterator> &nearNeighbours ) const;
-
-		/// Returns the number of nodes in the tree.
-		inline NodeIndex numNodes() const;
+	
 		/// Returns the specified Node of the tree. See rootIndex(), lowChildIndex() and highChildIndex() for
 		/// means of getting appropriate indices. This can be used to implement algorithms not provided as
 		/// member functions.
@@ -107,31 +96,31 @@ class KDTree
 		/// Returns the index for the "high" child of the specified Node. This will only
 		/// be valid if parent.isBranch() is true.
 		inline NodeIndex highChildIndex( NodeIndex parentIndex ) const;
-
+	
 	private :
-
+		
 		typedef std::vector<PointIterator> Permutation;
 		typedef typename Permutation::iterator PermutationIterator;
 		typedef typename Permutation::const_iterator PermutationConstIterator;
-
+		
 		class AxisSort;
-
+		
 		unsigned char majorAxis( PermutationConstIterator permFirst, PermutationConstIterator permLast );
 		void build( NodeIndex nodeIndex, PermutationIterator permFirst, PermutationIterator permLast );
-
+		
 		void nearestNeighbourWalk( NodeIndex nodeIndex, const Point &p, PointIterator &closestPoint, BaseType &distSquared ) const;
-
+		
 		void nearestNeighboursWalk( NodeIndex nodeIndex, const Point &p, BaseType r2, std::vector<PointIterator> &nearNeighbours ) const;
-
+		
 		struct NearNeighbour;
-
+		
 		void nearestNNeighboursWalk( NodeIndex nodeIndex, const Point &p, unsigned int numNeighbours, std::set<NearNeighbour> &nearNeighbours, BaseType &maxDistSquared ) const;
-
+		
 		Permutation m_perm;
 		NodeVector m_nodes;
-		int m_maxLeafSize;
-		PointIterator m_lastPoint;
-
+		const int m_maxLeafSize;
+		const PointIterator m_lastPoint;
+	
 };
 
 /// The Node class which is used to implement the branching structure in the KDTree.
@@ -139,8 +128,8 @@ template<class PointIterator>
 class KDTree<PointIterator>::Node
 {
 	public :
-
-		/// Returns true if this is a leaf node of the tree.
+		
+		/// Returns true if this is a leaf node of the tree.	
 		inline bool isLeaf() const;
 		/// Returns a pointer to an iterator referencing the first
 		/// child of this Node. Only valid if isLeaf() is true.
@@ -163,7 +152,13 @@ class KDTree<PointIterator>::Node
 
 		inline void makeLeaf( PermutationIterator permFirst, PermutationIterator permLast );
 		inline void makeBranch( unsigned char cutAxis, BaseType cutValue );
-
+		/// \todo Ditch me in preference to the KDTree::rootIndex method.
+		inline static NodeIndex rootIndex();
+		/// \todo Ditch me in preference to the KDTree::lowChildIndex method.
+		inline static NodeIndex lowChildIndex( NodeIndex index );
+		/// \todo Ditch me in preference to the KDTree::highChildIndex method.
+		inline static NodeIndex highChildIndex( NodeIndex index );
+						
 		unsigned char m_cutAxisAndLeaf;
 		union {
 			BaseType m_cutValue;
@@ -172,7 +167,7 @@ class KDTree<PointIterator>::Node
 				PointIterator *last;
 			} m_perm;
 		};
-
+		
 };
 
 typedef KDTree<std::vector<Imath::V2f>::const_iterator> V2fTree;

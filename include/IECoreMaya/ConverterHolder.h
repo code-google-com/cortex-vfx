@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,8 +32,8 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECOREMAYA_CONVERTERHOLDER_H
-#define IECOREMAYA_CONVERTERHOLDER_H
+#ifndef IECOREMAYA_ConverterHolder_H
+#define IECOREMAYA_ConverterHolder_H
 
 #include "IECoreMaya/ParameterisedHolder.h"
 
@@ -46,26 +46,26 @@ class ConverterHolder : public ParameterisedHolderNode
 {
 
 	public :
-
+	
 		ConverterHolder();
 		virtual ~ConverterHolder();
 
-		static void *creator();
-		static MStatus initialize();
+		static void *creator();				
+		static MStatus initialize();		
 		static MTypeId id;
 
 		virtual MStatus connectionMade( const MPlug &plug, const MPlug &otherPlug, bool asSrc );
 		virtual MStatus connectionBroken( const MPlug &plug, const MPlug &otherPlug, bool asSrc );
-
+			
 		static MObject aIn;
 		static MObject aFileName;
-
+			
 	private :
-
-
-
+	
+		
+		
 };
 
 } // namespace IECoreMaya
 
-#endif // IECOREMAYA_CONVERTERHOLDER_H
+#endif // IECOREMAYA_ConverterHolder_H

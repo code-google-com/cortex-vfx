@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,33 +48,45 @@ class TypedPrimitiveOp : public ModifyOp
 {
 	public :
 	
-		typedef T PrimitiveType;
-
-		TypedPrimitiveOp( const std::string &name, const std::string &description );
+		IE_CORE_DECLAREMEMBERPTR( TypedPrimitiveOp<T> )
+		
+		typedef T PrimitiveType;		
+		
+		TypedPrimitiveOp( const std::string name, const std::string description );
 		virtual ~TypedPrimitiveOp();
 		
-		IECORE_RUNTIMETYPED_DECLARETEMPLATE( TypedPrimitiveOp<T>, ModifyOp );
-
+		//! @name RunTimeTyped functions
+		////////////////////////////////////
+		//@{
+		virtual TypeId typeId() const;
+		virtual std::string typeName() const;
+		virtual bool isInstanceOf( TypeId typeId ) const;
+		virtual bool isInstanceOf( const std::string &typeName ) const;
+		static TypeId staticTypeId();
+		static std::string staticTypeName();
+		static bool inheritsFrom( TypeId typeId );
+		static bool inheritsFrom( const std::string &typeName );
+		//@}
+		
 	protected :
-
+		
 		/// Must be implemented by all subclasses.
 		virtual void modifyTypedPrimitive( typename T::Ptr typedPrimitive, ConstCompoundObjectPtr operands ) = 0;
-
+		
 	private :
-
+	
 		/// Implemented to call modifyTypedPrimitive
 		void modify( ObjectPtr primitive, ConstCompoundObjectPtr operands );
-
-		IE_CORE_DECLARERUNTIMETYPEDDESCRIPTION( TypedPrimitiveOp<T> );
-
+	
 };
 
 #define IE_CORE_DEFINETYPEDPRIMITIVEOP( TNAME ) \
 	typedef TypedPrimitiveOp<TNAME> (TNAME ## Op); \
-	IE_CORE_DECLAREPTR( TNAME ## Op );
-
-IE_CORE_DEFINETYPEDPRIMITIVEOP( MeshPrimitive )
-IE_CORE_DEFINETYPEDPRIMITIVEOP( ImagePrimitive )
+	typedef TypedPrimitiveOp<TNAME>::Ptr (TNAME ## OpPtr); \
+	typedef TypedPrimitiveOp<TNAME>::ConstPtr (Const ## TNAME ## OpPtr);
+	
+IE_CORE_DEFINETYPEDPRIMITIVEOP( MeshPrimitive )	
+IE_CORE_DEFINETYPEDPRIMITIVEOP( ImagePrimitive )	
 
 } // namespace IECore
 

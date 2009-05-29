@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/format.hpp"
+#include <boost/format.hpp>
 
 #include "IECore/DataPromoteOp.h"
 #include "IECore/SimpleTypedData.h"
@@ -50,8 +50,6 @@ using namespace IECore;
 using namespace Imath;
 using namespace std;
 using namespace boost;
-
-IE_CORE_DEFINERUNTIMETYPED( DataPromoteOp );
 
 DataPromoteOp::DataPromoteOp()
 		:	Op(
@@ -119,7 +117,7 @@ struct DataPromoteOp::Promote2Fn<T, typename boost::enable_if< TypeTraits::IsSim
 	template<typename F>
 	ReturnType operator()( typename F::ConstPtr d ) const
 	{
-		assert( d );
+		assert( d );	
 		typename T::Ptr result = new T;
 
 		result->writable() = typename T::ValueType( d->readable() );
@@ -163,7 +161,7 @@ struct DataPromoteOp::Promote1Fn::Func< F, typename boost::enable_if< TypeTraits
 {
 	ReturnType operator()( typename F::ConstPtr d, TypeId targetType ) const
 	{
-		assert( d );
+		assert( d );	
 		switch ( targetType )
 		{
 		case V2fVectorDataTypeId :
@@ -192,7 +190,7 @@ struct DataPromoteOp::Promote1Fn::Func< F, typename boost::enable_if< TypeTraits
 			return fn.template operator()<F>( d );
 		}
 		default :
-			throw Exception( "DataPromoteOp: Unsupported target data type \"" + std::string( Object::typeNameFromTypeId( targetType ) ) + "\"." );
+			throw Exception( "DataPromoteOp: Unsupported target data type \"" + Object::typeNameFromTypeId( targetType ) + "\"." );
 		}
 	}
 };
@@ -202,7 +200,7 @@ struct DataPromoteOp::Promote1Fn::Func< F, typename boost::enable_if< TypeTraits
 {
 	ReturnType operator()( typename F::ConstPtr d, TypeId targetType ) const
 	{
-		assert( d );
+		assert( d );	
 		switch ( targetType )
 		{
 		case V2fDataTypeId :
@@ -231,7 +229,7 @@ struct DataPromoteOp::Promote1Fn::Func< F, typename boost::enable_if< TypeTraits
 			return fn.template operator()<F>( d );
 		}
 		default :
-			throw Exception( "DataPromoteOp: Unsupported target data type \"" + std::string( Object::typeNameFromTypeId( targetType ) ) + "\"." );
+			throw Exception( "DataPromoteOp: Unsupported target data type \"" + Object::typeNameFromTypeId( targetType ) + "\"." );
 		}
 	}
 };

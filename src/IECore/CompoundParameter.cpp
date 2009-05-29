@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,6 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <algorithm>
-
-#include "boost/bind.hpp"
-#include "boost/format.hpp"
-#include "boost/lexical_cast.hpp"
-
 #include "IECore/CompoundParameter.h"
 #include "IECore/NullObject.h"
 #include "IECore/Exception.h"
@@ -46,11 +40,8 @@ using namespace std;
 using namespace IECore;
 using namespace boost;
 
-IE_CORE_DEFINEOBJECTTYPEDESCRIPTION( CompoundParameter );
-const unsigned int CompoundParameter::g_ioVersion = 1;
-
 CompoundParameter::CompoundParameter( const std::string &name, const std::string &description, ConstCompoundObjectPtr userData )
-	:	Parameter( name, description, new CompoundObject, PresetsContainer(), false, userData )
+	:	Parameter( name, description, new CompoundObject, Parameter::PresetsMap(), false, userData )
 {
 }
 
@@ -73,33 +64,33 @@ ConstObjectPtr CompoundParameter::defaultValue() const
 	return value;
 }
 
-const Parameter::PresetsContainer &CompoundParameter::presets() const
+const Parameter::PresetsMap &CompoundParameter::presets() const
 {
 	// naughty? nah! it gives the right semantics to an outside observer
-	PresetsContainer &pr = const_cast<PresetsContainer &>( Parameter::presets() );
+	PresetsMap &pr = const_cast<PresetsMap &>( Parameter::presets() );
 	pr.clear();
 	if( !m_namesToParameters.size() )
 	{
 		return pr;
-	}
-
+	}	
+	
 	// get a references for each child preset map.
 	// we only want to call presets() once for
 	// each child as the map returned may change between calls.
-	vector<const PresetsContainer *> childPresets;
+	vector<const PresetsMap *> childPresets;
 	for( size_t i=0; i<m_parameters.size(); i++ )
 	{
 		childPresets.push_back( &(m_parameters[i]->presets()) );
 	}
-
+	
 	// find the intersection of all the child preset names
 	set<string> names;
-	for( PresetsContainer::const_iterator it=childPresets[0]->begin(); it!=childPresets[0]->end(); it++ )
+	for( PresetsMap::const_iterator it=childPresets[0]->begin(); it!=childPresets[0]->end(); it++ )
 	{
 		bool ok = true;
 		for( size_t i=1; i<m_parameters.size(); i++ )
 		{
-			if( find_if( childPresets[i]->begin(), childPresets[i]->end(), bind( &Preset::first, _1 )==it->first )==childPresets[i]->end() )
+			if( childPresets[i]->find( it->first )==childPresets[i]->end() )
 			{
 				ok = false;
 				break;
@@ -110,17 +101,17 @@ const Parameter::PresetsContainer &CompoundParameter::presets() const
 			names.insert( it->first );
 		}
 	}
-
+	
 	for( set<string>::const_iterator nIt=names.begin(); nIt!=names.end(); nIt++ )
 	{
 		CompoundObjectPtr o = new CompoundObject;
 		for( size_t i=0; i<m_parameters.size(); i++ )
 		{
-			o->members()[m_parameters[i]->name()] = find_if( childPresets[i]->begin(), childPresets[i]->end(), bind( &Preset::first, _1 )==*nIt )->second;
+			o->members()[m_parameters[i]->name()] = childPresets[i]->find(*nIt)->second;
 		}
-		pr.push_back( Preset( *nIt, o ) );
+		pr[*nIt] = o;
 	}
-
+	
 	return pr;
 }
 
@@ -135,7 +126,7 @@ bool CompoundParameter::presetsOnly() const
 	}
 	return true;
 }
-
+	
 void CompoundParameter::setValue( ObjectPtr value )
 {
 	Parameter::setValue( value );
@@ -166,7 +157,7 @@ ObjectPtr CompoundParameter::getValue()
 	{
 		return value;
 	}
-
+	
 	CompoundObject::ObjectMap &m = tValue->members();
 	for( ParameterMap::const_iterator it=m_namesToParameters.begin(); it!=m_namesToParameters.end(); it++ )
 	{
@@ -235,26 +226,26 @@ bool CompoundParameter::valueValid( ConstObjectPtr value, std::string *reason ) 
 
 void CompoundParameter::addParameter( ParameterPtr parameter )
 {
-	if( m_namesToParameters.find( parameter->internedName() )!=m_namesToParameters.end() )
+	if( m_namesToParameters.find( parameter->name() )!=m_namesToParameters.end() )
 	{
-		throw Exception( boost::str( boost::format( "Child parameter named \"%s\" already exists." ) % parameter->name() ) );
+		throw Exception( "Identically named child parameter already exists." );
 	}
-	m_namesToParameters.insert( ParameterMap::value_type( parameter->internedName(), parameter ) );
-	m_parameters.push_back( parameter );
+	m_namesToParameters.insert( ParameterMap::value_type( parameter->name(), parameter ) );
+	m_parameters.push_back( parameter );	
 }
 
 void CompoundParameter::insertParameter( ParameterPtr parameter, ConstParameterPtr other )
 {
-	if( m_namesToParameters.find( parameter->internedName() )!=m_namesToParameters.end() )
+	if( m_namesToParameters.find( parameter->name() )!=m_namesToParameters.end() )
 	{
-		throw Exception( boost::str( boost::format( "Child parameter named \"%s\" already exists." ) % parameter->name() ) );
+		throw Exception( "Identically named child parameter already exists." );
 	}
 	ParameterVector::iterator it = find( m_parameters.begin(), m_parameters.end(), other );
 	if( it==m_parameters.end() )
 	{
 		throw Exception( "Parameter to insert before is not a child." );
 	}
-	m_namesToParameters.insert( ParameterMap::value_type( parameter->internedName(), parameter ) );
+	m_namesToParameters.insert( ParameterMap::value_type( parameter->name(), parameter ) );
 	m_parameters.insert( it, parameter );
 }
 
@@ -266,7 +257,7 @@ void CompoundParameter::removeParameter( ParameterPtr parameter )
 		throw Exception( "Parameter to remove doesn't exist" );
 	}
 	m_parameters.erase( it );
-	m_namesToParameters.erase( parameter->internedName() );
+	m_namesToParameters.erase( parameter->name() );
 
 	ObjectPtr value = Parameter::getValue();
 	CompoundObjectPtr tValue = runTimeCast<CompoundObject>( value );
@@ -278,7 +269,7 @@ void CompoundParameter::removeParameter( ParameterPtr parameter )
 			tValue->members().erase( oIt );
 		}
 	}
-
+	
 }
 
 void CompoundParameter::removeParameter( const std::string &name )
@@ -290,7 +281,7 @@ void CompoundParameter::removeParameter( const std::string &name )
 	}
 	removeParameter( it->second );
 }
-
+		
 const CompoundParameter::ParameterMap &CompoundParameter::parameters() const
 {
 	return m_namesToParameters;
@@ -339,120 +330,4 @@ ObjectPtr CompoundParameter::getValidatedParameterValue( const std::string &name
 		throw Exception( string("Parameter ") + name + " doesn't exist" );
 	}
 	return p->getValidatedValue();
-}
-
-bool CompoundParameter::parameterPath( ConstParameterPtr child, std::vector<std::string> &path ) const
-{
-	for( ParameterVector::const_iterator it=m_parameters.begin(); it!=m_parameters.end(); it++ )
-	{
-		if( child==*it )
-		{
-			path.insert( path.begin(), child->name() );
-			return true;
-		}
-		else
-		{
-			ConstCompoundParameterPtr c = runTimeCast<const CompoundParameter>( *it );
-			if( c )
-			{
-				if( c->parameterPath( child, path ) )
-				{
-					path.insert( path.begin(),  name() );
-					return true;
-				}
-			}
-		}
-	}
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Object implementation
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CompoundParameter::copyFrom( ConstObjectPtr other, CopyContext *context )
-{
-	Parameter::copyFrom( other, context );
-	const CompoundParameter *tOther = static_cast<const CompoundParameter *>( other.get() );
-
-	m_namesToParameters.clear();
-	m_parameters.clear();
-	for( ParameterVector::const_iterator it=tOther->m_parameters.begin(); it!=tOther->m_parameters.end(); it++ )
-	{
-		addParameter( (*it)->copy() );
-	}
-}
-
-void CompoundParameter::save( SaveContext *context ) const
-{
-	Parameter::save( context );
-	IndexedIOInterfacePtr container = context->container( staticTypeName(), g_ioVersion );
-
-	container->mkdir( "parameters" );
-	container->chdir( "parameters" );
-		unsigned i = 0;
-		for( ParameterVector::const_iterator it=m_parameters.begin(); it!=m_parameters.end(); it++, i++ )
-		{
-			string name = str( boost::format( "%d" ) % i );
-			context->save( *it, container, name );
-		}
-	container->chdir( ".." );
-}
-
-void CompoundParameter::load( LoadContextPtr context )
-{
-	Parameter::load( context );
-	unsigned int v = g_ioVersion;
-	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
-
-	m_namesToParameters.clear();
-	m_parameters.clear();
-	container->chdir( "parameters" );
-		IndexedIO::EntryList l = container->ls();
-		m_parameters.resize( l.size() );
-		for( IndexedIO::EntryList::const_iterator it=l.begin(); it!=l.end(); it++ )
-		{
-			ParameterPtr parameter = context->load<Parameter>( container, it->id() );
-			size_t i = boost::lexical_cast<size_t>( it->id() );
-			m_namesToParameters.insert( ParameterMap::value_type( parameter->internedName(), parameter ) );
-			m_parameters[i] = parameter;
-		}
-	container->chdir( ".." );
-}
-
-bool CompoundParameter::isEqualTo( ConstObjectPtr other ) const
-{
-	if( !Parameter::isEqualTo( other ) )
-	{
-		return false;
-	}
-
-
-	const CompoundParameter *tOther = static_cast<const CompoundParameter *>( other.get() );
-	if( tOther->m_parameters.size()!=m_parameters.size() )
-	{
-		return false;
-	}
-
-	for( unsigned i=0; i<m_parameters.size(); i++ )
-	{
-		if( !m_parameters[i]->isEqualTo( tOther->m_parameters[i] ) )
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-void CompoundParameter::memoryUsage( Object::MemoryAccumulator &a ) const
-{
-	Parameter::memoryUsage( a );
-	a.accumulate( m_parameters.capacity() * sizeof( ParameterVector::value_type ) );
-	for( ParameterVector::const_iterator it=m_parameters.begin(); it!=m_parameters.end(); it++ )
-	{
-		a.accumulate( *it );
-	}
-	
-	a.accumulate( m_namesToParameters.size() * sizeof( ParameterMap::value_type ) );
 }

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/OBJReader.h"
 #include "IECore/VectorTypedData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -43,12 +44,16 @@ using namespace boost;
 using namespace boost::python;
 
 namespace IECore {
-
-	void bindOBJReader()
-	{
-		RunTimeTypedClass<OBJReader>()
+	
+	void bindOBJReader() {
+		typedef class_<OBJReader, OBJReaderPtr, boost::noncopyable, bases<Reader> > OBJReaderPyClass;
+		OBJReaderPyClass("OBJReader", no_init)
 			.def(init<const std::string &>())
-		;
-  }
+			.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(OBJReader)
+			;
 
+		//INTRUSIVE_PTR_PATCH(OBJReader, ReaderPyClass);
+		implicitly_convertible<OBJReaderPtr, ReaderPtr>();
+  }
+  
 } // namespace IECore

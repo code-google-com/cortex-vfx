@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -34,14 +34,14 @@
 
 // This include needs to be the very first to prevent problems with warnings
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include <string>
 
-#include "IECore/IndexedIO.h"
-#include "IECore/AttributeCache.h"
+#include <IECore/IndexedIO.h>
+#include <IECore/AttributeCache.h>
 #include "IECore/CompoundObject.h"
-#include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using namespace boost::python;
 using namespace IECore;
@@ -53,37 +53,37 @@ struct AttributeCacheHelper
 {
 	typedef std::vector<AttributeCache::HeaderHandle> HeaderHandleVector;
 	typedef std::vector<AttributeCache::ObjectHandle> ObjectHandleVector;
-	typedef std::vector<AttributeCache::AttributeHandle> AttributeHandleVector;
-
+	typedef std::vector<AttributeCache::AttributeHandle> AttributeHandleVector;	
+	
 	static list objects(AttributeCachePtr cache)
 	{
 		list objects;
-
+		
 		ObjectHandleVector o;
 		cache->objects(o);
 		for (ObjectHandleVector::const_iterator it = o.begin(); it != o.end(); ++it)
 		{
 			objects.append<std::string>(*it);
 		}
-
-
+		
+		
 		return objects;
 	}
 
 	static list headers(AttributeCachePtr cache)
 	{
 		list headers;
-
+		
 		HeaderHandleVector o;
 		cache->headers(o);
 		for (HeaderHandleVector::const_iterator it = o.begin(); it != o.end(); ++it)
 		{
 			headers.append<std::string>(*it);
 		}
-
+		
 		return headers;
 	}
-
+	
 	static list attributes(AttributeCachePtr cache, const AttributeCache::ObjectHandle &obj, object regex)
 	{
 		list attributes;
@@ -110,18 +110,21 @@ struct AttributeCacheHelper
 		{
 			attributes.append<std::string>(*it);
 		}
-
+		
 		return attributes;
 	}
-
+	
 };
 
 void bindAttributeCache()
 {
+	const char *bindName = "AttributeCache";
+	
 	bool (AttributeCache::*containsObj)(const AttributeCache::ObjectHandle &) = &AttributeCache::contains;
 	bool (AttributeCache::*containsObjAttr)(const AttributeCache::ObjectHandle &, const AttributeCache::AttributeHandle &) = &AttributeCache::contains;
-
-	RefCountedClass<AttributeCache, RefCounted>( "AttributeCache" )
+	
+	typedef class_< AttributeCache, AttributeCachePtr > AttributeCachePyClass;
+	AttributeCachePyClass ( bindName, no_init )
 		.def( init<const std::string &, IndexedIO::OpenMode>() )
 		.def("write", &AttributeCache::write)
 		.def("writeHeader", &AttributeCache::writeHeader)
@@ -130,7 +133,7 @@ void bindAttributeCache()
 		.def("readHeader", (ObjectPtr (AttributeCache::*) ( const AttributeCache::HeaderHandle & ))&AttributeCache::readHeader)
 		.def("readHeader", (CompoundObjectPtr (AttributeCache::*)())&AttributeCache::readHeader)
 		.def("contains", containsObj)
-		.def("contains", containsObjAttr)
+		.def("contains", containsObjAttr)		
 		.def("objects", &AttributeCacheHelper::objects)
 		.def("headers", &AttributeCacheHelper::headers)
 		.def("attributes", make_function( &AttributeCacheHelper::attributes, default_call_policies(), ( boost::python::arg_( "obj" ), boost::python::arg_( "regex" ) = object() ) ) )
@@ -138,5 +141,6 @@ void bindAttributeCache()
 		.def("remove", (void (AttributeCache::*)( const AttributeCache::ObjectHandle & ))&AttributeCache::remove)
 		.def("removeHeader", &AttributeCache::removeHeader )
 	;
+	INTRUSIVE_PTR_PATCH( AttributeCache, AttributeCachePyClass );
 }
 }

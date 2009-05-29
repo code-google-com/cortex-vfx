@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,7 +36,6 @@
 #define IE_CORE_COMPOUNDOBJECT_H
 
 #include "IECore/Object.h"
-#include "IECore/Interned.h"
 
 namespace IECore
 {
@@ -46,20 +45,20 @@ namespace IECore
 class CompoundObject : public Object
 {
 	public:
-
+	
 		CompoundObject();
 		virtual ~CompoundObject();
-
+		
 		IE_CORE_DECLAREOBJECT( CompoundObject, Object );
-
-		typedef std::map<InternedString, ObjectPtr> ObjectMap;
-
+		
+		typedef std::map<std::string, ObjectPtr> ObjectMap;
+		
 		/// Gives const access to the member object map.
 		const ObjectMap &members() const;
 		/// Gives access to the member Object map for
 		/// direct manipulation.
 		ObjectMap &members();
-
+		
 		/// Convenience function to find an object in members(). Returns 0 if
 		/// the parameter doesn't exist, or does not match the type specified
 		/// as the template argument.
@@ -67,15 +66,15 @@ class CompoundObject : public Object
 		typename T::Ptr member( const std::string &name );
 		template<typename T>
 		typename T::ConstPtr member( const std::string &name ) const;
-
+		
 	protected:
-
+	
 		ObjectMap m_members;
-
+		
 	private :
 
 		static const unsigned int m_ioVersion;
-
+				
 };
 
 IE_CORE_DECLAREPTR( CompoundObject );

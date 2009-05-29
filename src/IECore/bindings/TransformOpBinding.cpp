@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009 Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/TransformOp.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -46,9 +47,15 @@ namespace IECore
 
 void bindTransformOp()
 {
-	RunTimeTypedClass<TransformOp>()
-		.def( init<>() )
+	typedef class_< TransformOp, TransformOpPtr, boost::noncopyable, bases<PrimitiveOp> > TransformOpPyClass;
+	TransformOpPyClass( "TransformOp" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(TransformOp)
 	;
+	
+	INTRUSIVE_PTR_PATCH( TransformOp, TransformOpPyClass );
+	implicitly_convertible<TransformOpPtr, PrimitiveOpPtr>();	
+	implicitly_convertible<TransformOpPtr, ConstTransformOpPtr>();	
+
 }
 
 } // namespace IECore

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,14 +46,12 @@ class OStreamMessageHandler;
 IE_CORE_DECLAREPTR( OStreamMessageHandler );
 
 /// This class implements a simple MessageHandler
-/// to write to a std::ostream object.
+/// to write to a std::ostream object. 
 class OStreamMessageHandler : public MessageHandler
 {
 
 	public :
-
-		IE_CORE_DECLAREMEMBERPTR( OStreamMessageHandler );
-
+	
 		/// Creates a message handler to output to the specified
 		/// stream. The handler does not own the stream and will
 		/// not attempt to delete it. This form of the constructor
@@ -64,7 +62,7 @@ class OStreamMessageHandler : public MessageHandler
 		/// stream. The handler takes ownerwship of the passed
 		/// stream and will delete it on destruction.
 		OStreamMessageHandler( std::ostream *stream );
-
+		
 		//! @name Shared message handlers
 		/// These functions return static instances of some
 		/// default message handlers that can be shared by
@@ -74,19 +72,19 @@ class OStreamMessageHandler : public MessageHandler
 		static OStreamMessageHandlerPtr cErrHandler();
 		static OStreamMessageHandlerPtr cOutHandler();
 		//@}
-
+		
 		virtual void handle( Level level, const std::string &context, const std::string &message );
-
+		
 	protected :
-
+	
 		virtual ~OStreamMessageHandler();
-
-
+	
+		
 	private :
 
 		bool m_ownStream;
 		std::ostream *m_stream;
-
+		
 };
 
 }; // namespace IECore

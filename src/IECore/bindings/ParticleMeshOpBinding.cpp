@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,13 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/ParticleMeshOp.h"
 #include "IECore/Parameter.h"
 #include "IECore/Object.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -48,9 +49,14 @@ namespace IECore
 
 void bindParticleMeshOp()
 {
-	RunTimeTypedClass<ParticleMeshOp>()
-		.def( init<>() )
+	typedef class_< ParticleMeshOp, ParticleMeshOpPtr, boost::noncopyable, bases<Op> > ParticleMeshOpPyClass;
+	ParticleMeshOpPyClass( "ParticleMeshOp" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(ParticleMeshOp)
 	;
+	
+	INTRUSIVE_PTR_PATCH( ParticleMeshOp, ParticleMeshOpPyClass );
+	implicitly_convertible<ParticleMeshOpPtr, OpPtr>();	
+
 }
 
 } // namespace IECore

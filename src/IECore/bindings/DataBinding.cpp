@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,13 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Data.h"
 #include "IECore/bindings/DataBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 
@@ -48,7 +49,14 @@ namespace IECore
 
 void bindData()
 {
-	RunTimeTypedClass<Data>( "An abstract base class for data storage." )
+	typedef class_< Data, boost::noncopyable, DataPtr, bases<Object> > DataPyClass;
+	DataPyClass ("Data", "An abstract base class for data storage.", no_init)
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( Data )
 	;
+
+	INTRUSIVE_PTR_PATCH( Data, DataPyClass );
+
+	implicitly_convertible<DataPtr, ObjectPtr>();
+	implicitly_convertible<DataPtr, ConstDataPtr>();
 }
 }

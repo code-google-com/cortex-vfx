@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -59,8 +59,6 @@ using namespace IECore;
 using namespace boost;
 using namespace Imath;
 using namespace std;
-
-IE_CORE_DEFINERUNTIMETYPED( JPEGImageReader );
 
 const Reader::ReaderDescription <JPEGImageReader> JPEGImageReader::m_readerDescription ("jpeg jpg");
 
@@ -130,11 +128,6 @@ Imath::Box2i JPEGImageReader::dataWindow()
 Imath::Box2i JPEGImageReader::displayWindow()
 {
 	return dataWindow();
-}
-
-std::string JPEGImageReader::sourceColorSpace() const
-{
-	return "srgb";
 }
 
 DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2i &dataWindow )
@@ -268,11 +261,11 @@ bool JPEGImageReader::open( bool throwOnFailure )
 			else if ( cinfo.out_color_space != JCS_RGB )
 			{
 				throw IOException( ( boost::format( "JPEGImageReader: Unsupported colorspace (%d) while opening file %s" ) % cinfo.out_color_space % m_bufferFileName ).str() );
-			}
+			}			
 			/// \todo Add support for JCS_YCbCr encoding, and make sure that we add a parameter that
-			/// species whether we should rescale values 0-255 to 16-235 (Y) and 16-239 (Cb/Cr) - default
+			/// species whether we should rescale values 0-255 to 16-235 (Y) and 16-239 (Cb/Cr) - default 
 			/// should be true. See http://www.fourcc.org/fccyvrgb.php for further info.
-
+			
 			/// Create buffer
 			int rowStride = cinfo.output_width * cinfo.output_components;
 			m_buffer.resize( rowStride * cinfo.output_height, 0 );

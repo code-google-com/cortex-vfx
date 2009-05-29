@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -63,13 +63,11 @@ class EXRImageWriter : public ImageWriter
 		/// construct an EXRImageWriter for the given image and output filename
 		EXRImageWriter( ObjectPtr object, const std::string & fileName );
 
-		virtual std::string destinationColorSpace() const ;
-
 	private:
 
 		static const WriterDescription<EXRImageWriter> m_writerDescription;
 
-		virtual void writeImage(const std::vector<std::string> &names,
+		virtual void writeImage(const std::vector<std::string> &names, 
 		                        ConstImagePrimitivePtr image,
 		                        const Imath::Box2i &dw) const;
 

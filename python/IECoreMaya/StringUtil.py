@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-9, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -44,48 +44,38 @@ def dependencyNodeFromString( s ) :
 
 	sl = maya.OpenMaya.MSelectionList()
 	sl.add( s )
-
+	
 	if sl.length() > 1 :
 		IECore.msg( IECore.Msg.Level.Warning, "IECoreMaya.dependencyNodeFromString", "Name \"%s\" is not unique." % s )
-
+		
 	result = maya.OpenMaya.MObject()
 	sl.getDependNode( 0, result )
 	return result
-
-## Utility function to return the parent string when
-# given a UI or DAG node's full path name as a string.
-def parentFromString( s ) :
-
-	tokens = s.split('|')
-	tokens.pop()
-	parent = '|'.join( tokens )
-
-	return parent
-
+	
 ## Utility function to return an MDagPath when
 # given it's name as a string.
 def dagPathFromString( s ) :
 
 	sl = maya.OpenMaya.MSelectionList()
 	sl.add( s )
-
+	
 	if sl.length() > 1 :
 		IECore.msg( IECore.Msg.Level.Warning, "IECoreMaya.dagPathFromString", "Name \"%s\" is not unique." % s )
-
+		
 	result = maya.OpenMaya.MDagPath()
 	sl.getDependNode( 0, result )
 	return result
-
+	
 ## Utility function to return an MPlug when
 # given it's name as a string.
 def plugFromString( s ) :
 
 	sl = maya.OpenMaya.MSelectionList()
 	sl.add( s )
-
+	
 	if sl.length() > 1 :
 		IECore.msg( IECore.Msg.Level.Warning, "IECoreMaya.plugFromString", "Name \"%s\" is not unique." % s )
-
+	
 	result = maya.OpenMaya.MPlug()
 	sl.getPlug( 0, result )
 	return result
@@ -99,7 +89,7 @@ def pathFromPlug( p ) :
 	except :
 		f = maya.OpenMaya.MFnDependencyNode( p.node() )
 		nodePath = f.name()
-
+			
 	return nodePath + "." + p.partialName()
 
 ## Extracts the node name from a full path to an attribute.

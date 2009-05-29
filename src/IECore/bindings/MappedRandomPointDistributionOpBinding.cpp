@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,13 +32,15 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/MappedRandomPointDistributionOp.h"
 #include "IECore/Parameter.h"
 #include "IECore/Object.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
+#include "IECore/bindings/Wrapper.h"
 
 using namespace boost;
 using namespace boost::python;
@@ -49,9 +51,15 @@ namespace IECore
 
 void bindMappedRandomPointDistributionOp()
 {
-	RunTimeTypedClass<MappedRandomPointDistributionOp>()
+	typedef class_< MappedRandomPointDistributionOp, MappedRandomPointDistributionOpPtr, boost::noncopyable, bases<UniformRandomPointDistributionOp> > MappedRandomPointDistributionOpPyClass;
+	MappedRandomPointDistributionOpPyClass( "MappedRandomPointDistributionOp", no_init )
 		.def( init<>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(MappedRandomPointDistributionOp)
 	;
+	
+	INTRUSIVE_PTR_PATCH( MappedRandomPointDistributionOp, MappedRandomPointDistributionOpPyClass );
+	implicitly_convertible<MappedRandomPointDistributionOpPtr, UniformRandomPointDistributionOpPtr>();	
+
 }
 
 } // namespace IECore

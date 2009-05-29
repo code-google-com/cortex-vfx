@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/PerlinNoise.h"
 #include "IECore/TypedData.h"
@@ -83,15 +83,15 @@ void bindPerlinNoise()
 	bindNoise<PerlinNoiseV3ff>( "PerlinNoiseV3ff" );
 	bindNoise<PerlinNoiseV2ff>( "PerlinNoiseV2ff" );
 	bindNoise<PerlinNoiseff>( "PerlinNoiseff" );
-
+	
 	bindNoise<PerlinNoiseV3fV2f>( "PerlinNoiseV3fV2f" );
 	bindNoise<PerlinNoiseV2fV2f>( "PerlinNoiseV2fV2f" );
 	bindNoise<PerlinNoisefV2f>( "PerlinNoisefV2f" );
-
+	
 	bindNoise<PerlinNoiseV3fV3f>( "PerlinNoiseV3fV3f" );
 	bindNoise<PerlinNoiseV2fV3f>( "PerlinNoiseV2fV3f" );
 	bindNoise<PerlinNoisefV3f>( "PerlinNoisefV3f" );
-
+	
 	bindNoise<PerlinNoiseV3fColor3f>( "PerlinNoiseV3fColor3f" );
 	bindNoise<PerlinNoiseV2fColor3f>( "PerlinNoiseV2fColor3f" );
 	bindNoise<PerlinNoisefColor3f>( "PerlinNoisefColor3f" );

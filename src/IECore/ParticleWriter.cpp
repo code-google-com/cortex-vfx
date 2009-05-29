@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,8 +46,6 @@ using namespace std;
 using namespace IECore;
 using namespace boost;
 
-IE_CORE_DEFINERUNTIMETYPED( ParticleWriter )
-
 ParticleWriter::ParticleWriter( const std::string &name, const std::string &description )
 	:	Writer( name, description, PointsPrimitiveTypeId )
 {
@@ -82,7 +80,7 @@ void ParticleWriter::particleAttributes( std::vector<std::string> &names )
 	vector<string> allNames;
 	ConstPointsPrimitivePtr cd = particleObject();
 	for( PrimitiveVariableMap::const_iterator it=cd->variables.begin(); it!=cd->variables.end(); it++ )
-	{
+	{					
 		if ( testTypedData<TypeTraits::IsVectorTypedData>( it->second.data ) )
 		{
 			size_t s = despatchTypedData< TypedDataSize, TypeTraits::IsVectorTypedData >( it->second.data );
@@ -101,17 +99,17 @@ void ParticleWriter::particleAttributes( std::vector<std::string> &names )
 			// in which case it's suitable for saving as a constant particle attribute
 
 			despatchTypedData< TypedDataAddress, TypeTraits::IsSimpleTypedData >( it->second.data );
-			allNames.push_back( it->first );
+			allNames.push_back( it->first );			
 		}
 	}
-
+	
 	ConstStringVectorDataPtr d = static_pointer_cast<const StringVectorData>( parameters()->parameter<StringVectorParameter>( "attributes" )->getValue() );
 	if( !d->readable().size() )
 	{
 		names = allNames;
 		return;
 	}
-
+		
 	names.clear();
 	for( vector<string>::const_iterator it = d->readable().begin(); it!=d->readable().end(); it++ )
 	{

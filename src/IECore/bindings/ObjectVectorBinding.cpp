@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,13 +32,14 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
 #include "boost/python.hpp"
 
 #include "IECore/ObjectVector.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/bindings/ObjectVectorBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using namespace boost::python;
 
@@ -53,13 +54,13 @@ static std::vector<ObjectVector>::size_type convertIndex( ObjectVector &o, long 
 	{
 		index += s;
 	}
-
+	
 	if( index >= s || index < 0 )
 	{
 		PyErr_SetString( PyExc_IndexError, "Index out of range" );
 		throw_error_already_set();
 	}
-
+	
 	return index;
 }
 
@@ -90,14 +91,21 @@ static void append( ObjectVector &o, ObjectPtr value )
 
 void bindObjectVector()
 {
-	RunTimeTypedClass<ObjectVector>()
-		.def( init<>() )
+	typedef class_< ObjectVector, ObjectVectorPtr, bases<Object>, boost::noncopyable > ObjectVectorPyClass;
+
+	ObjectVectorPyClass( "ObjectVector" )
 		.def( "__len__", &len )
 		.def( "__getitem__", &getItem )
 		.def( "__setitem__", &setItem )
 		.def( "__delitem__", &delItem )
 		.def( "append", &append )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(ObjectVector)
 	;
+	
+	INTRUSIVE_PTR_PATCH( ObjectVector, ObjectVectorPyClass );
+	
+	implicitly_convertible<ObjectVectorPtr, ObjectPtr>();
+	
 }
 
 } // namespace IECore

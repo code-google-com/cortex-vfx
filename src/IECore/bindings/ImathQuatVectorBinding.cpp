@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -33,15 +33,16 @@
 //////////////////////////////////////////////////////////////////////////
 
 // External includes
-#include "boost/python.hpp"
-#include "boost/python/make_constructor.hpp"
-#include "boost/python/suite/indexing/container_utils.hpp"
-#include "boost/numeric/conversion/cast.hpp"
-#include "boost/python/implicit.hpp"
+#include <boost/python.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/suite/indexing/container_utils.hpp>
+#include <boost/numeric/conversion/cast.hpp>
+#include <boost/python/implicit.hpp>
 
-#include "OpenEXR/ImathQuat.h"
+#include <OpenEXR/ImathQuat.h>
 
 #include "IECore/VectorTypedData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/VectorTypedDataBinding.inl"
 
 using namespace std;
@@ -57,8 +58,8 @@ IE_COREPYTHON_DEFINEVECTORDATASTRSPECIALISATION( Quatd )
 
 void bindImathQuatVectorTypedData()
 {
-	BIND_SIMPLE_OPERATED_VECTOR_TYPEDDATA( Quat< float >, "Quatf")
-	BIND_SIMPLE_OPERATED_VECTOR_TYPEDDATA( Quat< double >, "Quatd")
+	BIND_SIMPLE_OPERATED_VECTOR_TYPEDDATA( Quat< float >,  "QuatfVectorData", "Quatf")
+	BIND_SIMPLE_OPERATED_VECTOR_TYPEDDATA( Quat< double >, "QuatdVectorData", "Quatd")
 }
 
 } // namespace IECore

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/CINImageWriter.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -46,10 +47,16 @@ namespace IECore
 
 void bindCINImageWriter()
 {
-	RunTimeTypedClass<CINImageWriter>()
-		.def( init<>() )
+
+	typedef class_<CINImageWriter, CINImageWriterPtr, boost::noncopyable, bases<ImageWriter> > CINImageWriterPyClass;
+
+	CINImageWriterPyClass("CINImageWriter", init<>())
 		.def( init<ObjectPtr, const std::string &>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(CINImageWriter)
 	;
+
+	INTRUSIVE_PTR_PATCH( CINImageWriter, CINImageWriterPyClass );
+	implicitly_convertible<CINImageWriterPtr, CINImageWriterPtr>();
 }
 
 } // namespace IECore

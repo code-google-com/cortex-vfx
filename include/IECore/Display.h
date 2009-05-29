@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,15 +44,15 @@ namespace IECore
 class Display : public PreWorldRenderable
 {
 	public:
-
+	
 		Display( const std::string &name="default", const std::string &type="exr", const std::string &data="rgba", CompoundDataPtr parameters = new CompoundData );
 		virtual ~Display();
-
+				
 		IE_CORE_DECLAREOBJECT( Display, PreWorldRenderable );
 
 		void setName( const std::string &name );
 		const std::string &getName() const;
-
+		
 		void setType( const std::string &type );
 		const std::string &getType() const;
 
@@ -66,16 +66,16 @@ class Display : public PreWorldRenderable
 		/// (it calls readable() or writable() for you).
 		CompoundDataPtr parametersData();
 
-		virtual void render( RendererPtr renderer ) const;
-
+		virtual void render( RendererPtr renderer );
+			
 	private:
-
+	
 		std::string m_name;
 		std::string m_type;
 		std::string m_data;
 
 		CompoundDataPtr m_parameters;
-
+	
 		static const unsigned int m_ioVersion;
 };
 

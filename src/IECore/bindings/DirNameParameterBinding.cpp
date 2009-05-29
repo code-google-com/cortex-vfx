@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,13 +32,12 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
-#include "IECore/bindings/ParameterBinding.h"
 #include "IECore/DirNameParameter.h"
 #include "IECore/CompoundObject.h"
-#include "IECore/bindings/Wrapper.h"
-#include "IECore/bindings/RunTimeTypedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
+#include "IECore/bindings/ParameterBinding.h"
 
 using namespace std;
 using namespace boost;
@@ -47,41 +46,50 @@ using namespace boost::python;
 namespace IECore
 {
 
-class DirNameParameterWrap : public DirNameParameter, public Wrapper<DirNameParameter>
+static DirNameParameterPtr dirNameParameterConstructor( const std::string &name, const std::string &description,
+	const std::string &defaultValue, bool allowEmptyString, PathParameter::CheckType check, const dict &presets, bool presetsOnly, object userData )
 {
-	public :
-
-		DirNameParameterWrap( PyObject *self, const std::string &n, const std::string &d, const std::string &dv, bool ae,
-			PathParameter::CheckType c, const object &p, bool po, CompoundObjectPtr ud )
-			:	DirNameParameter( n, d, dv, ae, c, parameterPresets<PathParameter::PresetsContainer>( p ), po, ud ), Wrapper<DirNameParameter>( self, this ) {};
-
-		IE_COREPYTHON_PARAMETERWRAPPERFNS( DirNameParameter );
-
-};
-IE_CORE_DECLAREPTR( DirNameParameterWrap );
+ 	DirNameParameter::PresetsMap p;
+	boost::python::list keys = presets.keys();
+	boost::python::list values = presets.values();
+	for( int i = 0; i<keys.attr( "__len__" )(); i++ )
+	{
+		p.insert( DirNameParameter::PresetsMap::value_type( extract<string>( keys[i] )(), extract<string>( values[i] )() ) );
+	}
+	// get the optional userData parameter.
+	ConstCompoundObjectPtr ptrUserData = 0;
+	if (userData != object()) {
+		extract<CompoundObjectPtr> elem(userData);
+		// try if elem is an exact CompoundObjectPtr
+		if (elem.check()) {
+			ptrUserData = elem();
+		} else {
+			// now try for ConstCompoundObjectPtr
+			extract<ConstCompoundObjectPtr> elem(userData);
+			if (elem.check()) {
+				ptrUserData = elem();
+			} else {
+			   	PyErr_SetString(PyExc_TypeError, "Parameter userData is not an instance of CompoundObject!");
+			  	throw_error_already_set();
+				DirNameParameterPtr res;
+				return res;
+			}
+		}
+	}
+	return new DirNameParameter( name, description, defaultValue, allowEmptyString, check, p, presetsOnly, ptrUserData );
+}
 
 void bindDirNameParameter()
 {
-	using boost::python::arg;
 
-	RunTimeTypedClass<DirNameParameter, DirNameParameterWrapPtr>()
-		.def(
-			init<const std::string &, const std::string &, const std::string &, bool, PathParameter::CheckType, const object &, bool, CompoundObjectPtr>
-			(
-				(
-					arg( "name" ),
-					arg( "description" ),
-					arg( "defaultValue" ) = std::string( "" ),
-					arg( "allowEmptyString" ) = true,
-					arg( "check" ) = PathParameter::DontCare,
-					arg( "presets" ) = boost::python::tuple(),
-					arg( "presetsOnly" ) = false,
-					arg( "userData" ) = CompoundObject::Ptr( 0 )
-				)
-			)
-		)
+	typedef class_<DirNameParameter, DirNameParameterPtr, boost::noncopyable, bases<PathParameter> > DirNameParameterPyClass;
+	DirNameParameterPyClass( "DirNameParameter", no_init )
+		.def( "__init__", make_constructor( &dirNameParameterConstructor, default_call_policies(), ( boost::python::arg_( "name" ), boost::python::arg_( "description" ), boost::python::arg_( "defaultValue" ) = string( "" ), boost::python::arg_( "allowEmptyString" ) = true, boost::python::arg_( "check" ) = PathParameter::DontCare, boost::python::arg_( "presets" ) = dict(), boost::python::arg_( "presetsOnly") = false, boost::python::arg_( "userData" ) = object() ) ) )
 		.IE_COREPYTHON_DEFPARAMETERWRAPPERFNS( DirNameParameter )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( DirNameParameter )
 	;
+	INTRUSIVE_PTR_PATCH( DirNameParameter, DirNameParameterPyClass );
+	implicitly_convertible<DirNameParameterPtr, PathParameterPtr>();
 
 }
 

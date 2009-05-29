@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,36 +45,29 @@ class DiskPrimitive : public Primitive
 
 	public :
 
-		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::DiskPrimitive, DiskPrimitiveTypeId, Primitive );
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( DiskPrimitive, DiskPrimitiveTypeId, Primitive );
 
-		DiskPrimitive( float radius = 1, float z = 0, float thetaMax = 360 );
+		DiskPrimitive( float radius = 1, float thetaMax = 360 );
 		virtual ~DiskPrimitive();
-
+		
 		void setRadius( float radius );
 		float getRadius() const;
-
-		void setZ( float z );
-		float getZ() const;
-
-		void setThetaMax( float thetaMax );
-		float getThetaMax() const;
-
+		
 		virtual Imath::Box3f bound() const;
-
+		
 	protected :
 
 		virtual void render( ConstStatePtr state, IECore::TypeId style ) const;
 
 	private :
-
+	
 		float m_radius;
-		float m_z;
 		float m_thetaMax;
 
 		// So PointsPrimitive can use the protected render() method to
 		// render particle disks.
 		friend class PointsPrimitive;
-
+		
 };
 
 IE_CORE_DECLAREPTR( DiskPrimitive );

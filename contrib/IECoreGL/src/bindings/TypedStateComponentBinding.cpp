@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,6 +39,7 @@
 #include "IECoreGL/bindings/TypedStateComponentBinding.h"
 
 #include "IECore/MessageHandler.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -77,10 +78,15 @@ void bindTypedStateComponents()
 template< typename T >
 void bindTypedStateComponent( const char *className )
 {
-	IECore::RunTimeTypedClass<T>()
-		.def( init< const typename T::ValueType & >() )
-		.add_property( "value", make_function( &T::value, return_value_policy<copy_const_reference>() ) )
+	typedef class_< T, boost::intrusive_ptr< T >, boost::noncopyable, bases< StateComponent > > TypedStateComponentPyClass;
+	TypedStateComponentPyClass( className, init< const typename T::ValueType & >() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( T )
 	;
+
+	INTRUSIVE_PTR_PATCH( T, typename TypedStateComponentPyClass );
+	implicitly_convertible< boost::intrusive_ptr< T >, boost::intrusive_ptr< const T > >();
+	implicitly_convertible< boost::intrusive_ptr< T >, StateComponentPtr>();
+
 }
 
 } // namespace IECoreGL

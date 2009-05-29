@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,26 +48,28 @@ class CacheSet : public MPxObjectSet
 	public:
 		CacheSet();
 		virtual ~CacheSet();
-
+		
 		static void *creator();
-
+		
 		static MStatus initialize();
-
+		
 		virtual bool isAbstractClass() const;
-
+		virtual MStatus compute(const MPlug &plug, MDataBlock &block);		
+		
 		static MTypeId id;
-
+		
 		static MObject aActive;
 		static MObject aFrameRate;
 		static MObject aOversamples;
+		static MObject aActualOversamples;
 		static MObject aOutFrameMel;
-
+		
 	protected:
-
+	
 		/// A simple helper function to translate an MStringArray into
 		/// the MEL representation of the same data.
 		MString melFromStringArray(const MStringArray &a) const;
-
+		
 };
 }
 

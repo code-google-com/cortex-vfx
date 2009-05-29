@@ -77,8 +77,6 @@ bool withFreeType();
 /// \ref mainPageRenderingSection <br>
 /// \ref mainPageAlgorithmsSection <br>
 /// \ref mainPagePythonSection <br>
-/// \ref mainPageApplicationSupportSection <br>
-///
 /// \section mainPageMathSection Math
 ///
 /// Basic math types are provided by the Imath library which comes as part
@@ -93,7 +91,7 @@ bool withFreeType();
 /// provide common operations on top of this lower level access, allowing classes
 /// such as \link IECore::KDTree KDTree \endlink and \link IECore::PerlinNoise PerlinNoise \endlink to operate both on native IECore types and
 /// application specific types such as the Maya MPoint and MVector classes.
-///
+/// 
 /// The VectorOps.h and MatrixOps.h code provides a pretty ugly c-style function
 /// based interface - functional enough to provide library components like the KDTree
 /// but not useable enough for everyday coding. It may be better in the future to
@@ -205,17 +203,17 @@ bool withFreeType();
 /// As we saw above, Objects have a built in serialisation mechanism. This makes use of
 /// the \link IECore::IndexedIOInterface IndexedIOInterface \endlink, which defines a mechanism for the creation of random access
 /// files containing a hierarchy of named data items. Currently the main implementation
-/// of this interface is \link IECore::FileIndexedIO FileIndexedIO \endlink, with
+/// of this interface is \link IECore::FileIndexedIO FileIndexedIO \endlink, with 
 /// \link IECore::FileSystemIndexedIO FileSystemIndexedIO \endlink implementing a reference
 /// solution of use for debugging and the like.
 ///
-/// The \link IECore::AttributeCache AttributeCache \endlink and \link IECore::InterpolatedCache
+/// The \link IECore::AttributeCache AttributeCache \endlink and \link IECore::InterpolatedCache 
 /// InterpolatedCache \endlink sit on top of IndexedIOInterface and provide
 /// a simple framework useable for vertex caching, transform caching and more - in fact any
 /// Object subclass can be stored as an element of a cache - this is one of the benefits
 /// of combining the object serialisation and random access caching code.
 ///
-/// For input and output of third party file formats there are the \link IECore::Reader
+/// For input and output of third party file formats there are the \link IECore::Reader 
 /// Reader \endlink and \link IECore::Writer Writer \endlink classes.
 /// These contain factory mechanisms for obtaining Readers and Writers given a filename with
 /// an extension, and use Parameters to control any conversions during the io process.
@@ -228,10 +226,9 @@ bool withFreeType();
 ///
 /// \section mainPageRenderingSection Rendering
 ///
-/// IECore defines the \link IECore::Renderer Renderer \endlink class for the description of scenes to a renderer. The IECoreRI::Renderer
-/// subclass implements this class for RIB generation and use in DynamicLoad procedurals, and the IECoreGL::Renderer subclass implements
-/// the same interface in terms of OpenGL, providing fast preview rendering which can be used to visualise procedural results within
-/// an IECoreMaya::ProceduralHolder node.
+/// IECore defines the \link IECore::Renderer Renderer \endlink class for the description of scenes to a renderer. Currently
+/// no concrete implementations exist in the core library itself, but implementations for
+/// RenderMan and OpenGL exist in separate libraries.
 ///
 /// The Renderable class and subclasses such as \link IECore::MeshPrimitive MeshPrimitive \endlink
 /// provide objects which can be manipulated with Ops and which can describe themselves to Renderers.
@@ -244,7 +241,7 @@ bool withFreeType();
 /// \link IECore::PerlinNoise PerlinNoise \endlink implements the classic noise function for arbitrary dimensions.
 ///
 /// Fast closest point and ray intersection queries can be performed on some of the classes derived
-/// from \link IECore::Primitive Primitive \endlink, using an instance of a
+/// from \link IECore::Primitive Primitive \endlink, using an instance of a 
 /// \link IECore::PrimitiveEvaluator PrimitiveEvaluator \endlink.
 ///
 /// A fast, robust implementation of \link IECore::MarchingCubes MarchingCubes \endlink is available for creating meshes from an
@@ -257,11 +254,8 @@ bool withFreeType();
 ///
 /// All of the IECore C++ classes are bound into Python using the <a href="http://www.boost.org/libs/python/doc/">boost::python</a> framework.
 /// Many can actually be subclassed in python, making it very quick to implement a new Op
-/// or Procedural.
-///
-/// \section mainPageApplicationSupportSection Application support
-///
-/// The generic functionality contained within IECore is interfaced with specific 3rd party applications and frameworks using additional
-/// libraries. These libraries include \ref IECoreMaya, IECoreNuke, IECoreGL and IECoreTruelight.
+/// or Procedural. Some IECore functionality is implemented directly in Python - for instance
+/// the \link IECore::FileSequence FileSequence \endlink and \link IECore::FrameList
+/// FrameList \endlink classes.
 
 #endif // IE_CORE_CORE_H

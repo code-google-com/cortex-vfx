@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
-#include "boost/python/make_constructor.hpp"
+#include <boost/python.hpp>
+#include <boost/python/make_constructor.hpp>
 
 #include "IECore/TransformationMatrixData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/bindings/IECoreBinding.h"
 
@@ -85,15 +86,21 @@ static int cmp( T &x, T &y )
 }
 
 template< typename T >
-void bindTypedTransformationMatrixData()
+void bindTypedTransformationMatrixData( const char *bindName )
 {
-	RunTimeTypedClass<TypedData< TransformationMatrix< T > > >()
-		.def( "__init__", make_constructor( &construct< TypedData< TransformationMatrix< T > > > ), "Construct with no specified value." )
-		.def( "__init__", make_constructor( &constructWithValue< TypedData< TransformationMatrix< T > > > ), "Construct with the specified value." )
-		.add_property( "value",   &getValue< TypedData< TransformationMatrix< T > > >,
-	    						  &setValue< TypedData< TransformationMatrix< T > > >, "The value contained by the object.")
-		.def("__cmp__", &cmp< TypedData< TransformationMatrix< T > > > )
-	;
+	typedef class_< TypedData< TransformationMatrix< T > >, typename TypedData< TransformationMatrix< T > >::Ptr, boost::noncopyable, bases<Data> > ThisPyClass;
+	ThisPyClass result( bindName, no_init );
+	result.def( "__init__", make_constructor( &construct< TypedData< TransformationMatrix< T > > > ), "Construct with no specified value." );
+	result.def( "__init__", make_constructor( &constructWithValue< TypedData< TransformationMatrix< T > > > ), "Construct with the specified value." );
+	result.add_property( "value",	&getValue< TypedData< TransformationMatrix< T > > >,
+									&setValue< TypedData< TransformationMatrix< T > > >, "The value contained by the object.");
+	result.def("__cmp__", &cmp< TypedData< TransformationMatrix< T > > > );
+	result.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( TypedData< TransformationMatrix<T> > );
+
+	INTRUSIVE_PTR_PATCH( TypedData< TransformationMatrix<T> >, typename ThisPyClass );
+
+	implicitly_convertible< typename TypedData< TransformationMatrix<T> >::Ptr , DataPtr>();
+	implicitly_convertible< typename TypedData< TransformationMatrix<T> >::Ptr, typename TypedData< TransformationMatrix<T> >::ConstPtr >();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,8 +109,8 @@ void bindTypedTransformationMatrixData()
 
 void bindTransformationMatrixData()
 {
-	bindTypedTransformationMatrixData< float >();
-	bindTypedTransformationMatrixData< double >();
+	bindTypedTransformationMatrixData< float >( "TransformationMatrixfData" );
+	bindTypedTransformationMatrixData< double >( "TransformationMatrixdData" );
 }
 
 } // namespace IECore

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,8 +48,7 @@ namespace IECore
 void bindParameter();
 
 // Exposed so it can be used in the bindings for the other Parameter types.
-template<class T>
-T parameterPresets( const boost::python::object &o );
+Parameter::PresetsMap parameterPresetsFromDict( const boost::python::dict &presets );
 
 /// The following macros and functions provide a good example to follow in trying to
 /// wrap non trivial C++ objects so they can be derived from in Python, as they solve
@@ -80,14 +79,14 @@ T parameterPresets( const boost::python::object &o );
 #define IE_COREPYTHON_PARAMETERWRAPPERFNS( CLASSNAME )								\
 	virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const	\
 	{																				\
-		if( boost::python::override f = this->get_override( "valueValid" ) )								\
+		if( override f = this->get_override( "valueValid" ) )								\
 		{																			\
 			boost::python::tuple r = f( boost::const_pointer_cast<Object>( value ) );		\
 			if( reason )															\
 			{																		\
-				*reason = boost::python::extract<std::string>( r[1] );								\
+				*reason = extract<std::string>( r[1] );								\
 			}																		\
-			return boost::python::extract<bool>( r[0] );											\
+			return extract<bool>( r[0] );											\
 		}																			\
 		return CLASSNAME::valueValid( value, reason );								\
 	}
@@ -98,7 +97,7 @@ T parameterPresets( const boost::python::object &o );
 #define IE_COREPYTHON_DEFPARAMETERWRAPPERFNS( CLASSNAME )																								\
 	def( "valueValid", &valueValid<CLASSNAME>, "Returns a tuple containing a bool specifying validity and a string giving a reason for invalidity." )	\
 	.def( "valueValid", &valueValid2, "Returns a tuple containing a bool specifying validity and a string giving a reason for invalidity." )			\
-
+		
 template<typename T>
 boost::python::tuple valueValid( const T &that, ConstObjectPtr value );
 

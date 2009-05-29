@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,8 +44,8 @@ namespace IECore
 /// The NURBSPrimitive class represents a single NURBS surface
 /// \todo createPlane, createSphere static member functions
 class NURBSPrimitive : public Primitive
-{
-
+{	  
+	
 	public:
 
 		IE_CORE_DECLAREOBJECT( NURBSPrimitive, Primitive );
@@ -74,10 +74,10 @@ class NURBSPrimitive : public Primitive
 		virtual void setTopology(  int uOrder, ConstFloatVectorDataPtr uKnot, float uMin, float uMax,
 			int vOrder, ConstFloatVectorDataPtr vKnot, float vMin, float vMax );
 		//@}
-
+	
 		virtual size_t variableSize( PrimitiveVariable::Interpolation interpolation ) const;
 
-		virtual void render( RendererPtr renderer ) const;
+		virtual void render( RendererPtr renderer );
 
 	private:
 
@@ -89,9 +89,9 @@ class NURBSPrimitive : public Primitive
 		int m_vOrder;
 		FloatVectorDataPtr m_vKnot;
 		float m_vMin, m_vMax;
-
-};
-
+					
+};  
+	
 IE_CORE_DECLAREPTR( NURBSPrimitive );
 
 }

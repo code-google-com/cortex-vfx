@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,8 +44,6 @@ using namespace IECore;
 using namespace boost;
 using namespace std;
 
-IE_CORE_DEFINERUNTIMETYPED( VectorDataFilterOp );
-
 VectorDataFilterOp::VectorDataFilterOp()
 	:	ModifyOp( "VectorDataFilterOp", "Filters VectorData.", new ObjectParameter( "result", "The filtered result", new IntVectorData, DataTypeId ), new ObjectParameter( "input", "The data to filter.", new IntVectorData, DataTypeId ) )
 {
@@ -87,7 +85,7 @@ VectorDataFilterOp::~VectorDataFilterOp()
 struct Filter
 {
 	typedef void ReturnType;
-
+	
 	bool invert;
 	bool clip;
 	const vector<bool> *filter;
@@ -97,12 +95,12 @@ struct Filter
 	{
 		assert( data );
 		assert( filter );
-
+		
 		typedef typename T::ValueType Vector;
-
+		
 		const Vector &v = data->readable();
 		Vector vf;
-		typename Vector::const_iterator vIt = v.begin();
+		typename Vector::const_iterator vIt = v.begin();		
 		typename Vector::const_iterator vItEnd = vIt + min( v.size(), filter->size() );
 		vector<bool>::const_iterator fIt = filter->begin();
 		for( ; vIt!=vItEnd; vIt++, fIt++ )

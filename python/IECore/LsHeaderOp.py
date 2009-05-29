@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -37,7 +37,7 @@ from IECore import *
 class LsHeaderOp( Op ) :
 
 	def __init__( self ) :
-
+	
 		Op.__init__( self, "LsHeaderOp", "Lists the contents of file headers using reader classes such as AttributeCache, HierarchicalCache and Reader.",
 			Parameter(
 				name = "result",
@@ -45,9 +45,9 @@ class LsHeaderOp( Op ) :
 				defaultValue = StringVectorData()
 			)
 		)
-
+		
 		self.parameters().addParameters(
-
+		
 			[
 				FileNameParameter(
 					name = "file",
@@ -62,16 +62,16 @@ class LsHeaderOp( Op ) :
 					name = "resultType",
 					description = "The format of the result",
 					defaultValue = "string",
-					presets = (
-						( "string", "string" ),
-						( "stringVector", "stringVector" ),
-					),
+					presets = {
+						"string" : "string",
+						"stringVector" : "stringVector",
+					},
 					presetsOnly = True,
 				)
 			]
 		)
 
-		self.userData()["UI"] = CompoundObject(
+		self.userData()["UI"] = CompoundObject( 
 									{
 										"showResult": BoolData( True ),
 										"closeAfterExecution": BoolData( True ),
@@ -80,27 +80,26 @@ class LsHeaderOp( Op ) :
 
 	def doOperation( self, operands ) :
 
-		# \todo Do the exception handling properly!
 		headers = None
 		try:
-			cache = HierarchicalCache( operands["file"].value, IndexedIOOpenMode.Read )
+			cache = HierarchicalCache( operands.file.value, IndexedIOOpenMode.Read )
 			headers = cache.readHeader()
 		except:
 			debugException( "Error reading header as HierarchicalCache." )
 			try:
-				cache = AttributeCache( operands["file"].value, IndexedIOOpenMode.Read )
+				cache = AttributeCache( operands.file.value, IndexedIOOpenMode.Read )
 				headers = cache.readHeader()
 			except:
 				debugException( "Error reading header as AttributeCache." )
 				try:
-					reader = Reader.create( operands["file"].value )
+					reader = Reader.create( operands.file.value )
 					headers = reader.readHeader()
 				except:
 					debugException( "Error reading header as Reader." )
 					headers = None
 
 		if headers is None:
-			raise Exception, ("Could not get header from file " + operands["file"].value)
+			raise Exception, ("Could not get header from file " + operands.file.value)
 
 		def formatCompound( compound, lines, level = 0 ):
 			levelStr = "";
@@ -123,10 +122,10 @@ class LsHeaderOp( Op ) :
 
 		headerLines = []
 		formatCompound( headers, headerLines )
-
+	
 		if operands.resultType.value == "string" :
 			return StringData( "\n".join( headerLines ) )
 		else :
 			return StringVectorData( headerLines )
-
-registerRunTimeTyped( LsHeaderOp, 100015, Op )
+		
+makeRunTimeTyped( LsHeaderOp, 100015, Op )

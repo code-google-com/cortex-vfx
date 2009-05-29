@@ -37,6 +37,7 @@
 #include "IECore/PrimitiveEvaluator.h"
 #include "IECore/bindings/PrimitiveEvaluatorBinding.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using namespace IECore;
 using namespace boost::python;
@@ -50,45 +51,45 @@ struct PrimitiveEvaluatorHelper
 	{
 		return PrimitiveEvaluator::create( primitive );
 	}
-
+	
 	static float signedDistance( PrimitiveEvaluator &evaluator, const Imath::V3f &p )
 	{
 
 		float distance = 0.0;
 		bool success = evaluator.signedDistance( p, distance );
-
+		
 		if ( !success )
 		{
 		}
-
-		return distance;
+		
+		return distance;	
 	}
-
+	
 	static bool closestPoint( PrimitiveEvaluator &evaluator, const Imath::V3f &p, const PrimitiveEvaluator::ResultPtr &result )
 	{
 		evaluator.validateResult( result );
-
+		
 		return evaluator.closestPoint( p, result );
 	}
-
+			
 	static bool pointAtUV( PrimitiveEvaluator &evaluator, const Imath::V2f &uv, const PrimitiveEvaluator::ResultPtr &result )
 	{
 		evaluator.validateResult( result );
-
+		
 		return evaluator.pointAtUV( uv, result );
 	}
-
+		
 	static bool intersectionPoint( PrimitiveEvaluator& evaluator, const Imath::V3f &origin, const Imath::V3f &direction, const PrimitiveEvaluator::ResultPtr &result )
 	{
 		evaluator.validateResult( result );
-
+	
 		return evaluator.intersectionPoint( origin, direction, result );
 	}
-
+	
 	static bool intersectionPointMaxDist( PrimitiveEvaluator& evaluator, const Imath::V3f &origin, const Imath::V3f &direction, const PrimitiveEvaluator::ResultPtr &result, float maxDist )
 	{
 		evaluator.validateResult( result );
-
+	
 		return evaluator.intersectionPoint( origin, direction, result, maxDist );
 	}
 
@@ -96,74 +97,83 @@ struct PrimitiveEvaluatorHelper
 	{
 		std::vector< PrimitiveEvaluator::ResultPtr > results;
 		evaluator.intersectionPoints( origin, direction, results );
-
+		
 		list result;
-
+		
 		for ( std::vector< PrimitiveEvaluator::ResultPtr >::const_iterator it = results.begin(); it != results.end(); ++it)
 		{
 			result.append( *it );
 		}
-
+		
 		return result;
 	}
-
+	
 	static list intersectionPoints( PrimitiveEvaluator& evaluator, const Imath::V3f &origin, const Imath::V3f &direction, float maxDistance )
 	{
 		std::vector< PrimitiveEvaluator::ResultPtr > results;
 		evaluator.intersectionPoints( origin, direction, results, maxDistance );
-
+		
 		list result;
-
+				
 		for ( std::vector< PrimitiveEvaluator::ResultPtr >::const_iterator it = results.begin(); it != results.end(); ++it)
 		{
 			result.append( *it );
 		}
-
+		
 		return result;
 	}
 };
 
 void bindPrimitiveEvaluator()
 {
+	typedef class_< PrimitiveEvaluator, PrimitiveEvaluatorPtr, bases< RunTimeTyped >, boost::noncopyable > PrimitiveEvaluatorPyClass;
+	
 	list (*intersectionPoints)(PrimitiveEvaluator&, const Imath::V3f &, const Imath::V3f &) = &PrimitiveEvaluatorHelper::intersectionPoints;
-	list (*intersectionPointsMaxDist)(PrimitiveEvaluator&, const Imath::V3f &, const Imath::V3f &, float) = &PrimitiveEvaluatorHelper::intersectionPoints;
-
+	list (*intersectionPointsMaxDist)(PrimitiveEvaluator&, const Imath::V3f &, const Imath::V3f &, float) = &PrimitiveEvaluatorHelper::intersectionPoints;	
+	
 	bool (*intersectionPoint)(PrimitiveEvaluator&, const Imath::V3f &, const Imath::V3f &, const PrimitiveEvaluator::ResultPtr &) = &PrimitiveEvaluatorHelper::intersectionPoint;
-	bool (*intersectionPointMaxDist)(PrimitiveEvaluator&, const Imath::V3f &, const Imath::V3f &, const PrimitiveEvaluator::ResultPtr &, float ) = &PrimitiveEvaluatorHelper::intersectionPointMaxDist;
-
-	object p = RunTimeTypedClass<PrimitiveEvaluator>()
+	bool (*intersectionPointMaxDist)(PrimitiveEvaluator&, const Imath::V3f &, const Imath::V3f &, const PrimitiveEvaluator::ResultPtr &, float ) = &PrimitiveEvaluatorHelper::intersectionPointMaxDist;	
+	
+	object p = PrimitiveEvaluatorPyClass ( "PrimitiveEvaluator", no_init )
 		.def( "create", &PrimitiveEvaluatorHelper::create ).staticmethod("create")
 		.def( "createResult", &PrimitiveEvaluator::createResult )
-		.def( "validateResult", &PrimitiveEvaluator::validateResult )
-		.def( "signedDistance", &PrimitiveEvaluatorHelper::signedDistance )
+		.def( "validateResult", &PrimitiveEvaluator::validateResult )	
+		.def( "signedDistance", &PrimitiveEvaluatorHelper::signedDistance )	
 		.def( "closestPoint", &PrimitiveEvaluatorHelper::closestPoint )
 		.def( "pointAtUV", &PrimitiveEvaluatorHelper::pointAtUV )
 		.def( "intersectionPoint", intersectionPoint )
-		.def( "intersectionPoint", intersectionPointMaxDist )
+		.def( "intersectionPoint", intersectionPointMaxDist )		
 		.def( "intersectionPoints", intersectionPoints )
 		.def( "intersectionPoints", intersectionPointsMaxDist )
 		.def( "primitive", &PrimitiveEvaluator::primitive )
 		.def( "volume", &PrimitiveEvaluator::volume )
 		.def( "centerOfGravity", &PrimitiveEvaluator::centerOfGravity )
 		.def( "surfaceArea", &PrimitiveEvaluator::surfaceArea )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(PrimitiveEvaluator)
 	;
-
+	INTRUSIVE_PTR_PATCH( PrimitiveEvaluator, PrimitiveEvaluatorPyClass );
+	implicitly_convertible<PrimitiveEvaluatorPtr, RunTimeTypedPtr>();
+	
 	{
 		scope ps( p );
-		RefCountedClass<PrimitiveEvaluator::Result, RefCounted>( "Result" )
+		typedef class_< PrimitiveEvaluator::Result, PrimitiveEvaluator::ResultPtr, bases< RefCounted >, boost::noncopyable > ResultPyClass;
+		
+		ResultPyClass( "Result", no_init )
 			.def( "point", &PrimitiveEvaluator::Result::point )
-			.def( "normal", &PrimitiveEvaluator::Result::normal )
-			.def( "uv", &PrimitiveEvaluator::Result::uv )
-			.def( "uTangent", &PrimitiveEvaluator::Result::uTangent )
-			.def( "vTangent", &PrimitiveEvaluator::Result::vTangent )
-			.def( "vectorPrimVar", &PrimitiveEvaluator::Result::vectorPrimVar )
+			.def( "normal", &PrimitiveEvaluator::Result::normal )			
+			.def( "uv", &PrimitiveEvaluator::Result::uv )			
+			.def( "uTangent", &PrimitiveEvaluator::Result::uTangent )			
+			.def( "vTangent", &PrimitiveEvaluator::Result::vTangent )									
+			.def( "vectorPrimVar", &PrimitiveEvaluator::Result::vectorPrimVar )						
 			.def( "floatPrimVar", &PrimitiveEvaluator::Result::floatPrimVar )
-			.def( "intPrimVar", &PrimitiveEvaluator::Result::intPrimVar )
+			.def( "intPrimVar", &PrimitiveEvaluator::Result::intPrimVar )			
 			.def( "stringPrimVar", &PrimitiveEvaluator::Result::stringPrimVar, return_value_policy<copy_const_reference>() )
 			.def( "colorPrimVar", &PrimitiveEvaluator::Result::colorPrimVar )
-			.def( "halfPrimVar", &PrimitiveEvaluator::Result::halfPrimVar )
+			.def( "halfPrimVar", &PrimitiveEvaluator::Result::halfPrimVar )								
 		;
-
+	
+		INTRUSIVE_PTR_PATCH( PrimitiveEvaluator::Result, ResultPyClass );
+		implicitly_convertible<PrimitiveEvaluator::ResultPtr, RefCountedPtr>();	
 	}
 }
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,11 +32,12 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/bindings/FontBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/Font.h"
 #include "IECore/MeshPrimitive.h"
@@ -72,8 +73,8 @@ static ImagePrimitivePtr image( Font &f, char c )
 
 void bindFont()
 {
-	RunTimeTypedClass<Font>()
-		.def(  init<const std::string &>() )
+	typedef class_< Font, boost::noncopyable, FontPtr, bases< RunTimeTyped > > FontPyClass;
+	FontPyClass( "Font", init<const std::string &>() )
 		.def( "fileName", &Font::fileName, return_value_policy<copy_const_reference>() )
 		.def( "setCurveTolerance", &Font::setCurveTolerance )
 		.def( "getCurveTolerance", &Font::getCurveTolerance )
@@ -82,16 +83,19 @@ void bindFont()
 		.def( "setKerning", &Font::setKerning )
 		.def( "getKerning", &Font::getKerning )
 		.def( "mesh", &mesh )
-		.def( "mesh", (MeshPrimitivePtr (Font::*)( const std::string &)const)&Font::mesh )
+		.def( "mesh", (MeshPrimitivePtr (Font::*)( const std::string &))&Font::mesh )
 		.def( "meshGroup", &Font::meshGroup )
 		.def( "advance", &Font::advance )
-		.def( "bound", (Imath::Box2f (Font::*)( )const)&Font::bound )
-		.def( "bound", (Imath::Box2f (Font::*)( char )const)&Font::bound )
-		.def( "bound", (Imath::Box2f (Font::*)( const std::string &)const)&Font::bound )
+		.def( "bound", (Imath::Box2f (Font::*)( ))&Font::bound )
+		.def( "bound", (Imath::Box2f (Font::*)( char ))&Font::bound )
+		.def( "bound", (Imath::Box2f (Font::*)( const std::string &))&Font::bound )
 		.def( "image", &image )
-		.def( "image", (ImagePrimitivePtr (Font::*)()const)&Font::image )
+		.def( "image", (ImagePrimitivePtr (Font::*)())&Font::image )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( Font )		
 	;
 
+	INTRUSIVE_PTR_PATCH( Font, FontPyClass );
+	implicitly_convertible<FontPtr, RunTimeTypedPtr>();
 }
-
+	
 } // namespace IECore

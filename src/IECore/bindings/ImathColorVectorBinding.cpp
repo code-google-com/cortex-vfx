@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,15 +35,16 @@
 // System includes
 
 // External includes
-#include "boost/python.hpp"
-#include "boost/python/make_constructor.hpp"
-#include "boost/python/suite/indexing/container_utils.hpp"
-#include "boost/numeric/conversion/cast.hpp"
-#include "boost/python/implicit.hpp"
+#include <boost/python.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/suite/indexing/container_utils.hpp>
+#include <boost/numeric/conversion/cast.hpp>
+#include <boost/python/implicit.hpp>
 
-#include "OpenEXR/ImathColor.h"
+#include <OpenEXR/ImathColor.h>
 
 #include "IECore/VectorTypedData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/VectorTypedDataBinding.inl"
 
 using namespace std;
@@ -61,10 +62,10 @@ IE_COREPYTHON_DEFINEVECTORDATASTRSPECIALISATION( Color4<double> )
 
 void bindImathColorVectorTypedData()
 {
-	BIND_OPERATED_VECTOR_TYPEDDATA ( Color3f, "Color3f")
-	BIND_OPERATED_VECTOR_TYPEDDATA ( Color4f, "Color4f")
-	BIND_OPERATED_VECTOR_TYPEDDATA ( Color3<double>, "Color3d")
-	BIND_OPERATED_VECTOR_TYPEDDATA ( Color4<double>, "Color4d")
+	BIND_OPERATED_VECTOR_TYPEDDATA ( Color3f, "Color3fVectorData", "Color3f")
+	BIND_OPERATED_VECTOR_TYPEDDATA ( Color4f, "Color4fVectorData", "Color4f")
+	BIND_OPERATED_VECTOR_TYPEDDATA ( Color3<double>, "Color3dVectorData", "Color3d")
+	BIND_OPERATED_VECTOR_TYPEDDATA ( Color4<double>, "Color4dVectorData", "Color4d")
 }
 
 } // namespace IECore

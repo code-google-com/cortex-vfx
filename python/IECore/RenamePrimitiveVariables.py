@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -34,32 +34,33 @@
 
 from IECore import *
 from fnmatch import fnmatchcase
+from RunTimeTypedUtil import makeRunTimeTyped
 
 class RenamePrimitiveVariables( PrimitiveOp ) :
 
 	def __init__( self ) :
-
+	
 		PrimitiveOp.__init__( self, "RenamePrimitiveVariables", "Renames primitive variables" )
-
+		
 		self.parameters().addParameters(
 			[
-				StringVectorParameter(
+				StringVectorParameter( 
 					name = "names",
 					description = "The names of variables and their new names, separated by spaces.",
 					defaultValue = StringVectorData()
 				)
 			]
 		)
-
+		
 	def modifyPrimitive( self, primitive, args ) :
-
-		for name in args["names"] :
-
+	
+		for name in args.names :
+		
 			ns = name.split()
 			if len(ns)!=2 :
 				raise Exception( "\"%s\" should be of the form \"oldName newName\"" )
-
+				
 			primitive[ns[1]] = primitive[ns[0]]
 			del primitive[ns[0]]
 
-registerRunTimeTyped( RenamePrimitiveVariables, 100002, PrimitiveOp )
+makeRunTimeTyped( RenamePrimitiveVariables, 100002, PrimitiveOp )

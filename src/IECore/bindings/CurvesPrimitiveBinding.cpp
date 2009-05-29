@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,17 +32,18 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/bindings/CurvesPrimitiveBinding.h"
 #include "IECore/CurvesPrimitive.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
 
 namespace IECore
 {
-
+	
 static IntVectorDataPtr verticesPerFace( const CurvesPrimitive &p )
 {
 	return p.verticesPerCurve()->copy();
@@ -51,8 +52,8 @@ static IntVectorDataPtr verticesPerFace( const CurvesPrimitive &p )
 
 void bindCurvesPrimitive()
 {
-	RunTimeTypedClass<CurvesPrimitive>()
-		.def( init<>() )
+	typedef class_<CurvesPrimitive, CurvesPrimitivePtr, bases<Primitive>, boost::noncopyable> CurvesPrimitivePyClass;
+	CurvesPrimitivePyClass( "CurvesPrimitive" )
 		.def( init<IntVectorDataPtr, optional<const CubicBasisf &, bool, ConstV3fVectorDataPtr> >() )
 		.def( "verticesPerCurve", &verticesPerFace, "A copy of the list of vertices per curve." )
 		.def( "basis", &CurvesPrimitive::basis, return_value_policy<copy_const_reference>() )
@@ -60,7 +61,11 @@ void bindCurvesPrimitive()
 		.def( "variableSize", (size_t (CurvesPrimitive::*)( PrimitiveVariable::Interpolation )const)&CurvesPrimitive::variableSize )
 		.def( "variableSize", (size_t (CurvesPrimitive::*)( PrimitiveVariable::Interpolation, unsigned )const)&CurvesPrimitive::variableSize )
 		.def( "numSegments", (unsigned (CurvesPrimitive::*)( unsigned )const)&CurvesPrimitive::numSegments )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( CurvesPrimitive )
 	;
+	INTRUSIVE_PTR_PATCH( CurvesPrimitive, CurvesPrimitivePyClass );
+	implicitly_convertible<CurvesPrimitivePtr, PrimitivePtr>();
+	implicitly_convertible<CurvesPrimitivePtr, ConstCurvesPrimitivePtr>();
 }
-
+	
 } // namespace IECore

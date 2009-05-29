@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,8 +37,7 @@
 
 #include "IECore/Op.h"
 #include "IECore/NumericParameter.h"
-#include "IECore/SimpleTypedParameter.h"
-#include "IECore/VectorTypedParameter.h"
+#include "IECore/TypedParameter.h"
 #include "IECore/TypedObjectParameter.h"
 
 namespace IECore
@@ -50,43 +49,43 @@ IE_CORE_FORWARDDECLARE( ObjectParameter )
 class PointMeshOp : public Op
 {
 	public :
-
+		
 		IE_CORE_DECLARERUNTIMETYPED( PointMeshOp, Op );
-
+		
 		PointMeshOp();
 		virtual ~PointMeshOp();
-
+		
 		/// The Parameter for the input point cloud.
 		ObjectParameterPtr pointParameter();
 		ConstObjectParameterPtr pointParameter() const;
-
+		
 		/// The Parameter that specifies the radius of each point-centered sphere
 		DoubleVectorParameterPtr radiusParameter();
 		ConstDoubleVectorParameterPtr radiusParameter() const;
-
+		
 		/// The Parameter that specifies the strength fo each sphere
 		DoubleVectorParameterPtr strengthParameter();
 		ConstDoubleVectorParameterPtr strengthParameter() const;
-
+		
 		/// The Parameter that specifies the threshold at which to build the mesh
 		FloatParameterPtr thresholdParameter();
 		ConstFloatParameterPtr thresholdParameter() const;
-
+		
 		V3iParameterPtr resolutionParameter();
 		ConstV3iParameterPtr resolutionParameter() const;
-
+		
 		Box3fParameterPtr boundParameter();
-		ConstBox3fParameterPtr boundParameter() const;
-
+		ConstBox3fParameterPtr boundParameter() const;				
+		
 	protected :
 
 		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
-
+	
 	private :
-
+		
 		ObjectParameterPtr m_pointParameter;
-		DoubleVectorParameterPtr m_radiusParameter;
-		DoubleVectorParameterPtr m_strengthParameter;
+		DoubleVectorParameterPtr m_radiusParameter;		
+		DoubleVectorParameterPtr m_strengthParameter;		
 		FloatParameterPtr m_thresholdParameter;
 		V3iParameterPtr m_resolutionParameter;
 		Box3fParameterPtr m_boundParameter;

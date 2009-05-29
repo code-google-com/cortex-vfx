@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,11 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Exception.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/PlaneImplicitSurfaceFunction.h"
-#include "IECore/bindings/RefCountedBinding.h"
 
 using namespace boost::python;
 
@@ -47,11 +47,16 @@ template<typename T>
 void bindPlaneImplicitSurfaceFunction( const char *name )
 {
 	typedef ImplicitSurfaceFunction<typename T::Point, typename T::Value> Base;
+	
+	typedef class_< T, typename T::Ptr, bases< Base >, boost::noncopyable > PlaneImplicitPyClass;
 
-	RefCountedClass<T, Base>( name )
+	PlaneImplicitPyClass( name, no_init )
 		.def( init< const typename T::Point  &, typename T::PointBaseType> () )
 		.def( init< const typename T::Point  &, const typename T::Point  &> () )
 	;
+	
+	implicitly_convertible< typename T::Ptr, typename Base::Ptr>();
+	INTRUSIVE_PTR_PATCH_TEMPLATE( T, PlaneImplicitPyClass );	
 }
 
 void bindPlaneImplicitSurfaceFunction()
@@ -59,7 +64,7 @@ void bindPlaneImplicitSurfaceFunction()
 	bindPlaneImplicitSurfaceFunction<PlaneImplicitSurfaceFunctionV3ff>( "PlaneImplicitSurfaceFunctionV3ff" );
 	bindPlaneImplicitSurfaceFunction<PlaneImplicitSurfaceFunctionV3fd>( "PlaneImplicitSurfaceFunctionV3fd" );
 	bindPlaneImplicitSurfaceFunction<PlaneImplicitSurfaceFunctionV3df>( "PlaneImplicitSurfaceFunctionV3df" );
-	bindPlaneImplicitSurfaceFunction<PlaneImplicitSurfaceFunctionV3dd>( "PlaneImplicitSurfaceFunctionV3dd" );
+	bindPlaneImplicitSurfaceFunction<PlaneImplicitSurfaceFunctionV3dd>( "PlaneImplicitSurfaceFunctionV3dd" );	
 }
 
 } // namespace IECore

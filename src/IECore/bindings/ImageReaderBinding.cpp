@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/ImageReader.h"
 #include "IECore/VectorTypedData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -54,15 +55,19 @@ static StringVectorDataPtr channelNames( ImageReader &that )
 void bindImageReader()
 {
 
-	RunTimeTypedClass<ImageReader>()
+	typedef class_< ImageReader , ImageReaderPtr, boost::noncopyable, bases<Reader> > ImageReaderPyClass;
+	ImageReaderPyClass( "ImageReader", no_init )
 		.def( "isComplete", &ImageReader::isComplete )
 		.def( "channelNames", &channelNames )
 		.def( "dataWindow", &ImageReader::dataWindow )
 		.def( "displayWindow", &ImageReader::displayWindow )
 		.def( "readChannel", (DataPtr (ImageReader::*)( const std::string &))&ImageReader::readChannel )
-		.def( "sourceColorSpace", &ImageReader::sourceColorSpace )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(ImageReader)
 	;
 
-}
+	INTRUSIVE_PTR_PATCH( ImageReader, ImageReaderPyClass );
+	implicitly_convertible<ImageReaderPtr, ReaderPtr>();
 
+}
+  
 } // namespace IECore

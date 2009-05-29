@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,13 +32,14 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Renderable.h"
 #include "IECore/Renderer.h"
 #include "IECore/bindings/RenderableBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -48,9 +49,13 @@ namespace IECore
 
 void bindRenderable()
 {
-	RunTimeTypedClass<Renderable>( "An abstract class to define objects which are renderable" )
+	typedef class_< Renderable, boost::noncopyable, RenderablePtr, bases<BlindDataHolder> > RenderablePyClass;
+	RenderablePyClass("Renderable", "An abstract class to define objects which are renderable", no_init)
 		.def("render", &Renderable::render)
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(Renderable)
 	;
+	INTRUSIVE_PTR_PATCH( Renderable, RenderablePyClass );
+	implicitly_convertible<RenderablePtr, BlindDataHolderPtr>();
 }
 
 }

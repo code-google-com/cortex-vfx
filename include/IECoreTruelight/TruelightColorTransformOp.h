@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,6 @@
 
 #include "IECore/ColorTransformOp.h"
 #include "IECore/NumericParameter.h"
-#include "IECore/SRGBToLinearDataConversion.h"
 
 namespace IECoreTruelight
 {
@@ -60,10 +59,10 @@ class TruelightColorTransformOp : public IECore::ColorTransformOp
 
 		IECore::StringParameterPtr displayParameter();
 		IECore::ConstStringParameterPtr displayParameter() const;
-
+		
 		IECore::IntParameterPtr inputSpaceParameter();
 		IECore::ConstIntParameterPtr inputSpaceParameter() const;
-
+		
 		IECore::BoolParameterPtr rawTruelightOutputParameter();
 		IECore::ConstBoolParameterPtr rawTruelightOutputParameter() const;
 
@@ -72,12 +71,12 @@ class TruelightColorTransformOp : public IECore::ColorTransformOp
 		std::string commands() const;
 
 	protected :
-
+	
 		virtual void begin( IECore::ConstCompoundObjectPtr operands );
 		virtual void transform( Imath::Color3f &color ) const;
 
 	private :
-
+	
 		void maybeWarn() const;
 
 		void setInstanceFromParameters() const;
@@ -85,11 +84,13 @@ class TruelightColorTransformOp : public IECore::ColorTransformOp
 		IECore::StringParameterPtr m_profileParameter;
 		IECore::StringParameterPtr m_displayParameter;
 		IECore::IntParameterPtr m_inputSpaceParameter;
-		IECore::BoolParameterPtr m_rawTruelightOutputParameter;
-		IECore::SRGBToLinearDataConversion<float, float> m_srgbToLinearConversion;
 
 		void *m_instance; // truelight instance
-
+	
+	public :	
+		/// \todo Remove on next major version change
+		struct ExtraData;
+		
 };
 
 IE_CORE_DECLAREPTR( TruelightColorTransformOp )

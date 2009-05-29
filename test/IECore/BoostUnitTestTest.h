@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,7 @@
 #ifndef IE_CORE_BOOSTUNITTESTTEST_H
 #define IE_CORE_BOOSTUNITTESTTEST_H
 
-#include "boost/test/unit_test.hpp"
+#include <boost/test/unit_test.hpp>
 
 namespace IECore
 {
@@ -43,17 +43,17 @@ namespace IECore
 void addBoostUnitTestTest(boost::unit_test::test_suite* test);
 
 /// A test case to trap situations where reference count to test's
-/// shared_ptr decrements to zero before test is run when optimisations are
-/// enabled on osx104.ppc platform. Appears to be fixed in boost's CVS trunk.
+/// shared_ptr decrements to zero before test is run when optimisations are 
+/// enabled on osx104.ppc platform. Appears to be fixed in boost's CVS trunk. 
 struct BoostUnitTestTest
 {
 		bool m_testRun;
-
+		
 		BoostUnitTestTest()
 		{
 			m_testRun = false;
 		}
-
+		
 		~BoostUnitTestTest()
 		{
 			if (!m_testRun)
@@ -62,21 +62,21 @@ struct BoostUnitTestTest
 				exit(EXIT_FAILURE);
 			}
 		}
-
+		
 		void runTest()
 		{
-			m_testRun = true;
+			m_testRun = true;	
 		}
 };
 
 
 struct BoostUnitTestTestSuite : public boost::unit_test::test_suite
-{
-
+{	
+	
 	BoostUnitTestTestSuite() : boost::unit_test::test_suite("BoostUnitTestTestSuite")
 	{
 		boost::shared_ptr<BoostUnitTestTest> instance(new BoostUnitTestTest());
-
+		
 		add( BOOST_CLASS_TEST_CASE( &BoostUnitTestTest::runTest, instance ) );
 	}
 };

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,35 +46,26 @@ namespace IECore
 /// multiple different objects with the same value. It does this
 /// by keeping a static table with the actual values in it, with
 /// the object instances just referencing the values in the table.
-/// \todo Consider replacing this with the boost flyweight
-/// stuff now it's available (boost 1.38.0). Initial investigation
-/// suggests the boost implementation to be equivalent in speed but
-/// much more flexible. However, without using intermodule_holder
-/// we get crashes at program termination, and using it we get gcc
-/// crashes during compilation (with gcc 4.0.2).
+/// \todo We could consider replacing this with the boost flyweight
+/// stuff when it makes it into an actual boost release.
 template<typename T, typename Hash=Hash<T> >
 class Interned
 {
 	public :
-
+	
 		Interned( const T &value );
 		Interned( const Interned<T, Hash> &other );
-		Interned( const char *value );
-		template<typename S>
-		Interned( const S &value );
-
 		~Interned();
 
-		inline bool operator != ( const Interned<T, Hash> &other ) const;
 		inline bool operator == ( const Interned<T, Hash> &other ) const;
 		inline bool operator < ( const Interned<T, Hash> &other ) const;
-
-		inline operator const T & () const;
+		
+		inline operator T () const;
 
 		const T &value() const;
-
+		
 		static size_t size();
-
+		
 	private :
 
 		typedef boost::multi_index::multi_index_container<
@@ -84,14 +75,14 @@ class Interned
 					boost::multi_index::identity<T>,
 					Hash
 				>
-			>
+			> 
 		> HashSet;
-
+		
 		typedef typename HashSet::template nth_index<0>::type Index;
 		typedef typename HashSet::template nth_index_const_iterator<0>::type ConstIterator;
-
+		
 		const T *m_value;
-
+				
 		static HashSet *hashSet();
 
 };

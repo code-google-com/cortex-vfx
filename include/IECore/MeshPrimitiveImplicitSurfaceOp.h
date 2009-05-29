@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,7 +40,7 @@
 #include "IECore/TypedPrimitiveOp.h"
 #include "IECore/PrimitiveImplicitSurfaceFunction.h"
 #include "IECore/NumericParameter.h"
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/TypedParameter.h"
 #include "IECore/TypedObjectParameter.h"
 
 
@@ -53,55 +53,55 @@ namespace IECore
 class MeshPrimitiveImplicitSurfaceOp : public TypedPrimitiveOp<MeshPrimitive>
 {
 	public:
-
+	
 		typedef enum
 		{
 			Resolution = 0,
 			DivisionSize = 1,
-		} GridMethod;
-
+		} GridMethod;			
+	
 		MeshPrimitiveImplicitSurfaceOp();
 		virtual ~MeshPrimitiveImplicitSurfaceOp();
-
+		
 		IE_CORE_DECLARERUNTIMETYPED( MeshPrimitiveImplicitSurfaceOp, MeshPrimitiveOp );
-
+		
 		FloatParameterPtr thresholdParameter();
 		ConstFloatParameterPtr thresholdParameter() const;
-
+                
 		V3iParameterPtr resolutionParameter();
 		ConstV3iParameterPtr resolutionParameter() const;
-
+		
 		Box3fParameterPtr boundParameter();
 		ConstBox3fParameterPtr boundParameter() const;
-
+		
 		BoolParameterPtr automaticBoundParameter();
 		BoolParameterPtr automaticBoundParameter() const;
-
+		
 		IntParameterPtr gridMethodParameter();
 		IntParameterPtr gridMethodParameter() const;
-
+                
 		V3fParameterPtr divisionSizeParameter();
 		ConstV3fParameterPtr divisionSizeParameter() const;
-
+                
 		FloatParameterPtr boundExtendParameter();
-		FloatParameterPtr boundExtendParameter() const;
+		FloatParameterPtr boundExtendParameter() const;  
 
-
+		
 	protected:
-
+	
 		virtual void modifyTypedPrimitive( MeshPrimitivePtr typedPrimitive, ConstCompoundObjectPtr operands );
-
+		
 	private:
-
+	
 		FloatParameterPtr m_thresholdParameter;
 		V3iParameterPtr m_resolutionParameter;
-		Box3fParameterPtr m_boundParameter;
-
+		Box3fParameterPtr m_boundParameter;	
+		
 		BoolParameterPtr m_automaticBoundParameter;
-		IntParameterPtr m_gridMethodParameter;
+		IntParameterPtr m_gridMethodParameter;          
 		V3fParameterPtr m_divisionSizeParameter;
-		FloatParameterPtr m_boundExtendParameter;
-
+		FloatParameterPtr m_boundExtendParameter; 
+	
 };
 
 IE_CORE_DECLAREPTR( MeshPrimitiveImplicitSurfaceOp );

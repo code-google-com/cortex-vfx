@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,14 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/bindings/ParameterBinding.h"
 #include "IECore/PathParameter.h"
 #include "IECore/CompoundObject.h"
 #include "IECore/bindings/Wrapper.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
+#include "IECore/bindings/WrapperToPython.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace std;
@@ -47,24 +49,37 @@ using namespace boost::python;
 namespace IECore
 {
 
+static PathParameter::PresetsMap makePresets( const dict &d )
+{
+	PathParameter::PresetsMap p;
+	boost::python::list keys = d.keys();
+	boost::python::list values = d.values();
+	for( int i = 0; i<keys.attr( "__len__" )(); i++ )
+	{
+		p.insert( PathParameter::PresetsMap::value_type( extract<string>( keys[i] )(), extract<string>( values[i] )() ) );
+	}
+	return p;
+}
+
 class PathParameterWrap : public PathParameter, public Wrapper<PathParameter>
 {
+
 	public :
 
 		PathParameterWrap( PyObject *self, const std::string &n, const std::string &d, const std::string &dv, bool ae,
-			PathParameter::CheckType c, object &p, bool po, CompoundObjectPtr ud )
-			:	PathParameter( n, d, dv, ae, c, parameterPresets<PathParameter::PresetsContainer>( p ), po, ud ), Wrapper<PathParameter>( self, this ) {};
-
+			PathParameter::CheckType c, dict p, bool po, CompoundObjectPtr ud )	
+			:	PathParameter( n, d, dv, ae, c, makePresets( p ), po, ud ), Wrapper<PathParameter>( self, this ) {};
+		
 		IE_COREPYTHON_PARAMETERWRAPPERFNS( PathParameter );
-
+		
 };
 IE_CORE_DECLAREPTR( PathParameterWrap );
 
 void bindPathParameter()
 {
-	using boost::python::arg;
 
-	RunTimeTypedClass<PathParameter, PathParameterWrapPtr> pathParamClass;
+	typedef class_<PathParameter, PathParameterWrapPtr, boost::noncopyable, bases<StringParameter> > PathParameterPyClass;
+	PathParameterPyClass pathParamClass( "PathParameter", no_init );
 	{
 		// define enum before functions.
 		scope varScope = pathParamClass;
@@ -75,26 +90,19 @@ void bindPathParameter()
 		;
 	}
 	pathParamClass
-		.def(
-			init<const std::string &, const std::string &, const std::string &, bool, PathParameter::CheckType, object &, bool, CompoundObjectPtr>
-			(
-				(
-					arg( "name" ),
-					arg( "description" ),
-					arg( "defaultValue" ) = std::string( "" ),
-					arg( "allowEmptyString" ) = true,
-					arg( "check" ) = PathParameter::DontCare,
-					arg( "presets" ) = boost::python::tuple(),
-					arg( "presetsOnly" ) = false,
-					arg( "userData" ) = CompoundObject::Ptr( 0 )
-				)
-			)
-		)
+		.def( init<const std::string &, const std::string &, const std::string &, bool, PathParameter::CheckType, dict, bool, CompoundObjectPtr>() )
 		.IE_COREPYTHON_DEFPARAMETERWRAPPERFNS( PathParameter )
 		.add_property( "mustExist", &PathParameter::mustExist )
 		.add_property( "mustNotExist", &PathParameter::mustNotExist )
 		.add_property( "allowEmptyString", &PathParameter::allowEmptyString )
-	;
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(PathParameter)
+	;	
+	
+	WrapperToPython<PathParameterPtr>();
+	
+	INTRUSIVE_PTR_PATCH( PathParameter, PathParameterPyClass );
+	implicitly_convertible<PathParameterPtr, StringParameterPtr>();
+
 }
 
 } // namespace IECore

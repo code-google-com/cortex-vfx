@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,8 +46,6 @@ using namespace Imath;
 using namespace std;
 using namespace boost;
 
-IE_CORE_DEFINERUNTIMETYPED( RandomRotationOp );
-
 static TypeId seedTypes[] = { FloatVectorDataTypeId, DoubleVectorDataTypeId, IntVectorDataTypeId, UIntVectorDataTypeId, InvalidTypeId };
 
 RandomRotationOp::RandomRotationOp()
@@ -83,7 +81,7 @@ RandomRotationOp::RandomRotationOp()
 		"The maximum rotation speed.",
 		2.0f
 	);
-
+	
 	parameters()->addParameter( m_seedParameter );
 	parameters()->addParameter( m_timeParameter );
 	parameters()->addParameter( m_speedMinParameter );
@@ -150,7 +148,7 @@ ObjectPtr RandomRotationOp::doOperation( ConstCompoundObjectPtr operands )
 	float time = m_timeParameter->getNumericValue();
 	float minSpeed = m_speedMinParameter->getNumericValue();
 	float maxSpeed = m_speedMaxParameter->getNumericValue();
-
+	
 	ConstObjectPtr seed = m_seedParameter->getValue();
 	switch( seed->typeId() )
 	{
@@ -161,7 +159,7 @@ ObjectPtr RandomRotationOp::doOperation( ConstCompoundObjectPtr operands )
 		case IntVectorDataTypeId :
 			return doOp<IntVectorData>( static_pointer_cast<const IntVectorData>( seed ), time, minSpeed, maxSpeed );
 		case UIntVectorDataTypeId :
-			return doOp<UIntVectorData>( static_pointer_cast<const UIntVectorData>( seed ), time, minSpeed, maxSpeed );
+			return doOp<UIntVectorData>( static_pointer_cast<const UIntVectorData>( seed ), time, minSpeed, maxSpeed );		
 		default :
 			return 0; // shouldn't get here
 	}

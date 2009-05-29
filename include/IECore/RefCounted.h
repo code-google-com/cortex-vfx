@@ -37,8 +37,6 @@
 
 #include "boost/intrusive_ptr.hpp"
 
-#include <cassert>
-
 namespace IECore
 {
 
@@ -50,18 +48,18 @@ typedef boost::intrusive_ptr< const TYPENAME > Const ## TYPENAME ## Ptr; \
 		typedef boost::intrusive_ptr< TYPENAME > Ptr; \
 		typedef boost::intrusive_ptr< const TYPENAME > ConstPtr;
 
-/// This macro can be used when declaring member pointers in template classes with 2 template parameters,
+/// This macro can be used when declaring member pointers in template classes with 2 template parameters, 
 /// where the comma in the template arguments would otherwise confuse the pre-processor
 #define IE_CORE_DECLAREMEMBERPTR2( PART1, PART2 ) \
 		typedef boost::intrusive_ptr< PART1, PART2 > Ptr; \
 		typedef boost::intrusive_ptr< const PART1, PART2 > ConstPtr;
 
-/// This macro can be used when declaring member pointers in template classes with 3 template parameters,
+/// This macro can be used when declaring member pointers in template classes with 3 template parameters, 
 /// where the commas in the template arguments would otherwise confuse the pre-processor
 #define IE_CORE_DECLAREMEMBERPTR3( PART1, PART2, PART3 ) \
 		typedef boost::intrusive_ptr< PART1, PART2, PART3 > Ptr; \
-		typedef boost::intrusive_ptr< const PART1, PART2, PART3 > ConstPtr;
-
+		typedef boost::intrusive_ptr< const PART1, PART2, PART3 > ConstPtr;				
+		
 #define IE_CORE_FORWARDDECLARE( TYPENAME )									\
 	class TYPENAME;															\
 	IE_CORE_DECLAREPTR( TYPENAME )											\
@@ -70,38 +68,32 @@ typedef boost::intrusive_ptr< const TYPENAME > Const ## TYPENAME ## Ptr; \
 class RefCounted
 {
 	public:
-
+	
 		IE_CORE_DECLAREMEMBERPTR( RefCounted );
-
-		typedef size_t RefCount;
-
-		RefCounted();
-
+	
+		typedef unsigned long RefCount;
+		
+		RefCounted();		
+	
 		/// Add a reference to the current object
-		inline void addRef() const { m_numRefs++; };
-
+		/// \todo Inline me!
+		void addRef() const;
+	
 		/// Remove a reference from the current object
-		inline void removeRef() const
-		{
-			assert( m_numRefs > 0 );
-			m_numRefs--;
-			if( m_numRefs==0 )
-			{
-				delete this;
-			}
-		};
-
+		/// \todo Inline me!
+		void removeRef() const;
+		
+		/// \deprecated Use refCount() instead.
+		RefCount refCounter() const;
 		/// Returns the current reference count.
 		inline RefCount refCount() const { return m_numRefs; };
-
+	
 	protected:
-
-		virtual ~RefCounted();
-
-	private :
-
+		
+		virtual ~RefCounted();	
+		
+		/// \todo Make me private
 		mutable RefCount m_numRefs;
-
 };
 
 IE_CORE_DECLAREPTR( RefCounted )

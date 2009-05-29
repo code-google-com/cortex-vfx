@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/EXRImageWriter.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -46,10 +47,14 @@ namespace IECore
 
 void bindEXRImageWriter()
 {
-	RunTimeTypedClass<EXRImageWriter>()
-		.def( init<>() )
+	typedef class_<EXRImageWriter, EXRImageWriterPtr, boost::noncopyable, bases<ImageWriter> > EXRImageWriterPyClass;
+	EXRImageWriterPyClass ("EXRImageWriter", init<>())
 		.def( init<ObjectPtr, const std::string &>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(EXRImageWriter)
 	;
+
+	INTRUSIVE_PTR_PATCH( EXRImageWriter, EXRImageWriterPyClass );
+	implicitly_convertible<EXRImageWriterPtr, EXRImageWriterPtr>();
 }
 
 } // namespace IECore

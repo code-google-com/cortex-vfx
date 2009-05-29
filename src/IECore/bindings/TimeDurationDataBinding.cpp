@@ -40,6 +40,7 @@
 #include "datetime.h"
 
 #include "IECore/TimeDurationData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/bindings/IECoreBinding.h"
 
@@ -56,9 +57,9 @@ static int getMicroseconds( const posix_time::time_duration &dur )
 {
 	static long ticksPerSecond = posix_time::time_duration::ticks_per_second();
 	long fractionalSeconds = dur.fractional_seconds();
-
+	
 	static const int oneMillion = 1000000;
-
+	
 	/// Prevent over/underflow
 	if ( ticksPerSecond > oneMillion )
 	{
@@ -105,7 +106,7 @@ struct TimeDurationFromPythonDelta
 		{
 			days = -days;
 		}
-
+				
 		posix_time::time_duration td = posix_time::hours(24)*days
 			+ posix_time::seconds( pyDelta->seconds )
 			+ posix_time::microseconds( pyDelta->microseconds );
@@ -113,8 +114,8 @@ struct TimeDurationFromPythonDelta
 		if ( isNegative )
 		{
 			td = td.invert_sign();
-		}
-
+		}		
+		
 
 		void* storage = (( converter::rvalue_from_python_storage<posix_time::time_duration>* ) data )->storage.bytes;
 		new( storage ) posix_time::time_duration( td );
@@ -131,18 +132,18 @@ struct TimeDurationToPythonDelta
 			days --;
 		long seconds = td.total_seconds() - days * ( 24 * 60 * 60 );
 		long microSeconds = getMicroseconds( td );
-
+		
 		if ( days < 0 )
 		{
 			microSeconds = 1000000 - 1 - microSeconds;
 		}
-
+		
 		return PyDelta_FromDSU( days, seconds, microSeconds );
 	}
 };
 
 template<>
-std::string repr<TimeDurationData>( TimeDurationData &x )
+static std::string repr<TimeDurationData>( TimeDurationData &x )
 {
 	object item( x.readable() );
 
@@ -158,7 +159,7 @@ std::string repr<TimeDurationData>( TimeDurationData &x )
 }
 
 template<>
-std::string str<TimeDurationData>( TimeDurationData &x )
+static std::string str<TimeDurationData>( TimeDurationData &x )
 {
 	return posix_time::to_simple_string( x.readable() );
 }
@@ -182,14 +183,20 @@ void bindTimeDurationData()
 	TimeDurationFromPythonDelta();
 	to_python_converter<posix_time::time_duration, TimeDurationToPythonDelta > ();
 
-	RunTimeTypedClass<TimeDurationData>()
+	typedef class_< TimeDurationData, TimeDurationDataPtr, noncopyable, bases<Data> > TimeDurationDataPyClass;
+	TimeDurationDataPyClass( "TimeDurationData", no_init )
 		.def( init<>() )
 		.def( init<const TimeDurationData::ValueType &>() )
 		.add_property( "value", make_function( &getValue, return_value_policy<copy_const_reference>() ), &setValue )
 		.def( "__repr__", &repr<TimeDurationData> )
 		.def( "__str__", &str<TimeDurationData> )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( TimeDurationData );
 	;
 
+	INTRUSIVE_PTR_PATCH( TimeDurationData, TimeDurationDataPyClass );
+
+	implicitly_convertible<TimeDurationDataPtr, DataPtr>();
+	implicitly_convertible<TimeDurationDataPtr, ConstTimeDurationDataPtr >();
 }
 
 } // namespace IECore

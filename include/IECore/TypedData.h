@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,10 +37,22 @@
 
 #include "IECore/Data.h"
 #include "IECore/Exception.h"
-#include "IECore/TypedDataTraits.h"
 
 namespace IECore
 {
+
+/// Traits class for TypedData internal data structure
+// This templated class was created so that it could define the base data type used
+// in TypedData classes. That happens when the internal structure stored in 
+// the TypedData is made of only one data type, so that it could be addressed as an
+// array of base data type values.
+// Check TypedDataTraits.inl for utility macros that specializes TypedDataTraits.
+template <class T>
+class TypedDataTraits
+{
+	public:
+		typedef void BaseType;
+};
 
 /// A templated class which can be used to wrap useful data
 /// types and containers. The copyFrom() function is implemented
@@ -57,27 +69,40 @@ namespace IECore
 /// like baseReadable, baseWritable and baseSize. They are available
 /// only when the data can be seen as an array of a base type. Use
 /// hasBase for checking that.
-template <class T>
+template <class T> 
 class TypedData : public Data
 {
 	public:
 	
+		IE_CORE_DECLAREMEMBERPTR( TypedData );
+		
 		typedef T ValueType;
-
+	
 		/// Default constructor.
 		TypedData();
 		/// Constructor based on the stored data type.
 		TypedData(const T &data);
-
-		IECORE_RUNTIMETYPED_DECLARETEMPLATE( TypedData<T>, Data );
-
+		
+		//! @name RunTimeTyped interface
+		////////////////////////////////////////////////////////////
+		//@{
+		virtual TypeId typeId() const;
+		virtual std::string typeName() const;
+		virtual bool isInstanceOf( TypeId typeId ) const;
+		virtual bool isInstanceOf( const std::string &typeName ) const;
+		static TypeId staticTypeId();
+		static std::string staticTypeName();
+		static bool inheritsFrom( TypeId typeId );
+		static bool inheritsFrom( const std::string &typeName );
+		//@}
+		
 		//! @name Object interface
 		////////////////////////////////////////////////////////////
 		//@{
 		typename TypedData<T>::Ptr copy() const;
 		bool isEqualTo( ConstObjectPtr other ) const;
 		//@}
-
+		
 		/// Equivalent to writable() = data
 		void operator = (const T &data);
 		/// Equivalent to writable() = typedData.readable()
@@ -88,7 +113,7 @@ class TypedData : public Data
 		/// get read-write access to the internal data structure.
 		T &writable();
 
-		/// base type used in the internal data structure.
+		/// base type used in the internal data structure.		
 		typedef typename TypedDataTraits< TypedData<T> >::BaseType BaseType;
 
 		/// defines whether the internal data structure has a single base type.
@@ -104,14 +129,14 @@ class TypedData : public Data
 
 		/// return the size of the internal data structure in terms of base type elements.
 		/// Throws an Exception if this type has no single base type.
-		size_t baseSize() const;
-
+		unsigned long baseSize() const;
+		
 	protected:
-
+	
 		virtual ~TypedData();
-
-		static Object::TypeDescription<TypedData<T> > m_typeDescription;
-
+		
+		static TypeDescription<TypedData<T> > m_typeDescription;
+		
 		virtual void copyFrom( ConstObjectPtr other, CopyContext *context );
 		virtual void save( SaveContext *context ) const;
 		virtual void load( LoadContextPtr context );
@@ -119,7 +144,7 @@ class TypedData : public Data
 		/// a given T then you must provide an accurate specialisation
 		/// for this function.
 		virtual void memoryUsage( Object::MemoryAccumulator &accumulator ) const;
-
+		
 		class DataHolder : public RefCounted
 		{
 			public:
@@ -133,5 +158,7 @@ class TypedData : public Data
 };
 
 } // namespace IECore
+
+#include "IECore/TypedDataTraits.inl"
 
 #endif // IE_CORE_TYPEDDATA_H

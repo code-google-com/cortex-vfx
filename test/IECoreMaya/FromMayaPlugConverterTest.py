@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -41,21 +41,13 @@ import maya.cmds
 class FromMayaPlugConverterTest( unittest.TestCase ) :
 
 	def testFactory( self ) :
-
+		
 		locator = maya.cmds.spaceLocator( position = ( 1, 2, 3 ) )[0]
-
+		
 		converter = IECoreMaya.FromMayaPlugConverter.create( locator + ".translateX" )
 		self.assert_( converter )
 		self.assert_( converter.isInstanceOf( IECoreMaya.FromMayaPlugConverter.staticTypeId() ) )
-
-		converter = IECoreMaya.FromMayaPlugConverter.create( locator + ".scaleX" )
-		self.assert_( converter )
-		self.assert_( converter.isInstanceOf( IECoreMaya.FromMayaPlugConverter.staticTypeId() ) )
-
-		converter = IECoreMaya.FromMayaPlugConverter.create( locator + ".scale" )
-		self.assert_( converter )
-		self.assert_( converter.isInstanceOf( IECoreMaya.FromMayaPlugConverter.staticTypeId() ) )
-
+	
 		converter = IECoreMaya.FromMayaPlugConverter.create( IECoreMaya.plugFromString( locator + ".translateX" ) )
 		self.assert_( converter )
 		self.assert_( converter.isInstanceOf( IECoreMaya.FromMayaPlugConverter.staticTypeId() ) )
@@ -63,12 +55,12 @@ class FromMayaPlugConverterTest( unittest.TestCase ) :
 	def testTransformationMatrix( self ) :
 
 		locator = maya.cmds.spaceLocator( position = ( 1, 2, 3 ) )[0]
-
+		
 		converter = IECoreMaya.FromMayaPlugConverter.create( str( locator ) + ".worldMatrix", IECore.TransformationMatrixdData.staticTypeId() )
 		self.assert_( converter )
 
 		transform = converter.convert()
 		self.assert_( transform.isInstanceOf( IECore.TransformationMatrixdData.staticTypeId() ) )
-
+							
 if __name__ == "__main__":
 	MayaUnitTest.TestProgram()

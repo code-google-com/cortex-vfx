@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,13 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Transform.h"
 #include "IECore/bindings/TransformBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -49,9 +50,13 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(transformOverloads, transform, 0, 1);
 
 void bindTransform()
 {
-	RunTimeTypedClass<Transform>()
+	typedef class_< Transform, boost::noncopyable, TransformPtr, bases<StateRenderable> > TransformPyClass;
+	TransformPyClass("Transform", no_init )
 		.def("transform", &Transform::transform, transformOverloads() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(Transform)
 	;
+	INTRUSIVE_PTR_PATCH( Transform, TransformPyClass );
+	implicitly_convertible<TransformPtr, StateRenderablePtr>();
 }
 
 }

@@ -58,7 +58,7 @@ IE_CORE_FORWARDDECLARE( Renderer );
 /// using the MessageHandler class rather than by throwing Exceptions - it's often
 /// more useful to have an incomplete image for diagnosis of the problem than to
 /// have an Exception thrown.
-///
+/// 
 /// \par Naming conventions
 ///
 /// Many of the calls in the Renderer interface associate a name with a piece of
@@ -80,9 +80,9 @@ IE_CORE_FORWARDDECLARE( Renderer );
 ///
 /// \li <b>"prefix:name"</b><br>
 /// Used to specify data intended only for a particular implementation. Implementations
-/// silently ignore all data destined for other implementations. For instance, the
+/// silently ignore all data destined for other implementations. For instance, the 
 /// "gl:primitive:wireframe" attribute is used by the GL renderer implementation but
-/// silently ignored by other implementations.
+/// silently ignored by other implementations.  
 ///
 /// \li <b>"user:name"</b><br>
 /// Used to specify data for the purposes of users. The renderer should store the value
@@ -90,7 +90,7 @@ IE_CORE_FORWARDDECLARE( Renderer );
 /// mostly to the attribute and option calls.
 class Renderer : public RunTimeTyped
 {
-
+	
 	public :
 
 		IE_CORE_DECLARERUNTIMETYPED( Renderer, RunTimeTyped );
@@ -159,7 +159,7 @@ class Renderer : public RunTimeTyped
 		/// The time interval for which the shutter is open - this is used in conjunction with the
 		/// times passed to motionBegin() to specify motion blur. Defaults to 0,0 if unspecified.
 		virtual void camera( const std::string &name, const CompoundDataMap &parameters ) = 0;
-
+		
 		/// Specifies an image to be output from the renderer. In the case of file outputs name
 		/// specified the filename. type specifies the type of output to create and data specifies
 		/// the data to be output, for instance "rgba". parameters provides an implementation specific
@@ -204,7 +204,7 @@ class Renderer : public RunTimeTyped
 		/// Creates a named coordinate system from the current transform.
 		virtual void coordinateSystem( const std::string &name ) = 0;
 		//@}
-
+		
 		//! @name Attributes
 		/// Attributes are named items of data which control some per-object aspect
 		/// of the render. Attributes may be set both before and after worldBegin(),
@@ -270,7 +270,7 @@ class Renderer : public RunTimeTyped
 		/// Starts a new motion block. You should then make times.size() calls
 		/// to one of the primitive or transform functions to specify the motion
 		/// for the block.
-		virtual void motionBegin( const std::set<float> &times ) = 0;
+		virtual void motionBegin( const std::set<float> times ) = 0;
 		/// Ends a motion block. Should be called when times.size() calls to an
 		/// appropriate primitive or transform function have been made following
 		/// a motionBegin() call.
@@ -287,6 +287,7 @@ class Renderer : public RunTimeTyped
 		/// to the rightHandedOrientation attribute.
 		////////////////////////////////////////////////////////////////////////////
 		//@{
+		/// \todo Add a patchMesh call
 		/// Renders a set of points.
 		virtual void points( size_t numPoints, const PrimitiveVariableMap &primVars ) = 0;
 		/// Renders a disk of the specified radius on the xy plane, at the specified z value.
@@ -310,40 +311,61 @@ class Renderer : public RunTimeTyped
 		virtual void mesh( ConstIntVectorDataPtr vertsPerFace, ConstIntVectorDataPtr vertIds, const std::string &interpolation, const PrimitiveVariableMap &primVars ) = 0;
 		/// Renders a nurbs surface.
 		virtual void nurbs( int uOrder, ConstFloatVectorDataPtr uKnot, float uMin, float uMax, int vOrder, ConstFloatVectorDataPtr vKnot, float vMin, float vMax, const PrimitiveVariableMap &primVars ) = 0;
-		/// Render a patch mesh.
-		virtual void patchMesh( const CubicBasisf &uBasis, const CubicBasisf &vBasis, int nu, bool uPeriodic, int nv, bool vPeriodic, const PrimitiveVariableMap &primVars ) = 0;
 		/// Generic call for specifying renderer specify geometry types.
 		virtual void geometry( const std::string &type, const CompoundDataMap &topology, const PrimitiveVariableMap &primVars ) = 0;
 		//@}
-
+		
 		/// The Procedural class defines an interface via which the Renderer can
 		/// ask for geometry to be generated in a deferred fashion, at a time
 		/// which is convenient to it.
-		class Procedural : public RefCounted
+		/// \todo I think Procedurals should be simpler than a full blown Parameterised
+		/// class - we might have a ParameterisedProcedural too but at the lower level
+		/// a Procedural class shouldn't dictate how member data is stored.
+		/// \todo The fact that this doesn't derive from VisibleRenderable means we can't
+		/// store them in groups, which is also a major issue. I think we need to fix this 
+		/// by :
+		///
+		/// * having this class be much simpler and not derived from Parameterised - it should
+		///   have no more going on than the bare minimum the Renderer needs.
+		/// * deriving a ParameterisedProcedural class from VisibleRenderable and ParameterisedInterface,
+		///   that implements its render() method by using a Procedural of the new form to call
+		///   back to methods on the ParameterisedProcedural.
+		///
+		/// An additional consequence of this will be that we need to fix up the IECoreMaya::ParameterisedHolder stuff
+		/// so that it can hold T::Ptr provided T derives from ParameterisedInterface, whereas right now it insists
+		/// upon holding Parameterised::Ptr.
+		class Procedural : public Parameterised
 		{
 			public :
-
-				IE_CORE_DECLAREMEMBERPTR( Procedural );
-
-				Procedural();
+			
+				IE_CORE_DECLARERUNTIMETYPED( Procedural, Parameterised );
+				
+				Procedural( const std::string &name, const std::string &description );
 				virtual ~Procedural();
-
+				
 				/// Returns a bounding box guaranteed to completely
 				/// contain the geometry generated by the render()
-				/// method.
-				virtual Imath::Box3f bound() const = 0;
+				/// method. Implemented to call doBound() - subclasses should
+				/// therefore implement that method.
+				Imath::Box3f bound() const;
 				/// Called when the renderer is ready to receive the procedural
 				/// geometry. Any relevant methods of renderer may be called, but
 				/// the geometry generated must be contained within the
-				/// box returned by bound().
-				virtual void render( RendererPtr renderer ) const = 0;
-
+				/// box returned by bound(). Implemented to call doRender() - subclasses
+				/// should therefore implement that method.
+				void render( RendererPtr renderer ) const;
+				
+			protected :
+			
+				virtual Imath::Box3f doBound( ConstCompoundObjectPtr args ) const = 0;
+				virtual void doRender( RendererPtr renderer, ConstCompoundObjectPtr args ) const = 0;
+				
 		};
 		IE_CORE_DECLAREPTR( Procedural );
-
+		
 		/// Renders a piece of procedural geometry.
 		virtual void procedural( ProceduralPtr proc ) = 0;
-
+		
 		//! @name Instancing
 		/// These methods provide a means of describing a portion of a scene once and reusing
 		/// it many times.
@@ -357,7 +379,7 @@ class Renderer : public RunTimeTyped
 		/// using the current attribute state.
 		virtual void instance( const std::string &name ) = 0;
 		//@}
-
+		
 		/// Generic call for executing arbitrary renderer commands. This is intended to allow
 		/// derived classes to support calls such as RiMakeTexture via calls of the form
 		/// renderer->command( "ri:makeTexture", ... ).

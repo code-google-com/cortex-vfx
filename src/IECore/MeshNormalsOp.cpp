@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,8 +40,6 @@
 using namespace IECore;
 using namespace std;
 
-IE_CORE_DEFINERUNTIMETYPED( MeshNormalsOp );
-
 MeshNormalsOp::MeshNormalsOp() : MeshPrimitiveOp( staticTypeName(), "Calculates vertex normals for a mesh." )
 {
 }
@@ -53,18 +51,18 @@ MeshNormalsOp::~MeshNormalsOp()
 struct MeshNormalsOp::CalculateNormals
 {
 	typedef DataPtr ReturnType;
-
+	
 	CalculateNormals( ConstIntVectorDataPtr vertsPerFace, ConstIntVectorDataPtr vertIds )
 		:	m_vertsPerFace( vertsPerFace ), m_vertIds( vertIds )
 	{
 	}
-
+	
 	template<typename T>
 	ReturnType operator()( typename T::Ptr data )
 	{
 		typedef typename T::ValueType VecContainer;
 		typedef typename VecContainer::value_type Vec;
-
+		
 		const typename T::ValueType &points = data->readable();
 		const vector<int> &vertsPerFace = m_vertsPerFace->readable();
 		const vector<int> &vertIds = m_vertIds->readable();
@@ -81,7 +79,7 @@ struct MeshNormalsOp::CalculateNormals
 			const Vec &p0 = points[*vertId];
 			const Vec &p1 = points[*(vertId+1)];
 			const Vec &p2 = points[*(vertId+2)];
-
+			
 			Vec normal = (p2-p1).cross(p0-p1);
 			normal.normalize();
 			for( int i=0; i<*it; i++ )
@@ -90,21 +88,21 @@ struct MeshNormalsOp::CalculateNormals
 				vertId++;
 			}
 		}
-
+		
 		// normalize each of the vertex normals
 		for( typename VecContainer::iterator it=normals.begin(); it!=normals.end(); it++ )
 		{
 			it->normalize();
 		}
-
+		
 		return normalsData;
 	}
-
+	
 	private :
-
+	
 		ConstIntVectorDataPtr m_vertsPerFace;
 		ConstIntVectorDataPtr m_vertIds;
-
+		
 };
 
 struct MeshNormalsOp::HandleErrors
@@ -124,7 +122,7 @@ void MeshNormalsOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundOb
 	{
 		throw InvalidArgumentException( "MeshNormalsOp : MeshPrimitive has no \"P\" primitive variable." );
 	}
-
+	
 	if( !mesh->isPrimitiveVariableValid( pvIt->second ) )
 	{
 		throw InvalidArgumentException( "MeshNormalsOp : \"P\" primitive variable is invalid." );

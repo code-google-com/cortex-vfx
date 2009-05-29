@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "IECore/WrapperGarbageCollectorBase.h"
+#include <IECore/WrapperGarbageCollectorBase.h>
 
 using namespace IECore;
 
@@ -60,7 +60,7 @@ void WrapperGarbageCollectorBase::setCollectThreshold( size_t t )
 {
 	g_allocThreshold = t;
 }
-
+		
 size_t WrapperGarbageCollectorBase::getCollectThreshold()
 {
 	return g_allocThreshold;

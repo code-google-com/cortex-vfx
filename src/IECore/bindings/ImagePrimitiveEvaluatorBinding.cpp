@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,6 +37,7 @@
 #include "IECore/ImagePrimitiveEvaluator.h"
 #include "IECore/bindings/ImagePrimitiveEvaluatorBinding.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using namespace IECore;
 using namespace boost::python;
@@ -46,18 +47,18 @@ namespace IECore
 
 struct ImagePrimitiveEvaluatorHelper
 {
-
+	
 	static bool pointAtPixel( ImagePrimitiveEvaluator &evaluator, const Imath::V2i &pixel, const PrimitiveEvaluator::ResultPtr &result )
 	{
 		evaluator.validateResult( result );
-
+		
 		return evaluator.pointAtPixel( pixel, result );
 	}
-
+	
 	static object R( ImagePrimitiveEvaluator &evaluator )
 	{
 		PrimitiveVariableMap::const_iterator it = evaluator.R();
-
+		
 		if ( it != evaluator.primitive()->variables.end() )
 		{
 			return object( it->second );
@@ -67,11 +68,11 @@ struct ImagePrimitiveEvaluatorHelper
 			return object();
 		}
 	}
-
+	
 	static object G( ImagePrimitiveEvaluator &evaluator )
 	{
 		PrimitiveVariableMap::const_iterator it = evaluator.G();
-
+		
 		if ( it != evaluator.primitive()->variables.end() )
 		{
 			return object( it->second );
@@ -81,11 +82,11 @@ struct ImagePrimitiveEvaluatorHelper
 			return object();
 		}
 	}
-
+	
 	static object B( ImagePrimitiveEvaluator &evaluator )
 	{
 		PrimitiveVariableMap::const_iterator it = evaluator.B();
-
+		
 		if ( it != evaluator.primitive()->variables.end() )
 		{
 			return object( it->second );
@@ -95,11 +96,11 @@ struct ImagePrimitiveEvaluatorHelper
 			return object();
 		}
 	}
-
+	
 	static object A( ImagePrimitiveEvaluator &evaluator )
 	{
 		PrimitiveVariableMap::const_iterator it = evaluator.A();
-
+		
 		if ( it != evaluator.primitive()->variables.end() )
 		{
 			return object( it->second );
@@ -109,11 +110,11 @@ struct ImagePrimitiveEvaluatorHelper
 			return object();
 		}
 	}
-
+	
 	static object Y( ImagePrimitiveEvaluator &evaluator )
 	{
 		PrimitiveVariableMap::const_iterator it = evaluator.Y();
-
+		
 		if ( it != evaluator.primitive()->variables.end() )
 		{
 			return object( it->second );
@@ -123,13 +124,14 @@ struct ImagePrimitiveEvaluatorHelper
 			return object();
 		}
 	}
-
+	
 };
 
 void bindImagePrimitiveEvaluator()
 {
-
-	object m = RunTimeTypedClass<ImagePrimitiveEvaluator>()
+	typedef class_< ImagePrimitiveEvaluator, ImagePrimitiveEvaluatorPtr, bases< PrimitiveEvaluator >, boost::noncopyable > ImagePrimitiveEvaluatorPyClass;
+	
+	object m = ImagePrimitiveEvaluatorPyClass ( "ImagePrimitiveEvaluator", no_init )
 		.def( init< ImagePrimitivePtr > () )
 		.def( "pointAtPixel", &ImagePrimitiveEvaluatorHelper::pointAtPixel )
 		.def( "R", &ImagePrimitiveEvaluatorHelper::R )
@@ -137,20 +139,27 @@ void bindImagePrimitiveEvaluator()
 		.def( "B", &ImagePrimitiveEvaluatorHelper::B )
 		.def( "A", &ImagePrimitiveEvaluatorHelper::A )
 		.def( "Y", &ImagePrimitiveEvaluatorHelper::Y )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(ImagePrimitiveEvaluator)
 	;
-
+	INTRUSIVE_PTR_PATCH( ImagePrimitiveEvaluator, ImagePrimitiveEvaluatorPyClass );
+	implicitly_convertible<ImagePrimitiveEvaluatorPtr, PrimitiveEvaluatorPtr>();
+	
 	{
 		scope ms( m );
-		RefCountedClass<ImagePrimitiveEvaluator::Result, PrimitiveEvaluator::Result >( "Result" )
+		typedef class_< ImagePrimitiveEvaluator::Result, ImagePrimitiveEvaluator::ResultPtr, bases< PrimitiveEvaluator::Result >, boost::noncopyable > ResultPyClass;
+		
+		ResultPyClass( "Result", no_init )
 			.def( "pixel", &ImagePrimitiveEvaluator::Result::pixel )
 			.def( "uintPrimVar", &ImagePrimitiveEvaluator::Result::uintPrimVar )
 			.def( "shortPrimVar", &ImagePrimitiveEvaluator::Result::shortPrimVar )
 			.def( "ushortPrimVar", &ImagePrimitiveEvaluator::Result::ushortPrimVar )
 			.def( "charPrimVar", &ImagePrimitiveEvaluator::Result::charPrimVar )
 			.def( "ucharPrimVar", &ImagePrimitiveEvaluator::Result::ucharPrimVar )
-
+			
 		;
-
+	
+		INTRUSIVE_PTR_PATCH( ImagePrimitiveEvaluator::Result, ResultPyClass );
+		implicitly_convertible<ImagePrimitiveEvaluator::ResultPtr, PrimitiveEvaluator::ResultPtr>();	
 	}
 }
 

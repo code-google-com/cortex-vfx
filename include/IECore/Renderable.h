@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,17 +46,17 @@ IE_CORE_FORWARDDECLARE( Renderer );
 class Renderable : public BlindDataHolder
 {
 	public:
-
+	
 		Renderable();
 		virtual ~Renderable();
-
+				
 		IE_CORE_DECLAREABSTRACTOBJECT( Renderable, BlindDataHolder );
-
-		/// Render the object held by this instance via the given renderer.
-		virtual void render( RendererPtr renderer ) const = 0;
-
+		
+		/// Render the object held by this instance via the given renderer
+		virtual void render( RendererPtr renderer ) = 0;
+	
 	private:
-
+	
 		static const unsigned int m_ioVersion;
 };
 

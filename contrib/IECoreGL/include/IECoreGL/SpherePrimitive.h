@@ -45,33 +45,33 @@ class SpherePrimitive : public Primitive
 
 	public :
 
-		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::SpherePrimitive, SpherePrimitiveTypeId, Primitive );
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( SpherePrimitive, SpherePrimitiveTypeId, Primitive );
 
 		/// Z range is always 0 <= zMin < zMax <= 1. ie zMin and zMax are measured as a proportion
 		/// of radius and not absolutely as in the Renderman spec.
 		SpherePrimitive( float radius = 1, float zMin = -1, float zMax = 1, float thetaMax = 360 );
 		virtual ~SpherePrimitive();
-
+		
 		void setRadius( float radius );
 		float getRadius() const;
-
+		
 		void setZMin( float zMin );
 		float getZMin() const;
-
+		
 		void setZMax( float zMin );
 		float getZMax() const;
-
+		
 		void setThetaMax( float zMin );
 		float getThetaMax() const;
-
+		
 		virtual Imath::Box3f bound() const;
-
+	
 	protected :
-
+	
 		virtual void render( ConstStatePtr state, IECore::TypeId style ) const;
-
+		
 	private :
-
+	
 		float m_radius;
 		float m_zMin;
 		float m_zMax;

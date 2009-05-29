@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,6 +36,7 @@
 
 #include "IECore/MedianCutSampler.h"
 #include "IECore/bindings/MedianCutSamplerBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -45,16 +46,20 @@ namespace IECore
 
 void bindMedianCutSampler()
 {
-
-	scope s = RunTimeTypedClass<MedianCutSampler>()
-		.def( init<>() )
+	
+	typedef class_<MedianCutSampler, MedianCutSamplerPtr, boost::noncopyable, bases<Op> > MedianCutSamplerPyClass;
+	scope s = MedianCutSamplerPyClass( "MedianCutSampler" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( MedianCutSampler )
 	;
-
+	
 	enum_<MedianCutSampler::Projection>( "Projection" )
 		.value( "Invalid", MedianCutSampler::Invalid )
 		.value( "Rectilinear", MedianCutSampler::Rectilinear )
 		.value( "LatLong", MedianCutSampler::LatLong )
 	;
+	
+	INTRUSIVE_PTR_PATCH( MedianCutSampler, MedianCutSamplerPyClass );
+	implicitly_convertible<MedianCutSamplerPtr, OpPtr>();	
 
 }
 
