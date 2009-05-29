@@ -225,6 +225,8 @@
 #include "IECore/bindings/CurveExtrudeOpBinding.h"
 #include "IECore/bindings/BINParticleWriterBinding.h"
 #include "IECore/bindings/BINMeshReaderBinding.h"
+#include "IECore/bindings/BINMeshReaderBinding.h"
+#include "IECore/bindings/ZhuBridsonImplicitSurfaceFunctionBinding.h"
 #include "IECore/IECore.h"
 
 using namespace IECore;
@@ -435,6 +437,7 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindCurveExtrudeOp();
 	bindBINParticleWriter();
 	bindBINMeshReader();
+	bindZhuBridsonImplicitSurfaceFunction();
 
 	def( "majorVersion", &IECore::majorVersion );
 	def( "minorVersion", &IECore::minorVersion );
