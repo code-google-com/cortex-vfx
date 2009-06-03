@@ -186,6 +186,8 @@ from TimeDurationDataTest import *
 from TimePeriodDataTest import *
 from PatchMeshPrimitiveTest import *
 from CurveExtrudeOp import *
+from TGAImageReaderTest import *
+from TGAImageWriterTest import *
 from BINParticleWriterTest import *
 from BINMeshReaderTest import *
 

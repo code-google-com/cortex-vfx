@@ -102,6 +102,8 @@
 #include "IECore/bindings/DPXImageWriterBinding.h"
 #include "IECore/bindings/JPEGImageReaderBinding.h"
 #include "IECore/bindings/JPEGImageWriterBinding.h"
+#include "IECore/bindings/TGAImageReaderBinding.h"
+#include "IECore/bindings/TGAImageWriterBinding.h"
 #include "IECore/bindings/MeshPrimitiveBinding.h"
 #include "IECore/bindings/MotionPrimitiveBinding.h"
 #include "IECore/bindings/TransformBinding.h"
@@ -307,6 +309,9 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindJPEGImageReader();
 	bindJPEGImageWriter();
 #endif
+
+	bindTGAImageReader();
+	bindTGAImageWriter();
 
 	bindMeshPrimitive();
 	bindMotionPrimitive();
