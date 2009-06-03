@@ -35,6 +35,7 @@
 #include "boost/python.hpp"
 
 #include "IECore/TGAImageReader.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -46,11 +47,16 @@ namespace IECore
 
 void bindTGAImageReader()
 {
-	RunTimeTypedClass<TGAImageReader>()
-		.def( init<>() )
-		.def(  init<const std::string &>() )
-		.def( "canRead", &TGAImageReader::canRead).staticmethod( "canRead" )
+	typedef class_<TGAImageReader, TGAImageReaderPtr, boost::noncopyable, bases<ImageReader> > TGAImageReaderPyClass;
+	TGAImageReaderPyClass("TGAImageReader", init<>())
+		.def( init<const std::string &>() )
+		.def( "canRead", &TGAImageReader::canRead ).staticmethod( "canRead" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(TGAImageReader)
 	;
+
+	INTRUSIVE_PTR_PATCH( TGAImageReader, TGAImageReaderPyClass );
+	implicitly_convertible<TGAImageReaderPtr, ImageReaderPtr>();
+
 }
 
 } // namespace IECore

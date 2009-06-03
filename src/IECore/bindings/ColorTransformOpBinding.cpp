@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,34 +32,37 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/ColorTransformOp.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
+#include "IECore/bindings/WrapperToPython.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
-#include "IECore/bindings/Wrapper.h"
 
 using namespace boost;
 using namespace boost::python;
-
 
 namespace IECore {
 
 class ColorTransformOpWrap : public ColorTransformOp, public Wrapper<ColorTransformOp>
 {
 	public :
-
+		
 		ColorTransformOpWrap( PyObject *self, const std::string name, const std::string description ) : ColorTransformOp( name, description ), Wrapper<ColorTransformOp>( self, this ) {};
-
+		
 		virtual void begin( ConstCompoundObjectPtr operands )
 		{
 			override o = this->get_override( "begin" );
 			if( o )
 			{
+				//// \todo We may want to call operands->copy() here instead of casting away the constness. If the Python code being called
+				/// here actually attempts to change the CompoundObject, then any C++ calling code might get confused when a suposedly const value
+				/// changes unexpectedly. Check any performance overhead of the copy.
 				o( const_pointer_cast<CompoundObject>( operands ) );
 			}
 		}
-
+		
 		virtual void transform( Imath::Color3f &color ) const
 		{
 			override o = this->get_override( "transform" );
@@ -82,17 +85,22 @@ class ColorTransformOpWrap : public ColorTransformOp, public Wrapper<ColorTransf
 				o();
 			}
 		}
-
+			
 };
 IE_CORE_DECLAREPTR( ColorTransformOpWrap );
 
 void bindColorTransformOp()
 {
-	using boost::python::arg;
-
-	RunTimeTypedClass<ColorTransformOp, ColorTransformOpWrapPtr>( "ColorTransformOp" )
-		.def( init< const std::string, const std::string>( ( arg( "name" ), arg( "description" ) ) ) )
+	typedef class_< ColorTransformOp, ColorTransformOpWrapPtr, boost::noncopyable, bases<PrimitiveOp> > ColorTransformOpPyClass;
+	ColorTransformOpPyClass( "ColorTransformOp", no_init )
+		.def( init< const std::string, const std::string>( args( "name", "description" ) ) )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(ColorTransformOp)
 	;
+	
+	WrapperToPython<ColorTransformOpPtr>();
+
+	INTRUSIVE_PTR_PATCH( ColorTransformOp, ColorTransformOpPyClass );
+	implicitly_convertible<ColorTransformOpPtr, PrimitiveOpPtr>();	
 
 }
 

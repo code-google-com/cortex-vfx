@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,9 +36,9 @@
 template<typename T>
 struct LinearInterpolator< Imath::Quat<T> >
 {
-	void operator()(const Imath::Quat<T> &y0,
+	void operator()(const Imath::Quat<T> &y0, 
 			const Imath::Quat<T> &y1,
-			double x,
+			double x, 
 			Imath::Quat<T> &result) const
 	{
 		Imath::Quat< T > y0Tmp( y0.normalized() );
@@ -48,7 +48,7 @@ struct LinearInterpolator< Imath::Quat<T> >
 		{
 			result = y0Tmp;
 			return;
-		}
+		}		
 
 		result = IECore::slerpShortestArc( y0Tmp, y1Tmp, static_cast< T >(x) );
 	}
@@ -56,13 +56,27 @@ struct LinearInterpolator< Imath::Quat<T> >
 
 // Partially specialize for Imath::Quat. Interpolates through the shortest path.
 template<typename T>
+struct CosineInterpolator< Imath::Quat<T> >
+{
+	void operator()(const Imath::Quat<T> &y0, 
+			const Imath::Quat<T> &y1,
+			double x, 
+			Imath::Quat<T> &result) const
+	{
+		double cx = (1.0 - cos(x * M_PI)) / 2.0;
+		LinearInterpolator< Imath::Quat<T> >()( y0, y1, static_cast< T >(cx), result );
+	}
+};
+
+// Partially specialize for Imath::Quat. Interpolates through the shortest path.
+template<typename T>
 struct CubicInterpolator< Imath::Quat< T > >
 {
-	void operator()(const Imath::Quat< T > &y0,
+	void operator()(const Imath::Quat< T > &y0, 
 			const Imath::Quat< T > &y1,
 			const Imath::Quat< T > &y2,
 			const Imath::Quat< T > &y3,
-			double x,
+			double x, 
 			Imath::Quat< T > &result) const
 	{
 		Imath::Quat< T > y0Tmp( y0.normalized() );
@@ -74,7 +88,7 @@ struct CubicInterpolator< Imath::Quat< T > >
 		{
 			result = y0Tmp;
 			return;
-		}
+		}		
 
 		if ( (y0Tmp ^ y1Tmp) < 0.0 )
 		{

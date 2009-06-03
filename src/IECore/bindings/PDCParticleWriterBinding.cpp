@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/PDCParticleWriter.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -45,10 +46,13 @@ namespace IECore {
 
 void bindPDCParticleWriter()
 {
-	RunTimeTypedClass<PDCParticleWriter>()
-		.def( init<>() )
+	typedef class_< PDCParticleWriter , PDCParticleWriterPtr, boost::noncopyable, bases<ParticleWriter> > PDCParticleWriterPyClass;
+	PDCParticleWriterPyClass( "PDCParticleWriter", init<>() )
 		.def( init<ObjectPtr, const std::string &>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( PDCParticleWriter )
 	;
+	INTRUSIVE_PTR_PATCH( PDCParticleWriter, PDCParticleWriterPyClass );
+	implicitly_convertible<PDCParticleWriterPtr, ParticleWriterPtr>();
 }
 
 } // namespace IECore

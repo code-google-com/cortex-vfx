@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,69 +35,16 @@
 #ifndef IE_COREPYTHON_RUNTIMETYPEDBINDING_H
 #define IE_COREPYTHON_RUNTIMETYPEDBINDING_H
 
-#include "IECore/bindings/RefCountedBinding.h"
-
 namespace IECore
 {
-
 void bindRunTimeTyped();
+}
 
-/// A class to simplify the binding of RunTimeTyped derived classes. This should be used
-/// in place of the usual boost::python::class_. It automatically makes sure the class is bound
-/// with the correct name and base class, as well as dealing with all the issues that RefCountedClass
-/// fixes.
-template<typename T, typename Ptr=boost::intrusive_ptr<T> >
-class RunTimeTypedClass : public RefCountedClass<T, typename T::BaseClass, Ptr>
-{
+#define IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(CLASSNAME)							\
+	def("staticTypeName", &CLASSNAME::staticTypeName).staticmethod("staticTypeName") 	\
+	.def("staticTypeId", &CLASSNAME::staticTypeId).staticmethod("staticTypeId")			\
+	.def("inheritsFrom", (bool (*)( const std::string &))&CLASSNAME::inheritsFrom)		\
+	.def("inheritsFrom", (bool (*)( IECore::TypeId ) )&CLASSNAME::inheritsFrom).staticmethod("inheritsFrom")
 
-	public :
-
-		typedef RefCountedClass<T, typename T::BaseClass, Ptr> BaseClass;
-
-		RunTimeTypedClass( const char *docString = 0 );
-
-};
-
-#define IE_COREPYTHON_RUNTIMETYPEDWRAPPERFNS( CLASSNAME )\
-	virtual IECore::TypeId typeId() const\
-	{\
-		if( boost::python::override f = this->get_override( "typeId" ) )\
-		{\
-			boost::python::object res = f(); \
-			return boost::python::extract<IECore::TypeId>( res );\
-		}\
-		return CLASSNAME::typeId();\
-	}\
-	virtual const char *typeName() const\
-	{\
-		if( boost::python::override f = this->get_override( "typeName" ) )\
-		{\
-			boost::python::object res = f(); \
-			return boost::python::extract<const char *>( res );\
-		}\
-		return CLASSNAME::typeName();\
-	}\
-	virtual bool isInstanceOf( IECore::TypeId typeId ) const\
-	{\
-		if( boost::python::override f = this->get_override( "isInstanceOf" ) )\
-		{\
-			boost::python::object res = f( typeId ); \
-			return boost::python::extract<bool>( res );\
-		}\
-		return CLASSNAME::isInstanceOf( typeId );\
-	}\
-	virtual bool isInstanceOf( const char *typeName ) const\
-	{\
-		if( boost::python::override f = this->get_override( "isInstanceOf" ) )\
-		{\
-			boost::python::object res = f( typeName ); \
-			return boost::python::extract<bool>( res );\
-		}\
-		return CLASSNAME::isInstanceOf( typeName );\
-	}
-
-} // namespace IECore
-
-#include "IECore/bindings/RunTimeTypedBinding.inl"
 
 #endif // IE_COREPYTHON_RUNTIMETYPEDBINDING_H

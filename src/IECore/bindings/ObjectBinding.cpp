@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
-
-#include <cassert>
+#include <boost/python.hpp>
 
 #include "IECore/Object.h"
 #include "IECore/bindings/ObjectBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -45,31 +44,10 @@ using namespace boost::python;
 namespace IECore
 {
 
-static ObjectPtr creator( void *data )
-{
-	assert( data );
-	PyObject *d = (PyObject *)(data );
-
-	ObjectPtr r = call< ObjectPtr >( d );
-	return r;
-}
-
-static void registerType( TypeId typeId, const std::string &typeName, PyObject *createFn )
-{
-	assert( createFn );
-	Py_INCREF( createFn );
-	Object::registerType( typeId, typeName, creator, (void*)createFn );
-}
-
-static void registerAbstractType( TypeId typeId, const std::string &typeName )
-{
-	Object::registerType( typeId, typeName, 0, (void*)0 );
-}
-
 void bindObject()
 {
-
-	RunTimeTypedClass<Object>()
+	typedef class_<Object, boost::noncopyable, ObjectPtr, bases<RunTimeTyped> > ObjectPyClass;
+	ObjectPyClass( "Object", no_init )
 		.def( self == self )
 		.def( self != self )
 		.def( "copy", &Object::copy )
@@ -77,19 +55,26 @@ void bindObject()
 		.def( "isType", (bool (*)( TypeId) )&Object::isType )
 		.staticmethod( "isType" )
 		.def( "isAbstractType", (bool (*)( const std::string &) )&Object::isAbstractType )
-		.def( "isAbstractType", (bool (*)( TypeId ) )&Object::isAbstractType )
+		.def( "isAbstractType", (bool (*)( TypeId) )&Object::isAbstractType )
 		.staticmethod( "isAbstractType" )
 		.def( "create", (ObjectPtr (*)( const std::string &) )&Object::create )
 		.def( "create", (ObjectPtr (*)( TypeId ) )&Object::create )
 		.staticmethod( "create" )
+		.def( "typeIdFromTypeName", &Object::typeIdFromTypeName )
+		.staticmethod( "typeIdFromTypeName" )
+		.def( "typeNameFromTypeId", &Object::typeNameFromTypeId )
+		.staticmethod( "typeNameFromTypeId" )
 		.def( "load", (ObjectPtr (*)( IndexedIOInterfacePtr, const IndexedIO::EntryID & ) )&Object::load )
 		.staticmethod( "load" )
 		.def( "save", (void (Object::*)( IndexedIOInterfacePtr, const IndexedIO::EntryID & )const )&Object::save )
-		.def( "memoryUsage", (size_t (Object::*)()const )&Object::memoryUsage, "Returns the number of bytes this instance occupies in memory" )
-		.def( "registerType", registerType )
-		.def( "registerType", registerAbstractType )
-		.staticmethod( "registerType" )
+		.def("memoryUsage", (size_t (Object::*)()const )&Object::memoryUsage, "Returns the number of bytes this instance occupies in memory" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(Object)
 	;
+	
+	INTRUSIVE_PTR_PATCH( Object, ObjectPyClass );
+
+	implicitly_convertible<ObjectPtr, RefCountedPtr>();
+	implicitly_convertible<ObjectPtr, ConstObjectPtr>();
 
 }
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,11 +40,6 @@
 namespace IECore
 {
 
-inline const InternedString &Parameter::internedName() const
-{
-	return m_name;
-}
-
 template<typename T>
 typename T::Ptr Parameter::getTypedValue()
 {
@@ -68,7 +63,7 @@ typename T::ConstPtr Parameter::getTypedValidatedValue() const
 {
 	return runTimeCast<const T>( getValidatedValue() );
 }
-
+		
 } // namespace IECore
 
 #endif // IE_CORE_PARAMETER_INL

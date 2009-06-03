@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -39,7 +39,7 @@ import os.path
 class ClassLsOp( Op ) :
 
 	def __init__( self ) :
-
+	
 		Op.__init__( self, "ClassLsOp", "Lists installed classes which can be loaded with IECore.ClassLoader.",
 			Parameter(
 				name = "result",
@@ -47,18 +47,18 @@ class ClassLsOp( Op ) :
 				defaultValue = StringVectorData()
 			)
 		)
-
+		
 		self.parameters().addParameters(
 			[
 				StringParameter(
 					name = "type",
 					description = "The type of class to list.",
 					defaultValue = "procedural",
-					presets = (
-						( "Procedural", "procedural" ),
-						( "Op", "op" ),
-						( "Other", "other" ),
-					),
+					presets = {
+						"Procedural" : "procedural",
+						"Op" : "op",
+						"Other" : "other",
+					},
 					presetsOnly = True,
 				),
 				StringParameter(
@@ -81,40 +81,40 @@ class ClassLsOp( Op ) :
 					name = "resultType",
 					description = "The format of the result",
 					defaultValue = "string",
-					presets = (
-						( "string", "string" ),
-						( "stringVector", "stringVector" ),
-					),
+					presets = {
+						"string" : "string",
+						"stringVector" : "stringVector",
+					},
 					presetsOnly = True,
 				)
 			]
 		)
 
 	def doOperation( self, operands ) :
-
-		t = operands["type"].value
+	
+		t = operands.type.value
 		if t=="procedural" :
 			loader = ClassLoader.defaultProceduralLoader()
 		elif t=="op" :
 			loader = ClassLoader.defaultOpLoader()
 		else :
-			if operands["searchPath"].value and operands["searchPathEnvVar"].value :
+			if operands.searchPath.value and operands.searchPathEnvVar.value :
 				raise RuntimeError( "Cannot specify both searchPath and searchPathEnvVar." )
-			if not operands["searchPath"].value and not operands["searchPathEnvVar"].value :
+			if not operands.searchPath.value and not operands.searchPathEnvVar.value :
 				raise RuntimeError( "Must specify either searchPath or searchPathEnvVar." )
-
-			if operands["searchPath"].value :
-				sp = SearchPath( operands["searchPath"].value, ":" )
+				
+			if operands.searchPath.value :
+				sp = SearchPath( operands.searchPath.value, ":" )
 			else :
-				sp = SearchPath( os.path.expandvars( os.environ[operands["searchPathEnvVar"].value] ), ":" )
-
+				sp = SearchPath( os.path.expandvars( os.environ[operands.searchPathEnvVar.value] ), ":" )
+				
 			loader = ClassLoader( sp )
-
-		classes = loader.classNames( operands["match"].value )
-
-		if operands["resultType"].value == "string" :
+			
+		classes = loader.classNames( operands.match.value )	
+							
+		if operands.resultType.value == "string" :
 			return StringData( "\n".join( classes ) )
 		else :
 			return StringVectorData( classes )
 
-registerRunTimeTyped( ClassLsOp, 100008, Op )
+makeRunTimeTyped( ClassLsOp, 100008, Op )

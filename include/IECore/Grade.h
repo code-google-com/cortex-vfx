@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,9 +36,8 @@
 #define IECORE_GRADE_H
 
 #include "OpenEXR/ImathColor.h"
-
 #include "IECore/ColorTransformOp.h"
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/TypedParameter.h"
 
 namespace IECore
 {
@@ -51,12 +50,12 @@ namespace IECore
 class Grade : public ColorTransformOp
 {
 	public :
-
+		
 		IE_CORE_DECLARERUNTIMETYPED( Grade, ColorTransformOp );
-
+		
 		Grade();
 		virtual ~Grade();
-
+		
 		Color3fParameterPtr blackPointParameter();
 		ConstColor3fParameterPtr blackPointParameter() const;
 
@@ -71,7 +70,7 @@ class Grade : public ColorTransformOp
 
 		Color3fParameterPtr multiplyParameter();
 		ConstColor3fParameterPtr multiplyParameter() const;
-
+		
 		Color3fParameterPtr offsetParameter();
 		ConstColor3fParameterPtr offsetParameter() const;
 
@@ -83,15 +82,15 @@ class Grade : public ColorTransformOp
 
 		BoolParameterPtr whiteClampParameter();
 		ConstBoolParameterPtr whiteClampParameter() const;
-
+		
 	protected :
-
+			
 		/// initializes temporary values A, B and 1/gamma.
 		virtual void begin( ConstCompoundObjectPtr operands );
 		virtual void transform( Imath::Color3f &color ) const;
-
+		
 	private :
-
+	
 		Color3fParameterPtr m_blackPointParameter;
 		Color3fParameterPtr m_whitePointParameter;
 		Color3fParameterPtr m_liftParameter;

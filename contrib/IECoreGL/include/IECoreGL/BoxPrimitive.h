@@ -45,22 +45,22 @@ class BoxPrimitive : public Primitive
 
 	public :
 
-		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::BoxPrimitive, BoxPrimitiveTypeId, Primitive );
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( BoxPrimitive, BoxPrimitiveTypeId, Primitive );
 
 		BoxPrimitive( const Imath::Box3f &box );
 		virtual ~BoxPrimitive();
-
+		
 		void setBox( const Imath::Box3f &box );
 		const Imath::Box3f getBox() const;
-
+		
 		virtual Imath::Box3f bound() const;
-
+	
 	protected :
-
+		
 		virtual void render( ConstStatePtr state, IECore::TypeId style ) const;
-
+		
 	private :
-
+	
 		Imath::Box3f m_box;
 
 };

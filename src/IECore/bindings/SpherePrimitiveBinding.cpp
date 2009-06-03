@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,22 +32,24 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/SpherePrimitive.h"
 #include "IECore/bindings/SpherePrimitiveBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
 
 namespace IECore
 {
-
+	
 void bindSpherePrimitive()
 {
-	RunTimeTypedClass<SpherePrimitive>()
-		.def( init<>() )
-		.def( init< float, optional< float, float, float > >() )
+	typedef class_<SpherePrimitive, SpherePrimitivePtr, bases<Primitive>, boost::noncopyable> SpherePrimitivePyClass;
+	SpherePrimitivePyClass( "SpherePrimitive" )
+		.def( init< float, optional< float, float, float > >() )		
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( SpherePrimitive )
 		.def( "radius", &SpherePrimitive::radius )
 		.def( "zMin", &SpherePrimitive::zMin )
 		.def( "zMax", &SpherePrimitive::zMax )
@@ -56,7 +58,10 @@ void bindSpherePrimitive()
 		.def( "setZMin", &SpherePrimitive::setZMin )
 		.def( "setZMax", &SpherePrimitive::setZMax )
 		.def( "setThetaMax", &SpherePrimitive::setThetaMax )
+								
 	;
+	INTRUSIVE_PTR_PATCH( SpherePrimitive, SpherePrimitivePyClass );
+	implicitly_convertible<SpherePrimitivePtr, PrimitivePtr>();
 }
-
+	
 }

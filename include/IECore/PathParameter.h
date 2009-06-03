@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,7 @@
 #ifndef IE_CORE_PATHPARAMETER_H
 #define IE_CORE_PATHPARAMETER_H
 
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/TypedParameter.h"
 
 namespace IECore
 {
@@ -46,22 +46,22 @@ class PathParameter : public StringParameter
 {
 	public :
 
-		IE_CORE_DECLAREOBJECT( PathParameter, StringParameter )
+		IE_CORE_DECLARERUNTIMETYPED( PathParameter, StringParameter )
 
 		typedef enum {
 			DontCare,
 			MustExist,
 			MustNotExist,
 		} CheckType;
-
+	
 		PathParameter( const std::string &name, const std::string &description,
 			const std::string &defaultValue = "", bool allowEmptyString = true, CheckType check = PathParameter::DontCare,
-			const StringParameter::PresetsContainer &presets = StringParameter::PresetsContainer(), bool presetsOnly = false, ConstCompoundObjectPtr userData=0 );
+			const StringParameter::PresetsMap &presets = StringParameter::PresetsMap(), bool presetsOnly = false, ConstCompoundObjectPtr userData=0 );
 
 		bool allowEmptyString() const;
 		bool mustExist() const;
 		bool mustNotExist() const;
-
+		
 		/// Returns false if :
 		///
 		/// * allowEmptyString() is false and the string is empty.
@@ -70,17 +70,10 @@ class PathParameter : public StringParameter
 		/// * mustNotExist() is true and the file/dir exists.
 		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
 
-	protected :
-
-		PathParameter();
-		friend class TypeDescription<PathParameter>;
-
 	private :
-
+	
 		bool m_allowEmptyString;
 		CheckType m_check;
-
-		static const unsigned int g_ioVersion;
 
 };
 

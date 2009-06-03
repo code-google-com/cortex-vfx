@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,13 +32,15 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/BlindDataHolder.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/bindings/BlindDataHolderBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
+
 
 using namespace boost::python;
 
@@ -47,11 +49,15 @@ namespace IECore
 
 void bindBlindDataHolder()
 {
-	RunTimeTypedClass<BlindDataHolder>( "A class which represents an object with some blind data attached." )
+	typedef class_< BlindDataHolder, BlindDataHolderPtr, bases<Object> > BlindDataHolderPyClass;
+
+	BlindDataHolderPyClass("BlindDataHolder", "A class which represents an object with some blind data attached.", no_init)
 		.def(init<>())
 		.def(init<CompoundDataPtr>())
 		.def("blindData", &BlindDataHolder::blindData)
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(BlindDataHolder)
 	;
+	INTRUSIVE_PTR_PATCH( BlindDataHolder, BlindDataHolderPyClass );
+	implicitly_convertible<BlindDataHolderPtr, ObjectPtr>();
 }
-
 }

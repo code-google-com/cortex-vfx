@@ -45,25 +45,25 @@ class QuadPrimitive : public Primitive
 
 	public :
 
-		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::QuadPrimitive, QuadPrimitiveTypeId, Primitive );
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( QuadPrimitive, QuadPrimitiveTypeId, Primitive );
 
 		QuadPrimitive( float width = 1, float height = 1 );
 		virtual ~QuadPrimitive();
-
+		
 		void setWidth( float width );
 		float getWidth() const;
-
+		
 		void setHeight( float height );
 		float getHeight() const;
-
+		
 		virtual Imath::Box3f bound() const;
-
+		
 	protected :
-
+	
 		virtual void render( ConstStatePtr state, IECore::TypeId style ) const;
 
 	private :
-
+	
 		float m_width;
 		float m_height;
 

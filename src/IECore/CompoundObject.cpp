@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,7 @@ using namespace std;
 
 IE_CORE_DEFINEOBJECTTYPEDESCRIPTION( CompoundObject );
 
-const unsigned int CompoundObject::m_ioVersion = 0;
+const unsigned int CompoundObject::m_ioVersion = 0;	
 
 CompoundObject::CompoundObject()
 {
@@ -132,10 +132,10 @@ bool CompoundObject::isEqualTo( ConstObjectPtr other ) const
 void CompoundObject::memoryUsage( Object::MemoryAccumulator &a ) const
 {
 	Object::memoryUsage( a );
-	a.accumulate( m_members.size() * sizeof( ObjectMap::value_type ) );	
+	a.accumulate( sizeof( ObjectMap ) );
 	for( ObjectMap::const_iterator it=m_members.begin(); it!=m_members.end(); it++ )
 	{
+		a.accumulate( it->first.capacity() );
 		a.accumulate( it->second );
 	}
 }
-

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/YUVImageWriter.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -45,12 +46,15 @@ namespace IECore
 
 void bindYUVImageWriter()
 {
+	typedef class_<YUVImageWriter, YUVImageWriterPtr, boost::noncopyable, bases<ImageWriter> > YUVImageWriterPyClass;
 
-	RunTimeTypedClass<YUVImageWriter>()
-		.def( init<>() )
+	YUVImageWriterPyClass("YUVImageWriter", init<>())
 		.def( init<ObjectPtr, const std::string &>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( YUVImageWriter )
 	;
 
+	INTRUSIVE_PTR_PATCH( YUVImageWriter, YUVImageWriterPyClass );
+	implicitly_convertible<YUVImageWriterPtr, YUVImageWriterPtr>();
 }
 
 } // namespace IECore

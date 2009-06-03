@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,7 +36,7 @@
 #define IECORE_CHANNELOP_H
 
 #include "IECore/TypedPrimitiveOp.h"
-#include "IECore/VectorTypedParameter.h"
+#include "IECore/TypedParameter.h"
 
 namespace IECore
 {
@@ -51,11 +51,16 @@ class ChannelOp : public ImagePrimitiveOp
 		virtual ~ChannelOp();
 
 		IE_CORE_DECLARERUNTIMETYPED( ChannelOp, ImagePrimitiveOp );
-
+	
 		StringVectorParameterPtr channelNamesParameter();
 		ConstStringVectorParameterPtr channelNamesParameter() const;
-
+	
 	protected :
+	
+		/// Implemented to call modifyChannels(). Derived classes should implement modifyChannels rather than
+		/// this function.
+		/// \todo Consider making this private to enforce the above statement.
+		virtual void modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObjectPtr operands );
 
 		typedef std::vector<DataPtr> ChannelVector;
 
@@ -70,14 +75,11 @@ class ChannelOp : public ImagePrimitiveOp
 		/// things are right now, every derived class is iterating over the channels vector - there's not much else they can do - so it would
 		/// make sense to move that step to the base class.
 		virtual void modifyChannels( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, ChannelVector &channels ) = 0;
-
+	
 	private :
-
-		/// Implemented to call modifyChannels().
-		virtual void modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObjectPtr operands );
-
+	
 		StringVectorParameterPtr m_channelNamesParameter;
-
+				
 };
 
 IE_CORE_DECLAREPTR( ChannelOp );

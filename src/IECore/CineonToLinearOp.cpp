@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,12 +42,8 @@ using namespace IECore;
 using namespace std;
 using namespace boost;
 
-IE_CORE_DEFINERUNTIMETYPED( CineonToLinearOp );
-
-ColorSpaceTransformOp::ColorSpaceDescription<CineonToLinearOp> CineonToLinearOp::g_colorSpaceDescription( "cineon", "linear" );
-
 CineonToLinearOp::CineonToLinearOp()
-	:	ChannelOp( "CineonToLinearOp",
+	:	ChannelOp( "CineonToLinearOp", 
 				   "Applies Cineon to linear conversion on ImagePrimitive channels."
 		)
 {
@@ -64,9 +60,9 @@ CineonToLinearOp::~CineonToLinearOp()
 
 CompoundParameterPtr CineonToLinearOp::createCineonSettings()
 {
-	FloatParameter::PresetsContainer gammaPresets;
-	gammaPresets.push_back( FloatParameter::Preset( "Cineon", 0.6f ) );
-	gammaPresets.push_back( FloatParameter::Preset( "RedLog", 1.02f ) );
+	FloatParameter::PresetsMap gammaPresets;
+	gammaPresets["Cineon"] = 0.6f;
+	gammaPresets["RedLog"] = 1.02f;
 
 	FloatParameterPtr filmGamma = new FloatParameter(
 		"filmGamma",
@@ -77,9 +73,9 @@ CompoundParameterPtr CineonToLinearOp::createCineonSettings()
 		false
 	);
 
-	IntParameter::PresetsContainer whiteRefPresets;
-	whiteRefPresets.push_back( IntParameter::Preset( "Cineon", 685 ) );
-	whiteRefPresets.push_back( IntParameter::Preset( "RedLog", 1023 ) );
+	IntParameter::PresetsMap whiteRefPresets;
+	whiteRefPresets["Cineon"] = 685;
+	whiteRefPresets["RedLog"] = 1023;
 
 	IntParameterPtr refWhiteVal = new IntParameter(
 		"refWhiteVal",
@@ -90,9 +86,9 @@ CompoundParameterPtr CineonToLinearOp::createCineonSettings()
 		false
 	);
 
-	IntParameter::PresetsContainer blackRefPresets;
-	blackRefPresets.push_back( IntParameter::Preset( "Cineon", 95 ) );
-	blackRefPresets.push_back( IntParameter::Preset( "RedLog", 0 ) );
+	IntParameter::PresetsMap blackRefPresets;
+	blackRefPresets["Cineon"] = 95;
+	blackRefPresets["RedLog"] = 0;
 
 	IntParameterPtr refBlackVal = new IntParameter(
 		"refBlackVal",
@@ -151,7 +147,7 @@ struct CineonToLinearOp::Converter
 			m_filmGamma(filmGamma), m_refWhiteVal(refWhiteVal), m_refBlackVal(refBlackVal)
 		{
 		}
-
+	
 		template<typename T>
 		ReturnType operator()( typename T::Ptr data )
 		{
@@ -172,14 +168,14 @@ struct CineonToLinearOp::Converter
 		float m_filmGamma;
 		int m_refWhiteVal;
 		int m_refBlackVal;
-
+	
 };
 
 void CineonToLinearOp::modifyChannels( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, ChannelVector &channels )
 {
 	CineonToLinearOp::Converter converter(
-		filmGammaParameter()->getNumericValue(),
-		refWhiteValParameter()->getNumericValue(),
+		filmGammaParameter()->getNumericValue(), 
+		refWhiteValParameter()->getNumericValue(), 
 		refBlackValParameter()->getNumericValue()
 	);
 

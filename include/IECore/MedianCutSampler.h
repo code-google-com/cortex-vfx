@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,9 +36,9 @@
 #define IECORE_MEDIANCUTSAMPLER_H
 
 #include "IECore/Op.h"
-#include "IECore/TypedPrimitiveParameter.h"
+#include "IECore/TypedObjectParameter.h"
 #include "IECore/NumericParameter.h"
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/TypedParameter.h"
 
 namespace IECore
 {
@@ -53,18 +53,18 @@ namespace IECore
 class MedianCutSampler : public Op
 {
 	public :
-
+		
 		IE_CORE_DECLARERUNTIMETYPED( MedianCutSampler, Op );
-
+		
 		MedianCutSampler();
 		virtual ~MedianCutSampler();
-
+		
 		ImagePrimitiveParameterPtr imageParameter();
 		ConstImagePrimitiveParameterPtr imageParameter() const;
-
+		
 		StringParameterPtr channelNameParameter();
 		ConstStringParameterPtr channelNameParameter() const;
-
+		
 		IntParameterPtr subdivisionDepthParameter();
 		ConstIntParameterPtr subdivisionDepthParameter() const;
 
@@ -81,14 +81,14 @@ class MedianCutSampler : public Op
 	protected :
 
 		ObjectPtr doOperation( ConstCompoundObjectPtr operands );
-
+		
 	private :
-
+		
 		ImagePrimitiveParameterPtr m_imageParameter;
 		StringParameterPtr m_channelNameParameter;
 		IntParameterPtr m_subdivisionDepthParameter;
 		IntParameterPtr m_projectionParameter;
-
+		
 };
 
 IE_CORE_DECLAREPTR( MedianCutSampler );

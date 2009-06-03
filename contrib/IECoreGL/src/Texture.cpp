@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,8 +42,6 @@ using namespace boost;
 using namespace std;
 using namespace Imath;
 
-IE_CORE_DEFINERUNTIMETYPED( Texture );
-
 Texture::Texture()
 	:	m_texture( 0 )
 {
@@ -53,7 +51,7 @@ Texture::Texture( GLuint texture )
 	:	m_texture( texture )
 {
 }
-
+			
 Texture::~Texture()
 {
 	glDeleteTextures( 1, &m_texture );

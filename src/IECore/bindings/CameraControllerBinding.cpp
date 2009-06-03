@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,9 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/bindings/CameraControllerBinding.h"
 #include "IECore/CameraController.h"
@@ -64,20 +64,20 @@ void bindCameraController()
 		.def( "setResolution", &CameraController::setResolution )
 		.def( "getResolution", &CameraController::getResolution, return_value_policy<copy_const_reference>() )
 		.def( "frame", (void (CameraController::*)( const Imath::Box3f & ))&CameraController::frame )
-		.def( "frame", (void (CameraController::*)( const Imath::Box3f &, const Imath::V3f &, const Imath::V3f & ))&CameraController::frame )
+		.def( "frame", (void (CameraController::*)( const Imath::Box3f &, const Imath::V3f &, const Imath::V3f & ))&CameraController::frame )		
 		.def( "unproject", &unproject )
 		.def( "motionStart", &CameraController::motionStart )
 		.def( "motionUpdate", &CameraController::motionUpdate )
 		.def( "motionEnd", &CameraController::motionEnd )
 	;
-
+	
 	enum_<CameraController::MotionType>( "MotionType" )
 		.value( "None", CameraController::None )
 		.value( "Track", CameraController::Track )
 		.value( "Tumble", CameraController::Tumble )
 		.value( "Dolly", CameraController::Dolly )
 	;
-
+	
 }
 
 }

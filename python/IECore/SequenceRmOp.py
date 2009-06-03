@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -37,7 +37,7 @@ from IECore import *
 class SequenceRmOp( Op ) :
 
 	def __init__( self ) :
-
+	
 		Op.__init__( self, "SequenceRmOp", "Removes file sequences.",
 			FileSequenceParameter(
 				name = "result",
@@ -47,7 +47,7 @@ class SequenceRmOp( Op ) :
 				allowEmptyString = True,
 			)
 		)
-
+		
 		self.parameters().addParameters(
 			[
 				FileSequenceParameter(
@@ -61,9 +61,9 @@ class SequenceRmOp( Op ) :
 		)
 
 	def doOperation( self, operands ) :
+	
+		rm(	self.parameters()["seq"].getFileSequenceValue() )
 
-		rm( self.parameters()["seq"].getFileSequenceValue() )
+		return StringData( operands.seq.value )
 
-		return StringData( operands["seq"].value )
-
-registerRunTimeTyped( SequenceRmOp, 100003, Op )
+makeRunTimeTyped( SequenceRmOp, 100003, Op )

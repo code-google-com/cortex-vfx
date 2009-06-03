@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,29 +32,28 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECOREMAYA_COMPOUNDPARAMETERHANDLER_H
-#define IECOREMAYA_COMPOUNDPARAMETERHANDLER_H
+#ifndef IE_COREMAYA_COMPOUNDPARAMETERHANDLER_H
+#define IE_COREMAYA_COMPOUNDPARAMETERHANDLER_H
 
 #include "IECoreMaya/ParameterHandler.h"
+
+#include "maya/MObject.h"
+#include "maya/MString.h"
+#include "maya/MPlug.h"
 
 namespace IECoreMaya
 {
 
-/// A ParameterHandler which deals with CompoundParameters, representing them as simple
-/// message attributes. Note that no attempt is made to represent the children of the compound - separate
-/// calls to other parameter handlers should be used to do that.
+/// A ParameterHandler which deals with compound parameters
 class CompoundParameterHandler : public ParameterHandler
 {
-
 	protected:
-
 		virtual MObject create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const;
 		virtual MStatus update( IECore::ConstParameterPtr parameter, MObject &attribute ) const;
 		virtual MStatus setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const;
 		virtual MStatus setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const;
-
 };
 
 } // namespace IECoreMaya
 
-#endif // IECOREMAYA_COMPOUNDPARAMETERHANDLER_H
+#endif // IE_COREMAYA_COMPOUNDPARAMETERHANDLER_H

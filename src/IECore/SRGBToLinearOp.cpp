@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,12 +41,8 @@ using namespace IECore;
 using namespace std;
 using namespace boost;
 
-IE_CORE_DEFINERUNTIMETYPED( SRGBToLinearOp );
-
-ColorSpaceTransformOp::ColorSpaceDescription<SRGBToLinearOp> SRGBToLinearOp::g_colorSpaceDescription( "srgb", "linear" );
-
 SRGBToLinearOp::SRGBToLinearOp()
-	:	ChannelOp( "SRGBToLinearOp",
+	:	ChannelOp( "SRGBToLinearOp", 
 				   "Applies SRGB to linear conversion on ImagePrimitive channels."
 		)
 {
@@ -59,7 +55,7 @@ SRGBToLinearOp::~SRGBToLinearOp()
 struct SRGBToLinearOp::Converter
 {
 	typedef void ReturnType;
-
+	
 	template<typename T>
 	ReturnType operator()( typename T::Ptr data )
 	{

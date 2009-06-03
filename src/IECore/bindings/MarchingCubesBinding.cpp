@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/MarchingCubes.h"
-#include "IECore/bindings/RefCountedBinding.h"
 
 using namespace boost::python;
 
@@ -49,7 +49,7 @@ struct MarchingCubesHelper
 	{
 		marchingCubes.march( bound, res, iso );
 	}
-
+	
 	static void march2( T& marchingCubes, const typename T::BoxType &bound, const Imath::V3i &res )
 	{
 		marchingCubes.march( bound, res );
@@ -59,11 +59,16 @@ struct MarchingCubesHelper
 template<typename T>
 void bindMarchingCubes( const char *name )
 {
-	RefCountedClass<T, RefCounted>( name )
+	typedef class_< T, typename T::Ptr, bases<RefCounted>, boost::noncopyable > MarchingCubesPyClass;
+	
+	MarchingCubesPyClass( name, no_init )
 		.def( init< typename T::ImplicitFnType::Ptr, typename T::MeshBuilderType::Ptr > () )
 		.def( "march", &MarchingCubesHelper<T>::march1 )
-		.def( "march", &MarchingCubesHelper<T>::march2 )
+		.def( "march", &MarchingCubesHelper<T>::march2 )				
 	;
+	
+	INTRUSIVE_PTR_PATCH_TEMPLATE( T, MarchingCubesPyClass );
+	implicitly_convertible< typename T::Ptr, RefCountedPtr>();	
 }
 
 void bindMarchingCubes()

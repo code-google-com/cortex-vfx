@@ -36,6 +36,7 @@
 
 #include "IECore/BINParticleWriter.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using std::string;
 using namespace boost;
@@ -46,10 +47,13 @@ namespace IECore
 
 void bindBINParticleWriter()
 {
-	RunTimeTypedClass<BINParticleWriter>()
-		.def( init<>() )
+	typedef class_< BINParticleWriter , BINParticleWriterPtr, boost::noncopyable, bases<ParticleWriter> > BINParticleWriterPyClass;
+	BINParticleWriterPyClass( "BINParticleWriter", init<>() )
 		.def( init<ObjectPtr, const std::string &>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( BINParticleWriter )
 	;
+	INTRUSIVE_PTR_PATCH( BINParticleWriter, BINParticleWriterPyClass );
+	implicitly_convertible<BINParticleWriterPtr, ParticleWriterPtr>();
 }
 
 } // namespace IECore

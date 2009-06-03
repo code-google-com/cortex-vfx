@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,29 +48,25 @@ struct DataConversion : public std::unary_function<F, T>
 {
 	typedef F FromType;
 	typedef T ToType;
-
+	
 	/// The type of the converter that can perform the inverse transformation
 	typedef void InverseType;
 	
-	/// Some converions will return the exact same value (and the exact same type) as the input - they can be marked as "identity" conversions. This means
-	/// that DataConvert, for example, can optimise specific cases.
-	typedef boost::false_type IsIdentity;
-
 	virtual ~DataConversion()
 	{
 	}
-
-	T operator()( F f ) const
+	
+	T operator()( F f )
 	{
 		BOOST_STATIC_ASSERT( sizeof(T) == 0 );
 	}
-
+	
 	InverseType inverse() const
 	{
 		/// Function is not invertible
 		BOOST_STATIC_ASSERT( sizeof(T) == 0 );
 	}
-
+	
 };
 
 } // namespace IECore

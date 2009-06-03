@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -176,6 +176,11 @@ class TransformationMatrixDatafTest(unittest.TestCase):
 		self.assert_( c.value.scale.equalWithAbsError( V3f( 1.5, 2, 2.5 ), 0.01 ) )
 		self.assert_( c.value.translate.equalWithAbsError( V3f( 0.5, 1, 1.5 ), 0.01 ) )
 
+		c = cosineObjectInterpolation( a, b, 0.5 )
+		self.assertEqual( type(c), TransformationMatrixfData )
+		self.assert_( c.value.scale.equalWithAbsError( V3f( 1.5, 2, 2.5 ), 0.01 ) )
+		self.assert_( c.value.translate.equalWithAbsError( V3f( 0.5, 1, 1.5 ), 0.01 ) )
+
 		c = cubicObjectInterpolation( b, b, b, b, 0.5 )
 		self.assertEqual( type(c), TransformationMatrixfData )
 		self.assert_( c.value.scale.equalWithAbsError( V3f( 2, 3, 4 ), 0.01 ) )
@@ -235,6 +240,11 @@ class TransformationMatrixDatadTest(unittest.TestCase):
 		self.assert_( c.value.scale.equalWithAbsError( V3d( 1.5, 2, 2.5 ), 0.01 ) )
 		self.assert_( c.value.translate.equalWithAbsError( V3d( 0.5, 1, 1.5 ), 0.01 ) )
 
+		c = cosineObjectInterpolation( a, b, 0.5 )
+		self.assertEqual( type(c), TransformationMatrixdData )
+		self.assert_( c.value.scale.equalWithAbsError( V3d( 1.5, 2, 2.5 ), 0.01 ) )
+		self.assert_( c.value.translate.equalWithAbsError( V3d( .5, 1, 1.5 ), 0.01 ) )
+
 		c = cubicObjectInterpolation( b, b, b, b, 0.5 )
 		self.assertEqual( type(c), TransformationMatrixdData )
 		self.assert_( c.value.scale.equalWithAbsError( V3d( 2, 3, 4 ), 0.01 ) )
@@ -243,8 +253,10 @@ class TransformationMatrixDatadTest(unittest.TestCase):
 		# try rotation interpolation...
 		d = TransformationMatrixdData( TransformationMatrixd( V3d(2,3,4), Eulerd( 1., 2., 3. ), V3d(1,2,3) ) )
 		e = linearObjectInterpolation( b, d, 0.2 )
-		self.assert_( e.value.rotate.equalWithAbsError( V3d( -0.341406, 0.189475, 0.191253 ), 0.001 ) )
-		
+		self.assertAlmostEqual( (e.value.rotate - Eulerd( 0.2, 0.4, 0.6 )).length(), 0, 2 )
+		c = linearObjectInterpolation( d, d, 0.8 )
+		self.assertAlmostEqual( (c.value.rotate - d.value.rotate).length(), 0, 2 )
+
 	def testComparison(self):
 		"""Test TransformationMatrixdData comparison"""
 		a = TransformationMatrixdData()
@@ -258,7 +270,7 @@ class TransformationMatrixDatadTest(unittest.TestCase):
 	def tearDown(self):
 		if os.path.exists( self.testFile ):
 			os.remove( self.testFile )
-
+					
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main()   
 

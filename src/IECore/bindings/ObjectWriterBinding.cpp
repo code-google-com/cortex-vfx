@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,11 +32,12 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/ObjectWriter.h"
 #include "IECore/FileNameParameter.h"
 #include "IECore/CompoundParameter.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -47,10 +48,13 @@ namespace IECore {
 
 void bindObjectWriter()
 {
-	RunTimeTypedClass<ObjectWriter>()
-		.def( init<>() )
+	typedef class_< ObjectWriter , ObjectWriterPtr, bases<Writer> > ObjectWriterPyClass;
+	ObjectWriterPyClass( "ObjectWriter", init<>() )
 		.def( init<ObjectPtr, const std::string &>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(ObjectWriter)
 	;
+	INTRUSIVE_PTR_PATCH( ObjectWriter, ObjectWriterPyClass );
+	implicitly_convertible<ObjectWriterPtr, WriterPtr>();
 }
 
 } // namespace IECore

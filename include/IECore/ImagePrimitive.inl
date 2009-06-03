@@ -35,16 +35,11 @@
 #ifndef IECORE_IMAGEPRIMITIVE_INL
 #define IECORE_IMAGEPRIMITIVE_INL
 
-#include "boost/format.hpp"
-#include "boost/static_assert.hpp"
-
-#include "OpenEXR/half.h"
-
 #include "IECore/Primitive.h"
 #include "IECore/Exception.h"
-#include "IECore/TypeTraits.h"
+#include "boost/format.hpp"
 
-namespace IECore
+namespace IECore 
 {
 
 template<typename T>
@@ -57,7 +52,7 @@ typename TypedData<std::vector<T> >::Ptr ImagePrimitive::getChannel( const std::
 	}
 	return 0;
 }
-
+		
 template<typename T>
 typename TypedData<std::vector<T> >::ConstPtr ImagePrimitive::getChannel( const std::string &name ) const
 {
@@ -68,26 +63,20 @@ typename TypedData<std::vector<T> >::ConstPtr ImagePrimitive::getChannel( const 
 	}
 	return 0;
 }
-
+			
 template<class T>
 typename TypedData<std::vector<T> >::Ptr ImagePrimitive::createChannel( const std::string &name )
-{
-	/// This assert enforces the comments regarding permissible channel types in ImagePrimitive.h
-	BOOST_STATIC_ASSERT( (
-		boost::mpl::or_<
-			boost::is_same< T, float >,
-			boost::is_same< T, unsigned int >,
-			boost::is_same< T, half >
-		>::value
-	) );
+{	
+	// create a new Variable
+	PrimitiveVariable::Interpolation i = PrimitiveVariable::Vertex;
 	typename TypedData<std::vector<T> >::Ptr channel = new TypedData<std::vector<T> >;
-
-	typename std::vector<T>::size_type area = ( 1 + m_dataWindow.max.x - m_dataWindow.min.x ) * ( 1 + m_dataWindow.max.y - m_dataWindow.min.y );
+	
+	int area = ( 1 + m_dataWindow.max.x - m_dataWindow.min.x ) * ( 1 + m_dataWindow.max.y - m_dataWindow.min.y );
 
 	channel->writable().resize( area );
-
-	variables.insert( PrimitiveVariableMap::value_type( name, PrimitiveVariable( PrimitiveVariable::Vertex, channel ) ) );
-
+	
+	variables.insert(PrimitiveVariableMap::value_type(name, PrimitiveVariable(i, channel)));
+	
 	return channel;
 }
 

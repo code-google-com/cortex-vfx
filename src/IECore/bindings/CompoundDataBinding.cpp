@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,6 +43,7 @@
 #include "boost/python/call_method.hpp"
 
 #include "IECore/CompoundData.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -55,7 +56,7 @@ namespace IECore
 {
 
 // Binding implementations
-/// \todo Why is this a template? We only ever instantiate it for one type
+
 template<typename Container>
 class CompoundTypedDataFunctions
 {
@@ -74,7 +75,6 @@ class CompoundTypedDataFunctions
 		}
 
 		/// constructor that receives a python map object
-		/// \todo Create a rvalue-from-python converter to replace this
 		static typename TypedData< Container >::Ptr dataMapConstructor( dict v )
 		{
 			typename TypedData< Container >::Ptr mapPtr = new TypedData< Container >();
@@ -197,7 +197,7 @@ class CompoundTypedDataFunctions
 			typename Container::const_iterator iterX = xData.begin();
 			while ( iterX != xData.end() )
 			{
-				newList.append( boost::python::make_tuple( iterX->first.value(), iterX->second ) );
+				newList.append( boost::python::make_tuple( iterX->first.c_str(), iterX->second ) );
 				iterX++;
 			}
 			return newList;
@@ -212,7 +212,7 @@ class CompoundTypedDataFunctions
 			typename Container::const_iterator iterX = xData.begin();
 			while ( iterX != xData.end() )
 			{
-				newList.append( iterX->first.value() );
+				newList.append( iterX->first );
 				iterX++;
 			}
 			return newList;
@@ -233,7 +233,6 @@ class CompoundTypedDataFunctions
 		}
 
 		/// binding for update method
-		/// \todo This can be removed once we have a dict->CompoundData from-python converter
 		static void
 		update2( TypedData< Container > &x, dict v )
 		{
@@ -415,7 +414,7 @@ class CompoundTypedDataFunctions
 			typename Container::iterator iterX = xData.begin();
 			if ( iterX != xData.end() )
 			{
-				newTuple = boost::python::make_tuple( iterX->first.value(), iterX->second );
+				newTuple = boost::python::make_tuple( iterX->first.c_str(), iterX->second );
 				xData.erase( iterX );
 			}
 			else
@@ -425,14 +424,13 @@ class CompoundTypedDataFunctions
 			}
 			return newTuple;
 		}
-
-		/// \todo Move outside template so that it specialises the repr() in IECoreBinding.h
+		
 		static std::string repr( TypedData< Container > &x )
-		{
+		{	
 			std::stringstream s;
-
+			
 			s << "IECore." << x.typeName() << "(";
-
+		
 			bool added = false;
 			for (
 				typename Container::const_iterator it = x.readable().begin();
@@ -446,31 +444,31 @@ class CompoundTypedDataFunctions
 				if ( item.attr( "__repr__" ) != object() )
 				{
 					std::string v = call_method< std::string >( item.ptr(), "__repr__" );
-
+						
 					if ( !added )
 					{
 						added = true;
-						s << "{";
+						s << "{";	
 					}
 					else
 					{
 						s << ",";
 					}
-
+					
 					s << "'";
 					s << key;
 					s << "':";
-					s << v;
+					s << v;							
 				}
 			}
-
+		
 			if ( added )
 			{
 				s << "}";
 			}
-
+		
 			s << ")";
-
+			
 			return s.str();
 		}
 
@@ -498,18 +496,20 @@ void bindCompoundData()
 {
 	typedef CompoundTypedDataFunctions< CompoundDataMap > ThisBinder;
 
-	RunTimeTypedClass<CompoundData>(
+	typedef class_< CompoundData , CompoundDataPtr, boost::noncopyable, bases<Data> > CompoundDataPyClass;
+	CompoundDataPyClass( 
+		"CompoundData",
 		"This class behaves like the native python dict, except that it only accepts objects derived from Data class.\n"
 		"The copy constructor accepts another instance of this class or a python dict containing Data objects\n"
-		"it has the most important dict methods: has_key, items, keys, values, get, pop, etc.\n"
-		)
+		"it has the most important dict methods: has_key, items, keys, values, get, pop, etc.\n",
+		no_init )
 		.def( "__init__", make_constructor( &ThisBinder::dataConstructor ), "Default constructor" )
 		.def( "__init__", make_constructor( &ThisBinder::dataMapConstructor ), "Copy constructor: accepts a python dict containing Data objects." )
 		.def( "__getitem__", &ThisBinder::getItem, "indexing operator.\nAccepts only string keys." )
 		.def( "__setitem__", &ThisBinder::setItem, "index assignment operator.\nWorks exactly like on python dicts but only accepts Data objects as the new value." )
 		.def( "__delitem__", &ThisBinder::delItem, "index deletion operator.\nWorks exactly like on python dicts." )
 		.def( "__len__", &ThisBinder::len, "Length operator." )
-		.def( "__contains__", &ThisBinder::has_key, "In operator.\nWorks exactly like on python dicts." )
+		.def( "__contains__", &ThisBinder::has_key, "In operator.\nWorks exactly like on python dicts." )		
 		.def( "size", &ThisBinder::len, "m.size()\nReturns the number of elements on m. Same result as the len operator." )
 		.def( "__cmp__", &ThisBinder::invalidOperator, "Raises an exception. CompoundData does not support comparison operators." )
 		.def( "__repr__", &ThisBinder::repr )
@@ -528,8 +528,11 @@ void bindCompoundData()
 		.def( "pop", &ThisBinder::pop, "m.pop(k [,default])\nReturns m[k] if found and removes it from m; otherwise, returns default if supplied or raises KeyError if not." )
 		.def( "pop", &ThisBinder::pop2 )
 		.def( "popitem", &ThisBinder::popitem, "m.popitem()\nRemvoes a random (key,value) pair from m and returns it as a tuple." )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( CompoundData )
 	;
 
+	INTRUSIVE_PTR_PATCH( CompoundData, CompoundDataPyClass );
+	implicitly_convertible<CompoundDataPtr, DataPtr>();
 }
 
 } // namespace IECore

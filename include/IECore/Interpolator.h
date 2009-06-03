@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,24 +38,26 @@
 #include <cassert>
 #include <vector>
 #include <math.h>
+#include <OpenEXR/ImathQuat.h>
+#include <OpenEXR/ImathBox.h>
+#include <IECore/TransformationMatrix.h>
 
-#include "OpenEXR/ImathQuat.h"
-#include "OpenEXR/ImathBox.h"
-
-#include "IECore/TransformationMatrix.h"
-#include "IECore/TypedData.h"
+#include <IECore/TypedData.h>
 #include "IECore/QuatAlgo.h"
 
 namespace IECore
 {
-
 /// A function object which performs linear interpolation
+
 template<typename T>
 struct LinearInterpolator;
 
-/// A function object which performs cubic interpolation
+template<typename T>
+struct CosineInterpolator;
+
 template<typename T>
 struct CubicInterpolator;
+
 
 template<typename T>
 struct LinearInterpolator
@@ -65,6 +67,16 @@ struct LinearInterpolator
 
 };
 
+/// A function object which performs cosine interpolation
+template<typename T>
+struct CosineInterpolator
+{
+		/// Interpolate between y0 and y1
+		void operator()(const T &y0, const T &y1, double x, T &result ) const;
+
+};
+
+/// A function object which performs cubic interpolation
 template<typename T>
 struct CubicInterpolator
 {

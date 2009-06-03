@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,26 +38,24 @@
 
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPED( ModifyOp );
-
-ModifyOp::ModifyOp( const std::string &name, const std::string &description, ParameterPtr resultParameter, ParameterPtr inputParameter )
+ModifyOp::ModifyOp( const std::string name, const std::string description, ParameterPtr resultParameter, ParameterPtr inputParameter )
 	:	Op( name, description, resultParameter )
 {
 	parameters()->addParameter( inputParameter );
 	m_inputParameter = inputParameter;
-
+	
 	m_copyParameter = new BoolParameter(
 		"copyInput",
 		"When this is on the input is copied before being modified. When off the object is modified in place.",
 		true
 	);
 	parameters()->addParameter( m_copyParameter );
-
+	
 	m_enableParameter = new BoolParameter(
 		"enable",
 		"When this is off the input is passed through unchanged.",
 		true
-
+	
 	);
 	parameters()->addParameter( m_enableParameter );
 }

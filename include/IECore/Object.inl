@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -55,29 +55,28 @@ boost::intrusive_ptr<T> Object::CopyContext::copy( boost::intrusive_ptr<const T>
 }
 
 template<class T>
-Object::TypeDescription<T>::TypeDescription() : RunTimeTyped::TypeDescription<T>()
+Object::TypeDescription<T>::TypeDescription()
 {
-	Object::registerType( T::staticTypeId(), T::staticTypeName(), creator, (void*)0 );
+	Object::registerType( T::staticTypeId(), T::staticTypeName(), creator );
 }
 
 template<class T>
-Object::TypeDescription<T>::TypeDescription( TypeId alternateTypeId, const std::string &alternateTypeName ) : RunTimeTyped::TypeDescription<T>()
+Object::TypeDescription<T>::TypeDescription( TypeId alternateTypeId, const std::string &alternateTypeName )
 {
-	Object::registerType( alternateTypeId, alternateTypeName, creator, (void*)0 );
+	Object::registerType( alternateTypeId, alternateTypeName, creator );
 }
 
 
 template<class T>
-ObjectPtr Object::TypeDescription<T>::creator( void *data )
+ObjectPtr Object::TypeDescription<T>::creator()
 {
-	assert( !data ); // We don't expect to receive any data here.
 	return new T;
 }
 
 template<class T>
-Object::AbstractTypeDescription<T>::AbstractTypeDescription() : RunTimeTyped::TypeDescription<T>()
+Object::AbstractTypeDescription<T>::AbstractTypeDescription()
 {
-	Object::registerType( T::staticTypeId(), T::staticTypeName(), 0, (void*)0 );
+	Object::registerType( T::staticTypeId(), T::staticTypeName(), 0 );
 }
 
 template<class T>

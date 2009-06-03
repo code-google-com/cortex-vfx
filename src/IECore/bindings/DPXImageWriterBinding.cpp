@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/DPXImageWriter.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -47,11 +48,15 @@ namespace IECore
 void bindDPXImageWriter()
 {
 
-	RunTimeTypedClass<DPXImageWriter>()
-		.def( init<>() )
+	typedef class_<DPXImageWriter, DPXImageWriterPtr, boost::noncopyable, bases<ImageWriter> > DPXImageWriterPyClass;
+
+	DPXImageWriterPyClass("DPXImageWriter", init<>())
 		.def( init<ObjectPtr, const std::string &>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(DPXImageWriter)
 	;
 
+	INTRUSIVE_PTR_PATCH( DPXImageWriter, DPXImageWriterPyClass );
+	implicitly_convertible<DPXImageWriterPtr, DPXImageWriterPtr>();
 }
 
 } // namespace IECore

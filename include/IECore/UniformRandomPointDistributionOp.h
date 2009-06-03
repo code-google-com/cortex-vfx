@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,8 +38,8 @@
 #include "IECore/Op.h"
 #include "IECore/NumericParameter.h"
 #include "IECore/MeshPrimitive.h"
-#include "IECore/SimpleTypedParameter.h"
-#include "IECore/TypedPrimitiveParameter.h"
+#include "IECore/TypedParameter.h"
+#include "IECore/TypedObjectParameter.h"
 
 namespace IECore
 {
@@ -51,41 +51,41 @@ IE_CORE_FORWARDDECLARE( ObjectParameter )
 class UniformRandomPointDistributionOp : public Op
 {
 	public :
-
+		
 		IE_CORE_DECLARERUNTIMETYPED( UniformRandomPointDistributionOp, Op );
-
+		
 		UniformRandomPointDistributionOp();
 		virtual ~UniformRandomPointDistributionOp();
-
+		
 		MeshPrimitiveParameterPtr meshParameter();
 		ConstMeshPrimitiveParameterPtr meshParameter() const;
-
+		
 		IntParameterPtr numPointsParameter();
-		ConstIntParameterPtr numPointsParameter() const;
-
+		ConstIntParameterPtr numPointsParameter() const;	
+		
 		IntParameterPtr seedParameter();
 		ConstIntParameterPtr seedParameter() const;
-
+		
 		BoolParameterPtr addSTParameter();
-		ConstBoolParameterPtr addSTParameter() const;
-
-
+		ConstBoolParameterPtr addSTParameter() const;				
+			
+		
 	protected :
-
+	
 		void constructCommon();
-
+	
 		UniformRandomPointDistributionOp( const std::string &name, const std::string &description );
-
+	
 		/// Derived classes can override this method and return a number in the range [0,1] defining the
 		/// required density at the given point.
 		virtual float density( ConstMeshPrimitivePtr mesh, const Imath::V3f &point, const Imath::V2f &uv ) const;
-
+	
 		struct DistributeFn;
 
 		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
-
+	
 	private :
-
+		
 		MeshPrimitiveParameterPtr m_meshParameter;
 		IntParameterPtr m_numPointsParameter;
 		IntParameterPtr m_seedParameter;

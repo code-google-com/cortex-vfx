@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,8 +40,6 @@
 using namespace IECoreGL;
 using namespace std;
 
-IE_CORE_DEFINERUNTIMETYPED( DepthTexture );
-
 DepthTexture::DepthTexture( unsigned int width, unsigned height, IECore::ConstDataPtr z )
 {
 	glGenTextures( 1, &m_texture );
@@ -52,7 +50,7 @@ DepthTexture::DepthTexture( unsigned int width, unsigned height, IECore::ConstDa
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-
+	
 	if( !z )
 	{
 		glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height, 0, GL_DEPTH_COMPONENT,
@@ -65,7 +63,7 @@ DepthTexture::DepthTexture( unsigned int width, unsigned height, IECore::ConstDa
 
 	Exception::throwIfError();
 }
-
+				
 DepthTexture::~DepthTexture()
 {
 }

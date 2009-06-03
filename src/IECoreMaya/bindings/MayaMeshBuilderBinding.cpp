@@ -32,12 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECoreMaya/bindings/MayaMeshBuilderBinding.h"
 #include "IECoreMaya/MayaMeshBuilder.h"
 
-#include "IECore/bindings/RefCountedBinding.h"
 
 using namespace boost;
 using namespace boost::python;
@@ -50,14 +49,16 @@ namespace IECoreMaya
 template<typename T>
 void bindMayaMeshBuilder( const char *name )
 {
-	RefCountedClass<T, RefCounted>( name )
+	typedef class_< T, typename T::Ptr, boost::noncopyable > MayaMeshBuilderPyClass;
+
+	MayaMeshBuilderPyClass( name, no_init )
 		.def( init< MObject > () )
 		.def( "addVertex", &T::addVertex )
 		.def( "addTriangle", &T::addTriangle )
-		.def( "mesh", &T::mesh )
+		.def( "mesh", &T::mesh )								
 	;
-
-	implicitly_convertible< typename T::Ptr, RefCountedPtr>();
+	
+	implicitly_convertible< typename T::Ptr, RefCountedPtr>();	
 }
 
 void bindMayaMeshBuilder()

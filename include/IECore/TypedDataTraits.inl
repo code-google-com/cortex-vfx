@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,24 +32,18 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IE_CORE_TYPEDDATATRAITS_INL
-#define IE_CORE_TYPEDDATATRAITS_INL
-
 namespace IECore
 {
 
-/// This macro specializes the TypedDataTraits template class for a particular Data type T.
-/// The parameter BT must be the base data type for the internal structure on the Data type T.
+/// This macro specializes the TypedDAtaTraits template class for a particular Data type T.
+// The parameter BT must be the base data type for the internal structure on the Data type T.
 #define IE_CORE_DEFINETYPEDDATATRAITSSPECIALIZATION( T, BT )				\
 	template <>																\
 	class TypedDataTraits<T>												\
 	{																		\
 		public:																\
-			typedef BT BaseType; \
-			typedef boost::true_type HasBase; \
+			typedef BT BaseType;											\
 	};
 
 
 } // namespace IECore
-
-#endif // IE_CORE_TYPEDDATATRAITS_INL

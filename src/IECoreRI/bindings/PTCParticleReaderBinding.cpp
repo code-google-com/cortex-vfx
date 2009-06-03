@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,9 @@
 #include <boost/python.hpp>
 
 #include "IECoreRI/PTCParticleReader.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
+
 
 using std::string;
 using namespace boost;
@@ -46,11 +48,15 @@ namespace IECoreRI {
 
 void bindPTCParticleReader()
 {
-	RunTimeTypedClass<PTCParticleReader>()
-		.def( init<>() )
+	typedef class_< PTCParticleReader , PTCParticleReaderPtr, boost::noncopyable, bases<ParticleReader> > PTCParticleReaderPyClass;
+	PTCParticleReaderPyClass( "PTCParticleReader", init<>() )
 		.def( init<const std::string &>() )
 		.def( "canRead", &PTCParticleReader::canRead ).staticmethod( "canRead" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( PTCParticleReader )
 	;
+
+	INTRUSIVE_PTR_PATCH( PTCParticleReader, PTCParticleReaderPyClass );
+	implicitly_convertible<PTCParticleReaderPtr, ParticleReaderPtr>();
 }
 
 } // namespace IECoreRI

@@ -36,7 +36,7 @@
 #define IECORE_MESHMERGEOP_H
 
 #include "IECore/TypedPrimitiveOp.h"
-#include "IECore/TypedPrimitiveParameter.h"
+#include "IECore/TypedObjectParameter.h"
 
 namespace IECore
 {
@@ -50,20 +50,20 @@ class MeshMergeOp : public MeshPrimitiveOp
 		virtual ~MeshMergeOp();
 
 		IE_CORE_DECLARERUNTIMETYPED( MeshMergeOp, MeshPrimitiveOp );
-
+		
 		MeshPrimitiveParameterPtr meshParameter();
 		ConstMeshPrimitiveParameterPtr meshParameter() const;
 
 	protected :
-
+	
 		virtual void modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands );
-
+	
 	private :
-
+		
 		struct AppendPrimVars;
-
+	
 		MeshPrimitiveParameterPtr m_meshParameter;
-
+		
 };
 
 IE_CORE_DECLAREPTR( MeshMergeOp );

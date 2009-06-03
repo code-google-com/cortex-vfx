@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/bindings/PolygonAlgoBinding.h"
 #include "IECore/PolygonAlgo.h"
@@ -83,7 +83,7 @@ void bindPolygonAlgo()
 
 	def( "polygonWinding", &polygonWindingBinding3D<V3fVectorData> );
 	def( "polygonWinding", &polygonWindingBinding3D<V3dVectorData> );
-
+	
 	def( "polygonBound", &polygonBoundBinding<V2fVectorData> );
 	def( "polygonBound", &polygonBoundBinding<V3fVectorData> );
 	def( "polygonBound", &polygonBoundBinding<V2dVectorData> );

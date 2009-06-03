@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,13 +45,13 @@ namespace IECore
 class DirNameParameter : public PathParameter
 {
 	public :
-
-		IE_CORE_DECLAREOBJECT( DirNameParameter, PathParameter );
-
+	
+		IE_CORE_DECLARERUNTIMETYPED( DirNameParameter, PathParameter )
+	
 		DirNameParameter( const std::string &name, const std::string &description,
 			const std::string &defaultValue = "", bool allowEmptyString = true,
 			PathParameter::CheckType check = PathParameter::DontCare,
-			const StringParameter::PresetsContainer &presets = StringParameter::PresetsContainer(), bool presetsOnly = false, ConstCompoundObjectPtr userData=0 );
+			const StringParameter::PresetsMap &presets = StringParameter::PresetsMap(), bool presetsOnly = false, ConstCompoundObjectPtr userData=0 );
 
 		/// Returns false if :
 		///
@@ -59,12 +59,8 @@ class DirNameParameter : public PathParameter
 		/// * The given path points to a existent file.
 		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
 
-	protected :
-
-		// for file io and copying
-		DirNameParameter();
-		friend class TypeDescription<DirNameParameter>;
-
+	private :
+	
 };
 
 IE_CORE_DECLAREPTR( DirNameParameter )

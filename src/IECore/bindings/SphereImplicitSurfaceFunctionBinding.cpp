@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,11 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Exception.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/SphereImplicitSurfaceFunction.h"
-#include "IECore/bindings/RefCountedBinding.h"
 
 using namespace boost::python;
 
@@ -47,10 +47,15 @@ template<typename T>
 void bindSphereImplicitSurfaceFunction( const char *name )
 {
 	typedef ImplicitSurfaceFunction<typename T::Point, typename T::Value> Base;
+	
+	typedef class_< T, typename T::Ptr, bases< Base >, boost::noncopyable > SphereImplicitPyClass;
 
-	RefCountedClass<T, Base>( name )
+	SphereImplicitPyClass( name, no_init )
 		.def( init< const typename T::Point  &, typename T::PointBaseType> () )
 	;
+	
+	implicitly_convertible< typename T::Ptr, typename Base::Ptr>();
+	INTRUSIVE_PTR_PATCH_TEMPLATE( T, SphereImplicitPyClass );	
 }
 
 void bindSphereImplicitSurfaceFunction()
@@ -58,7 +63,7 @@ void bindSphereImplicitSurfaceFunction()
 	bindSphereImplicitSurfaceFunction<SphereImplicitSurfaceFunctionV3ff>( "SphereImplicitSurfaceFunctionV3ff" );
 	bindSphereImplicitSurfaceFunction<SphereImplicitSurfaceFunctionV3fd>( "SphereImplicitSurfaceFunctionV3fd" );
 	bindSphereImplicitSurfaceFunction<SphereImplicitSurfaceFunctionV3df>( "SphereImplicitSurfaceFunctionV3df" );
-	bindSphereImplicitSurfaceFunction<SphereImplicitSurfaceFunctionV3dd>( "SphereImplicitSurfaceFunctionV3dd" );
+	bindSphereImplicitSurfaceFunction<SphereImplicitSurfaceFunctionV3dd>( "SphereImplicitSurfaceFunctionV3dd" );	
 }
 
 } // namespace IECore

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,16 +32,17 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include <limits.h>
 
-#include "boost/python/make_constructor.hpp"
+#include <boost/python/make_constructor.hpp>
 
 #include "OpenEXR/ImathLimits.h"
-#include "OpenEXR/halfLimits.h"
 
 #include "IECore/SimpleTypedData.h"
+#include "IECore/BoxOperators.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 #include "IECore/bindings/IECoreBinding.h"
 
@@ -61,26 +62,21 @@ namespace IECore
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
-struct ConstructHelper
+static intrusive_ptr<T> construct()
 {
-	static typename T::Ptr construct()
-	{
-		return new T;
-	}
-};
+	return new T;
+}
 
 /// Half needs explicit initialisation
 template<>
-struct ConstructHelper<HalfData>
+intrusive_ptr<HalfData> construct()
 {
-	static HalfDataPtr construct()
-	{
-		return new HalfData( 0 );
-	}
-};
+	return new HalfData(0);
+}
+
 
 template<class T>
-static typename T::Ptr constructWithValue( const typename T::ValueType &v )
+static intrusive_ptr<T> constructWithValue( const typename T::ValueType &v )
 {
 	return new T( v );
 }
@@ -117,6 +113,18 @@ template<>
 int cmp( StringData &x, StringData &y )
 {
 	return x.readable().compare( y.readable() );
+}
+
+template<class T>
+static typename T::ValueType minValue( T &x )
+{
+	return std::numeric_limits<typename T::ValueType>::min();
+}
+
+template<class T>
+static typename T::ValueType maxValue( T & x)
+{
+	return std::numeric_limits<typename T::ValueType>::max();
 }
 
 template<>
@@ -178,7 +186,7 @@ string str<TYPE>( TYPE &x )																				\
 	stringstream s;																						\
 	s << x;																								\
 	return s.str();																						\
-}
+}				
 
 DEFINENUMERICSTRSPECIALISATION( bool );
 DEFINENUMERICSTRSPECIALISATION( int );
@@ -206,7 +214,7 @@ string str<TypedData<TYPE> >( TypedData<TYPE> &x )														\
 	stringstream s;																						\
 	s << str( const_cast<TYPE &>( x.readable() ) );														\
 	return s.str();																						\
-}
+}						
 
 DEFINETYPEDDATASTRSPECIALISATION( bool );
 DEFINETYPEDDATASTRSPECIALISATION( char );
@@ -245,101 +253,38 @@ DEFINETYPEDDATASTRSPECIALISATION( Quatf );
 DEFINETYPEDDATASTRSPECIALISATION( Quatd );
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// an rvalue converter to get TypedData<T> from a python object convertible to T
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-template<typename T>
-struct TypedDataFromType
-{
-	TypedDataFromType()
-	{
-		converter::registry::push_back(
-			&convertible,
-			&construct,
-			type_id<typename T::Ptr>()
-		);
-
-	}
-
-	static void *convertible( PyObject *obj )
-	{
-		extract<typename T::ValueType> e( obj );
-		if( e.check() )
-		{
-			return obj;
-		}
-		return 0;
-	}
-
-	static void construct( PyObject *obj, converter::rvalue_from_python_stage1_data *data )
-	{
-		void *storage = ((converter::rvalue_from_python_storage<typename T::Ptr>*)data)->storage.bytes;
-		new (storage) typename T::Ptr( new T( extract<typename T::ValueType>( obj ) ) );
-		data->convertible = storage;
-	}
-};
-
-// specialise the bool version so it doesn't go gobbling up ints and things and turning them
-// into BoolData
-template<>
-struct TypedDataFromType<BoolData>
-{
-
-	TypedDataFromType()
-	{
-		converter::registry::push_back(
-			&convertible,
-			&construct,
-			type_id<BoolDataPtr>()
-		);
-
-	}
-
-	static void *convertible( PyObject *obj )
-	{
-		if( PyBool_Check( obj ) )
-		{
-			return obj;
-		}
-		return 0;
-	}
-
-	static void construct( PyObject *obj, converter::rvalue_from_python_stage1_data *data )
-	{
-		void *storage = ((converter::rvalue_from_python_storage<BoolDataPtr>*)data)->storage.bytes;
-		new (storage) BoolDataPtr( new BoolData( extract<bool>( obj ) ) );
-		data->convertible = storage;
-	}
-
-};
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // functions to do the binding
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
-static RunTimeTypedClass<T> bindSimpleData()
+static class_<T, intrusive_ptr<T>, boost::noncopyable, bases<Data> > bindSimpleData()
 {
-	TypedDataFromType<T>();
-
-	RunTimeTypedClass<T> result;
-	result.def( "__init__", make_constructor( &ConstructHelper<T>::construct ), "Construct with no specified value." );
+	string typeName = T::staticTypeName();
+	typedef class_<T, intrusive_ptr<T>, boost::noncopyable, bases<Data> > ThisPyClass;
+	ThisPyClass result( typeName.c_str(), no_init );
+	result.def( "__init__", make_constructor( &construct<T> ), "Construct with no specified value." );
 	result.def( "__init__", make_constructor( &constructWithValue<T> ), "Construct with the specified value." );
 	result.def( "__str__", &str<T> );
 	result.def( "__repr__", &repr<T> );
 	result.add_property( "value",	&getValue<T>,
 									&setValue<T>, "The value contained by the object.");
-
-
+	result.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(T);									
+	INTRUSIVE_PTR_PATCH( T, typename ThisPyClass );
 	return result;
 }
 
 template<class T>
-static void bindNumericMethods( class_<T, typename T::Ptr, boost::noncopyable, bases<Data> > &c )
+static void bindNumericMethods( class_<T, intrusive_ptr<T>, boost::noncopyable, bases<Data> > &c )
 {
-	c.add_static_property( "minValue", &std::numeric_limits<typename T::ValueType>::min, "Minimum representable value." );
-	c.add_static_property( "maxValue", &std::numeric_limits<typename T::ValueType>::max, "Maximum representable value." );
+	/// \todo minValue/maxValue should be static
+	c.add_property( "minValue", &minValue<T>, "Minimum representable value." );
+	c.add_property( "maxValue", &maxValue<T>, "Maximum representable value." );
 	c.def( "__cmp__", &cmp<T>, "Comparison operators ( <, >, >=, <= )" );
+}
+
+static void bindHalfMethods( class_<HalfData, intrusive_ptr<HalfData>, boost::noncopyable, bases<Data> > &c )
+{
+	c.def( "__cmp__", &cmp<HalfData>, "Comparison operators ( <, >, >=, <= )" );
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -348,98 +293,133 @@ static void bindNumericMethods( class_<T, typename T::Ptr, boost::noncopyable, b
 
 void bindAllSimpleTypedData()
 {
-	RunTimeTypedClass<StringData> sdc = bindSimpleData<StringData>();
+	class_< StringData, StringDataPtr, boost::noncopyable, bases<Data> > sdc = bindSimpleData<StringData>();
 	sdc.def("__cmp__", &cmp<StringData> );
+	implicitly_convertible<StringDataPtr, DataPtr>();
 
 	bindSimpleData<BoolData>();
-
-	RunTimeTypedClass<IntData> idc = bindSimpleData<IntData>();
+	implicitly_convertible<BoolDataPtr, DataPtr>();
+	
+	class_< IntData, IntDataPtr, boost::noncopyable, bases<Data> > idc = bindSimpleData<IntData>();
 	bindNumericMethods( idc );
 	idc.def( "__int__", &getValue<IntData> );
-
-	RunTimeTypedClass<UIntData> uidc = bindSimpleData<UIntData>();
+	implicitly_convertible<IntDataPtr, DataPtr>();
+	
+	class_< UIntData, UIntDataPtr, boost::noncopyable, bases<Data> > uidc = bindSimpleData<UIntData>();
 	bindNumericMethods( uidc );
 	uidc.def( "__long__", &getValue<UIntData> );
-
-	RunTimeTypedClass<FloatData > fdc = bindSimpleData<FloatData>();
+	implicitly_convertible<UIntDataPtr, DataPtr>();
+	
+	class_< FloatData, FloatDataPtr, boost::noncopyable, bases<Data> > fdc = bindSimpleData<FloatData>();
 	bindNumericMethods( fdc );
 	fdc.def( "__float__", &getValue<FloatData> );
-
-	RunTimeTypedClass<DoubleData> ddc = bindSimpleData<DoubleData>();
+	implicitly_convertible<FloatDataPtr, DataPtr>();
+	
+	class_< DoubleData, DoubleDataPtr, boost::noncopyable, bases<Data> > ddc = bindSimpleData<DoubleData>();
 	bindNumericMethods( ddc );
 	ddc.def( "__float__", &getValue<DoubleData> );
-
-	RunTimeTypedClass<CharData> cdc = bindSimpleData<CharData>();
+	implicitly_convertible<DoubleDataPtr, DataPtr>();
+	
+	class_< CharData, CharDataPtr, boost::noncopyable, bases<Data> > cdc = bindSimpleData<CharData>();
 	bindNumericMethods( cdc );
-
-	RunTimeTypedClass<UCharData> ucdc = bindSimpleData<UCharData>();
+	implicitly_convertible<CharDataPtr, DataPtr>();
+	
+	class_< UCharData, UCharDataPtr, boost::noncopyable, bases<Data> > ucdc = bindSimpleData<UCharData>();
 	bindNumericMethods( ucdc );
 	ucdc.def( "__int__", &getValue<UCharData> );
 	ucdc.def( "__chr__", &getValue<UCharData> );
-
-	RunTimeTypedClass<HalfData> hdc = bindSimpleData<HalfData>();
-	bindNumericMethods( hdc );
+	implicitly_convertible<UCharDataPtr, DataPtr>();
+	
+	class_< HalfData, HalfDataPtr, boost::noncopyable, bases<Data> > hdc = bindSimpleData<HalfData>();
+	bindHalfMethods( hdc );
 	hdc.def( "__float__", &getValue<HalfData> );
-
-	RunTimeTypedClass<ShortData> shdc = bindSimpleData<ShortData>();
+	implicitly_convertible<HalfDataPtr, DataPtr>();
+	
+	class_< ShortData, ShortDataPtr, boost::noncopyable, bases<Data> > shdc = bindSimpleData<ShortData>();
 	bindNumericMethods( shdc );
 	shdc.def( "__int__", &getValue<ShortData> );
-
-	RunTimeTypedClass<UShortData> ushdc = bindSimpleData<UShortData>();
+	implicitly_convertible<ShortDataPtr, DataPtr>();
+	
+	class_< UShortData, UShortDataPtr, boost::noncopyable, bases<Data> > ushdc = bindSimpleData<UShortData>();
 	bindNumericMethods( ushdc );
 	ushdc.def( "__int__", &getValue<UShortData> );
-
-	RunTimeTypedClass<Int64Data> i64dc = bindSimpleData<Int64Data>();
+	implicitly_convertible<UShortDataPtr, DataPtr>();
+	
+	class_< Int64Data, Int64DataPtr, boost::noncopyable, bases<Data> > i64dc = bindSimpleData<Int64Data>();
 	bindNumericMethods( i64dc );
 	i64dc.def( "__long__", &getValue<Int64Data> );
-
-	RunTimeTypedClass<UInt64Data> ui64dc = bindSimpleData<UInt64Data>();
+	implicitly_convertible<Int64DataPtr, DataPtr>();
+	
+	class_< UInt64Data, UInt64DataPtr, boost::noncopyable, bases<Data> > ui64dc = bindSimpleData<UInt64Data>();
 	bindNumericMethods( ui64dc );
 	ui64dc.def( "__long__", &getValue<UInt64Data> );
+	implicitly_convertible<UInt64DataPtr, DataPtr>();	
 
 	bindSimpleData<V2iData>();
+	implicitly_convertible<V2iDataPtr, DataPtr>();
 
 	bindSimpleData<V3iData>();
+	implicitly_convertible<V3iDataPtr, DataPtr>();
 
 	bindSimpleData<V2fData>();
-
+	implicitly_convertible<V2fDataPtr, DataPtr>();
+	
 	bindSimpleData<V3fData>();
-
+	implicitly_convertible<V3fDataPtr, DataPtr>();
+	
 	bindSimpleData<V2dData>();
-
+	implicitly_convertible<V2dDataPtr, DataPtr>();
+	
 	bindSimpleData<V3dData>();
+	implicitly_convertible<V3dDataPtr, DataPtr>();
 
 	bindSimpleData<Box2iData>();
-
+	implicitly_convertible<Box2iDataPtr, DataPtr>();
+	
 	bindSimpleData<Box3iData>();
-
+	implicitly_convertible<Box3iDataPtr, DataPtr>();
+	
 	bindSimpleData<Box2fData>();
-
+	implicitly_convertible<Box2fDataPtr, DataPtr>();
+	
 	bindSimpleData<Box3fData>();
-
+	implicitly_convertible<Box3fDataPtr, DataPtr>();
+	
 	bindSimpleData<Box2dData>();
-
+	implicitly_convertible<Box2dDataPtr, DataPtr>();
+	
 	bindSimpleData<Box3dData>();
+	implicitly_convertible<Box3dDataPtr, DataPtr>();
 
 	bindSimpleData<M33fData>();
-
+	implicitly_convertible<M33fDataPtr, DataPtr>();
+	
 	bindSimpleData<M33dData>();
-
+	implicitly_convertible<M33dDataPtr, DataPtr>();
+	
 	bindSimpleData<M44fData>();
-
+	implicitly_convertible<M44fDataPtr, DataPtr>();
+	
 	bindSimpleData<M44dData>();
-
+	implicitly_convertible<M44dDataPtr, DataPtr>();
+	
 	bindSimpleData<QuatfData>();
-
+	implicitly_convertible<QuatfDataPtr, DataPtr>();
+	
 	bindSimpleData<QuatdData>();
-
+	implicitly_convertible<QuatdDataPtr, DataPtr>();
+	
 	bindSimpleData<Color3fData>();
-
+	implicitly_convertible<Color3fDataPtr, DataPtr>();
+	
 	bindSimpleData<Color3dData>();
-
+	implicitly_convertible<Color3dDataPtr, DataPtr>();
+	
 	bindSimpleData<Color4fData>();
-
+	implicitly_convertible<Color4fDataPtr, DataPtr>();
+	
 	bindSimpleData<Color4dData>();
+	implicitly_convertible<Color4dDataPtr, DataPtr>();
 
 }
 

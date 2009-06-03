@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 ##########################################################################
 
 import _IECore as IECore
-from IECore import registerObject
+from RunTimeTypedUtil import makeRunTimeTyped
 
 ## This class implements a CompoundParameter that do not validate optional parameters if they are undefined.
 # This CompoundParameter derived class allows one to set a group of obligatory parameters that should always
@@ -49,8 +49,8 @@ class OptionalCompoundParameter( IECore.CompoundParameter ):
 		self.__obligatoryParameterNames = None
 
 	## Defines a list of parameter names that must be validated.
-	# The non listed parameters are treated as
-	# optional. That means they can be set to NullObject. The obligatoryParameterNames can also be None.
+	# The non listed parameters are treated as 
+	# optional. That means they can be set to NullObject. The obligatoryParameterNames can also be None. 
 	# In that case the validation used is from CompoundParameter
 	def setObligatoryParameterNames( self, obligatoryParameterNames = None ):
 		self.__obligatoryParameterNames = set( obligatoryParameterNames )
@@ -68,7 +68,7 @@ class OptionalCompoundParameter( IECore.CompoundParameter ):
 		return isinstance( self[ paramName ].getValue(), IECore.NullObject )
 
 	## Overwrites default validation method from CompoundParameter.
-	# This function does not validate undefined parameters ( values equal to NullObject ) not listed in the
+	# This function does not validate undefined parameters ( values equal to NullObject ) not listed in the 
 	# obligatory parameter list.
 	def valueValid( self, value ) :
 
@@ -115,4 +115,4 @@ class OptionalCompoundParameter( IECore.CompoundParameter ):
 		else:
 			parameter.smartSetValue( attrValue )
 
-registerObject( OptionalCompoundParameter, 100009, IECore.CompoundParameter )
+makeRunTimeTyped( OptionalCompoundParameter, 100009, IECore.CompoundParameter )

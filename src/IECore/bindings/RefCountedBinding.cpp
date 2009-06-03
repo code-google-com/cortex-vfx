@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,14 +32,15 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/RefCounted.h"
 #include "IECore/WrapperGarbageCollectorBase.h"
 #include "IECore/bindings/WrapperGarbageCollector.h"
 #include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using namespace boost::python;
 
@@ -53,18 +54,15 @@ static bool is(RefCountedPtr self,RefCountedPtr other )
 
 void bindRefCounted()
 {
-	class_<RefCounted, boost::noncopyable, RefCountedPtr>( "RefCounted", "A simple class to count references." )
+	typedef class_< RefCounted, boost::noncopyable, RefCountedPtr > RefCountedPyClass;
+	RefCountedPyClass("RefCounted", "A simple class to count references.", no_init)
 		.def( "isSame", &is )
 		.def( "numWrappedInstances", &WrapperGarbageCollectorBase::numWrappedInstances ).staticmethod( "numWrappedInstances" )
 		.add_static_property( "garbageCollectionThreshold", &WrapperGarbageCollectorBase::getCollectThreshold, &WrapperGarbageCollectorBase::setCollectThreshold )
 		.def( "collectGarbage", &WrapperGarbageCollector::collect ).staticmethod( "collectGarbage" )
 	;
-
-	IntrusivePtrToPython<RefCounted>();
-	IntrusivePtrFromPython<RefCounted>();
-
+	INTRUSIVE_PTR_PATCH( RefCounted, RefCountedPyClass );
 	implicitly_convertible<RefCountedPtr, ConstRefCountedPtr>();
 }
-
 }
 

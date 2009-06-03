@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,11 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/PointsPrimitive.h"
 #include "IECore/bindings/PointsPrimitiveBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -44,13 +45,17 @@ namespace IECore
 {
 
 void bindPointsPrimitive()
-{
-	scope primScope = RunTimeTypedClass<PointsPrimitive>()
+{	
+	typedef class_< PointsPrimitive, PointsPrimitivePtr, bases<Primitive>, boost::noncopyable > PointsPrimitivePyClass;
+	scope primScope = PointsPrimitivePyClass( "PointsPrimitive", no_init )
 		.def( init<size_t>() )
 		.def( init<V3fVectorDataPtr>() )
 		.def( init<V3fVectorDataPtr, FloatVectorDataPtr>() )
 		.add_property( "numPoints", &PointsPrimitive::getNumPoints, &PointsPrimitive::setNumPoints  )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(PointsPrimitive)
 	;
+	INTRUSIVE_PTR_PATCH( PointsPrimitive, PointsPrimitivePyClass );
+	implicitly_convertible<PointsPrimitivePtr, PrimitivePtr>();
 }
 
 }

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,6 +37,7 @@
 
 #include "IECore/SRGBToLinearOp.h"
 #include "IECore/bindings/SRGBToLinearOpBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -46,10 +47,14 @@ namespace IECore
 
 void bindSRGBToLinearOp()
 {
-
-	RunTimeTypedClass<SRGBToLinearOp>()
-		.def( init<>() )
+	
+	typedef class_<SRGBToLinearOp, SRGBToLinearOpPtr, boost::noncopyable, bases<ChannelOp> > SRGBToLinearOpPyClass;
+	SRGBToLinearOpPyClass( "SRGBToLinearOp" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( SRGBToLinearOp )
 	;
+	
+	INTRUSIVE_PTR_PATCH( SRGBToLinearOp, SRGBToLinearOpPyClass );
+	implicitly_convertible<SRGBToLinearOpPtr, ChannelOpPtr>();	
 
 }
 

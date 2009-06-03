@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <cassert>
-
-#include "boost/mpl/eval_if.hpp"
-#include "boost/mpl/or.hpp"
-#include "boost/type_traits/is_same.hpp"
-#include "boost/utility/enable_if.hpp"
+#include <boost/mpl/eval_if.hpp>
+#include <boost/mpl/or.hpp>
+#include <boost/type_traits/is_same.hpp>
+#include <boost/utility/enable_if.hpp>
 
 #include "IECore/MatrixMultiplyOp.h"
 #include "IECore/SimpleTypedData.h"
@@ -48,26 +46,26 @@
 #include "IECore/NullObject.h"
 #include "IECore/DespatchTypedData.h"
 
+#include <cassert>
+
 using namespace IECore;
 using namespace Imath;
 using namespace std;
 using namespace boost;
 using namespace boost::mpl;
 
-IE_CORE_DEFINERUNTIMETYPED( MatrixMultiplyOp );
-
-static TypeId inputTypes[] =
+static TypeId inputTypes[] = 
 {
 	V3fVectorDataTypeId,
 	V3dVectorDataTypeId,
 	InvalidTypeId
 };
 
-static TypeId matrixTypes[] =
+static TypeId matrixTypes[] = 
 {
 	M33fDataTypeId,
 	M33dDataTypeId,
-	M44fDataTypeId,
+	M44fDataTypeId, 
 	M44dDataTypeId,
 	TransformationMatrixfDataTypeId,
 	TransformationMatrixdDataTypeId,
@@ -98,12 +96,11 @@ MatrixMultiplyOp::MatrixMultiplyOp()
 		new M44fData(),
 		&matrixTypes[0]
 	);
-
-	IntParameter::PresetsContainer modePresets;
-	modePresets.push_back( IntParameter::Preset( "point", Point ) );
-	modePresets.push_back( IntParameter::Preset( "vector", Vector ) );
-	modePresets.push_back( IntParameter::Preset( "normal", Normal ) );
-
+	
+	IntParameter::PresetsMap modePresets;
+	modePresets["point"] = Point;
+	modePresets["vector"] = Vector;
+	modePresets["normal"] = Normal;
 	m_modeParameter = new IntParameter(
 		"mode",
 		"The interpretation of the vectors, which modifies the way "
@@ -146,16 +143,16 @@ ConstIntParameterPtr MatrixMultiplyOp::modeParameter() const
 struct MultiplyFunctor
 {
 	typedef void ReturnType;
-
+	
 	DataPtr data;
 	ConstObjectPtr matrix;
 	MatrixMultiplyOp::Mode mode;
-
+	
 	template< typename T, typename U >
 	void multiply33( typename U::Ptr data, const T &matrix, MatrixMultiplyOp::Mode mode )
 	{
 		assert( data );
-
+		
 		typename U::ValueType::iterator beginIt = data->writable().begin();
 		typename U::ValueType::iterator endIt = data->writable().end();
 		if( mode==MatrixMultiplyOp::Point || mode==MatrixMultiplyOp::Vector )
@@ -171,17 +168,17 @@ struct MultiplyFunctor
 			T m = matrix.inverse();
 			m.transpose();
 			for ( typename U::ValueType::iterator it = beginIt; it != endIt; it++ )
-			{
+			{	
 				*it *= matrix;
 			}
 		}
 	}
-
+	
 	template< typename T, typename U >
 	void multiply( typename U::Ptr data, const T &matrix, MatrixMultiplyOp::Mode mode )
 	{
 		assert( data );
-
+	
 		typename U::ValueType::iterator beginIt = data->writable().begin();
 		typename U::ValueType::iterator endIt = data->writable().end();
 		if( mode==MatrixMultiplyOp::Point )
@@ -194,7 +191,7 @@ struct MultiplyFunctor
 		else if( mode==MatrixMultiplyOp::Vector )
 		{
 			for ( typename U::ValueType::iterator it = beginIt; it != endIt; it++ )
-			{
+			{	
 				matrix.multDirMatrix( *it, *it );
 			}
 		}
@@ -204,7 +201,7 @@ struct MultiplyFunctor
 			T m = matrix.inverse();
 			m.transpose();
 			for ( typename U::ValueType::iterator it = beginIt; it != endIt; it++ )
-			{
+			{	
 				m.multDirMatrix( *it, *it );
 			}
 		}
@@ -214,7 +211,7 @@ struct MultiplyFunctor
 	void operator() ( typename U::Ptr data )
 	{
 		assert( data );
-
+		
 		switch ( matrix->typeId() )
 		{
 		case M33fDataTypeId:
@@ -239,7 +236,7 @@ struct MultiplyFunctor
 			throw InvalidArgumentException( "Data supplied is not a known matrix type." );
 		}
 	}
-
+	
 };
 
 void MatrixMultiplyOp::modify( ObjectPtr toModify, ConstCompoundObjectPtr operands )

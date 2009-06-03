@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,16 +42,14 @@
 using namespace IECore;
 using namespace boost;
 
-IE_CORE_DEFINERUNTIMETYPED( ObjectReader );
-
 const Reader::ReaderDescription<ObjectReader> ObjectReader::g_readerDescription( "cob" );
 
-ObjectReader::ObjectReader() :
+ObjectReader::ObjectReader() : 
 		Reader( "ObjectReader", "Reads instances of a single Object from a file with a .cob extension" )
 {
 }
 
-ObjectReader::ObjectReader( const std::string &fileName ) :
+ObjectReader::ObjectReader( const std::string &fileName ) : 
 		Reader( "ObjectReader", "Reads instances of a single Object from a file with a .cob extension" )
 {
 	m_fileNameParameter->setTypedValue( fileName );
@@ -62,29 +60,29 @@ ObjectReader::~ObjectReader()
 }
 
 bool ObjectReader::canRead( const std::string &fileName )
-{
+{	
 	// Ideally we'd like to look inside the file and see if it contains one object only
 	// but for efficiency purposes we'll just try and open the file as a database and
 	// see if that succeeds. We could possibly query the structure of the database and
-	// check that it matches the signature of a one-object cache without needing to
+	// check that it matches the signature of a one-object cache without needing to 
 	// actually read the data.
 	IndexedIOInterfacePtr io = 0;
-
+	
 	try
 	{
 		if ( FileIndexedIO::canRead( fileName ) )
 		{
 			return true;
 		}
-
+	
 		io = open(fileName);
 		return true;
-	}
+	} 
 	catch (Exception &e)
 	{
 		return false;
 	}
-
+	
 	return io != 0;
 }
 
@@ -97,15 +95,15 @@ ObjectPtr ObjectReader::doOperation( ConstCompoundObjectPtr operands )
 CompoundObjectPtr ObjectReader::readHeader()
 {
 	CompoundObjectPtr header = Reader::readHeader();
-
+	
 	IndexedIOInterfacePtr io = open(fileName());
 	CompoundDataPtr objectHeader = runTimeCast<CompoundData>( Object::load( io, "header" ) );
-
+	
 	for ( CompoundData::ValueType::const_iterator it = objectHeader->readable().begin(); it != objectHeader->readable().end(); ++it )
 	{
 		header->members()[ it->first ] = it->second ;
 	}
-
+	
 	return header;
 }
 

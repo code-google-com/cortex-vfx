@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,6 +37,7 @@
 #include "IECoreGL/LuminanceTexture.h"
 #include "IECoreGL/bindings/LuminanceTextureBinding.h"
 
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -47,10 +48,15 @@ namespace IECoreGL
 
 void bindLuminanceTexture()
 {
-	IECore::RunTimeTypedClass<LuminanceTexture>()
+	typedef class_< LuminanceTexture, LuminanceTexturePtr, boost::noncopyable, bases<Texture> > LuminanceTexturePyClass;
+	LuminanceTexturePyClass( "LuminanceTexture", no_init )
 		.def( init<unsigned int, unsigned int, IECore::ConstDataPtr, IECore::ConstDataPtr, bool>() )
 		.def( init<IECore::ImagePrimitivePtr, bool>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( LuminanceTexture )
 	;
-}
 
+	INTRUSIVE_PTR_PATCH( LuminanceTexture, LuminanceTexturePyClass );
+	implicitly_convertible<LuminanceTexturePtr, TexturePtr>();
+}
+	
 }

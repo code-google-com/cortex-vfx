@@ -37,6 +37,7 @@
 #include "IECore/Exception.h"
 #include "IECore/ZhuBridsonImplicitSurfaceFunction.h"
 #include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using namespace boost::python;
 
@@ -47,11 +48,15 @@ template<typename T>
 void bindZhuBridsonImplicitSurfaceFunction( const char *name )
 {
 	typedef ImplicitSurfaceFunction<typename T::Point, typename T::Value> Base;
+	
+	typedef class_< T, typename T::Ptr, bases< Base >, boost::noncopyable > ZhuBridsonImplicitPyClass;
 
-	RefCountedClass<T, Base>( name )
+	ZhuBridsonImplicitPyClass( name, no_init )
 		.def( init< typename T::PointVectorData::ConstPtr, ConstDoubleVectorDataPtr, typename T::Value > () )
 	;
-
+	
+	implicitly_convertible< typename T::Ptr, typename Base::Ptr>();
+	INTRUSIVE_PTR_PATCH_TEMPLATE( T, ZhuBridsonImplicitPyClass );	
 }
 
 void bindZhuBridsonImplicitSurfaceFunction()

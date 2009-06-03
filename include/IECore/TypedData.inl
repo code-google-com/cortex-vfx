@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -64,12 +64,75 @@ TypedData<T>::~TypedData()
 {
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+// runtimetyped interface
+//////////////////////////////////////////////////////////////////////////////////////
 
+template <class T> 
+TypeId TypedData<T>::typeId() const
+{
+	assert( 0 ); // this function must be specialised for each data type!
+	return InvalidTypeId;
+}
+
+template <class T> 
+TypeId TypedData<T>::staticTypeId()
+{
+	assert( 0 ); // this function must be specialised for each data type!
+	return InvalidTypeId;
+}
+
+template <class T> 
+std::string TypedData<T>::typeName() const
+{
+	assert( 0 ); // this function must be specialised for each data type!
+	return "";
+}
+
+template <class T> 
+std::string TypedData<T>::staticTypeName()
+{
+	assert( 0 ); // this function must be specialised for each data type!
+	return "";
+}
+
+template<class T>
+bool TypedData<T>::isInstanceOf( TypeId typeId ) const
+{
+	if( typeId==staticTypeId() )
+	{
+		return true;
+	}
+	return Data::isInstanceOf( typeId );
+}
+
+template<class T>
+bool TypedData<T>::isInstanceOf( const std::string &typeName ) const
+{
+	if( typeName==staticTypeName() )
+	{
+		return true;
+	}
+	return Data::isInstanceOf( typeName );
+}
+
+template<class T>
+bool TypedData<T>::inheritsFrom( TypeId typeId )
+{
+	return Data::staticTypeId()==typeId ? true : Data::inheritsFrom( typeId );
+}
+
+template<class T>
+bool TypedData<T>::inheritsFrom( const std::string &typeName )
+{
+	return Data::staticTypeName()==typeName ? true : Data::inheritsFrom( typeName );
+}
+		
 //////////////////////////////////////////////////////////////////////////////////////
 // object interface
 //////////////////////////////////////////////////////////////////////////////////////
 
-template <class T>
+template <class T> 
 typename TypedData<T>::Ptr TypedData<T>::copy() const
 {
 	return boost::static_pointer_cast<TypedData<T> >( Data::copy() );
@@ -106,7 +169,7 @@ void TypedData<T>::load( LoadContextPtr context )
 		// backwards compatibility with old files
 		unsigned int v = 0;
 		IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
-		container->read( "value", writable() );
+		container->read( "value", writable() );	
 	}
 }
 
@@ -132,7 +195,7 @@ bool TypedData<T>::isEqualTo( ConstObjectPtr other ) const
 //////////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
-void TypedData<T>::operator = (const T &data)
+void TypedData<T>::operator = (const T &data) 
 {
 	writable() = data;
 }
@@ -144,10 +207,10 @@ void TypedData<T>::operator = (const TypedData<T> &typedData)
 }
 
 template<class T>
-const T & TypedData<T>::readable() const
+const T & TypedData<T>::readable() const 
 {
 	assert( m_data );
-
+	
 	return m_data->data;
 }
 
@@ -155,11 +218,11 @@ template<class T>
 T & TypedData<T>::writable()
 {
 	assert( m_data );
-	if (m_data->refCount() > 1)
+	if (m_data->refCounter() > 1) 
 	{
 		// duplicate the data
 
-		m_data = new DataHolder(m_data->data);
+		m_data = new DataHolder(m_data->data);			
 	}
 	return m_data->data;
 }
@@ -178,15 +241,15 @@ void TypedData<T>::memoryUsage( Object::MemoryAccumulator &accumulator ) const
 template <class T>
 bool TypedData<T>::hasBase()
 {
-	return TypedDataTraits< TypedData<T> >::HasBase::value;
+	return true;
 }
 
 template <class T>
-size_t TypedData<T>::baseSize() const
+unsigned long TypedData<T>::baseSize() const
 {
 	if ( !TypedData<T>::hasBase() )
 	{
-		throw Exception( std::string( TypedData<T>::staticTypeName() ) + " has no base type." );
+		throw Exception( TypedData<T>::staticTypeName() + " has no base type." );
 	}
 	return ( sizeof( T ) / sizeof( typename TypedData<T>::BaseType ) );
 }
@@ -196,7 +259,7 @@ const typename TypedData<T>::BaseType *TypedData<T>::baseReadable() const
 {
 	if ( !TypedData<T>::hasBase() )
 	{
-		throw Exception( std::string( TypedData<T>::staticTypeName() ) + " has no base type." );
+		throw Exception( TypedData<T>::staticTypeName() + " has no base type." );
 	}
 	return reinterpret_cast< const typename TypedData<T>::BaseType * >( &readable() );
 }
@@ -206,7 +269,7 @@ typename TypedData<T>::BaseType *TypedData<T>::baseWritable()
 {
 	if ( !TypedData<T>::hasBase() )
 	{
-		throw Exception( std::string( TypedData<T>::staticTypeName() ) + " has no base type." );
+		throw Exception( TypedData<T>::staticTypeName() + " has no base type." );
 	}
 	return reinterpret_cast< typename TypedData<T>::BaseType * >( &writable() );
 }
@@ -215,14 +278,39 @@ typename TypedData<T>::BaseType *TypedData<T>::baseWritable()
 // macros for TypedData function specializations
 //////////////////////////////////////////////////////////////////////////////////////
 
-#define IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( TNAME, TID ) \
-	IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( TNAME, TID )
+#define IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( TNAME, TID )			\
+																			\
+	template<>																\
+	TypeId TNAME::typeId() const											\
+	{																		\
+		return TID;															\
+	}																		\
+	template<>																\
+	TypeId TNAME::staticTypeId()											\
+	{																		\
+		return TID;															\
+	}																		\
+	template<>																\
+	std::string TNAME::typeName() const										\
+	{																		\
+		return #TNAME;														\
+	}																		\
+	template<>																\
+	std::string TNAME::staticTypeName()										\
+	{																		\
+		return #TNAME;														\
+	}																		\
 
 #define IE_CORE_DEFINETYPEDDATANOBASESIZE( TNAME )							\
 	template <>																\
-	size_t TNAME::baseSize() const									\
+	bool TNAME::hasBase()													\
 	{																		\
-		throw Exception( std::string( TNAME::staticTypeName() ) + " has no base type." );	\
+		return false;														\
+	}																		\
+	template <>																\
+	unsigned long TNAME::baseSize()	const									\
+	{																		\
+		throw Exception( TNAME::staticTypeName() + " has no base type." );	\
 	}																		\
 
 #define IE_CORE_DEFINEBASETYPEDDATAIOSPECIALISATION( TNAME, N )										\

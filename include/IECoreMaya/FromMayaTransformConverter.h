@@ -35,8 +35,6 @@
 #ifndef IECOREMAYA_FROMMAYATRANSFORMCONVERTER_H
 #define IECOREMAYA_FROMMAYATRANSFORMCONVERTER_H
 
-#include "maya/MEulerRotation.h"
-
 #include "IECoreMaya/FromMayaDagNodeConverter.h"
 
 #include "IECore/NumericParameter.h"
@@ -54,7 +52,7 @@ class FromMayaTransformConverter : public FromMayaDagNodeConverter
 		FromMayaTransformConverter( const MDagPath &dagPath );
 
 		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( FromMayaTransformConverter, FromMayaTransformConverterTypeId, FromMayaDagNodeConverter );
-
+		
 		enum Space
 		{
 			Local = 0,
@@ -63,25 +61,21 @@ class FromMayaTransformConverter : public FromMayaDagNodeConverter
 
 		IECore::IntParameterPtr spaceParameter();
 		IECore::ConstIntParameterPtr spaceParameter() const;
-
+		
 		IECore::BoolParameterPtr eulerFilterParameter();
 		IECore::ConstBoolParameterPtr eulerFilterParameter() const;
-
+		
 		IECore::BoolParameterPtr zeroPivotsParameter();
 		IECore::ConstBoolParameterPtr zeroPivotsParameter() const;
-
+		
 	protected :
-
+	
 		virtual IECore::ObjectPtr doConversion( const MDagPath &dagPath, IECore::ConstCompoundObjectPtr operands ) const;
-
+			
 	private :
 
 		IECore::IntParameterPtr m_spaceParameter;
-		mutable MEulerRotation m_lastRotation;
-		mutable bool m_lastRotationValid;
-		IECore::BoolParameterPtr m_eulerFilterParameter;
-		IECore::BoolParameterPtr m_zeroPivotsParameter;
-
+		
 		static Description<FromMayaTransformConverter> g_description;
 
 };

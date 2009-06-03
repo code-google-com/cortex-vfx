@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,8 +47,6 @@ using namespace IECore;
 using namespace boost;
 using namespace Imath;
 
-IE_CORE_DEFINERUNTIMETYPED( ImageReader );
-
 ImageReader::ImageReader( const std::string &name, const std::string &description ) :
 		Reader( name, description, new ObjectParameter( "result", "The loaded object", new NullObject, ImagePrimitive::staticTypeId() ) )
 {
@@ -67,7 +65,7 @@ ImageReader::ImageReader( const std::string &name, const std::string &descriptio
 		"independent of the dataWindow parameter."
 	);
 
-	m_channelNamesParameter = new StringVectorParameter(
+	m_channelNamesParameter = new StringVectorParameter( 
 		"channels",
 		"The names of all channels to load from the file. If the list is empty (the default value) "
 		"then all channels are loaded."
@@ -87,7 +85,7 @@ ObjectPtr ImageReader::doOperation( ConstCompoundObjectPtr operands )
 		displayWind = displayWindow();
 	}
 	Box2i dataWind = dataWindowToRead();
-
+	
 
 	// create our ImagePrimitive
 	ImagePrimitivePtr image = new ImagePrimitive( dataWind, displayWind );
@@ -103,15 +101,15 @@ ObjectPtr ImageReader::doOperation( ConstCompoundObjectPtr operands )
 	while( ci != channelNames.end() )
 	{
 		DataPtr d = readChannel( *ci, dataWind );
-
+		
 		assert( d  );
 		assert( d->typeId()==FloatVectorDataTypeId || d->typeId()==HalfVectorDataTypeId || d->typeId()==IntVectorDataTypeId );
-
+		
 		PrimitiveVariable p( PrimitiveVariable::Vertex, d );
 		assert( image->isPrimitiveVariableValid( p ) );
-
+		
 		image->variables[*ci] = p;
-
+		
 		ci++;
 	}
 

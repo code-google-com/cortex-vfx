@@ -36,7 +36,7 @@
 #define IECORE_RIBWRITER_H
 
 #include "IECore/Writer.h"
-#include "IECore/SimpleTypedParameter.h"
+#include "IECore/TypedParameter.h"
 
 #include "IECoreRI/TypeIds.h"
 
@@ -55,28 +55,28 @@ class RIBWriter : public IECore::Writer
 
 	public :
 
-		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( RIBWriter, RIBWriterTypeId, IECore::Writer )
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( RIBWriter, RIBWriterTypeId, Writer )
 
 		RIBWriter();
 		RIBWriter( IECore::ObjectPtr object, const std::string &fileName );
-
+		
 		static bool canWrite( IECore::ConstObjectPtr object, const std::string &fileName );
-
+		
 		IECore::BoolParameterPtr worldBlockParameter();
 		IECore::ConstBoolParameterPtr worldBlockParameter() const;
-
+		
 	protected :
 
 		virtual void doWrite();
-
+	
 	private :
-
+	
 		void constructParameters();
-
+		
 		IECore::BoolParameterPtr m_worldBlockParameter;
-
+			
 		static const WriterDescription<RIBWriter> g_writerDescription;
-
+		
 };
 
 IE_CORE_DECLAREPTR( RIBWriter );

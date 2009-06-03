@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/PrimitiveVariable.h"
 #include "IECore/bindings/PrimitiveVariableBinding.h"
@@ -53,8 +53,8 @@ static void dataSetter( PrimitiveVariable &p, DataPtr d )
 }
 
 void bindPrimitiveVariable()
-{
-
+{	
+	
 	scope varScope = class_<PrimitiveVariable>( "PrimitiveVariable", no_init )
 		.def( init<PrimitiveVariable::Interpolation, DataPtr>() )
 		.def_readwrite( "interpolation", &PrimitiveVariable::interpolation )
@@ -68,7 +68,7 @@ void bindPrimitiveVariable()
 		.value( "Varying", PrimitiveVariable::Varying )
 		.value( "FaceVarying", PrimitiveVariable::FaceVarying )
 	;
-
+	
 }
 
 }

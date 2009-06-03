@@ -41,24 +41,22 @@
 #include "IECore/bindings/ImathColorBinding.h"
 #include "IECore/bindings/ImathEulerBinding.h"
 #include "IECore/bindings/ImathRootsBinding.h"
-#include "IECore/bindings/ImathPlaneBinding.h"
 
 using namespace IECore;
 
 // Binding implementations
-namespace IECore
+namespace IECore 
 {
-
+	
 void bindImath()
 {
-	bindImathVec();
+	bindImathVec();	
 	bindImathBox();
 	bindImathQuat();
 	bindImathMatrix();
 	bindImathColor();
 	bindImathEuler();
 	bindImathRoots();
-	bindImathPlane();
 }
 
 }

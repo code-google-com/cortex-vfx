@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,13 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/PointNormalsOp.h"
 #include "IECore/Parameter.h"
 #include "IECore/Object.h"
 #include "IECore/CompoundObject.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -47,9 +48,14 @@ namespace IECore {
 
 void bindPointNormalsOp()
 {
-	RunTimeTypedClass<PointNormalsOp>()
-		.def( init<>() )
+	typedef class_< PointNormalsOp, PointNormalsOpPtr, boost::noncopyable, bases<Op> > PointNormalsOpPyClass;
+	PointNormalsOpPyClass( "PointNormalsOp" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS(PointNormalsOp)
 	;
+	
+	INTRUSIVE_PTR_PATCH( PointNormalsOp, PointNormalsOpPyClass );
+	implicitly_convertible<PointNormalsOpPtr, OpPtr>();	
+
 }
 
 } // namespace IECore

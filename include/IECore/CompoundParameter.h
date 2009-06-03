@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,14 +46,14 @@ namespace IECore
 class CompoundParameter : public Parameter
 {
 	public :
-
-		IE_CORE_DECLAREOBJECT( CompoundParameter, Parameter );
-
+	
+		IE_CORE_DECLARERUNTIMETYPED( CompoundParameter, Parameter )
+	
 		/// A type to map from names to Parameters.
-		typedef std::map<InternedString, ParameterPtr> ParameterMap;
+		typedef std::map<std::string, ParameterPtr> ParameterMap;
 		/// A type to hold a vector of Parameters.
 		typedef std::vector<ParameterPtr> ParameterVector;
-
+		
 		/// Creates an empty CompoundParameter.
 		CompoundParameter( const std::string &name = "", const std::string &description = "", ConstCompoundObjectPtr userData=0 );
 		/// Create a CompoundParameter containing all the parameters in the range specified
@@ -61,17 +61,17 @@ class CompoundParameter : public Parameter
 		/// to ParameterPtr objects.
 		template<typename I>
 		CompoundParameter( const std::string &name, const std::string &description, I membersBegin, I membersEnd, ConstCompoundObjectPtr userData=0 );
-
+		
 		//! @name Parameter method overrides.
 		////////////////////////////////////////////////////////////////////////
-		//@{
+		//@{				
 		/// Implemented to return a CompoundObject representing the default values
 		/// of all the child objects.
 		virtual ConstObjectPtr defaultValue() const;
 		/// Implemented to update the presets with the intersection of the presets
 		/// of all the child parameters. Please note that the map returned may differ between
 		/// one call to presets() and the next.
-		virtual const PresetsContainer &presets() const;
+		virtual const PresetsMap &presets() const;
 		/// Implemented to return true only if all children have presetsOnly() true.
 		virtual bool presetsOnly() const;
 		/// Values are only valid if they are a CompoundObject with a valid member
@@ -126,10 +126,6 @@ class CompoundParameter : public Parameter
 		typename T::Ptr parameter( const std::string &name );
 		template<typename T>
 		typename T::ConstPtr parameter( const std::string &name ) const;
-		/// Searches for child recursively underneath this parameter, filling path
-		/// with the names of all its ancestors, plus the name of child
-		/// itself. Returns true if child is found and false otherwise.
-		bool parameterPath( ConstParameterPtr child, std::vector<std::string> &path ) const;
 		/// Convenience function to find a parameter in parameters() and call setValue()
 		/// on it. Throws an Exception if the named parameter doesn't exist.
 		void setParameterValue( const std::string &name, ObjectPtr value );
@@ -145,14 +141,12 @@ class CompoundParameter : public Parameter
 		/// named parameter doesn't exist.
 		ObjectPtr getValidatedParameterValue( const std::string &name );
 		//@}
-
-	private :
+		
+	private :	
 
 		ParameterMap m_namesToParameters;
 		ParameterVector m_parameters;
-
-		static const unsigned int g_ioVersion;
-
+		
 };
 
 IE_CORE_DECLAREPTR( CompoundParameter );

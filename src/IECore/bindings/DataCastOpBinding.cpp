@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,10 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/DataCastOp.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost;
@@ -44,9 +45,14 @@ namespace IECore {
 
 void bindDataCastOp()
 {
-	RunTimeTypedClass<DataCastOp>()
-		.def( init<>() )
+	typedef class_< DataCastOp, DataCastOpPtr, boost::noncopyable, bases<Op> > DataCastOpPyClass;
+	DataCastOpPyClass( "DataCastOp" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( DataCastOp )
 	;
+	
+	INTRUSIVE_PTR_PATCH( DataCastOp, DataCastOpPyClass );
+	implicitly_convertible<DataCastOpPtr, OpPtr>();	
+
 }
 
 } // namespace IECore

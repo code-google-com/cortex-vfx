@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,13 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/Display.h"
 #include "IECore/bindings/DisplayBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -47,22 +48,9 @@ namespace IECore
 
 void bindDisplay()
 {
-	using boost::python::arg;
-
-	RunTimeTypedClass<Display>()
-		.def(
-		 	init< optional< const std::string &, const std::string &, const std::string &, CompoundDataPtr > >
-			(
-				(
-					arg( "name" ) = std::string( "default" ),
-					arg( "type" ) = std::string( "exr" ),
-					arg( "data" ) = std::string( "rgba" ),
-
-					/// We need to explicitly make this a CompoundData::Ptr so that boost.python finds the correct to_python converter
-					arg( "parameters" ) = CompoundData::Ptr( new CompoundData() )
-				)
-			)
-		)
+	typedef class_<Display, boost::noncopyable, DisplayPtr, bases<PreWorldRenderable> > DisplayPyClass;
+	DisplayPyClass( "Display", no_init )
+		.def( init< optional< const std::string &, const std::string &, const std::string &, CompoundDataPtr > >( args( "name", "type", "data", "parameters" ) ) )
 		.def( "setName", &Display::setName )
 		.def( "getName", &Display::getName, return_value_policy<copy_const_reference>() )
 		.def( "setType", &Display::setType )
@@ -70,8 +58,11 @@ void bindDisplay()
 		.def( "setData", &Display::setData )
 		.def( "getData", &Display::getData, return_value_policy<copy_const_reference>() )
 		.def( "parameters", &Display::parametersData )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( Display )
 	;
-
+	INTRUSIVE_PTR_PATCH( Display, DisplayPyClass );
+	implicitly_convertible<DisplayPtr, ConstDisplayPtr>();
+	implicitly_convertible<DisplayPtr, PreWorldRenderablePtr>();
 }
 
 }

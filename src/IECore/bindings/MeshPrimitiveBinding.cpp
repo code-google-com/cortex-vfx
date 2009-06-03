@@ -32,31 +32,32 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/MeshPrimitive.h"
 #include "IECore/bindings/MeshPrimitiveBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
 
 namespace IECore
 {
-
+	
 	static IntVectorDataPtr verticesPerFace( const MeshPrimitive &p )
 	{
 		return p.verticesPerFace()->copy();
 	}
-
+	
 	static IntVectorDataPtr vertexIds( const MeshPrimitive &p )
 	{
 		return p.vertexIds()->copy();
 	}
-
+	
 	void bindMeshPrimitive()
 	{
-		RunTimeTypedClass<MeshPrimitive>()
-			.def( init<>() )
+		typedef class_<MeshPrimitive, MeshPrimitivePtr, bases<Primitive>, boost::noncopyable> MeshPrimitivePyClass;
+		MeshPrimitivePyClass( "MeshPrimitive" )
 			.def( init<IntVectorDataPtr, IntVectorDataPtr, optional<const std::string &, V3fVectorDataPtr> >() )
 			.add_property( "verticesPerFace", &verticesPerFace, "A copy of the mesh's list of vertices per face." )
 			.add_property( "vertexIds", &vertexIds, "A copy of the mesh's list of vertex ids." )
@@ -64,7 +65,10 @@ namespace IECore
 			.def( "setTopology", &MeshPrimitive::setTopology )
 			.def( "createBox", &MeshPrimitive::createBox ).staticmethod( "createBox" )
 			.def( "createPlane", &MeshPrimitive::createPlane ).staticmethod( "createPlane" )
+			.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( MeshPrimitive )
 		;
+		INTRUSIVE_PTR_PATCH( MeshPrimitive, MeshPrimitivePyClass );
+		implicitly_convertible<MeshPrimitivePtr, PrimitivePtr>();
 	}
-
+	
 }

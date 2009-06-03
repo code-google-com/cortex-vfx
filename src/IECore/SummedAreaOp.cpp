@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,8 +40,6 @@ using namespace IECore;
 using namespace std;
 using namespace Imath;
 
-IE_CORE_DEFINERUNTIMETYPED( SummedAreaOp );
-
 SummedAreaOp::SummedAreaOp()
 	:	ChannelOp( staticTypeName(), "Calculates summed area table for image channels." )
 {
@@ -66,9 +64,9 @@ struct SummedAreaOp::SumArea
 		typedef typename T::ValueType Container;
 		typedef typename Container::value_type V;
 		typedef typename Container::iterator It;
-
+		
 		Container &buffer = data->writable();
-
+		
 		// deal with first row alone, as it doesn't have values above it
 		unsigned pixelIndex=0;
 		V rowSum = 0;
@@ -90,19 +88,19 @@ struct SummedAreaOp::SumArea
 			}
 		}
 	}
-
+	
 	private :
-
+	
 		Box2i m_dataWindow;
 
 };
-
+	
 void SummedAreaOp::modifyChannels( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, ChannelVector &channels )
-{
+{	
 	SumArea summer( dataWindow );
 	for( unsigned i=0; i<channels.size(); i++ )
 	{
 		despatchTypedData<SumArea, TypeTraits::IsNumericVectorTypedData>( channels[i], summer );
 	}
 }
-
+		

@@ -36,6 +36,7 @@
 
 #include "IECore/BINMeshReader.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using std::string;
 using namespace boost;
@@ -46,10 +47,14 @@ namespace IECore
 
 void bindBINMeshReader()
 {
-	RunTimeTypedClass<BINMeshReader>()
+	typedef class_< BINMeshReader, BINMeshReaderPtr, boost::noncopyable, bases<Reader> > BINMeshReaderPyClass;
+	BINMeshReaderPyClass( "BINMeshReader", no_init )
 		.def(  init<const std::string &>() )
 		.def( "canRead", &BINMeshReader::canRead).staticmethod( "canRead" )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( BINMeshReader )
 	;
+	INTRUSIVE_PTR_PATCH( BINMeshReader, BINMeshReaderPyClass );
+	implicitly_convertible<BINMeshReaderPtr, ReaderPtr>();
 }
 
 } // namespace IECore

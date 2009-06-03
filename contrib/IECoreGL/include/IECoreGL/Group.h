@@ -52,8 +52,8 @@ class Group : public Renderable
 	public :
 
 		typedef std::list<RenderablePtr> ChildContainer;
-
-		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::Group, GroupTypeId, Renderable );
+		
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( Group, GroupTypeId, Renderable );
 
 		/// Newly created Groups have empty state and
 		/// identity transforms.
@@ -69,15 +69,15 @@ class Group : public Renderable
 		StatePtr getState();
 		ConstStatePtr getState() const;
 		void setState( StatePtr state );
-
+		
 		virtual void render( ConstStatePtr state ) const;
 		virtual Imath::Box3f bound() const;
 
 		void addChild( RenderablePtr child );
 		const ChildContainer &children() const;
-
+		
 	private :
-
+	
 		StatePtr m_state;
 		Imath::M44f m_transform;
 		ChildContainer m_children;

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,13 +39,14 @@
 
 #include "IECore/TypedPrimitiveOp.h"
 #include "IECore/NumericParameter.h"
-#include "IECore/SimpleTypedParameter.h"
-#include "IECore/TypedPrimitiveParameter.h"
+#include "IECore/TypedParameter.h"
+#include "IECore/TypedObjectParameter.h"
+
 
 namespace IECore
 {
 
-/// An Op to project the vertices of a mesh onto a second mesh, the target mesh,
+/// An Op to project the vertices of a mesh onto a second mesh, the target mesh, 
 /// by means of raycasting. The direction of the ray for each vertex is
 /// defined by either an (X/Y/Z) axis, the surface normal, or the vector to the
 /// corresponding vertex on a third mesh, the direction mesh. In addition rays can be cast in
@@ -61,7 +62,7 @@ class MeshPrimitiveShrinkWrapOp : public TypedPrimitiveOp<MeshPrimitive>
 			Outside = 1,
 			Both = 2,
 		} Direction;
-
+		
 		typedef enum
 		{
 			Normal = 0,
@@ -81,20 +82,20 @@ class MeshPrimitiveShrinkWrapOp : public TypedPrimitiveOp<MeshPrimitive>
 
 		IntParameterPtr directionParameter();
 		ConstIntParameterPtr directionParameter() const;
-
+		
 		IntParameterPtr methodParameter();
 		ConstIntParameterPtr methodParameter() const;
-
+		
 		MeshPrimitiveParameterPtr directionMeshParameter();
 		ConstMeshPrimitiveParameterPtr directionMeshParameter() const;
-
+		
 		FloatParameterPtr triangulationToleranceParameter();
-		ConstFloatParameterPtr triangulationToleranceParameter() const;
+		ConstFloatParameterPtr triangulationToleranceParameter() const;		
 
 	protected:
 
 		struct ShrinkWrapFn;
-
+		
 		virtual void modifyTypedPrimitive( MeshPrimitivePtr typedPrimitive, ConstCompoundObjectPtr operands );
 
 	private:

@@ -53,59 +53,38 @@ namespace IECoreMaya
 class ObjectData : public MPxData
 {
 	public:
-
-		enum CopyMode
-		{
-			Shallow,
-			Deep
-		};
-
 		ObjectData();
 		virtual ~ObjectData();
-
+		
 		static void* creator();
-
+		
 		virtual MStatus readASCII( const MArgList &argList, unsigned int &endOfTheLastParsedElement );
 		virtual MStatus readBinary( istream &in, unsigned length );
 		virtual MStatus writeASCII( ostream &out );
 		virtual MStatus writeBinary( ostream &out );
 
-		/// The behaviour of this function is defined by the current copy mode of source.
-		virtual void copy( const MPxData &source );
-		virtual MTypeId typeId() const;
+		virtual void copy( const MPxData &other );
+		virtual MTypeId typeId() const; 
 		virtual MString name() const;
-
+		
 		static const MString typeName;
 		static const MTypeId id;
-
-		/// Controls how the copy() method behaves when this object is the source
-		/// for the copy. When in Shallow mode
-		/// an ObjectData copy will point to the same Object that the original
-		/// pointed to. When in Deep mode, the copy will point to a copy() of
-		/// the original Object. The copied ObjectData inherits the copy mode
-		/// from the original. The default copy mode for all new instances of
-		/// ObjectData is Deep.
-		void setCopyMode( CopyMode mode );
-		/// Returns the current copy mode.
-		CopyMode getCopyMode() const;
-
-		/// Returns the object held by this instance - note that this is not
-		/// a copy so you should be careful not to cause unwanted side effects
-		/// through modification.
+		
+		/// Non-const access to the held Object
 		IECore::ObjectPtr getObject();
+		
+		/// Const access to the held Object		
 		IECore::ConstObjectPtr getObject() const;
-		/// Sets the object held by this instance - note that a copy is not
-		/// taken, so any subsequent modification of object directly affects this
-		/// ObjectData.
-		void setObject( IECore::ObjectPtr object );
-
+		
+		/// Copies and holds the given Object
+		void setObject( IECore::ConstObjectPtr other );
+		
 	protected:
-
-		CopyMode m_copyMode;
-		IECore::ObjectPtr m_object;
-
+	
+		IECore::ObjectPtr m_object;				
+		
 };
 
 }
 
-#endif // IE_COREMAYA_OBJECTDATA_H
+#endif // IE_COREMAYA_OBJECTDATA_H 

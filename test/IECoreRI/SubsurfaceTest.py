@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -41,13 +41,13 @@ import IECoreRI
 class SubsurfaceTest( unittest.TestCase ) :
 
 	outputFileName = os.path.dirname( __file__ ) + "/output/subsurface.rib"
-
+	
 	def test( self ) :
-
+	
 		r = IECoreRI.Renderer( self.outputFileName )
-
+		
 		r.worldBegin()
-
+		
 		a = IECore.AttributeState()
 		a.attributes["ri:subsurface"] = IECore.CompoundData(
 			{
@@ -59,26 +59,23 @@ class SubsurfaceTest( unittest.TestCase ) :
 				"shadingrate" : IECore.FloatData( 10 ),
 			}
 		)
-
+			
 		a.render( r )
-
+		
 		r.worldEnd()
-
+		
 		l = "".join( file( self.outputFileName ).readlines() )
-
+		
 		p1 = l.find( 'Attribute "visibility" "string subsurface" [ "test" ]' )
-		p2 = l.find( 'Attribute "subsurface"' )
+		p2 = l.find( 'Attribute "subsurface" "color meanfreepath" [ 1 1 1 ] "color reflectance" [ 0 0 0 ] "float refractionindex" [ 1.3 ] "float scale" [ 0.1 ] "float shadingrate" [ 10 ]' )
 		self.assertNotEqual( p1, -1 )
 		self.assertNotEqual( p2, -1 )
 		self.assert_( p2 > p1 )
-		for a in ( '"color meanfreepath" [ 1 1 1 ]', '"color reflectance" [ 0 0 0 ]', '"float refractionindex" [ 1.3 ]', '"float scale" [ 0.1 ]', '"float shadingrate" [ 10 ]' ) :
-			p3 = l.find( a )
-			self.assert_( p3 > p2 )
-
+					
 	def tearDown( self ) :
 
 		if os.path.exists( self.outputFileName ) :
 			os.remove( self.outputFileName )
-
+				
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main()   

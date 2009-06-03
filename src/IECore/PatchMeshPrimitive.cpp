@@ -38,12 +38,12 @@
 
 using namespace IECore;
 
-const unsigned int PatchMeshPrimitive::m_ioVersion = 1;
+const unsigned int PatchMeshPrimitive::m_ioVersion = 0;
 IE_CORE_DEFINEOBJECTTYPEDESCRIPTION( PatchMeshPrimitive );
 
 PatchMeshPrimitive::PatchMeshPrimitive()
 		:
-		m_uLinear( true ), m_vLinear( true ),
+		m_linear( true ),
 		m_uPoints( 0 ), m_vPoints( 0 ),
 		m_uBasis( CubicBasisf::linear() ), m_vBasis( CubicBasisf::linear() ),
 		m_uPeriodic( false ), m_vPeriodic( false )
@@ -61,9 +61,13 @@ PatchMeshPrimitive::PatchMeshPrimitive(
 ) : m_uPoints( uPoints ), m_vPoints( vPoints ), m_uBasis( uBasis ), m_vBasis( vBasis ), m_uPeriodic( uPeriodic ),
 		m_vPeriodic( vPeriodic )
 {
-	m_uLinear = m_uBasis==CubicBasisf::linear();
-	m_vLinear = m_vBasis==CubicBasisf::linear();
-
+	m_linear = m_uBasis==CubicBasisf::linear();
+	
+	if ( ( m_vBasis==CubicBasisf::linear() ) != m_linear )
+	{
+		throw InvalidArgumentException( "PatchMeshPrimitive: Mismatched u/v basis" );
+	}	
+	
 	if ( !uPoints )
 	{
 		throw InvalidArgumentException( "PatchMeshPrimitive: Insufficient control points in u" );
@@ -72,44 +76,37 @@ PatchMeshPrimitive::PatchMeshPrimitive(
 	{
 		throw InvalidArgumentException( "PatchMeshPrimitive: Insufficient control points in v" );
 	}
-
-	if ( m_uLinear )
+	
+	if ( m_linear )
 	{
 		if ( !m_uPeriodic && !m_uPoints )
-		{
+		{		
 			throw InvalidArgumentException( "PatchMeshPrimitive: Insufficient control points in u" );
 		}
-	}
-	else
-	{
-		if ( !m_uPeriodic && m_uPoints < 4 )
-		{
-			throw InvalidArgumentException( "PatchMeshPrimitive: Insufficient control points in u" );
-		}
-	}
-
-	if ( m_vLinear )
-	{
 		if ( !m_vPeriodic && !m_vPoints )
 		{
 			throw InvalidArgumentException( "PatchMeshPrimitive: Insufficient control points in v" );
 		}
 	}
-	else
+	else 
 	{
+		if ( !m_uPeriodic && m_uPoints < 4 )
+		{
+			throw InvalidArgumentException( "PatchMeshPrimitive: Insufficient control points in u" );
+		}
 		if ( !m_vPeriodic && m_vPoints < 4 )
 		{
 			throw InvalidArgumentException( "PatchMeshPrimitive: Insufficient control points in v" );
 		}
 	}
-
+		
 	if ( p )
 	{
 		if ( p->readable().size() != m_uPoints * m_vPoints )
 		{
 			throw InvalidArgumentException( "PatchMeshPrimitive: Invalid length of primitive variable P" );
 		}
-
+		
 		variables["P"] = PrimitiveVariable( PrimitiveVariable::Vertex, p->copy() );
 	}
 }
@@ -129,11 +126,7 @@ bool PatchMeshPrimitive::isEqualTo( ConstObjectPtr other ) const
 	{
 		return false;
 	}
-	if ( m_uLinear!=tOther->m_uLinear )
-	{
-		return false;
-	}
-	if ( m_vLinear!=tOther->m_vLinear )
+	if ( m_linear!=tOther->m_linear )
 	{
 		return false;
 	}
@@ -154,13 +147,12 @@ void PatchMeshPrimitive::copyFrom( ConstObjectPtr other, CopyContext *context )
 	Primitive::copyFrom( other, context );
 	const PatchMeshPrimitive *tOther = static_cast<const PatchMeshPrimitive *>( other.get() );
 	m_uPoints = tOther->m_uPoints;
-	m_vPoints = tOther->m_vPoints;
+	m_vPoints = tOther->m_vPoints;	
 	m_uBasis = tOther->m_uBasis;
 	m_vBasis = tOther->m_vBasis;
 	m_uPeriodic = tOther->m_uPeriodic;
 	m_vPeriodic = tOther->m_vPeriodic;
-	m_uLinear = tOther->m_uLinear;
-	m_vLinear = tOther->m_vLinear;
+	m_linear = tOther->m_linear;	
 }
 
 void PatchMeshPrimitive::save( IECore::Object::SaveContext *context ) const
@@ -168,9 +160,9 @@ void PatchMeshPrimitive::save( IECore::Object::SaveContext *context ) const
 	Primitive::save( context );
 
 	IndexedIOInterfacePtr container = context->container( staticTypeName(), m_ioVersion );
-
+	
 	container->write( "uPoints", m_uPoints );
-	container->write( "vPoints", m_vPoints );
+	container->write( "vPoints", m_vPoints );		
 	container->write( "uBasisMatrix", m_uBasis.matrix.getValue(), 16 );
 	container->write( "uBasisStep", m_uBasis.step );
 	container->write( "vBasisMatrix", m_vBasis.matrix.getValue(), 16 );
@@ -187,7 +179,7 @@ void PatchMeshPrimitive::load( IECore::Object::LoadContextPtr context )
 	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 
 	container->read( "uPoints", m_uPoints );
-	container->read( "vPoints", m_vPoints );
+	container->read( "vPoints", m_vPoints );	
 
 	float *f = m_uBasis.matrix.getValue();
 	container->read( "uBasisMatrix", f, 16 );
@@ -203,14 +195,14 @@ void PatchMeshPrimitive::load( IECore::Object::LoadContextPtr context )
 	container->read( "vPeriodic", p );
 	m_vPeriodic = p;
 
-	m_uLinear = m_uBasis==CubicBasisf::linear();
-	m_vLinear = m_vBasis==CubicBasisf::linear();
+	m_linear = m_uBasis==CubicBasisf::linear();
+	assert ( (m_vBasis==CubicBasisf::linear()) == m_linear );
 }
 
 void PatchMeshPrimitive::memoryUsage( Object::MemoryAccumulator &a ) const
 {
 	Primitive::memoryUsage( a );
-	a.accumulate( sizeof( CubicBasisf ) * 2 + sizeof( bool ) * 4 + sizeof( unsigned ) * 2 );
+	a.accumulate( sizeof( CubicBasisf ) * 2 + sizeof( bool ) * 3 + sizeof( unsigned ) * 2 );
 }
 
 unsigned int PatchMeshPrimitive::uPoints() const
@@ -225,14 +217,14 @@ unsigned int PatchMeshPrimitive::vPoints() const
 
 unsigned int PatchMeshPrimitive::uPatches() const
 {
-	if ( m_uLinear )
+	if ( m_linear )
 	{
 		if ( m_uPeriodic )
 		{
 			return m_uPoints;
 		}
 		else
-		{
+		{			
 			return m_uPoints - 1;
 		}
 	}
@@ -251,7 +243,7 @@ unsigned int PatchMeshPrimitive::uPatches() const
 
 unsigned int PatchMeshPrimitive::vPatches() const
 {
-	if ( m_vLinear )
+	if ( m_linear )
 	{
 		if ( m_vPeriodic )
 		{
@@ -295,17 +287,20 @@ bool PatchMeshPrimitive::vPeriodic() const
 	return m_vPeriodic;
 }
 
-void PatchMeshPrimitive::render( RendererPtr renderer ) const
+void PatchMeshPrimitive::render( RendererPtr renderer )
 {
-	renderer->patchMesh(
-		m_uBasis,
-		m_vBasis,
-		m_uPoints,
-		m_uPeriodic,
-		m_vPoints,
-		m_vPeriodic,
-		Primitive::variables
-	);
+	CompoundDataMap topology;
+	topology["type"] = new StringData( m_linear ? "bilinear" : "bicubic" );
+	topology["nu"] = new IntData( m_uPoints );
+	topology["nv"] = new IntData( m_vPoints );
+	topology["uwrap"] = new StringData( m_uPeriodic ? "periodic" : "nonperiodic" );
+	topology["vwrap"] = new StringData( m_vPeriodic ? "periodic" : "nonperiodic" );	
+	topology["uBasisMatrix"] = new M44fData( m_uBasis.matrix );
+	topology["uBasisStep"] = new IntData( m_uBasis.step );
+	topology["vBasisMatrix"] = new M44fData( m_vBasis.matrix );	
+	topology["vBasisStep"] = new IntData( m_vBasis.step );	
+	
+	renderer->geometry( "patchMesh", topology, Primitive::variables );
 }
 
 size_t PatchMeshPrimitive::variableSize( PrimitiveVariable::Interpolation interpolation ) const
@@ -313,14 +308,14 @@ size_t PatchMeshPrimitive::variableSize( PrimitiveVariable::Interpolation interp
 	switch ( interpolation )
 	{
 		case PrimitiveVariable::Constant :
-			return 1;
+			return 1;		
 		case PrimitiveVariable::Uniform :
-			return uPatches() * vPatches();
+			return uPatches() * vPatches();	
 		case PrimitiveVariable::Vertex :
 			return m_uPoints * m_vPoints;
 		case PrimitiveVariable::Varying :
 		case PrimitiveVariable::FaceVarying :
-
+		
 			{
 				if ( !m_uPeriodic )
 				{
@@ -331,10 +326,10 @@ size_t PatchMeshPrimitive::variableSize( PrimitiveVariable::Interpolation interp
 					else
 					{
 						return ( uPatches() + 1 ) * ( vPatches() + 1 );
-					}
+					}					
 				}
 				else
-				{
+				{				
 					if ( !m_vPeriodic )
 					{
 						return uPatches() * ( vPatches() + 1 );
@@ -343,7 +338,7 @@ size_t PatchMeshPrimitive::variableSize( PrimitiveVariable::Interpolation interp
 					{
 						return uPatches() * vPatches();
 					}
-				}
+				}						
 			}
 			assert( false ); // Unreachable
 		default :

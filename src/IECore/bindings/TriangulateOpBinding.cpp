@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,10 +32,12 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+
+#include <boost/python.hpp>
 
 #include "IECore/TriangulateOp.h"
 #include "IECore/bindings/TriangulateOpBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
@@ -45,10 +47,15 @@ namespace IECore
 
 void bindTriangulateOp()
 {
-
-	RunTimeTypedClass<TriangulateOp>()
+	
+	typedef class_< TriangulateOp, TriangulateOpPtr, boost::noncopyable, bases<MeshPrimitiveOp> > TriangulateOpPyClass;
+	TriangulateOpPyClass( "TriangulateOp", no_init )
 		.def( init< >() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( TriangulateOp )
 	;
+	
+	INTRUSIVE_PTR_PATCH( TriangulateOp, TriangulateOpPyClass );
+	implicitly_convertible<TriangulateOpPtr, MeshPrimitiveOpPtr>();	
 
 }
 

@@ -36,7 +36,6 @@
 #define IECORE_LINEARTOREC709OP_H
 
 #include "IECore/ChannelOp.h"
-#include "IECore/ColorSpaceTransformOp.h"
 
 namespace IECore
 {
@@ -50,16 +49,12 @@ class LinearToRec709Op : public ChannelOp
 		virtual ~LinearToRec709Op();
 
 		IE_CORE_DECLARERUNTIMETYPED( LinearToRec709Op, ChannelOp );
-
+	
 	protected :
-
+	
 		virtual void modifyChannels( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, ChannelVector &channels );
-
+	
 		struct Converter;
-
-	private :
-
-		static ColorSpaceTransformOp::ColorSpaceDescription<LinearToRec709Op> g_colorSpaceDescription;
 };
 
 IE_CORE_DECLAREPTR( LinearToRec709Op );

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,8 +43,6 @@
 using namespace IECoreGL;
 using namespace Imath;
 using namespace std;
-
-IE_CORE_DEFINERUNTIMETYPED( SpherePrimitive );
 
 SpherePrimitive::SpherePrimitive( float radius, float zMin, float zMax, float thetaMax )
 {
@@ -98,13 +96,13 @@ float SpherePrimitive::getThetaMax() const
 {
 	return m_thetaMax;
 }
-
+				
 void SpherePrimitive::render( ConstStatePtr state, IECore::TypeId style ) const
 {
 	float oMin = Math<float>::asin( m_zMin );
 	float oMax = Math<float>::asin( m_zMax );
 	const unsigned int nO = max( 4u, (unsigned int)( 20.0f * m_radius * (oMax - oMin) / M_PI ) );
-
+	
 	float thetaMax = m_thetaMax/180.0f * M_PI;
 	const unsigned int nT = max( 7u, (unsigned int)( m_radius * 40.0f * thetaMax / (M_PI*2) ) );
 

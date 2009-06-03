@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,41 +48,44 @@ template<typename T>
 class NumericParameter : public Parameter
 {
 	public :
-
+	
 		typedef T ValueType;
 		typedef TypedData<T> ObjectType;
-
+		IE_CORE_DECLAREMEMBERPTR( NumericParameter<T> );
 		IE_CORE_DECLAREPTR( ObjectType );
-		typedef std::pair<std::string, T> Preset;
-		typedef std::vector<Preset> PresetsContainer;
-
+		typedef std::map<std::string, T> PresetsMap;
+	
 		NumericParameter( const std::string &name, const std::string &description, T defaultValue = T(),
 			T minValue = Imath::limits<T>::min(), T maxValue = Imath::limits<T>::max(),
-			const PresetsContainer &presets = PresetsContainer(), bool presetsOnly = false, ConstCompoundObjectPtr userData = 0 );
-
+			const PresetsMap &presets = PresetsMap(), bool presetsOnly = false, ConstCompoundObjectPtr userData = 0 );
+			
 		NumericParameter( const std::string &name, const std::string &description, T defaultValue,
-			const PresetsContainer &presets, ConstCompoundObjectPtr userData = 0 );
-
-		IECORE_RUNTIMETYPED_DECLARETEMPLATE( NumericParameter<T>, Parameter );
-
-		//! @name Object functions
+			const PresetsMap &presets, ConstCompoundObjectPtr userData = 0 );	
+		
+		//! @name RunTimeTyped functions
 		////////////////////////////////////
 		//@{
-		typename NumericParameter<T>::Ptr copy() const;
-		virtual bool isEqualTo( ConstObjectPtr other ) const;
+		virtual TypeId typeId() const;
+		virtual std::string typeName() const;
+		virtual bool isInstanceOf( TypeId typeId ) const;
+		virtual bool isInstanceOf( const std::string &typeName ) const;
+		static TypeId staticTypeId();
+		static std::string staticTypeName();
+		static bool inheritsFrom( TypeId typeId );
+		static bool inheritsFrom( const std::string &typeName );
 		//@}
-
+		
 		bool hasMinValue() const;
 		T minValue() const;
-
+		
 		bool hasMaxValue() const;
 		T maxValue() const;
-
+		
 		/// Convenience function for getting the default value, which avoids all
 		/// the hoop jumping needed to extract the value from the Object returned
 		/// by Parameter::defaultValue()
 		T numericDefaultValue() const;
-
+		
 		/// Convenience function for value getting, which avoids all the hoop
 		/// jumping needed to extract the value from the Object returned
 		/// by Parameter::getValue(). Throws an exception if the value is not
@@ -91,30 +94,16 @@ class NumericParameter : public Parameter
 		/// Convenience function for value setting - constructs a TypedData<T>
 		/// from value and calls Parameter::setValue()
 		void setNumericValue( T value );
-
+		
 		/// Implemented to return true only if value is of type TypedData<T> and if
-		/// min <= value->readable() <= max.
+		/// min <= value->readable() <= max.		
 		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
 
-	protected :
-
-		// constructor for use during load/copy
-		NumericParameter();
-
-		virtual void copyFrom( ConstObjectPtr other, CopyContext *context );
-		virtual void save( SaveContext *context ) const;
-		virtual void load( LoadContextPtr context );
-		virtual void memoryUsage( Object::MemoryAccumulator &accumulator ) const;
-
-	private :
+	private :	
 
 		T m_min;
 		T m_max;
 
-		static TypeDescription<NumericParameter<T> > g_typeDescription;
-		friend class TypeDescription<NumericParameter<T> >;
-
-		static const unsigned int g_ioVersion;
 };
 
 typedef NumericParameter<int> IntParameter;

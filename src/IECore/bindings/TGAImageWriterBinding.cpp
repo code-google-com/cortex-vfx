@@ -35,6 +35,7 @@
 #include "boost/python.hpp"
 
 #include "IECore/TGAImageWriter.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using std::string;
@@ -46,11 +47,16 @@ namespace IECore
 
 void bindTGAImageWriter()
 {
-	RunTimeTypedClass<TGAImageWriter>()
-		.def( init<>() )
+	typedef class_<TGAImageWriter, TGAImageWriterPtr, boost::noncopyable, bases<ImageWriter> > TGAImageWriterPyClass;
+	object tgaImageWriter = TGAImageWriterPyClass("TGAImageWriter", init<>())
 		.def( init<ObjectPtr, const std::string &>() )
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( TGAImageWriter )
 	;
+
+	INTRUSIVE_PTR_PATCH( TGAImageWriter, TGAImageWriterPyClass );
+	implicitly_convertible<TGAImageWriterPtr, TGAImageWriterPtr>();
 }
 
 } // namespace IECore
+
 

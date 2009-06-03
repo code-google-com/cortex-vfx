@@ -54,8 +54,6 @@ using namespace IECore;
 using namespace Imath;
 using namespace boost;
 
-IE_CORE_DEFINERUNTIMETYPED( BINMeshReader );
-
 const Reader::ReaderDescription<BINMeshReader> BINMeshReader::m_readerDescription( "bin" );
 
 template<typename T>

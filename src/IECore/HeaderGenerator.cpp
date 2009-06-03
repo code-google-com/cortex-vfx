@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,8 +37,8 @@
 #include <pwd.h>
 #include <time.h>
 
-#include "boost/format.hpp"
-#include "boost/algorithm/string/trim.hpp"
+#include <boost/format.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 #include "IECore/HeaderGenerator.h"
 #include "IECore/SimpleTypedData.h"
@@ -114,16 +114,16 @@ static void timeStampHeaderGenerator( CompoundObjectPtr header )
 {
 	time_t tm;
 	time( &tm );
-
+	
 	/// ctime_r manpage suggest that 26 characters should be enough in all cases
 	char buf[27];
 	std::string strTime ( ctime_r( &tm, &buf[0] ) );
-
+		
 	assert( strTime.length() <= 26 );
-
+	
 	/// Remove the newline at the end
 	boost::algorithm::trim_right( strTime );
-
+			
 	header->members()["timeStamp"] = new StringData( strTime );
 }
 

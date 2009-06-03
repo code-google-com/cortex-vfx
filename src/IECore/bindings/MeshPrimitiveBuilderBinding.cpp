@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,9 +32,9 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
-#include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 #include "IECore/MeshPrimitiveBuilder.h"
 
@@ -45,13 +45,17 @@ namespace IECore
 
 void bindMeshPrimitiveBuilder()
 {
-	RefCountedClass<MeshPrimitiveBuilder, RefCounted>( "MeshPrimitiveBuilder" )
+	typedef class_< MeshPrimitiveBuilder, MeshPrimitiveBuilderPtr, bases<RefCounted>, boost::noncopyable > MeshPrimitiveBuilderPyClass;
+
+	MeshPrimitiveBuilderPyClass( "MeshPrimitiveBuilder", no_init )
 		.def( init<> () )
 		.def( "addVertex", &MeshPrimitiveBuilder::addVertex<float> )
-		.def( "addVertex", &MeshPrimitiveBuilder::addVertex<double> )
+		.def( "addVertex", &MeshPrimitiveBuilder::addVertex<double> )		
 		.def( "addTriangle", &MeshPrimitiveBuilder::addTriangle )
-		.def( "mesh", &MeshPrimitiveBuilder::mesh )
+		.def( "mesh", &MeshPrimitiveBuilder::mesh )								
 	;
+	INTRUSIVE_PTR_PATCH( MeshPrimitiveBuilder, MeshPrimitiveBuilderPyClass );
+	implicitly_convertible< MeshPrimitiveBuilderPtr, RefCountedPtr>();	
 }
 
 } // namespace IECore

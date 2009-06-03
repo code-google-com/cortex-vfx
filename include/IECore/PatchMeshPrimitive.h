@@ -48,9 +48,9 @@ class PatchMeshPrimitive : public Primitive
 	public :
 
 		PatchMeshPrimitive();
-
+		
 		/// Copy of p is taken.
-		PatchMeshPrimitive(
+		PatchMeshPrimitive(		        
 		        unsigned int uPoints,
 		        unsigned int vPoints,
 		        const CubicBasisf &uBasis=CubicBasisf::linear(),
@@ -59,14 +59,14 @@ class PatchMeshPrimitive : public Primitive
 		        bool vPeriodic = false,
 		        ConstV3fVectorDataPtr p = 0
 		);
-
+		
 		virtual ~PatchMeshPrimitive();
 
 		IE_CORE_DECLAREOBJECT( PatchMeshPrimitive, Primitive );
-
+		
 		/// Returns the number of control points in U or V
 		unsigned int uPoints() const;
-		unsigned int vPoints() const;
+		unsigned int vPoints() const;		
 
 		/// Returns the number of sub-patches in U or V
 		unsigned int uPatches() const;
@@ -79,14 +79,14 @@ class PatchMeshPrimitive : public Primitive
 		bool uPeriodic() const;
 		bool vPeriodic() const;
 
-		virtual void render( RendererPtr renderer ) const;
-
+		virtual void render( RendererPtr renderer );
+		
 		/// Follows the RenderMan specification for variable sizes.
 		virtual size_t variableSize( PrimitiveVariable::Interpolation interpolation ) const;
 
 	protected :
 
-		bool m_uLinear, m_vLinear;
+		bool m_linear;
 		unsigned int m_uPoints, m_vPoints;
 		CubicBasisf m_uBasis, m_vBasis;
 		bool m_uPeriodic, m_vPeriodic;

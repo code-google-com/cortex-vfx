@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,8 +52,6 @@ using std::vector;
 using Imath::Box2i;
 using namespace Imf;
 
-IE_CORE_DEFINERUNTIMETYPED( EXRImageWriter )
-
 const Writer::WriterDescription<EXRImageWriter> EXRImageWriter::m_writerDescription("exr");
 
 EXRImageWriter::EXRImageWriter()
@@ -69,11 +67,6 @@ EXRImageWriter::EXRImageWriter(ObjectPtr image, const string &fileName)
 
 	m_objectParameter->setValue( image );
 	m_fileNameParameter->setTypedValue( fileName );
-}
-
-std::string EXRImageWriter::destinationColorSpace() const
-{
-	return "linear";
 }
 
 void EXRImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow) const

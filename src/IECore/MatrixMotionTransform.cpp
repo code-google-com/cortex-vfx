@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -54,8 +54,8 @@ MatrixMotionTransform::MatrixMotionTransform()
 MatrixMotionTransform::~MatrixMotionTransform()
 {
 }
-
-void MatrixMotionTransform::render( RendererPtr renderer ) const
+		
+void MatrixMotionTransform::render( RendererPtr renderer )
 {
 	if( !m_snapshots.size() )
 	{
@@ -66,7 +66,7 @@ void MatrixMotionTransform::render( RendererPtr renderer ) const
 		renderer->concatTransform( m_snapshots.begin()->second );
 		return;
 	}
-
+	
 	set<float> times;
 	for( SnapshotMap::const_iterator it = m_snapshots.begin(); it!=m_snapshots.end(); it++ )
 	{
@@ -110,7 +110,7 @@ MatrixMotionTransform::SnapshotMap &MatrixMotionTransform::snapshots()
 {
 	return m_snapshots;
 }
-
+		
 void MatrixMotionTransform::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	Transform::copyFrom( other, context );

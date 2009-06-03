@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,14 +32,14 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-// This include needs to be the very first to prevent problems with warnings
+// This include needs to be the very first to prevent problems with warnings 
 // regarding redefinition of _POSIX_C_SOURCE
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/CachedReader.h"
 #include "IECore/Object.h"
 #include "IECore/bindings/CachedReaderBinding.h"
-#include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
 
 using namespace boost::python;
 
@@ -61,15 +61,20 @@ static ObjectPtr read( CachedReader &r, const std::string &f )
 
 void bindCachedReader()
 {
-	RefCountedClass<CachedReader, RefCounted>( "CachedReader" )
+	typedef class_< CachedReader, boost::noncopyable, CachedReaderPtr, bases< RefCounted > > CachedReaderPyClass;
+	CachedReaderPyClass( "CachedReader", no_init )
 		.def( init<const SearchPath &, size_t>() )
 		.def( "read", &read )
 		.def( "memoryUsage", &CachedReader::memoryUsage )
 		.def( "clear", &CachedReader::clear )
 		.add_property( "searchPath", make_function( &CachedReader::getSearchPath, return_value_policy<copy_const_reference>() ), &CachedReader::setSearchPath )
-		.add_property( "maxMemory", &CachedReader::getMaxMemory, &CachedReader::setMaxMemory )
+		.add_property( "maxMemory", &CachedReader::getMaxMemory, &CachedReader::setMaxMemory )		
 		.def( "defaultCachedReader", &CachedReader::defaultCachedReader ).staticmethod( "defaultCachedReader" )
 	;
-}
 
+	INTRUSIVE_PTR_PATCH( CachedReader, CachedReaderPyClass );
+	implicitly_convertible<CachedReaderPtr, RefCountedPtr>();
+	
+}
+	
 }

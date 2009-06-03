@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -59,18 +59,18 @@ class Camera : public Renderable
 			const Imath::V2f &clippingPlanes = Imath::V2f( 0.1, 1000 )
 		);
 
-		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::Camera, CameraTypeId, Renderable );
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( Camera, CameraTypeId, Renderable );
 
 		/// Specifies the transform of the camera relative to the world.
 		void setTransform( const Imath::M44f &transform );
 		const Imath::M44f &getTransform() const;
-
+		
 		void setResolution( const Imath::V2i &resolution );
 		const Imath::V2i &getResolution() const;
-
+		
 		void setScreenWindow( const Imath::Box2f &screenWindow );
 		const Imath::Box2f &getScreenWindow() const;
-
+		
 		void setClippingPlanes( const Imath::V2f &clippingPlanes );
 		const Imath::V2f &getClippingPlanes() const;
 
@@ -100,16 +100,16 @@ class Camera : public Renderable
 		/// relative to the current GL transform.
 		static Imath::V3f upInObjectSpace();
 		//@}
-
+	
 	protected :
-
+	
 		void setModelViewMatrix() const;
-
+	
 		Imath::M44f m_transform;
 		Imath::V2i m_resolution;
 		Imath::Box2f m_screenWindow;
 		Imath::V2f m_clippingPlanes;
-
+		
 };
 
 IE_CORE_DECLAREPTR( Camera );

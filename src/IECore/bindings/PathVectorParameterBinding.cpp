@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,12 +32,14 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/python.hpp"
+#include <boost/python.hpp>
 
 #include "IECore/bindings/ParameterBinding.h"
 #include "IECore/PathVectorParameter.h"
 #include "IECore/CompoundObject.h"
 #include "IECore/bindings/Wrapper.h"
+#include "IECore/bindings/IntrusivePtrPatch.h"
+#include "IECore/bindings/WrapperToPython.h"
 #include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace std;
@@ -50,23 +52,48 @@ namespace IECore
 class PathVectorParameterWrap : public PathVectorParameter, public Wrapper<PathVectorParameter>
 {
 	public:
-
+	
 		PathVectorParameterWrap( PyObject *self, const std::string &n, const std::string &d, ConstStringVectorDataPtr dv, bool ae = true,
-			PathVectorParameter::CheckType c = PathVectorParameter::DontCare, const object &p = boost::python::tuple(), bool po = false, CompoundObjectPtr ud = 0 )
-			:	PathVectorParameter( n, d, dv->readable(), ae, c, parameterPresets<PathVectorParameter::PresetsContainer>( p ), po, ud ), Wrapper<PathVectorParameter>( self, this )
+			PathVectorParameter::CheckType c = PathVectorParameter::DontCare, dict p = dict(), bool po = false, CompoundObjectPtr ud = 0 )	
+			:	PathVectorParameter( n, d, dv->readable(), ae, c, makePresets( p ), po, ud ), Wrapper<PathVectorParameter>( self, this )
 		{
 		}
-
+		
 		IE_COREPYTHON_PARAMETERWRAPPERFNS( PathVectorParameter );
 
+	protected :
+	
+		static PathVectorParameter::PresetsMap makePresets( const dict &d )
+		{
+			PathVectorParameter::PresetsMap p;
+			boost::python::list keys = d.keys();
+			boost::python::list values = d.values();
+			for( int i = 0; i<keys.attr( "__len__" )(); i++ )
+			{
+				extract<StringVectorDataPtr> e( values[i] );				
+				if( e.check() )
+				{
+					p.insert( PathVectorParameter::PresetsMap::value_type( extract<string>( keys[i] )(), e()->readable() ) );
+				}
+				else
+				{
+					p.insert( PathVectorParameter::PresetsMap::value_type( extract<string>( keys[i] )(), extract<StringVectorDataPtr>( values[i] )()->readable() ) );
+				}
+				
+				StringVectorDataPtr value = e();
+				assert( value );
+				p.insert( PathVectorParameter::PresetsMap::value_type( extract<string>( keys[i] )(), value->readable() ) );
+			}
+			return p;
+		}		
 };
 IE_CORE_DECLAREPTR( PathVectorParameterWrap );
 
 void bindPathVectorParameter()
 {
-	using boost::python::arg;
 
-	RunTimeTypedClass<PathVectorParameter, PathVectorParameterWrapPtr> pathVectorParamClass;
+	typedef class_<PathVectorParameter, PathVectorParameterWrapPtr, boost::noncopyable, bases<StringVectorParameter> > PathVectorParameterPyClass;
+	PathVectorParameterPyClass pathVectorParamClass( "PathVectorParameter", no_init );
 	{
 		// define enum before functions.
 		scope varScope = pathVectorParamClass;
@@ -77,26 +104,19 @@ void bindPathVectorParameter()
 		;
 	}
 	pathVectorParamClass
-		.def(
-			init< const std::string &, const std::string &, ConstStringVectorDataPtr, boost::python::optional<bool, PathVectorParameter::CheckType, const object &, bool, CompoundObjectPtr > >
-			(
-				(
-					arg( "name" ),
-					arg( "description" ),
-					arg( "defaultValue" ),
-					arg( "allowEmptyList" ) = true,
-					arg( "check" ) = PathVectorParameter::DontCare,
-					arg( "presets" ) = boost::python::tuple(),
-					arg( "presetsOnly" ) = false ,
-					arg( "userData" ) = CompoundObject::Ptr( 0 )
-				)
-			)
-		)
+		.def( init< const std::string &, const std::string &, ConstStringVectorDataPtr, optional<bool, PathVectorParameter::CheckType, const dict &, bool, CompoundObjectPtr > >( args( "name", "description", "defaultValue", "allowEmptyList", "check", "presets", "presetsOnly", "userData") ) )
 		.IE_COREPYTHON_DEFPARAMETERWRAPPERFNS( PathVectorParameter )
 		.add_property( "mustExist", &PathVectorParameter::mustExist )
 		.add_property( "mustNotExist", &PathVectorParameter::mustNotExist )
 		.add_property( "allowEmptyList", &PathVectorParameter::allowEmptyList )
-	;
+		.IE_COREPYTHON_DEFRUNTIMETYPEDSTATICMETHODS( PathVectorParameter )
+	;	
+	
+	WrapperToPython<PathVectorParameterPtr>();
+	
+	INTRUSIVE_PTR_PATCH( PathVectorParameter, PathVectorParameterPyClass );
+	implicitly_convertible<PathVectorParameterPtr, StringVectorParameterPtr>();
+
 }
 
 } // namespace IECore

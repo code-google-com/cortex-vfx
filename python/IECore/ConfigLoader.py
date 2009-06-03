@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -35,8 +35,6 @@
 import re
 import os
 import os.path
-import sys
-import traceback
 import IECore
 
 ## This function provides an easy means of providing a flexible configuration
@@ -61,7 +59,7 @@ def loadConfig( searchPaths, localsDict, raiseExceptions = False ) :
 					try :
 						execfile( fullFileName, globals(), localsDict )
 					except Exception, m :
-						stacktrace = traceback.format_exc()
-						IECore.msg( IECore.Msg.Level.Error, "IECore.loadConfig", "Error executing file \"%s\" - \"%s\".\n %s" % ( fullFileName, m, stacktrace ) )
+						IECore.debugException("loading config file")
+						IECore.msg( IECore.Msg.Level.Error, "IECore.loadConfig", "Error executing file \"%s\" - \"%s\"." % ( fullFileName, m ) )
 
 loadConfig( IECore.SearchPath( os.environ.get( "IECORE_CONFIG_PATHS", "" ), ":" ), { "IECore" : IECore } )

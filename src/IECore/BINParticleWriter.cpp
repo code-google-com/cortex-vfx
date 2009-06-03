@@ -49,8 +49,6 @@ using namespace IECore;
 using namespace std;
 using namespace Imath;
 
-IE_CORE_DEFINERUNTIMETYPED( BINParticleWriter )
-
 const Writer::WriterDescription<BINParticleWriter> BINParticleWriter::m_writerDescription( "bin" );
 
 BINParticleWriter::BINParticleWriter( )

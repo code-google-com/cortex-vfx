@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,8 +43,6 @@ using namespace IECore;
 using namespace std;
 using namespace boost;
 
-IE_CORE_DEFINERUNTIMETYPED( ChannelOp );
-
 ChannelOp::ChannelOp( const std::string &name, const std::string &description )
 	:	ImagePrimitiveOp( name, description )
 {
@@ -53,7 +51,7 @@ ChannelOp::ChannelOp( const std::string &name, const std::string &description )
 	defaultChannels->writable().push_back( "R" );
 	defaultChannels->writable().push_back( "G" );
 	defaultChannels->writable().push_back( "B" );
-
+	
 	m_channelNamesParameter = new StringVectorParameter(
 		"channels",
 		"The names of the channels to modify.",
@@ -66,7 +64,7 @@ ChannelOp::ChannelOp( const std::string &name, const std::string &description )
 ChannelOp::~ChannelOp()
 {
 }
-
+	
 StringVectorParameterPtr ChannelOp::channelNamesParameter()
 {
 	return m_channelNamesParameter;
@@ -85,10 +83,10 @@ void ChannelOp::modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObje
 	}
 
 	ChannelVector channels;
-
+	
 	/// \todo Just use ImagePrimitive::channelValid. We don't want to do that right now
 	/// as it imposes loose restrictions on the channel datatype - in the future it should perhaps
-	/// impose the restrictions we have here (float, int or half vector data).
+	/// impose the restrictions we have here (float, int or half vector data). 
 	/// Would be useful to add a TypeTraits class which can test compatiblity againt ImagePrimitive-supported channels, too.
 	size_t numPixels = image->variableSize( PrimitiveVariable::Vertex );
 	const vector<string> channelNames = channelNamesParameter()->getTypedValue();
@@ -99,35 +97,35 @@ void ChannelOp::modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObje
 		{
 			throw Exception( str( format( "Channel \"%s\" does not exist." ) % channelNames[i] ) );
 		}
-
+		
 		if( it->second.interpolation!=PrimitiveVariable::Vertex &&
 			it->second.interpolation!=PrimitiveVariable::Varying &&
 			it->second.interpolation!=PrimitiveVariable::FaceVarying )
 		{
 			throw Exception( str( format( "Primitive variable \"%s\" has inappropriate interpolation." ) % channelNames[i] ) );
 		}
-
+		
 		if( !it->second.data )
 		{
 			throw Exception( str( format( "Primitive variable \"%s\" has no data." ) % channelNames[i] ) );
 		}
-
+		
 		if( !it->second.data->isInstanceOf( FloatVectorData::staticTypeId() ) &&
 			!it->second.data->isInstanceOf( HalfVectorData::staticTypeId() ) &&
 			!it->second.data->isInstanceOf( IntVectorData::staticTypeId() ) )
 		{
 			throw Exception( str( format( "Primitive variable \"%s\" has inappropriate type." ) % channelNames[i] ) );
 		}
-
+		
 		size_t size = despatchTypedData<TypedDataSize>( it->second.data );
 		if( size!=numPixels )
 		{
 			throw Exception( str( format( "Primitive variable \"%s\" has wrong size (%d but should be %d)." ) % channelNames[i] % size % numPixels ) );
 		}
-
+		
 		channels.push_back( it->second.data );
 	}
-
+	
 	modifyChannels( image->getDisplayWindow(), image->getDataWindow(), channels );
 	/// \todo Consider cases where the derived class invalidates the channel data (by changing its length)
 }

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -33,15 +33,23 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "IECoreMaya/Parameter.h"
+#include "IECoreMaya/NumericTraits.h"
+#include "IECoreMaya/ToMayaObjectConverter.h"
+#include "IECoreMaya/FromMayaObjectConverter.h"
 #include "IECoreMaya/CompoundParameterHandler.h"
 
+#include "IECore/NumericParameter.h"
+#include "IECore/TypedParameter.h"
 #include "IECore/CompoundParameter.h"
 
-#include "maya/MFnMessageAttribute.h"
+#include "maya/MFnCompoundAttribute.h"
+
 
 using namespace IECoreMaya;
+using namespace Imath;
+using namespace boost;
 
-static ParameterHandler::Description<CompoundParameterHandler> registrar( IECore::CompoundParameter::staticTypeId() );
+static ParameterHandler::Description< CompoundParameterHandler > registrar( IECore::CompoundParameter::staticTypeId() );
 
 MStatus CompoundParameterHandler::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
 {
@@ -50,35 +58,144 @@ MStatus CompoundParameterHandler::update( IECore::ConstParameterPtr parameter, M
 	{
 		return MS::kFailure;
 	}
-
-	MFnMessageAttribute fnMAttr( attribute );
-	if( !fnMAttr.hasObj( attribute ) )
+	
+	MFnCompoundAttribute fnCAttr( attribute );
+	if( !fnCAttr.hasObj( attribute ) )
 	{
 		return MS::kFailure;
 	}
 
+	const IECore::CompoundParameter::ParameterMap &childParameters = p->parameters();
+
+	// remove any children who aren't represented in the parameter
+	bool removedOne = false;
+	do {
+		removedOne = false;
+		for( unsigned i=0; i<fnCAttr.numChildren(); i++ )
+		{
+			MObject childAttr = fnCAttr.child( i );
+			MFnAttribute fnAttr( childAttr );
+			if( !childParameters.count( fnAttr.name().asChar() ) )
+			{
+				fnCAttr.removeChild( childAttr );
+				removedOne = true;
+				break;
+			}
+		}
+	} while( removedOne );
+	
+	// add/update children for each child of the parameter
+	for( IECore::CompoundParameter::ParameterMap::const_iterator it=childParameters.begin(); it!=childParameters.end(); it++ )
+	{
+		bool updatedOk = false;
+		for( unsigned i=0; i<fnCAttr.numChildren(); i++ )
+		{
+			MObject childAttr = fnCAttr.child( i );
+			MFnAttribute fnChildAttr( childAttr );
+			if( fnChildAttr.name()==it->first.c_str() )
+			{
+				if( Parameter::update( it->second, childAttr ) ) {
+					updatedOk = true;
+				} else {
+					fnCAttr.removeChild( childAttr );
+				}
+				break;
+			}
+		}
+		if( !updatedOk )
+		{
+			MObject c = Parameter::create( it->second, it->first.c_str() );
+			if( c.isNull() )
+			{
+				return MS::kFailure;
+			} else {
+				MStatus s = fnCAttr.addChild( c );
+				if( !s )
+				{
+					return s;
+				}
+			}
+		}
+	}
+	
 	return MS::kSuccess;
 }
 
 MObject CompoundParameterHandler::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
 {
 	IECore::ConstCompoundParameterPtr p = IECore::runTimeCast<const IECore::CompoundParameter>( parameter );
-	if( !p )
+	
+	if( !p || !p->parameters().size())
 	{
 		return MObject::kNullObj;
 	}
-
-	MFnMessageAttribute fnMAttr;
-	MObject result = fnMAttr.create( attributeName, attributeName );
+	
+	MFnCompoundAttribute fnCAttr;
+	MObject result = fnCAttr.create( attributeName, attributeName );
+	update( parameter, result );
 	return result;
 }
-
+		
 MStatus CompoundParameterHandler::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
+	IECore::ConstCompoundParameterPtr p = IECore::runTimeCast<const IECore::CompoundParameter>( parameter );
+	if( !p )
+	{
+		return MS::kFailure;
+	}
+	
+	const IECore::CompoundParameter::ParameterMap &childParameters = p->parameters();
+	if( childParameters.size()!=plug.numChildren() )
+	{
+		return MS::kFailure;
+	}
+	
+	for( unsigned i=0; i<plug.numChildren(); i++ )
+	{
+		MPlug childPlug = plug.child( i );
+		IECore::CompoundParameter::ParameterMap::const_iterator it = childParameters.find( childPlug.partialName().asChar() );
+		if( it==childParameters.end() )
+		{
+			return MS::kFailure;
+		}
+		MStatus s = Parameter::setValue( it->second, childPlug );
+		if( !s )
+		{
+			return s;
+		}
+	}
+
 	return MS::kSuccess;
 }
 
 MStatus CompoundParameterHandler::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
+	IECore::CompoundParameterPtr p = IECore::runTimeCast<IECore::CompoundParameter>( parameter );
+	if( !p )
+	{
+		return MS::kFailure;
+	}
+	
+	const IECore::CompoundParameter::ParameterMap &childParameters = p->parameters();
+	if( childParameters.size()!=plug.numChildren() )
+	{
+		return MS::kFailure;
+	}
+	
+	for( unsigned i=0; i<plug.numChildren(); i++ )
+	{
+		MPlug childPlug = plug.child( i );
+		IECore::CompoundParameter::ParameterMap::const_iterator it = childParameters.find( childPlug.partialName().asChar() );
+		if( it==childParameters.end() )
+		{
+			return MS::kFailure;
+		}
+		MStatus s = Parameter::setValue( childPlug, it->second );
+		if( !s )
+		{
+			return s;
+		}
+	}
+
 	return MS::kSuccess;
 }

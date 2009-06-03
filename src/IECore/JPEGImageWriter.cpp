@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -49,7 +49,6 @@
 #include "IECore/BoxOps.h"
 
 #include "boost/format.hpp"
-#include "boost/multi_array.hpp"
 
 #include <fstream>
 
@@ -62,8 +61,6 @@ using namespace IECore;
 using namespace std;
 using namespace boost;
 using namespace Imath;
-
-IE_CORE_DEFINERUNTIMETYPED( JPEGImageWriter )
 
 const Writer::WriterDescription<JPEGImageWriter> JPEGImageWriter::m_writerDescription("jpeg jpg");
 
@@ -98,11 +95,6 @@ JPEGImageWriter::~JPEGImageWriter()
 {
 }
 
-std::string JPEGImageWriter::destinationColorSpace() const
-{
-	return "srgb";
-}
-
 IntParameterPtr JPEGImageWriter::qualityParameter()
 {
 	return m_qualityParameter;
@@ -135,14 +127,14 @@ struct JPEGImageWriter::ChannelConverter
 	typedef void ReturnType;
 
 	std::string m_channelName;
-	ConstImagePrimitivePtr m_image;
+	Box2i m_displayWindow;
 	Box2i m_dataWindow;
 	int m_numChannels;
 	int m_channelOffset;
 	std::vector<unsigned char> &m_imageBuffer;
 
-	ChannelConverter( const std::string &channelName, ConstImagePrimitivePtr image, const Box2i &dataWindow, int numChannels, int channelOffset, std::vector<unsigned char> &imageBuffer  )
-	: m_channelName( channelName ), m_image( image ), m_dataWindow( dataWindow ), m_numChannels( numChannels ), m_channelOffset( channelOffset ), m_imageBuffer( imageBuffer )
+	ChannelConverter( const std::string &channelName, const Box2i &displayWindow, const Box2i &dataWindow, int numChannels, int channelOffset, std::vector<unsigned char> &imageBuffer  ) 
+	: m_channelName( channelName ), m_displayWindow( displayWindow ), m_dataWindow( dataWindow ), m_numChannels( numChannels ), m_channelOffset( channelOffset ), m_imageBuffer( imageBuffer )
 	{
 	}
 
@@ -154,30 +146,36 @@ struct JPEGImageWriter::ChannelConverter
 		const typename T::ValueType &data = dataContainer->readable();
 		ScaledDataConversion<typename T::ValueType::value_type, unsigned char> converter;
 
-		typedef boost::multi_array_ref< const typename T::ValueType::value_type, 2 > SourceArray2D;
-		typedef boost::multi_array_ref< unsigned char, 3 > TargetArray3D;
+		int displayWidth = m_displayWindow.size().x + 1;
+		int dataWidth = m_dataWindow.size().x + 1;
 
-		const SourceArray2D sourceData( &data[0], extents[ m_image->getDataWindow().size().y + 1 ][ m_image->getDataWindow().size().x + 1 ] );
-		TargetArray3D targetData( &m_imageBuffer[0], extents[ m_image->getDisplayWindow().size().y + 1 ][ m_image->getDisplayWindow().size().x + 1 ][ m_numChannels ] );
+		int dataY = 0;
 
-		const Box2i copyRegion = boxIntersection( m_dataWindow, boxIntersection( m_image->getDisplayWindow(), m_image->getDataWindow() ) );
-
-		for ( int y = copyRegion.min.y; y <= copyRegion.max.y ; y++ )
+		for ( int y = m_dataWindow.min.y; y <= m_dataWindow.max.y; y++, dataY++ )
 		{
-			for ( int x = copyRegion.min.x; x <= copyRegion.max.x ; x++ )
-			{
-				targetData[ y - m_image->getDisplayWindow().min.y + copyRegion.min.y ][ x - m_image->getDisplayWindow().min.x + copyRegion.min.x ][ m_channelOffset ]
-					= converter( sourceData[ y - m_image->getDataWindow().min.y ][ x - m_image->getDataWindow().min.x ] );
+			int dataOffset = dataY * dataWidth;
+			assert( dataOffset >= 0 );
+
+			for ( int x = m_dataWindow.min.x; x <= m_dataWindow.max.x; x++, dataOffset++ )
+			{		
+				int pixelIdx = ( y - m_displayWindow.min.y ) * displayWidth + ( x - m_displayWindow.min.x );
+
+				assert( pixelIdx >= 0 );
+				assert( m_numChannels*pixelIdx + m_channelOffset < (int)m_imageBuffer.size() );
+				assert( dataOffset < (int)data.size() );
+
+				// convert to unsigned 8-bit integer				
+				m_imageBuffer[ m_numChannels*pixelIdx + m_channelOffset ] = converter( data[dataOffset] );
 			}
 		}
 	};
-
+	
 	struct ErrorHandler
 	{
 		template<typename T, typename F>
 		void operator()( typename T::ConstPtr data, const F& functor )
 		{
-			throw InvalidArgumentException( ( boost::format( "JPEGImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId( data->typeId() ) % functor.m_channelName ).str() );
+			throw InvalidArgumentException( ( boost::format( "JPEGImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId( data->typeId() ) % functor.m_channelName ).str() );		
 		}
 	};
 };
@@ -185,10 +183,10 @@ struct JPEGImageWriter::ChannelConverter
 void JPEGImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow ) const
 {
 	vector<string>::const_iterator rIt = std::find( names.begin(), names.end(), "R" );
-	vector<string>::const_iterator gIt = std::find( names.begin(), names.end(), "G" );
+	vector<string>::const_iterator gIt = std::find( names.begin(), names.end(), "G" );	
 	vector<string>::const_iterator bIt = std::find( names.begin(), names.end(), "B" );
-	vector<string>::const_iterator yIt = std::find( names.begin(), names.end(), "Y" );
-
+	vector<string>::const_iterator yIt = std::find( names.begin(), names.end(), "Y" );		
+	
 	int numChannels = 0;
 	J_COLOR_SPACE colorSpace = JCS_RGB;
 	if ( rIt != names.end() && gIt != names.end() && bIt != names.end() )
@@ -198,23 +196,23 @@ void JPEGImageWriter::writeImage( const vector<string> &names, ConstImagePrimiti
 			throw IOException("JPEGImageWriter: Unsupported channel names specified");
 		}
 		numChannels = 3;
-	}
-	else if ( yIt != names.end() )
+	} 
+	else if ( yIt != names.end() ) 
 	{
 		if ( rIt != names.end() || gIt != names.end() || bIt != names.end() )
 		{
 			throw IOException("JPEGImageWriter: Unsupported channel names specified");
 		}
-
+		
 		colorSpace = JCS_GRAYSCALE;
 		numChannels = 1;
 	}
-
+	
 	if( !numChannels )
 	{
 		throw IOException( "JPEGImageWriter: Unsupported channel names specified." );
 	}
-
+	
 	assert( numChannels == 1 || numChannels == 3 );
 
 	FILE *outFile = 0;
@@ -261,7 +259,7 @@ void JPEGImageWriter::writeImage( const vector<string> &names, ConstImagePrimiti
 
 		int quality = qualityParameter()->getNumericValue();
 		assert( quality >= 0 );
-		assert( quality <= 100 );
+		assert( quality <= 100 );		
 
 		// force baseline-JPEG (8bit) values with TRUE
 		jpeg_set_quality(&cinfo, quality, TRUE);
@@ -289,12 +287,12 @@ void JPEGImageWriter::writeImage( const vector<string> &names, ConstImagePrimiti
 			}
 			else if ( name == "G" )
 			{
-				assert( colorSpace == JCS_RGB );
+				assert( colorSpace == JCS_RGB );			
 				channelOffset = 1;
 			}
 			else if ( name == "B" )
 			{
-				assert( colorSpace == JCS_RGB );
+				assert( colorSpace == JCS_RGB );			
 				channelOffset = 2;
 			}
 			else
@@ -305,17 +303,17 @@ void JPEGImageWriter::writeImage( const vector<string> &names, ConstImagePrimiti
 			}
 
 			// get the image channel
-			assert( image->variables.find( name ) != image->variables.end() );
+			assert( image->variables.find( name ) != image->variables.end() );			
 			DataPtr dataContainer = image->variables.find( name )->second.data;
 			assert( dataContainer );
-
-			ChannelConverter converter( *it, image, dataWindow, numChannels, channelOffset, imageBuffer );
-
-			despatchTypedData<
-				ChannelConverter,
+			
+			ChannelConverter converter( *it, image->getDisplayWindow(), boxIntersection( dataWindow, image->getDisplayWindow() ), numChannels, channelOffset, imageBuffer );
+		
+			despatchTypedData<			
+				ChannelConverter, 
 				TypeTraits::IsNumericVectorTypedData,
 				ChannelConverter::ErrorHandler
-			>( dataContainer, converter );
+			>( dataContainer, converter );	
 
 		}
 
