@@ -319,7 +319,9 @@ enum TypeId
 	PatchMeshPrimitiveTypeId = 276,
 	CurvesPrimitiveParameterTypeId = 277,
 	CurveExtrudeOpTypeId = 278,
-	// TypeIds 279-294 reserved for future version
+	// TypeIds 279-292 reserved for future version
+	TGAImageReaderTypeId = 293,
+	TGAImageWriterTypeId = 294,
 	BINParticleReaderTypeId = 295,		
 	BINParticleWriterTypeId = 296,	
 	BINMeshReaderTypeId = 297,
