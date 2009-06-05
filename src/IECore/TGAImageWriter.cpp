@@ -168,10 +168,10 @@ void TGAImageWriter::writeImage( const vector<string> &names, ConstImagePrimitiv
 	}
 
 	vector<string> desiredChannelOrder;
-	desiredChannelOrder.push_back( "A" );
 	desiredChannelOrder.push_back( "B" );
 	desiredChannelOrder.push_back( "G" );
 	desiredChannelOrder.push_back( "R" );
+	desiredChannelOrder.push_back( "A" );
 
 	vector<string> namesCopy = names;
 	vector<string> filteredNames;
