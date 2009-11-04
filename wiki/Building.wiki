@@ -3,17 +3,17 @@
 
 = Overview =
 
-Internal Image Engine builds of IECore are made using a customised build system unsuitable for external use. This page describes how IECore can be built outside Image Engine. We've intentionally not used the common autotools standard as in our experience it doesn't work well for building software in a vfx facility, where software must often be installed centrally and with specific naming conventions. We aim to make this build process flexible enough to work in most contexts with some tweaking, and intend to migrate our own internal builds to use it shortly.
+Cortex is built using the SCons build tool. We've intentionally not used the common autotools standard as in our experience it doesn't work well for building software in a vfx facility, where software must often be installed centrally and with specific naming conventions. We aim to make the build process work out of the box for local installs on machines with locally installed dependencies, but flexible enough to work successfully for any facility.
 
-The build process has yet to stabilise fully, so if you encounter problems please raise them on the [http://groups.google.com/group/cortexdev cortex developers list].
+If you encounter problems with this process please raise them on the [http://groups.google.com/group/cortexdev cortex developers list].
 
 = Prerequisites =
  
-IECore is built using the SCons built tool, which is not installed as standard on many systems. It should be downloaded and installed from http://www.scons.org. You will need at least version 0.97.
+If the SCons build tool is not available on your system it should be downloaded and installed from http://www.scons.org. You will need at least version 0.97.
 
 You will also need the [http://www.openexr.org OpenEXR] and [http://www.boost.org boost] libraries. Internally at Image Engine we currently use OpenEXR 1.6.1 and boost 1.38.0, but builds with earlier versions (1.4.0 and 1.35.0 respectively) are known to work.
 
-Finally, you'll need at least Python version 2.4. This is preinstalled on many systems, but current Apple systems ship with only version 2.3, so you may need to download and install a later version from http://www.python.org/download.
+Finally, you'll need at least Python version 2.4. This is preinstalled on many systems, but you may wish to download and install a version from http://www.python.org/download. Image Engine is currently using Python 2.5 but Python 2.6 is known to work too.
 
 = Optional Prerequisites =
 
@@ -23,12 +23,12 @@ To generate the documentation you'll also need a recent version of [http://www.d
 
 = Building =
  
-Currently there are no packages for download, so you'll need to check out the source code from [http://code.google.com/p/cortex-vfx/source subversion].
+Source code packages are available from the downloads section. Alternatively, the latest development code can be obtained from [http://code.google.com/p/cortex-vfx/source subversion].
 
 Assuming vanilla installs of all the dependencies in the default locations, you should simply be able to issue the following command to build the library and python module : 
- 
+
 *scons*
- 
+
 If your libraries are installed in nonstandard locations you may need to add a few command line options to specify those locations. A list of available options with help is obtained with the following command :
 
 *scons --help*
@@ -45,7 +45,7 @@ And loaded again with the following option :
 
 *OPTIONS=optionsFileName*
 
-In this latter case you can still specify further options on the command line in order to override the file contents. Furthermore, the options file can contain any executable python code, so you could edit it to import site specific modules that automatically obtain information about software installation locations etc.
+In this latter case you can still specify further options on the command line in order to override the file contents. Furthermore, the options file can contain any executable python code, so you could edit it to import site specific modules that automatically obtain information about software installation locations etc. A somewhat complex example of such a file can be found in config/ie/options.
 
 = Testing and documentation =
 
