@@ -4,6 +4,8 @@
 
 This code example creates a dome of spotlights in maya, distributed according to the intensities in an environment map. It demonstrates the use of Ops, the loading of images, the sampling of an environment map using the median cut algorithm and the automatic creation of maya user interfaces from a set of parameters.
 
+http://opensource.image-engine.com/images/examples/lightDome.png
+
 == Code ==
 
 Either cut and paste the code below directly into the maya script editor, or save it to a file and run it with execfile(). When executed it pops up a window which controls the creation of the dome.
