@@ -10,18 +10,31 @@ import maya.cmds
 import IECore
 import IECoreMaya
 
-def exportMeshes( meshes, destinationDirectory ) :
+def writeVertexCaches( meshes, destinationFileSequence ) :
 
+	destinationDirectory = os.path.dirname( str( destinationFileSequence ) )
 	if not os.path.exists( destinationDirectory ) :
-		os.makedirs( destinationDirectory )	
-
-	for mesh in meshes :
+		os.makedirs( destinationDirectory )
+		
+	for frameNumber in destinationFileSequence.frameList.asList() :
 	
-		converter = IECoreMaya.FromMayaShapeConverter.create( mesh )
-		converted = converter.convert()
-		writer = IECore.ObjectWriter( converted, destinationDirectory + "/" + mesh + ".cob" )
-		writer.write()
+		maya.cmds.currentTime( frameNumber )
+		
+		attributeCache = IECore.AttributeCache( destinationFileSequence.fileNameForFrame( frameNumber * 250 ), IECore.IndexedIOOpenMode.Write )
+		
+		for mesh in meshes :
+		
+			converter = IECoreMaya.FromMayaShapeConverter.create( mesh )
+			converter["space"].setValue( "World" )
+			points = converter.points()
+			
+			bound = IECore.PointBoundsOp()( points=points )
+			attributeCache.write( mesh, "vertCache.P", points )
+			attributeCache.write( mesh, "vertCache.boundingBox", bound )
 
 allMeshes = maya.cmds.ls( selection=True, noIntermediate=True, dag=True, type="mesh" )
-exportMeshes( allMeshes, "/tmp/myMeshes" )
+writeVertexCaches( allMeshes, IECore.FileSequence( "/tmp/myCaches/cache.######.fio", IECore.FrameRange( 1, 50 ) ) )
+
+
+
 }}}
