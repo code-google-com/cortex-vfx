@@ -2,9 +2,9 @@
 
 This example fills a mesh primitive with particles, then creates a new mesh primitive by surfacing those particles using marching cubes and an implicit surface function.
 
-In production, particle caches are read from disk using an IECore.ParticleReader and the resulting meshes are used for rendering the particle surface.
+In production, particle caches are read from disk using a Particle Reader and the resulting meshes are used for rendering the particle surface.
 
-As of Cortex 4.1.0 there are particle readers for Cortex PointsPrimitives (.cob), Maya (.pdc), Renderman (.ptc), Maya nParticles (.mc), and Houdini (.bgeo).
+As of Cortex 4.1.0 there are particle readers for Cortex Points Primitives (.cob), Maya (.pdc), Renderman (.ptc), Maya nParticles (.mc), and Houdini (.bgeo).
 
 {{{
 import os
