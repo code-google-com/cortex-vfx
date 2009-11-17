@@ -1,4 +1,5 @@
 #summary Code examples
+#labels Featured
 
  * DomeBuilderExample _Building a light dome in maya using an environment map._
  * MeshExportExample _Exporting meshes from maya_
