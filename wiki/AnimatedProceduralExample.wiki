@@ -2,6 +2,10 @@
 
 This example pulls together the MeshExportExample and the AnimationExportExample by using the resulting files within a procedural.
 
+== The Procedural ==
+
+This code implements the procedural. It should be saved in a file called vertCacheProcedural.py.
+
 {{{
 
 from __future__ import with_statement
@@ -153,3 +157,18 @@ class vertCacheProcedural( IECore.ParameterisedProcedural ) :
 		return self.__lastAnimationCache
 	
 }}}
+
+== Using the procedural ==
+
+You can see the procedural in operation in maya quite easily using the following code to create a node to hold it.
+
+execfile( "/path/to/vertCacheProcedural.py" )
+
+import IECoreMaya
+import maya.cmds
+
+p = maya.cmds.createNode( "ieProceduralHolder" )
+fp = IECoreMaya.FnProceduralHolder( "ieProceduralHolder1" )
+fp.setParameterised( vertCacheProcedural() )
+
+The Parameters section of the attribute editor then allows you to specify the meshes and caches you want to render. Here we're using the meshes and caches exported by the MeshExportExample and AnimationExportExample.
