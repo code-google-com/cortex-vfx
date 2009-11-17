@@ -2,4 +2,5 @@
 
  * DomeBuilderExample _Building a light dome in maya using an environment map._
  * MeshExportExample _Exporting meshes from maya_
+ * VertCacheExample _Exporting maya animation to a vertcache_
  * ParticleSurfacingExample _Creating a mesh from a point cloud_
