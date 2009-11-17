@@ -174,3 +174,6 @@ fp.setParameterised( vertCacheProcedural() )
 }}}
 
 The Parameters section of the attribute editor then allows you to specify the meshes and caches you want to render. Here we're using the meshes and caches exported by the MeshExportExample and AnimationExportExample.
+
+
+http://opensource.image-engine.com/images/examples/animatedProcedural.png
