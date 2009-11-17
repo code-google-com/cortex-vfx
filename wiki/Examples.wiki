@@ -2,4 +2,4 @@
 
  * DomeBuilderExample _Building a light dome in maya using an environment map._
  * MeshExportExample _Exporting meshes from maya_
- * ParticleSurfacingExample _Create a mesh surface from a point cloud_
+ * ParticleSurfacingExample _Create a mesh from a point cloud_
