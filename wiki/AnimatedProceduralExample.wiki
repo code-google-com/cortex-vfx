@@ -160,8 +160,9 @@ class vertCacheProcedural( IECore.ParameterisedProcedural ) :
 
 == Using the procedural ==
 
-You can see the procedural in operation in maya quite easily using the following code to create a node to hold it.
+You can see test the procedural in maya quite easily using the following code to create a node to hold it.
 
+{{{
 execfile( "/path/to/vertCacheProcedural.py" )
 
 import IECoreMaya
@@ -170,5 +171,6 @@ import maya.cmds
 p = maya.cmds.createNode( "ieProceduralHolder" )
 fp = IECoreMaya.FnProceduralHolder( "ieProceduralHolder1" )
 fp.setParameterised( vertCacheProcedural() )
+}}}
 
 The Parameters section of the attribute editor then allows you to specify the meshes and caches you want to render. Here we're using the meshes and caches exported by the MeshExportExample and AnimationExportExample.
