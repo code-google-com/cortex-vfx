@@ -95,6 +95,13 @@ class vertCacheProcedural( IECore.ParameterisedProcedural ) :
 
 		return result
 
+	# This method can be used to set renderer attributes outside of the procedural.
+	# This can sometimes be necessary to let the renderer know when it needs to
+	# open the procedural - for instance it might set raytrace visibility attributes.
+	def doRenderState( self, renderer, args ) :
+	
+		pass
+
 	# This method is called when the renderer wants to know what exists inside the
 	# bounding box returned by doBound. Here we load the geometry, deform it, and
 	# pass it to the renderer.
