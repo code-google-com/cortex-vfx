@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,40 +32,40 @@
 #
 ##########################################################################
 
-import warnings
-warnings.filterwarnings( "error", "Access to Parameters as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Access to CompoundObject children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Access to CompoundParameter children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
-warnings.filterwarnings( "error", "Specifying presets as a dictionary is deprecated - pass a tuple of tuples instead.", DeprecationWarning )
-
+import IECore
+import IECoreMaya
 import unittest
-
-from ConverterHolder import *
-from PlaybackFrameList import *
-from ParameterisedHolder import *
-from FromMayaCurveConverterTest import *
-from PluginLoadUnload import *
-from NamespacePollution import *
-from FromMayaMeshConverterTest import *
-from FromMayaParticleConverterTest import *
-from FromMayaPlugConverterTest import *
-from FromMayaUnitPlugConverterTest import *
-from FromMayaGroupConverterTest import *
-from FromMayaCameraConverterTest import *
-from FromMayaConverterTest import *
-from FromMayaObjectConverterTest import *
-from FnParameterisedHolderTest import *
-from ToMayaPlugConverterTest import *
-from ToMayaMeshConverterTest import *
-from MayaTypeIdTest import *
-from FromMayaTransformConverterTest import *
-from CallbackIdTest import *
-from TemporaryAttributeValuesTest import *
-from SplineParameterHandlerTest import *
-from DAGPathParametersTest import *
-from PythonTest import *
-
 import MayaUnitTest
+import maya.OpenMaya as OpenMaya
+
+class PythonTest( unittest.TestCase ) :
+
+	def testKeywordMethodName( self ) :
+			
+		# "as" is a keyword in Python 2.5, and later versions of the
+		# interpreter may be more restrictive regarding its use as a 
+		# method name. Unfortunately MTime relies on its use, and this
+		# has been observed as a potential candidate for rogue "SyntaxError"
+		# exceptions
+		c = OpenMaya.MTime( 1, OpenMaya.MTime.kSeconds )
+		self.assertEqual( c.as( OpenMaya.MTime.kMilliseconds ), 1000 )
+		
+		# Currently, http://www.python.org/doc/2.5.1/ref/keywords.html states
+		# that "as" is only recognized as a keyword once with_statement has been
+		# imported		
+		code = \
+"""from __future__ import with_statement
+oneSecond = OpenMaya.MTime( 1, OpenMaya.MTime.kSeconds )
+milli = oneSecond.as( OpenMaya.MTime.kMilliseconds ), 1000 )
+"""
+		try :
+			exec( code )
+			self.assert_( False )
+		except SyntaxError, e:
+			self.assertEqual( str(e), "invalid syntax (<string>, line 3)" )
+		except :
+			self.assert_( False )
+		
 
 if __name__ == "__main__":
 	MayaUnitTest.TestProgram()
