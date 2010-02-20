@@ -76,8 +76,8 @@ class TestOptionalCompoundParameter( unittest.TestCase ) :
 		self.assertEqual( p["f"].getValue(),  FloatData( 20 ) )
 
 		p.setValue( CompoundObject( { "i" : IntData( 10 ) } ) )
-		self.assertRaises( RuntimeError, p.validate )
-		self.assertRaises( RuntimeError, p.getValidatedValue )
+		p.validate()
+		p.getValidatedValue()
 		p["f"].setValue( FloatData( 20 ) )
 		p.validate()
 
