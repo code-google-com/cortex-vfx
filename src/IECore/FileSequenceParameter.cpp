@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -58,9 +58,9 @@ FileSequenceParameter::FileSequenceParameter()
 FileSequenceParameter::FileSequenceParameter(
 	const std::string &name, const std::string &description, const std::string &defaultValue,
 	bool allowEmptyString, CheckType check, const StringParameter::PresetsContainer &presets, bool presetsOnly,
-	ConstCompoundObjectPtr userData, const ExtensionList &extensions, size_t minSequenceSize
+	ConstCompoundObjectPtr userData, const ExtensionList &extensions
 ) : PathParameter( name, description, defaultValue, allowEmptyString, check, presets, presetsOnly, userData ),
-    m_extensions( extensions ), m_minSequenceSize(minSequenceSize)
+    m_extensions( extensions )
 {
 }
 
@@ -78,7 +78,7 @@ void FileSequenceParameter::setExtensions( const ExtensionList &extensions )
 	m_extensions = extensions;
 }
 
-bool FileSequenceParameter::valueValid( const Object *value, std::string *reason ) const
+bool FileSequenceParameter::valueValid( ConstObjectPtr value, std::string *reason ) const
 {
 	/// we can't call PathParameter::valueValid() because that would do existence checking on
 	/// our path specifier with the # characters in it, and that would yield the wrong results
@@ -88,7 +88,7 @@ bool FileSequenceParameter::valueValid( const Object *value, std::string *reason
 		return false;
 	}
 
-	const StringData *stringDataValue = assertedStaticCast<const StringData>( value );
+	ConstStringDataPtr stringDataValue = assertedStaticCast< const StringData >( value );
 	const std::string &stringValue = stringDataValue->readable();
 
 	if ( allowEmptyString() && !stringValue.size() )
@@ -108,7 +108,7 @@ bool FileSequenceParameter::valueValid( const Object *value, std::string *reason
 	FileSequencePtr fileSequence = 0;
 	try
 	{
-		fileSequence = new FileSequence( stringValue );
+		fileSequence = parseFileSequence( stringValue );
 	}
 	catch ( Exception &e )
 	{
@@ -142,7 +142,7 @@ bool FileSequenceParameter::valueValid( const Object *value, std::string *reason
 	if ( mustExist() )
 	{
 		FileSequencePtr s = 0;
-		ls( fileSequence->getFileName(), s, m_minSequenceSize );
+		ls( fileSequence->getFileName(), s );
 
 		if ( !s )
 		{
@@ -156,7 +156,7 @@ bool FileSequenceParameter::valueValid( const Object *value, std::string *reason
 	else if ( mustNotExist() )
 	{
 		FileSequencePtr s = 0;
-		ls( fileSequence->getFileName(), s, m_minSequenceSize );
+		ls( fileSequence->getFileName(), s );
 
 		if ( s )
 		{
@@ -173,23 +173,65 @@ bool FileSequenceParameter::valueValid( const Object *value, std::string *reason
 
 void FileSequenceParameter::setFileSequenceValue( ConstFileSequencePtr fileSequence )
 {
-	setTypedValue( fileSequence->asString() );
+	/// \todo Don't throw away the FrameList here!
+	setValue( new StringData( fileSequence->getFileName() ) );
 }
 
 FileSequencePtr FileSequenceParameter::getFileSequenceValue() const
 {
 	const std::string &fileSequenceStr = getTypedValue();
 	
+	/// \todo Consider returning an EmptyFrameList rather than checking the filesystem
+	/// note that Several Ops make the assumption that this will check the filesystem (e.g. SequenceRmOp)
 	if ( fileSequenceStr.find_first_of( ' ' ) == std::string::npos )
 	{
-		if ( mustExist() )
+		FileSequencePtr result = 0;
+		ls( fileSequenceStr, result );
+		return result;
+	}
+
+	return parseFileSequence( fileSequenceStr );
+}
+
+FileSequencePtr FileSequenceParameter::parseFileSequence( const std::string &fileSequenceStr ) const
+{
+	std::string fileSequenceCopy = fileSequenceStr;
+
+	std::string::size_type spaceIndex = fileSequenceCopy.find_first_of( " " );
+
+	bool found = false;
+
+	std::string filename = fileSequenceStr;
+
+	FrameListPtr frameList = FrameList::parse( "" );
+
+	while ( !found && spaceIndex != std::string::npos )
+	{
+
+		std::string head = fileSequenceStr.substr( 0, spaceIndex );
+		std::string tail = fileSequenceStr.substr( spaceIndex+1, fileSequenceStr.size() - spaceIndex - 1 );
+		assert( head + " " + tail == fileSequenceStr );
+
+		filename = head;
+
+		try
 		{
-			FileSequencePtr result = 0;
-			ls( fileSequenceStr, result, m_minSequenceSize );
-			return result;
+			frameList = FrameList::parse( tail );
+			found = true;
+		}
+		catch ( Exception &e )
+		{
+			fileSequenceCopy = fileSequenceCopy.substr( 0, spaceIndex )
+				+ "*"
+				+ fileSequenceCopy.substr( spaceIndex+1, fileSequenceStr.size() - spaceIndex - 1 )
+			;
+
+			spaceIndex = fileSequenceCopy.find_first_of( " " );
 		}
 	}
-	return new FileSequence( fileSequenceStr );
+
+	return new FileSequence( filename, frameList );
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////

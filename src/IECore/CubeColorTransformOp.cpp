@@ -49,7 +49,7 @@ using namespace Imath;
 IE_CORE_DEFINERUNTIMETYPED( CubeColorTransformOp );
 
 CubeColorTransformOp::CubeColorTransformOp()
-	:	ColorTransformOp( "description" ), m_data( 0 )
+	:	ColorTransformOp( "name", "description" ), m_data( 0 )
 {
 	m_cubeParameter = new CubeColorLookupfParameter(
 		"cube",

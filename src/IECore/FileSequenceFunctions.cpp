@@ -74,8 +74,7 @@ void IECore::findSequences( const std::vector< std::string > &names, std::vector
 	/// placing each of those in a group of the resulting match.
 	/// both $prefix and $suffix may be the empty string and $frameNumber
 	/// may be preceded by a minus sign.
-	/// It also matches file extensions with 3 or 4 characters that contain numbers (for example: CR2, MP3 )
-	boost::regex matchExpression( std::string( "^([^#]*?)(-?[0-9]+)([^0-9#]*|[^0-9#]*\\.[a-zA-Z]{2,3}[0-9])$" ) );
+	boost::regex matchExpression( std::string( "^([^#]*?)(-?[0-9]+)([^0-9#]*)$" ) );
 
 	/// build a mapping from ($prefix, $suffix) to a list of $frameNumbers
 	typedef std::vector< std::string > Frames;
@@ -175,8 +174,8 @@ void IECore::ls( const std::string &path, std::vector< FileSequencePtr > &sequen
 {
 	sequences.clear();
 
-	if ( boost::filesystem::is_directory( path ) )
-	{
+	 if ( boost::filesystem::is_directory( path ) )
+	 {
 		boost::filesystem::directory_iterator end;
 	 	std::vector< std::string > files;
 		for ( boost::filesystem::directory_iterator it( path ); it != end; ++it )
@@ -185,10 +184,16 @@ void IECore::ls( const std::string &path, std::vector< FileSequencePtr > &sequen
 		}
 
 		findSequences( files, sequences, minSequenceSize );
-	}
+	 }
 }
 
-void IECore::ls( const std::string &sequencePath, FileSequencePtr &sequence, size_t minSequenceSize )
+void IECore::ls( const std::string &path, std::vector< FileSequencePtr > &sequences )
+{
+	/// ignore any sequences with less than two files
+	ls( path, sequences, 2 );
+}
+
+void IECore::ls( const std::string &sequencePath, FileSequencePtr &sequence )
 {
 	sequence = 0;
 	boost::smatch matches;
@@ -234,7 +239,7 @@ void IECore::ls( const std::string &sequencePath, FileSequencePtr &sequence, siz
 	}
 
 	std::vector< FileSequencePtr > sequences;
-	findSequences( files, sequences, minSequenceSize );
+	findSequences( files, sequences );
 
 	for ( std::vector< FileSequencePtr >::iterator it = sequences.begin(); it != sequences.end() ; ++it )
 	{
@@ -243,8 +248,8 @@ void IECore::ls( const std::string &sequencePath, FileSequencePtr &sequence, siz
 			sequence = *it;
 			return;
 		}
-		// Also accept frame ranges with number of digits greater than the padding.
-		if ( (*it)->getPadding() == 1 && (*it)->getFrameList()->typeId() == FrameRangeTypeId )
+		// Also accept frame ranges with same number of digits on start and end frames.
+		if ( (*it)->getFrameList()->typeId() == FrameRangeTypeId )
 		{
 			FrameRangePtr fr = boost::static_pointer_cast< FrameRange >( (*it)->getFrameList() );
 			FrameList::Frame startFrame, endFrame;
@@ -257,13 +262,17 @@ void IECore::ls( const std::string &sequencePath, FileSequencePtr &sequence, siz
 				if ( startFrame > 0 )
 					startDigits = static_cast<unsigned int>(floor(log10( static_cast<double>(abs(startFrame)) ))) + 1;
 
-				if ( startDigits >= padding )
+				unsigned int endDigits = 1;
+				if ( endFrame > 0 )
+					endDigits = static_cast<unsigned int>(floor(log10( static_cast<double>(abs(endFrame)) ))) + 1;
+
+				if ( startDigits == endDigits && startDigits == padding )
 				{
 					sequence = *it;
-					sequence->setPadding( padding );
 					return;
 				}
 			}
+
 		}
 	}
 }

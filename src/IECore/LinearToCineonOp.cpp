@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,7 +48,9 @@ IE_CORE_DEFINERUNTIMETYPED( LinearToCineonOp );
 ColorSpaceTransformOp::ColorSpaceDescription<LinearToCineonOp> LinearToCineonOp::g_colorSpaceDescription( "linear", "cineon" );
 
 LinearToCineonOp::LinearToCineonOp()
-	:	ChannelOp( "Applies linear to Cineon conversion on ImagePrimitive channels." )
+	:	ChannelOp( "LinearToCineon",
+				   "Applies linear to Cineon conversion on ImagePrimitive channels."
+		)
 {
 	CompoundParameterPtr cineonParameters = CineonToLinearOp::createCineonSettings();
 	m_filmGamma = cineonParameters->parameter< FloatParameter >( "filmGamma" );

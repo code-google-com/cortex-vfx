@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,22 +46,11 @@ using namespace Imath;
 
 IE_CORE_DEFINERUNTIMETYPED( ImageWriter )
 
-ImageWriter::ImageWriter( const std::string &description ) :
-		Writer( description, ImagePrimitiveTypeId)
+ImageWriter::ImageWriter( const std::string &name, const std::string &description ) :
+		Writer(name, description, ImagePrimitiveTypeId)
 {
 	m_channelsParameter = new StringVectorParameter("channels", "The list of channels to write.  No list causes all channels to be written." );
-
 	parameters()->addParameter( m_channelsParameter );
-}
-
-StringVectorParameterPtr ImageWriter::channelNamesParameter()
-{
-	return m_channelsParameter;
-}
-
-ConstStringVectorParameterPtr ImageWriter::channelNamesParameter() const
-{
-	return m_channelsParameter;
 }
 
 bool ImageWriter::canWrite( ConstObjectPtr image, const string &fileName )
@@ -102,10 +91,11 @@ void ImageWriter::imageChannels( vector<string> &names ) const
 
 ConstImagePrimitivePtr ImageWriter::getImage() const
 {
-	return static_cast<const ImagePrimitive *>( object() );
+	/// \todo This case isn't good until we're making the input parameter accept only ImagePrimitive instances
+	return boost::static_pointer_cast<const ImagePrimitive>(object());
 }
 
-void ImageWriter::doWrite( const CompoundObject *operands )
+void ImageWriter::doWrite()
 {
 	// write the image channel data
 	vector<string> channels;

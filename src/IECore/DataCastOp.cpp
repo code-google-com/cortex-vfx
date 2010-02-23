@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -55,6 +55,7 @@ IE_CORE_DEFINERUNTIMETYPED( DataCastOp );
 
 DataCastOp::DataCastOp()
 	:	Op(
+		staticTypeName(),
 		"Performs cast conversion on Data types.",
 		new ObjectParameter(
 			"result",
@@ -171,7 +172,7 @@ ObjectPtr DataCastOp::doOperation( ConstCompoundObjectPtr operands )
 {
 	const TypeId targetType = (TypeId) m_targetTypeParameter->getNumericValue();
 
-	Data *data = static_cast<Data *>( m_objectParameter->getValue() );
+	DataPtr data = static_pointer_cast< Data >( m_objectParameter->getValue() );
 
 	if ( data->typeId() == targetType )
 	{

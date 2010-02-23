@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -67,13 +67,13 @@ IE_CORE_DEFINERUNTIMETYPED( TIFFImageReader );
 const Reader::ReaderDescription<TIFFImageReader> TIFFImageReader::m_readerDescription("tiff tif tdl");
 
 TIFFImageReader::TIFFImageReader()
-		:	ImageReader( "Reads Tagged Image File Format (TIFF) files" ),
+		:	ImageReader("TIFFImageReader", "Reads Tagged Image File Format (TIFF) files" ),
 		m_tiffImage( 0 ), m_currentDirectoryIndex( 0 ), m_numDirectories( 1 ), m_haveDirectory( false )
 {
 }
 
 TIFFImageReader::TIFFImageReader( const string &fileName )
-		:	ImageReader( "Reads Tagged Image File Format (TIFF) files" ),
+		:	ImageReader("TIFFImageReader", "Reads Tagged Image File Format (TIFF) files" ),
 		m_tiffImage( 0 ), m_currentDirectoryIndex( 0 ), m_numDirectories( 1 ), m_haveDirectory( false )
 {
 	m_fileNameParameter->setTypedValue(fileName);
@@ -255,14 +255,12 @@ T TIFFImageReader::tiffFieldDefaulted( unsigned int t )
 	return value;
 }
 
-template<typename T, typename V>
+template<typename T>
 DataPtr TIFFImageReader::readTypedChannel( const std::string &name, const Box2i &dataWindow )
 {
-	typedef TypedData< std::vector< V > > TargetVector;
+	FloatVectorDataPtr dataContainer = new FloatVectorData();
 
-	typename TargetVector::Ptr dataContainer = new TargetVector();
-
-	typename TargetVector::ValueType &data = dataContainer->writable();
+	typename FloatVectorData::ValueType &data = dataContainer->writable();
 
 	std::vector<std::string> names;
 	channelNames( names );
@@ -289,7 +287,7 @@ DataPtr TIFFImageReader::readTypedChannel( const std::string &name, const Box2i 
 	int dataWidth = 1 + dataWindow.size().x;
 	int bufferDataWidth = 1 + m_dataWindow.size().x;
 
-	ScaledDataConversion<T, V> converter;
+	ScaledDataConversion<T, float> converter;
 
 	int dataY = 0;
 	for ( int y = dataWindow.min.y - m_dataWindow.min.y ; y <= dataWindow.max.y - m_dataWindow.min.y ; ++y, ++dataY )
@@ -303,7 +301,7 @@ DataPtr TIFFImageReader::readTypedChannel( const std::string &name, const Box2i 
 
 			// \todo Currently, we only support PLANARCONFIG_CONTIG for TIFFTAG_PLANARCONFIG.
 			assert( m_planarConfig ==  PLANARCONFIG_CONTIG );
-			typename TargetVector::ValueType::size_type dataOffset = dataY * dataWidth + dataX;
+			FloatVectorData::ValueType::size_type dataOffset = dataY * dataWidth + dataX;
 			assert( dataOffset < data.size() );
 
 			data[dataOffset] = converter( buf[ m_samplesPerPixel * ( y * bufferDataWidth + x ) + channelOffset ] );
@@ -313,7 +311,7 @@ DataPtr TIFFImageReader::readTypedChannel( const std::string &name, const Box2i 
 	return dataContainer;
 }
 
-DataPtr TIFFImageReader::readChannel( const std::string &name, const Imath::Box2i &dataWindow, bool raw )
+DataPtr TIFFImageReader::readChannel( const std::string &name, const Imath::Box2i &dataWindow )
 {
 	ScopedTIFFErrorHandler errorHandler;
 	if ( setjmp( errorHandler.m_jmpBuffer ) )
@@ -330,29 +328,20 @@ DataPtr TIFFImageReader::readChannel( const std::string &name, const Imath::Box2
 
 	if ( m_sampleFormat == SAMPLEFORMAT_IEEEFP )
 	{
-		return readTypedChannel<float, float>( name, dataWindow );
+		return readTypedChannel<float>( name, dataWindow );
 	}
 	else if ( m_sampleFormat == SAMPLEFORMAT_INT )
 	{
 		switch ( m_bitsPerSample )
 		{
 		case 8:
-			if ( raw )
-				return readTypedChannel<char, char>( name, dataWindow );
-			else
-				return readTypedChannel<char, float>( name, dataWindow );
+			return readTypedChannel<char>( name, dataWindow );
 
 		case 16:
-			if ( raw )
-				return readTypedChannel<int16, int16>( name, dataWindow );
-			else
-				return readTypedChannel<int16, float>( name, dataWindow );
+			return readTypedChannel<int16>( name, dataWindow );
 
 		case 32:
-			if ( raw )
-				return readTypedChannel<int32, int32>( name, dataWindow );
-			else
-				return readTypedChannel<int32, float>( name, dataWindow );
+			return readTypedChannel<int32>( name, dataWindow );
 
 		default:
 			assert( false );
@@ -366,22 +355,13 @@ DataPtr TIFFImageReader::readChannel( const std::string &name, const Imath::Box2
 		switch ( m_bitsPerSample )
 		{
 		case 8:
-			if ( raw )
-				return readTypedChannel<unsigned char, unsigned char>( name, dataWindow );
-			else
-				return readTypedChannel<unsigned char, float>( name, dataWindow );
+			return readTypedChannel<unsigned char>( name, dataWindow );
 
 		case 16:
-			if ( raw )
-				return readTypedChannel<uint16, uint16>( name, dataWindow );
-			else
-				return readTypedChannel<uint16, float>( name, dataWindow );
+			return readTypedChannel<uint16>( name, dataWindow );
 
 		case 32:
-			if ( raw )
-				return readTypedChannel<uint32, uint32>( name, dataWindow );
-			else
-				return readTypedChannel<uint32, float>( name, dataWindow );
+			return readTypedChannel<uint32>( name, dataWindow );
 
 		default:
 			assert( false );

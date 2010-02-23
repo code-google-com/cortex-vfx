@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -77,16 +77,16 @@ class Parameter : public Object
 		/// Returns the description for this parameter.
 		const std::string &description() const;
 		/// Returns the default value for this parameter.
-		virtual const Object *defaultValue() const;
+		virtual ConstObjectPtr defaultValue() const;
 		/// Returns the presets for this parameter.
 		virtual const PresetsContainer &presets() const;
 		/// Returns true if this parameter only accepts
 		/// parameters present as presets.
 		virtual bool presetsOnly() const;
 		/// Returns the userdata. This can be modified freely.
-		CompoundObject *userData();
+		CompoundObjectPtr userData();
 		/// Read only version of the above.
-		const CompoundObject *userData() const;
+		ConstCompoundObjectPtr userData() const;
 		//@}
 
 		//! @name Validation
@@ -109,7 +109,7 @@ class Parameter : public Object
 		/// it returns false. The default implementation returns false only if
 		/// presetsOnly() is true and value is not present in
 		/// the presets() map, or if value is a NullObject instance.
-		virtual bool valueValid( const Object *value, std::string *reason = 0 ) const;
+		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
 		/// Calls valueValid( getValue(), reason )
 		bool valueValid( std::string *reason = 0 ) const;
 		/// Throws an Exception if valueValid( getValue() ) is false, otherwise
@@ -117,15 +117,12 @@ class Parameter : public Object
 		void validate() const;
 		/// Throws an Exception if valueValid( value ) is false, otherwise
 		/// does nothing.
-		void validate(const Object *value ) const;
+		void validate( ConstObjectPtr value ) const;
 		//@}
 
 		//! @name Value setting
 		/// These functions set the Parameter value, with or without
 		/// validation.
-		/// \threading It is not safe to call these methods from multiple
-		/// concurrent threads, nor to call them while other threads
-		/// are getting the value.
 		//////////////////////////////////////////////////////////////
 		//@{
 		/// Sets the value held by this parameter. Note that this
@@ -144,38 +141,47 @@ class Parameter : public Object
 		//! @name Value getting
 		/// These functions provide access to the Parameter value, with or without
 		/// validation.
-		/// \threading These methods may be called from multiple concurrent threads
-		/// provided that no other thread is setting the value at the time.
-		/// Please note that this is currently not true of the CompoundParameter overrides
-		/// for these methods - see the CompoundParameter documentation for details.
 		//////////////////////////////////////////////////////////////
 		//@{
 		/// Returns the value held by this parameter. Note that this
 		/// value may not be valid.
-		virtual Object *getValue();
+		virtual ObjectPtr getValue();
 		/// Returns the value held by this parameter. Note that this
 		/// value may not be valid.
-		virtual const Object *getValue() const;
+		/// \threading This is not threadsafe due to the use of an intrusive_ptr
+		/// return value. We could really do with it being though, as it's a common
+		/// requirement to have multiple threads acting based on the same set of
+		/// input parameters - presently we have to stash the values elsewhere
+		/// before entering threaded code.
+		/// \todo Address the threading issue (either return a raw pointer or
+		/// investigate the use of atomic operations for reference counting).
+		virtual ConstObjectPtr getValue() const;
 		/// Returns the value held by this parameter if it is valid, throwing
 		/// an Exception if it is not.
-		Object *getValidatedValue();
+		ObjectPtr getValidatedValue();
 		/// Returns the value held by this parameter if it is valid, throwing
 		/// an Exception if it is not.
-		const Object *getValidatedValue() const;
+		/// \threading This is not threadsafe due to the use of an intrusive_ptr
+		/// return value. We could really do with it being though, as it's a common
+		/// requirement to have multiple threads acting based on the same set of
+		/// input parameters.
+		/// \todo Address the threading issue (either return a raw pointer or
+		/// investigate the use of atomic operations for reference counting).
+		ConstObjectPtr getValidatedValue() const;
 		/// Convenience function returning runTimeCast<T>( getValue() ).
 		template<typename T>
-		T *getTypedValue();
+		typename T::Ptr getTypedValue();
 		/// Convenience function returning runTimeCast<T>( getValue() ).
 		template<typename T>
-		const T *getTypedValue() const;
+		typename T::ConstPtr getTypedValue() const;
 		/// Convenience function returning runTimeCast<T>( getValidatedValue() ).
 		/// Note that if a value is valid but not of the requested type an Exception is not thrown.
 		template<typename T>
-		T *getTypedValidatedValue();
+		typename T::Ptr getTypedValidatedValue();
 		/// Convenience function returning runTimeCast<T>( getValidatedValue() ).
 		/// Note that if a value is valid but not of the requested type an Exception is not thrown.
 		template<typename T>
-		const T *getTypedValidatedValue() const;
+		typename T::ConstPtr getTypedValidatedValue() const;
 		/// If the current value is one of the presets, then returns its
 		/// name, otherwise returns the empty string.
 		std::string getCurrentPresetName() const;

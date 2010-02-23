@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,7 +46,7 @@ using namespace std;
 IE_CORE_DEFINERUNTIMETYPED( CurvesMergeOp );
 
 CurvesMergeOp::CurvesMergeOp()
-	:	CurvesPrimitiveOp( "Merges one set of curves with another." )
+	:	CurvesPrimitiveOp( staticTypeName(), "Merges one set of curves with another." )
 {
 	m_curvesParameter = new CurvesPrimitiveParameter(
 		"curves",
@@ -104,7 +104,7 @@ struct CurvesMergeOp::AppendPrimVars
 
 void CurvesMergeOp::modifyTypedPrimitive( CurvesPrimitivePtr curves, ConstCompoundObjectPtr operands )
 {
-	const CurvesPrimitive *curves2 = static_cast<const CurvesPrimitive *>( m_curvesParameter->getValue() );
+	ConstCurvesPrimitivePtr curves2 = boost::static_pointer_cast<const CurvesPrimitive>( m_curvesParameter->getValue() );
 
 	const vector<int> &verticesPerCurve1 = curves->verticesPerCurve()->readable();
 	const vector<int> &verticesPerCurve2 = curves2->verticesPerCurve()->readable();

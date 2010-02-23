@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -148,9 +148,9 @@ size_t CurvesPrimitive::numCurves() const
 	return m_vertsPerCurve->readable().size();
 }
 
-const IntVectorData *CurvesPrimitive::verticesPerCurve() const
+ConstIntVectorDataPtr CurvesPrimitive::verticesPerCurve() const
 {
-	return m_vertsPerCurve.get();
+	return m_vertsPerCurve;
 }
 
 const CubicBasisf &CurvesPrimitive::basis() const
@@ -188,7 +188,7 @@ void CurvesPrimitive::setTopology( ConstIntVectorDataPtr verticesPerCurve, const
 	}
 }
 
-void CurvesPrimitive::render( Renderer *renderer ) const
+void CurvesPrimitive::render( RendererPtr renderer ) const
 {
 	renderer->curves( m_basis, m_periodic, m_vertsPerCurve, variables );
 }

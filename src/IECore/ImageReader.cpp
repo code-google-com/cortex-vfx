@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -49,8 +49,8 @@ using namespace Imath;
 
 IE_CORE_DEFINERUNTIMETYPED( ImageReader );
 
-ImageReader::ImageReader( const std::string &description ) :
-		Reader( description, new ObjectParameter( "result", "The loaded object", new NullObject, ImagePrimitive::staticTypeId() ) )
+ImageReader::ImageReader( const std::string &name, const std::string &description ) :
+		Reader( name, description, new ObjectParameter( "result", "The loaded object", new NullObject, ImagePrimitive::staticTypeId() ) )
 {
 	m_dataWindowParameter = new Box2iParameter(
 		"dataWindow",
@@ -73,22 +73,14 @@ ImageReader::ImageReader( const std::string &description ) :
 		"then all channels are loaded."
 	);
 
-	m_rawChannelsParameter = new BoolParameter(
-		"rawChannels",
-		"Specifies if the returned data channels should be what's stored in the file. That's not possible when "
-		"the image pixels are not byte aligned. Color space settings will not take effect when this parameter is "
-		"on.",
-		false
-	);
-
 	parameters()->addParameter( m_dataWindowParameter );
 	parameters()->addParameter( m_displayWindowParameter );
 	parameters()->addParameter( m_channelNamesParameter );
-	parameters()->addParameter( m_rawChannelsParameter );
 }
 
 ObjectPtr ImageReader::doOperation( ConstCompoundObjectPtr operands )
 {
+
 	Box2i displayWind = displayWindowParameter()->getTypedValue();
 	if( displayWind.isEmpty() )
 	{
@@ -96,7 +88,6 @@ ObjectPtr ImageReader::doOperation( ConstCompoundObjectPtr operands )
 	}
 	Box2i dataWind = dataWindowToRead();
 
-	bool rawChannels = operands->member< BoolData >( "rawChannels" )->readable();
 
 	// create our ImagePrimitive
 	ImagePrimitivePtr image = new ImagePrimitive( dataWind, displayWind );
@@ -111,22 +102,23 @@ ObjectPtr ImageReader::doOperation( ConstCompoundObjectPtr operands )
 	vector<string>::const_iterator ci = channelNames.begin();
 	while( ci != channelNames.end() )
 	{
-		DataPtr d = readChannel( *ci, dataWind, rawChannels );
+		DataPtr d = readChannel( *ci, dataWind );
 
 		assert( d  );
-		assert( !rawChannels || d->typeId()==FloatVectorDataTypeId );
+		assert( d->typeId()==FloatVectorDataTypeId || d->typeId()==HalfVectorDataTypeId || d->typeId()==UIntVectorDataTypeId );
 
 		PrimitiveVariable p( PrimitiveVariable::Vertex, d );
 		assert( image->isPrimitiveVariableValid( p ) );
 
 		image->variables[*ci] = p;
+
 		ci++;
 	}
 
 	return image;
 }
 
-DataPtr ImageReader::readChannel( const std::string &name, bool raw )
+DataPtr ImageReader::readChannel( const std::string &name )
 {
 	vector<string> allNames;
 	channelNames( allNames );
@@ -137,7 +129,7 @@ DataPtr ImageReader::readChannel( const std::string &name, bool raw )
 	}
 
 	Box2i d = dataWindowToRead();
-	return readChannel( name, d, raw );
+	return readChannel( name, d );
 }
 
 void ImageReader::channelsToRead( vector<string> &names )
@@ -145,8 +137,8 @@ void ImageReader::channelsToRead( vector<string> &names )
 	vector<string> allNames;
 	channelNames( allNames );
 
-	ConstStringVectorParameterPtr p = channelNamesParameter();
-	const StringVectorData *d = static_cast<const StringVectorData *>( p->getValue() );
+	ConstStringVectorParameterPtr p = parameters()->parameter<StringVectorParameter>("channels");
+	ConstStringVectorDataPtr d = static_pointer_cast<const StringVectorData>(p->getValue());
 
 	// give all channels when no list is provided
 	if (!d->readable().size())
@@ -214,16 +206,6 @@ StringVectorParameterPtr ImageReader::channelNamesParameter()
 ConstStringVectorParameterPtr ImageReader::channelNamesParameter() const
 {
 	return m_channelNamesParameter;
-}
-
-BoolParameterPtr ImageReader::rawChannelsParameter()
-{
-	return m_rawChannelsParameter;
-}
-
-ConstBoolParameterPtr ImageReader::rawChannelsParameter() const
-{
-	return m_rawChannelsParameter;
 }
 
 CompoundObjectPtr ImageReader::readHeader()

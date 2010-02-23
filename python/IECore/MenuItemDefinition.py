@@ -61,7 +61,7 @@
 # \ingroup python
 class MenuItemDefinition :
 
-	__slots__ = [ "command", "secondaryCommand", "divider", "active", "description", "subMenu", "blindData" ]
+	__slots__ = [ "command", "secondaryCommand", "divider", "active", "description", "subMenu" ]
 
 	def __init__( self, dictionary = None, **kwArgs ) :
 
@@ -71,7 +71,6 @@ class MenuItemDefinition :
 		self.active = True
 		self.description = ""
 		self.subMenu = None
-		self.blindData = {}
 
 		if dictionary :
 			for k, v in dictionary.items() :

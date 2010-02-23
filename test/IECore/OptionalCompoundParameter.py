@@ -167,7 +167,7 @@ class TestOptionalCompoundParameter( unittest.TestCase ) :
 		self.assert_( p["i"].getTypedValue() == 20 )
 		p["i"] = IntData(30)
 		self.assert_( p["i"].getTypedValue() == 30 )
-		
+
 	def testSetValueWithMissingData( self ) :
 
 		c = CompoundParameter()

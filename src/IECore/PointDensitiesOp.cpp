@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -53,6 +53,7 @@ static TypeId resultTypes[] = { FloatVectorDataTypeId, DoubleVectorDataTypeId, I
 
 PointDensitiesOp::PointDensitiesOp()
 	:	Op(
+		staticTypeName(),
 		"Calculates densities for a volume of points.",
 		new ObjectParameter(
 			"result",
@@ -128,13 +129,13 @@ static void densities( const vector<Vec3<T> > &points, int numNeighbours, T mult
 	multiplier *= (T)numNeighbours / ((4.0/3.0) * M_PI);
 
 	Tree tree( points.begin(), points.end() );
-	vector<typename Tree::Neighbour> neighbours;
+	vector<typename Tree::Iterator> neighbours;
 
 	result.resize( points.size() );
 	for( unsigned int i=0; i<points.size(); i++ )
 	{
 		tree.nearestNNeighbours( points[i], numNeighbours, neighbours );
-		T r = ((*(neighbours.rbegin()->point)) - points[i]).length();
+		T r = ((**neighbours.begin()) - points[i]).length();
 		result[i] = multiplier / (r*r*r);
 	}
 }

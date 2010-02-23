@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -50,6 +50,7 @@ from _IECore import *
 Msg = MessageHandler
 from registerRunTimeTyped import registerRunTimeTyped
 from registerObject import registerObject
+from RunTimeTypedUtil import *
 from Log import *
 from Formatter import Formatter
 from WrappedTextFormatter import WrappedTextFormatter
@@ -99,8 +100,6 @@ from DateTimeParameterParser import *
 from MotionBlock import MotionBlock
 from SubstitutedDict import SubstitutedDict
 from VisualiserProcedural import VisualiserProcedural
-from PresetManager import PresetManager
-from IDXReader import IDXReader
 
 # importing internal utility modules and class overwrites
 from ObjectOverwriting import *

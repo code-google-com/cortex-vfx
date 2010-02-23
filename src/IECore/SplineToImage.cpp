@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,7 +47,7 @@ using namespace Imath;
 IE_CORE_DEFINERUNTIMETYPED( SplineToImage );
 
 SplineToImage::SplineToImage()
-	:	Op( "Creates ImagePrimitives from SplineData", new IECore::ObjectParameter( "result", "An image of the spline.", new IECore::NullObject(), ImagePrimitiveTypeId ) )
+	:	Op( staticTypeName(), "Creates ImagePrimitives from SplineData", new IECore::ObjectParameter( "result", "An image of the spline.", new IECore::NullObject(), ImagePrimitiveTypeId ) )
 {
 
 	static TypeId splineTypes[] = { SplineffDataTypeId, SplinefColor3fDataTypeId, InvalidTypeId };
@@ -161,6 +161,6 @@ ObjectPtr SplineToImage::doOperation( ConstCompoundObjectPtr operands )
 {
 
 	CreateImage f( this );
-	return despatchTypedData<CreateImage, TypeTraits::IsSplineTypedData>( static_cast<Data *>( m_splineParameter->getValue() ), f );
+	return despatchTypedData<CreateImage, TypeTraits::IsSplineTypedData>( boost::static_pointer_cast<Data>( m_splineParameter->getValue() ), f );
 
 }

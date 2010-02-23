@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,6 @@
 #include <string>
 
 #include "IECore/Writer.h"
-#include "IECore/SimpleTypedParameter.h"
 #include "IECore/VectorTypedParameter.h"
 
 namespace IECore
@@ -58,10 +57,6 @@ class ImageWriter : public Writer
 		/// Checks that object is an ImagePrimitive instance
 		static bool canWrite( ConstObjectPtr object, const std::string &fileName );
 
-		/// The parameter specifying the channels to write.
-		StringVectorParameterPtr channelNamesParameter();
-		ConstStringVectorParameterPtr channelNamesParameter() const;
-
 		/// Convenience function to access the channels specified in parameters
 		void imageChannels( std::vector<std::string> &names ) const;
 
@@ -70,7 +65,7 @@ class ImageWriter : public Writer
 
 	protected:
 
-		ImageWriter( const std::string &description );
+		ImageWriter( const std::string &name, const std::string &description );
 
 		/// Return the image object to write
 		ConstImagePrimitivePtr getImage() const;
@@ -83,7 +78,7 @@ class ImageWriter : public Writer
 	private :
 
 		/// Implementation of Writer::doWrite(). Calls through to writeImage()
-		virtual void doWrite( const CompoundObject *operands );
+		virtual void doWrite();
 
 		StringVectorParameterPtr m_channelsParameter;
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,6 +52,7 @@ IE_CORE_DEFINERUNTIMETYPED( MedianCutSampler );
 MedianCutSampler::MedianCutSampler()
 	:
 	Op(
+		staticTypeName(),
 		"Performs importance sampling of an image.",
 		new ObjectParameter( "result",
 			"A CompoundObject containing a vector of areas which cover the image, and all of which "
@@ -214,7 +215,7 @@ static void medianCut( const Array2D &luminance, const Array2D &summedLuminance,
 
 ObjectPtr MedianCutSampler::doOperation( ConstCompoundObjectPtr operands )
 {
-	ImagePrimitivePtr image = static_cast<ImagePrimitive *>( imageParameter()->getValue() )->copy();
+	ImagePrimitivePtr image = static_pointer_cast<ImagePrimitive>( imageParameter()->getValue() )->copy();
 	Box2i dataWindow = image->getDataWindow();
 
 	// find the right channel

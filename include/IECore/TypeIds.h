@@ -351,7 +351,6 @@ enum TypeId
 	CurveTracerTypeId = 308,
 	ImageThinnerTypeId = 309,
 	CurveLineariserTypeId = 310,
-	CompoundDataBaseTypeId = 311,
 
 	// Remember to update TypeIdBinding.cpp !!!
 

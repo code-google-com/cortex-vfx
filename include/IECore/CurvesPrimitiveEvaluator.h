@@ -153,7 +153,9 @@ class CurvesPrimitiveEvaluator : public PrimitiveEvaluator
 		////////////////////////////////////////////////////////////////////////////////////////
 		//@{
 		/// Equivalent to CurvesPrimitive::verticesPerCurve() but returns a reference to
-		/// the vector within the IntVectorData.
+		/// the vector within the IntVectorData. This is threadsafe whereas the other is not
+		/// (due to constructing a smart pointer for the return value).
+		/// \todo Make CurvesPrimitive::verticesPerCurve() threadsafe.
 		const std::vector<int> &verticesPerCurve() const;
 		/// One value per curve, storing the offset to the first vertex value for
 		/// that curve.

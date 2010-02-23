@@ -54,7 +54,7 @@ class OBJReader : public Reader
 
 		IE_CORE_DECLARERUNTIMETYPED(OBJReader, Reader);
 
-		OBJReader( const std::string &fileName );
+		OBJReader( const std::string &name );
 
 		static bool canRead( const std::string &filename );
 
