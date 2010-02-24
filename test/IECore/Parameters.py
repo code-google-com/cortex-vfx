@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -804,12 +804,7 @@ class TestCompoundParameter( unittest.TestCase ) :
 		p["i"] = IntData(30)
 		self.assert_( p["i"].getTypedValue() == 30 )
 
-	def testAttributeAccessRemoval( self ) :
-
-		# we used to allow access to child parameters
-		# using the parent.child attribute notation, but
-		# after deprecating it in version 4 we removed it
-		# in version 5. check that it's removed.
+	def testAttributeAccessDeprecation( self ) :
 
 		p = CompoundParameter(
 			name = "c",
@@ -819,7 +814,7 @@ class TestCompoundParameter( unittest.TestCase ) :
 			],
 		)
 
-		self.assertRaises( AttributeError, getattr, p, "i" )
+		self.assertRaises( DeprecationWarning, getattr, p, "i" )
 
 	def testParameterPath( self ) :
 
@@ -879,7 +874,7 @@ class TestCompoundParameter( unittest.TestCase ) :
 				
 		self.assertRaises( Exception, a.__getitem__, "b" )
 		self.assertRaises( Exception, a.__getitem__, "d" )
-
+	
 	def testSetValueWithMissingData( self ) :
 
 		c = CompoundParameter()
@@ -896,6 +891,7 @@ class TestCompoundParameter( unittest.TestCase ) :
 		c.setValue( preset )
 			
 		self.assertEqual( c2value, c["child2"].getValue() )
+		
 			
 class TestValidatedStringParameter( unittest.TestCase ) :
 

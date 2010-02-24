@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -67,8 +67,7 @@ class CompoundParameter : public Parameter
 		//@{
 		/// Implemented to return a CompoundObject representing the default values
 		/// of all the child objects.
-		/// \threading It is not safe to call this from multiple concurrent threads.
-		virtual const Object *defaultValue() const;
+		virtual ConstObjectPtr defaultValue() const;
 		/// Implemented to update the presets with the intersection of the presets
 		/// of all the child parameters. Please note that the map returned may differ between
 		/// one call to presets() and the next.
@@ -77,17 +76,16 @@ class CompoundParameter : public Parameter
 		virtual bool presetsOnly() const;
 		/// Values are only valid if they are a CompoundObject with a valid member
 		/// for each child parameter, and no additional values.
-		virtual bool valueValid( const Object *value, std::string *reason = 0 ) const;
+		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
 		/// Sets the values of child parameters using the matching child objects of the passed CompoundObject.
 		/// In the case of missing values (or if the value isn't even a CompoundParameter) sets the child parameter
 		/// value to a NullObject instance to signify it's invalidity.
 		virtual void setValue( ObjectPtr value );
 		/// If the last set value was a CompoundObject (as it should have been) then updates it with the current
 		/// child parameter values and returns it.
-		/// \threading It is not safe to call this from multiple concurrent threads.
-		virtual Object *getValue();
+		virtual ObjectPtr getValue();
 		/// As above.
-		virtual const Object *getValue() const;
+		virtual ConstObjectPtr getValue() const;
 		//@}
 
 		//! @name Child Parameter access
@@ -127,13 +125,13 @@ class CompoundParameter : public Parameter
 		/// the parameter doesn't exist, or does not match the type specified
 		/// as the template argument.
 		template<typename T>
-		T *parameter( const std::string &name );
+		typename T::Ptr parameter( const std::string &name );
 		template<typename T>
-		const T *parameter( const std::string &name ) const;
+		typename T::ConstPtr parameter( const std::string &name ) const;
 		/// Searches for child recursively underneath this parameter, filling path
 		/// with the names of all its ancestors, plus the name of child
 		/// itself. Returns true if child is found and false otherwise.
-		bool parameterPath( const Parameter *child, std::vector<std::string> &path ) const;
+		bool parameterPath( ConstParameterPtr child, std::vector<std::string> &path ) const;
 		/// Convenience function to find a parameter in parameters() and call setValue()
 		/// on it. Throws an Exception if the named parameter doesn't exist.
 		void setParameterValue( const std::string &name, ObjectPtr value );
@@ -143,11 +141,11 @@ class CompoundParameter : public Parameter
 		/// Convenience function to find a parameter in parameters() and return the
 		/// result of calling getValue() on it. Throws an Exception if the
 		/// named parameter doesn't exist.
-		Object *getParameterValue( const std::string &name );
+		ObjectPtr getParameterValue( const std::string &name );
 		/// Convenience function to find a parameter in parameters() and return the
 		/// result of calling getValidatedValue() on it. Throws an Exception if the
 		/// named parameter doesn't exist.
-		Object *getValidatedParameterValue( const std::string &name );
+		ObjectPtr getValidatedParameterValue( const std::string &name );
 		//@}
 
 	private :

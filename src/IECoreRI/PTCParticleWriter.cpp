@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -56,12 +56,12 @@ IE_CORE_DEFINERUNTIMETYPED( PTCParticleWriter );
 const Writer::WriterDescription<PTCParticleWriter> PTCParticleWriter::m_writerDescription( "3Dbake 3DWbake ptc" );
 
 PTCParticleWriter::PTCParticleWriter( )
-	:	ParticleWriter( "Creates files in renderman point cloud format" )
+	:	ParticleWriter( "PTCParticleWriter", "Creates files in renderman point cloud format" )
 {
 }
 
 PTCParticleWriter::PTCParticleWriter( ObjectPtr object, const std::string &fileName )
-	:	ParticleWriter( "Creates files in renderman point cloud format" )
+	:	ParticleWriter( "PTCParticleWriter", "Creates files in renderman point cloud format" )
 {
 	m_objectParameter->setValue( object );
 	m_fileNameParameter->setTypedValue( fileName );
@@ -142,7 +142,7 @@ static void writeAttribute( float *target, DataPtr attr, int index )
 	}
 }
 
-void PTCParticleWriter::doWrite( const IECore::CompoundObject *operands )
+void PTCParticleWriter::doWrite()
 {
 
 	checkPTCParticleIO();

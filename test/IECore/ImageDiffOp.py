@@ -42,9 +42,7 @@ class TestImageDiffOp(unittest.TestCase):
 
 		op = ImageDiffOp()
 
-		r = Reader.create( "test/IECore/data/tiff/uvMap.512x256.32bit.tif" )
-		r['rawChannels'] = True
-		imageA = r.read()
+		imageA = Reader.create( "test/IECore/data/tiff/uvMap.512x256.32bit.tif" ).read()
 		imageB = Reader.create( "test/IECore/data/cinFiles/uvMap.512x256.cin" ).read()
 		res = op(
 			imageA = imageA,

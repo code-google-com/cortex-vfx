@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,6 @@
 #include <string>
 
 #include "IECore/Writer.h"
-#include "IECore/SimpleTypedParameter.h"
 #include "IECore/VectorTypedParameter.h"
 
 namespace IECore
@@ -58,31 +57,15 @@ class ImageWriter : public Writer
 		/// Checks that object is an ImagePrimitive instance
 		static bool canWrite( ConstObjectPtr object, const std::string &fileName );
 
-		/// The parameter specifying the channels to write.
-		StringVectorParameterPtr channelNamesParameter();
-		ConstStringVectorParameterPtr channelNamesParameter() const;
-		/// The parameter specifying the colorspace that the given image will be when stored in the file.
-		/// If autoDetect is chosen than it will use the colorspace returned by destinationColorSpace().
-		/// The input image is assumed to be in linear colorspace.
-		StringParameterPtr colorspaceParameter();
-		ConstStringParameterPtr colorspaceParameter() const;
-		/// The parameter specifying if the image channels should be 
-		/// written as is to the file, keeping the same data type if possible. 
-		/// If True, then color space settings will not take effect.
-		/// Otherwise the 
-		BoolParameterPtr rawChannelsParameter();
-		ConstBoolParameterPtr rawChannelsParameter() const;
-
 		/// Convenience function to access the channels specified in parameters
 		void imageChannels( std::vector<std::string> &names ) const;
 
 		/// Returns the name of default colorspace in which the Writer expects to receive images.
-		/// The base class is responsible for making sure it will happen.
 		virtual std::string destinationColorSpace() const = 0;
 
 	protected:
 
-		ImageWriter( const std::string &description );
+		ImageWriter( const std::string &name, const std::string &description );
 
 		/// Return the image object to write
 		ConstImagePrimitivePtr getImage() const;
@@ -95,11 +78,9 @@ class ImageWriter : public Writer
 	private :
 
 		/// Implementation of Writer::doWrite(). Calls through to writeImage()
-		virtual void doWrite( const CompoundObject *operands );
+		virtual void doWrite();
 
 		StringVectorParameterPtr m_channelsParameter;
-		BoolParameterPtr m_rawChannelsParameter;
-		StringParameterPtr m_colorspaceParameter;
 
 };
 

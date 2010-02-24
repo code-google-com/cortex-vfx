@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,6 +52,7 @@ IE_CORE_DEFINERUNTIMETYPED( HdrMergeOp );
 
 HdrMergeOp::HdrMergeOp()
 	:	Op(
+		staticTypeName(),
 		"Merges all the given input images into a single HDR image.",
 		new ObjectParameter(
 			"result",
@@ -209,7 +210,7 @@ inline void merge( bool firstImage, size_t &pixelCount,
 
 ObjectPtr HdrMergeOp::doOperation( ConstCompoundObjectPtr operands )
 {
-	Group *imageGroup = static_cast<Group *>( m_inputGroupParameter->getValue() );
+	GroupPtr imageGroup = static_pointer_cast< Group >( m_inputGroupParameter->getValue() );
 
 	// first of all, check if the group contains ImagePrimitive objects with float or half vector data types and "R","G","B" channels.
 	const Group::ChildContainer &images = imageGroup->children();

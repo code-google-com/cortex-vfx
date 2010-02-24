@@ -50,13 +50,6 @@ typename Interned<T, Hash>::HashSet *Interned<T, Hash>::hashSet()
 	return h;
 }
 
-template<typename T, typename Hash>
-typename Interned<T, Hash>::Mutex *Interned<T, Hash>::mutex()
-{
-	static Mutex *m = new Mutex;
-	return m;
-}
-
 struct StringCStringEqual
 {
 	bool operator()( const char *c, const std::string &s ) const
@@ -74,7 +67,6 @@ InternedString::Interned( const char *value )
 {
 	HashSet *h = hashSet();
 	Index &hashIndex = h->get<0>();
-	Mutex::scoped_lock lock( *mutex(), false ); // read-only lock
 	HashSet::const_iterator it = hashIndex.find( value, Hash<const char *>(), StringCStringEqual() );
 	if( it!=hashIndex.end() )
 	{
@@ -82,7 +74,6 @@ InternedString::Interned( const char *value )
 	}
 	else
 	{
-		lock.upgrade_to_writer();
 		m_value = &(*(h->insert( std::string( value ) ).first ) );
 	}
 }

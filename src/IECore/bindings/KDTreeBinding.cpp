@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -119,13 +119,16 @@ struct KDTreeWrapper
 
 	}
 
+	/// \todo Switch this to use the faster form rather than the deprecated form, and bind the Neighbour
+	/// class so everything can be returned in a list. Change the tests to reflect this fact.
+	/// Wait till the next major version (5) before doing this.
 	IntVectorDataPtr nearestNNeighbours(const typename T::Point &p, unsigned int numNeighbours)
 	{
 		assert(m_tree);
 
-		typedef std::vector<typename T::Neighbour> NeighbourArray;
+		typedef std::vector<typename T::Iterator> PointArray;
 
-		NeighbourArray points;
+		PointArray points;
 
 		unsigned int num = m_tree->nearestNNeighbours(p, numNeighbours, points);
 
@@ -133,9 +136,9 @@ struct KDTreeWrapper
 
 		indices->writable().reserve( num );
 
-		for (typename NeighbourArray::const_iterator it = points.begin(); it != points.end(); ++it)
+		for (typename PointArray::const_iterator it = points.begin(); it != points.end(); ++it)
 		{
-			indices->writable().push_back(  std::distance( m_points->readable().begin(), it->point ) );
+			indices->writable().push_back(  std::distance( m_points->readable().begin(), *it ) );
 		}
 
 		return indices;

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -104,6 +104,16 @@ static ParameterPtr compoundParameterGetItem( CompoundParameter &o, const char *
 	throw Exception( std::string("Bad index: ") + n );
 }
 
+static ParameterPtr compoundParameterGetAttr( CompoundParameter &o, const char *n )
+{
+	if( PyErr_WarnEx( PyExc_DeprecationWarning, "Access to CompoundParameter children as attributes is deprecated - please use item style access instead.", 1 ) )
+	{
+		// warning converted to exception;
+		throw error_already_set();
+	}
+	return compoundParameterGetItem( o, n );
+}
+
 static bool compoundParameterContains( const CompoundParameter &o, const std::string &n )
 {
 	return o.parameter<const Parameter>( n );
@@ -138,15 +148,10 @@ static void compoundParameterAddParameters( CompoundParameter &o, const boost::p
 	o.addParameters( pp.begin(), pp.end() );
 }
 
-static ParameterPtr parameter( CompoundParameter &o, const char *name )
-{
-	return o.parameter<Parameter>( name );
-}
-
 static boost::python::list parameterPath( CompoundParameter &o, ConstParameterPtr child )
 {
 	std::vector<std::string> p;
-	o.parameterPath( child.get(), p );
+	o.parameterPath( child, p );
 	boost::python::list result;
 	for( std::vector<std::string>::const_iterator it=p.begin(); it!=p.end(); it++ )
 	{
@@ -173,6 +178,8 @@ void bindCompoundParameter()
 		)
 		.def( "__len__", &compoundParameterLen )
 		.def( "__getitem__", &compoundParameterGetItem )
+		/// \todo Remove attribute style access in major version 5.
+		.def( "__getattr__", &compoundParameterGetAttr )
 		.def( "__contains__", &compoundParameterContains )
 		.def( "keys", &compoundParameterKeys )
 		.def( "values", &compoundParameterValues )
@@ -184,7 +191,7 @@ void bindCompoundParameter()
 		.def( "removeParameter", (void (CompoundParameter::*)(ParameterPtr)) &CompoundParameter::removeParameter )
 		.def( "removeParameter", (void (CompoundParameter::*)(const std::string&)) &CompoundParameter::removeParameter )
 		.def( "clearParameters", &CompoundParameter::clearParameters )
-		.def( "parameter", &parameter )
+		.def( "parameter", (ParameterPtr (CompoundParameter::*)(const std::string&)) &CompoundParameter::parameter<Parameter> )
 		.def( "parameterPath", &parameterPath )
 	;
 

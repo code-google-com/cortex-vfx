@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,12 +52,12 @@ IE_CORE_DEFINERUNTIMETYPED( PDCParticleWriter )
 const Writer::WriterDescription<PDCParticleWriter> PDCParticleWriter::m_writerDescription( "pdc" );
 
 PDCParticleWriter::PDCParticleWriter( )
-	:	ParticleWriter( "Creates files in maya pdc format" )
+	:	ParticleWriter( "PDCParticleWriter", "Creates files in maya pdc format" )
 {
 }
 
 PDCParticleWriter::PDCParticleWriter( ObjectPtr object, const std::string &fileName )
-	:	ParticleWriter( "Creates files in maya pdc format" )
+	:	ParticleWriter( "PDCParticleWriter", "Creates files in maya pdc format" )
 {
 	m_objectParameter->setValue( object );
 	m_fileNameParameter->setTypedValue( fileName );
@@ -105,7 +105,7 @@ static void writeSimpleAttr( ofstream &oStream, typename T::ConstPtr attr )
 	}
 }
 
-void PDCParticleWriter::doWrite( const CompoundObject *operands )
+void PDCParticleWriter::doWrite()
 {
 	// write the header
 	int numParticles = particleCount();

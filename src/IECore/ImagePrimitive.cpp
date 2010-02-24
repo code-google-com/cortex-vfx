@@ -120,7 +120,7 @@ size_t ImagePrimitive::variableSize( PrimitiveVariable::Interpolation interpolat
 	}
 }
 
-void ImagePrimitive::render( Renderer *renderer ) const
+void ImagePrimitive::render(RendererPtr renderer) const
 {
 	assert( renderer );
 

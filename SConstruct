@@ -41,9 +41,9 @@ import re
 EnsureSConsVersion( 0, 97 )
 SConsignFile()
 
-ieCoreMajorVersion=5
-ieCoreMinorVersion=0
-ieCorePatchVersion=0
+ieCoreMajorVersion=4
+ieCoreMinorVersion=17
+ieCorePatchVersion=3
 
 ###########################################################################################
 # Command line options
@@ -89,26 +89,6 @@ o.Add(
 	[]
 )
 
-# TBB options
-
-o.Add(
-	"TBB_INCLUDE_PATH",
-	"The path to the tbb include directory.",
-	"/usr/local/include/tbb",
-)
-
-o.Add(
-	"TBB_LIB_PATH",
-	"The path to the tbb library directory.",
-	"/usr/local/lib",
-)
-
-o.Add(
-	"TBB_LIB_SUFFIX",
-	"The suffix appended to the names of the tbb libraries. You can modify this "
-	"to link against libraries installed with non-defalt names.",
-	"",
-)
 
 # Boost options
 
@@ -296,11 +276,6 @@ o.Add(
 	"/usr/flexlm/license.dat",
 )
 
-o.Add(
-	"MAYA_ADLM_ENV_FILE",
-	"The path to ADLM env xml file to use as of Maya 2010.",
-	"/usr/adlm/AdlmThinClientCustomEnv.xml",
-)
 
 o.Add(
 	BoolOption( 
@@ -520,14 +495,13 @@ o.Add(
 	""
 )
 	
-libraryPathEnvVar = "DYLD_LIBRARY_PATH" if Environment()["PLATFORM"]=="darwin" else "LD_LIBRARY_PATH"
 o.Add(
 	"TEST_LIBRARY_PATH_ENV_VAR",
 	"This is a curious one, probably only ever necessary at image engine. It "
 	"specifies the name of an environment variable used to specify the library "
 	"search paths correctly when running the tests. Defaults to LD_LIBRARY_PATH on "
 	"Linux and DYLD_LIBRARY_PATH on OSX.",
-	libraryPathEnvVar
+	"DYLD_LIBRARY_PATH" if Environment()["PLATFORM"]=="darwin" else "LD_LIBRARY_PATH"
 )
 
 # Documentation options
@@ -576,7 +550,6 @@ env.Append(
 env.Prepend(
 	CPPPATH = [
 		"include",
-		"$TBB_INCLUDE_PATH",
 		"$OPENEXR_INCLUDE_PATH",
 		# we use "OpenEXR/x.h" and they use "x.h"
 		os.path.join( "$OPENEXR_INCLUDE_PATH","OpenEXR" ),
@@ -586,7 +559,6 @@ env.Prepend(
 		"$FREETYPE_INCLUDE_PATH",
 	],
 	LIBPATH = [
-		"$TBB_LIB_PATH",
 		"$BOOST_LIB_PATH",
 		"$OPENEXR_LIB_PATH",
 		"$JPEG_LIB_PATH",
@@ -663,10 +635,6 @@ if doConfigure :
 	if not c.CheckLibWithHeader( "Iex" + env["OPENEXR_LIB_SUFFIX"], "OpenEXR/ImfInputFile.h", "C++" ) :
 		sys.stderr.write( "ERROR : unable to find the OpenEXR libraries - check OPENEXR_INCLUDE_PATH and OPENEXR_LIB_PATH.\n" )
 		Exit( 1 )
-		
-	if not c.CheckLibWithHeader( "tbb" + env["TBB_LIB_SUFFIX"], "tbb/tbb.h", "C++" ) :
-		sys.stderr.write( "ERROR : unable to find the TBB libraries - check TBB_INCLUDE_PATH and TBB_LIB_PATH.\n" )
-		Exit( 1 )	
 		
 	c.Finish()
 		
@@ -749,7 +717,7 @@ if testEnv["TEST_LIBPATH"] != "" :
 	testEnvLibPath += ":" + testEnv["TEST_LIBPATH"]
 
 testEnv["ENV"][testEnv["TEST_LIBRARY_PATH_ENV_VAR"]] = testEnvLibPath
-testEnv["ENV"][libraryPathEnvVar] = testEnvLibPath
+testEnv["ENV"]["DYLD_LIBRARY_PATH" if Environment()["PLATFORM"]=="darwin" else "LD_LIBRARY_PATH"] = testEnvLibPath
 testEnv["ENV"]["IECORE_PROCEDURAL_PATHS"] = "test/IECore/procedurals"
 testEnv["ENV"]["IECORE_OP_PATHS"] = "test/IECore/ops"
 
@@ -1421,11 +1389,9 @@ if doConfigure :
 		
 		mayaTestEnv = testEnv.Copy()
 		
-		mayaTestLibPaths = mayaEnv.subst( ":".join( [ "./lib" ] + mayaPythonEnv["LIBPATH"] ) )
+		mayaTestEnv["ENV"][mayaTestEnv["TEST_LIBRARY_PATH_ENV_VAR"]] += ":" + mayaEnv.subst( ":".join( [ "./lib" ] + mayaPythonEnv["LIBPATH"] ) )
 		if haveRI :
-			mayaTestLibPaths += ":" + mayaEnv.subst( "$RMAN_ROOT/lib" )
-		mayaTestEnv["ENV"][mayaTestEnv["TEST_LIBRARY_PATH_ENV_VAR"]] += ":" + mayaTestLibPaths
-		mayaTestEnv["ENV"][libraryPathEnvVar] += ":" + mayaTestLibPaths
+			mayaTestEnv["ENV"][mayaTestEnv["TEST_LIBRARY_PATH_ENV_VAR"]] += ":" + mayaEnv.subst( "$RMAN_ROOT/lib" )
 		
 		mayaTestEnv["ENV"]["PATH"] = mayaEnv.subst( "$MAYA_ROOT/bin:" ) + mayaEnv["ENV"]["PATH"]
 		mayaTestEnv["ENV"]["MAYA_PLUG_IN_PATH"] = "./plugins/maya:./test/IECoreMaya/plugins"
@@ -1444,8 +1410,7 @@ if doConfigure :
 		mayaTestEnv["ENV"]["PYTHONHOME"] = mayaTestEnv.subst( "$MAYA_ROOT" )
 		mayaTestEnv["ENV"]["MAYA_LOCATION"] = mayaTestEnv.subst( "$MAYA_ROOT" )
 		mayaTestEnv["ENV"]["LM_LICENSE_FILE"] = env["MAYA_LICENSE_FILE"]
-		mayaTestEnv["ENV"]["AUTODESK_ADLM_THINCLIENT_ENV"] = env["MAYA_ADLM_ENV_FILE"]
-		
+				
 		mayaTestProgram = mayaTestEnv.Program( "test/IECoreMaya/IECoreMayaTest", glob.glob( "test/IECoreMaya/*.cpp" ) )
 		mayaTest = mayaTestEnv.Command( "test/IECoreMaya/results.txt", mayaTestProgram, "test/IECoreMaya/IECoreMayaTest >& test/IECoreMaya/results.txt" )
 		NoCache( mayaTest )

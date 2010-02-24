@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,7 +46,7 @@ using namespace std;
 IE_CORE_DEFINERUNTIMETYPED( MeshMergeOp );
 
 MeshMergeOp::MeshMergeOp()
-	:	MeshPrimitiveOp( "Merges one mesh with another." )
+	:	MeshPrimitiveOp( staticTypeName(), "Merges one mesh with another." )
 {
 	m_meshParameter = new MeshPrimitiveParameter(
 		"mesh",
@@ -104,7 +104,7 @@ struct MeshMergeOp::AppendPrimVars
 
 void MeshMergeOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands )
 {
-	const MeshPrimitive *mesh2 = static_cast<const MeshPrimitive *>( m_meshParameter->getValue() );
+	ConstMeshPrimitivePtr mesh2 = boost::static_pointer_cast<const MeshPrimitive>( m_meshParameter->getValue() );
 
 	const vector<int> &verticesPerFace1 = mesh->verticesPerFace()->readable();
 	const vector<int> &vertexIds1 = mesh->vertexIds()->readable();

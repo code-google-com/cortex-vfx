@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -127,7 +127,6 @@ class TestJPEGReader(unittest.TestCase):
 	def testDataWindowRead( self ):
 
 		r = Reader.create( "test/IECore/data/jpg/uvMap.512x256.jpg" )
-		r['colorSpace'] = 'linear'
 		self.assertEqual( type(r), JPEGImageReader )
 
 		dataWindow = Box2i(
@@ -159,9 +158,9 @@ class TestJPEGReader(unittest.TestCase):
 		found = ipe.pointAtPixel( V2i( 511, 255 ), result )
 		self.assert_( found )
 		color = V3f(
-				result.floatPrimVar( ipe.R() ),
-				result.floatPrimVar( ipe.G() ),
-				result.floatPrimVar( ipe.B() )
+				result.halfPrimVar( ipe.R() ),
+				result.halfPrimVar( ipe.G() ),
+				result.halfPrimVar( ipe.B() )
 			)
 		expectedColor = V3f( 0, 0, 0 )
 		self.assert_( ( color - expectedColor).length() < 1.e-3 )
@@ -170,9 +169,9 @@ class TestJPEGReader(unittest.TestCase):
 		self.assert_( found )
 
 		color = V3f(
-				result.floatPrimVar( ipe.R() ),
-				result.floatPrimVar( ipe.G() ),
-				result.floatPrimVar( ipe.B() )
+				result.halfPrimVar( ipe.R() ),
+				result.halfPrimVar( ipe.G() ),
+				result.halfPrimVar( ipe.B() )
 			)
 
 		expectedColor = V3f( 0.741211, 0.706055, 0 )
@@ -181,9 +180,7 @@ class TestJPEGReader(unittest.TestCase):
 	def testOrientation( self ) :
 		""" Test orientation of JPEG files """
 
-		r = Reader.create( "test/IECore/data/jpg/uvMap.512x256.jpg" )
-		r['colorSpace'] = 'linear'
-		img = r.read()
+		img = Reader.create( "test/IECore/data/jpg/uvMap.512x256.jpg" ).read()
 
 		ipe = PrimitiveEvaluator.create( img )
 		self.assert_( ipe.R() )
@@ -206,9 +203,9 @@ class TestJPEGReader(unittest.TestCase):
 			self.assert_( found )
 
 			color = V3f(
-				result.floatPrimVar( ipe.R() ),
-				result.floatPrimVar( ipe.G() ),
-				result.floatPrimVar( ipe.B() )
+				result.halfPrimVar( ipe.R() ),
+				result.halfPrimVar( ipe.G() ),
+				result.halfPrimVar( ipe.B() )
 			)
 
 			self.assert_( ( color - expectedColor).length() < 1.e-3 )
