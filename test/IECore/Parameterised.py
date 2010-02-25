@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -40,7 +40,7 @@ class derived( Parameterised ):
 
 	def __init__( self ):
 		self.objectAttribute1 = 1
-		Parameterised.__init__( self, "description" )
+		Parameterised.__init__( self, "name", "description" )
 		a = self.parameters()
 		self.objectAttribute2 = 2
 		a.addParameter( IntParameter( "number", "number parameter", 0 ) )
@@ -53,7 +53,7 @@ class TestParameterised( unittest.TestCase ) :
 
 	def testUserData( self ) :
 
-		a = Parameterised( "description" )
+		a = Parameterised( "name", "description" )
 		self.assertEqual( a.userData(), CompoundObject() )
 
 	def testSmartAssignment( self ):
@@ -66,18 +66,15 @@ class TestParameterised( unittest.TestCase ) :
 		b["number"] = 30
 		self.assertEqual( b["number"].getTypedValue(), 30 )
 
-	def testAttributeAccessRemoval( self ) :
+	def testAttributeDeprecation( self ) :
 
 		b = derived()
 		
 		self.assert_( hasattr( b, "objectAttribute1" ) )
 		self.failIf( hasattr( b, "doesNotExist" ) )
-		self.assertEqual( b.objectAttribute1, 1 )
-	
-		self.assertRaises( AttributeError, getattr, b, "number" )
-		b.number = 10
-		self.assertEqual( b.number, 10 )
-		self.assertEqual( b["number"].getNumericValue(), 0 )		
 		
+		self.assertRaises( DeprecationWarning, getattr, b, "number" )
+		self.assertRaises( DeprecationWarning, setattr, b, "number", 10 )
+
 if __name__ == "__main__":
         unittest.main()

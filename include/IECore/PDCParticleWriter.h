@@ -53,7 +53,7 @@ class PDCParticleWriter : public ParticleWriter
 
 	private :
 
-		virtual void doWrite( const CompoundObject *operands );
+		virtual void doWrite();
 
 		static const WriterDescription<PDCParticleWriter> m_writerDescription;
 

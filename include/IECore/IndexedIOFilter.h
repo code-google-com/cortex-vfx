@@ -54,8 +54,6 @@ class IndexedIOFilter : public RefCounted
 		IndexedIOFilter();
 		virtual ~IndexedIOFilter();
 
-		IE_CORE_DECLAREMEMBERPTR( IndexedIOFilter );
-
 		/// Chains an additional filter to the end, resulting in a logical OR.
 		virtual void add(const IndexedIOFilterPtr &f);
 
@@ -76,8 +74,6 @@ class IndexedIONullFilter : public IndexedIOFilter
 	public:
 		IndexedIONullFilter();
 
-		IE_CORE_DECLAREMEMBERPTR( IndexedIONullFilter );
-
 		virtual bool filter( const IndexedIO::Entry &e) const;
 };
 
@@ -88,8 +84,6 @@ class IndexedIOEntryTypeFilter : public IndexedIOFilter
 {
 	public:
 		IndexedIOEntryTypeFilter(IndexedIO::EntryType typ);
-
-		IE_CORE_DECLAREMEMBERPTR( IndexedIOEntryTypeFilter );
 
 		virtual bool filter( const IndexedIO::Entry &e) const;
 
@@ -105,8 +99,6 @@ class IndexedIORegexFilter : public IndexedIOFilter
 {
 	public:
 		IndexedIORegexFilter(const std::string &regex);
-
-		IE_CORE_DECLAREMEMBERPTR( IndexedIORegexFilter );
 
 		virtual bool filter( const IndexedIO::Entry &e) const;
 

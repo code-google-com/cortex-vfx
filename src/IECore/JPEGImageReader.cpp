@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,7 +47,6 @@
 #include "IECore/ImagePrimitive.h"
 #include "IECore/FileNameParameter.h"
 #include "IECore/BoxOps.h"
-#include "IECore/ScaledDataConversion.h"
 
 #include "boost/format.hpp"
 
@@ -66,12 +65,12 @@ IE_CORE_DEFINERUNTIMETYPED( JPEGImageReader );
 const Reader::ReaderDescription <JPEGImageReader> JPEGImageReader::m_readerDescription ("jpeg jpg");
 
 JPEGImageReader::JPEGImageReader() :
-		ImageReader( "Reads Joint Photographic Experts Group (JPEG) files" )
+		ImageReader( "JPEGImageReader", "Reads Joint Photographic Experts Group (JPEG) files" )
 {
 }
 
 JPEGImageReader::JPEGImageReader(const string & fileName) :
-		ImageReader( "Reads Joint Photographic Experts Group (JPEG) files" )
+		ImageReader( "JPEGImageReader", "Reads Joint Photographic Experts Group (JPEG) files" )
 {
 	m_fileNameParameter->setTypedValue( fileName );
 }
@@ -138,35 +137,7 @@ std::string JPEGImageReader::sourceColorSpace() const
 	return "srgb";
 }
 
-template<typename V>
-DataPtr JPEGImageReader::readTypedChannel( const std::string &name, const Imath::Box2i &dataWindow, int channelOffset )
-{
-	int area = ( dataWindow.size().x + 1 ) * ( dataWindow.size().y + 1 );
-	assert( area >= 0 );
-	int dataWidth = 1 + dataWindow.size().x;
-	int dataY = 0;
-
-	typedef TypedData< std::vector< V > > TargetVector;
-	
-	typename TargetVector::Ptr dataContainer = new TargetVector();
-	typename TargetVector::ValueType &data = dataContainer->writable();
-	data.resize( area );
-
-	ScaledDataConversion< unsigned char, V> converter;
-
-	for ( int y = dataWindow.min.y; y <= dataWindow.max.y; ++y, ++dataY )
-	{
-		typename TargetVector::ValueType::size_type dataOffset = dataY * dataWidth;
-		for ( int x = dataWindow.min.x; x <= dataWindow.max.x; ++x, ++dataOffset )
-		{
-			assert( dataOffset < data.size() );
-			data[dataOffset] = converter( m_buffer[ m_numChannels * ( y * m_bufferWidth + x ) + channelOffset ] );
-		}
-	}
-	return dataContainer;
-}
-
-DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2i &dataWindow, bool raw )
+DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2i &dataWindow )
 {
 	open( true );
 
@@ -194,15 +165,28 @@ DataPtr JPEGImageReader::readChannel( const std::string &name, const Imath::Box2
 
 	assert( channelOffset < m_numChannels );
 
-	DataPtr dataContainer = NULL;
-	if ( raw )
+	HalfVectorDataPtr dataContainer = new HalfVectorData();
+	HalfVectorData::ValueType &data = dataContainer->writable();
+	int area = ( dataWindow.size().x + 1 ) * ( dataWindow.size().y + 1 );
+	assert( area >= 0 );
+	data.resize( area );
+
+	int dataWidth = 1 + dataWindow.size().x;
+
+	int dataY = 0;
+
+	for ( int y = dataWindow.min.y; y <= dataWindow.max.y; ++y, ++dataY )
 	{
-		dataContainer = readTypedChannel< unsigned char >( name, dataWindow, channelOffset );
+		HalfVectorData::ValueType::size_type dataOffset = dataY * dataWidth;
+
+		for ( int x = dataWindow.min.x; x <= dataWindow.max.x; ++x, ++dataOffset )
+		{
+			assert( dataOffset < data.size() );
+
+			data[dataOffset] = m_buffer[ m_numChannels * ( y * m_bufferWidth + x ) + channelOffset ] / 255.0f;
+		}
 	}
-	else
-	{
-		dataContainer = readTypedChannel< float >( name, dataWindow, channelOffset );
-	}
+
 	return dataContainer;
 }
 

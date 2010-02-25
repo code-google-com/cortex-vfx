@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -50,13 +50,13 @@ IE_CORE_DEFINERUNTIMETYPED( RIBWriter );
 const IECore::Writer::WriterDescription<RIBWriter> RIBWriter::g_writerDescription( "rib" );
 
 RIBWriter::RIBWriter()
-	:	IECore::Writer( "Writes Renderable objects in RIB format.", IECore::RenderableTypeId )
+	:	IECore::Writer( "RIBWriter", "Writes Renderable objects in RIB format.", IECore::RenderableTypeId )
 {
 	constructParameters();
 }
 
 RIBWriter::RIBWriter( IECore::ObjectPtr object, const std::string &fileName )
-	:	IECore::Writer( "Writes Renderable objects in RIB format.", IECore::RenderableTypeId )
+	:	IECore::Writer( "RIBWriter", "Writes Renderable objects in RIB format.", IECore::RenderableTypeId )
 {
 	constructParameters();
 	m_objectParameter->setValue( object );
@@ -78,21 +78,21 @@ IECore::ConstBoolParameterPtr RIBWriter::worldBlockParameter() const
 	return m_worldBlockParameter;
 }
 
-void RIBWriter::doWrite( const IECore::CompoundObject *operands )
+void RIBWriter::doWrite()
 {
 	RendererPtr renderer = new Renderer( fileName() );
 
-	IECore::Renderable *renderable = static_cast<IECore::Renderable *>( const_cast<IECore::Object *>( object() ) );
+	IECore::RenderablePtr renderable = static_pointer_cast<IECore::Renderable>( const_pointer_cast<IECore::Object>( object() ) );
 	if( !m_worldBlockParameter->getTypedValue() )
 	{
-		renderable->render( renderer.get() );
+		renderable->render( renderer );
 	}
 	else
 	{
 		/// \todo When we have a Scene class or other Renderables which specify their own world block
 		/// then we'll have to detect them and act appropriately.
 		renderer->worldBegin();
-			renderable->render( renderer.get() );
+			renderable->render( renderer );
 		renderer->worldEnd();
 	}
 }

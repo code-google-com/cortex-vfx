@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -60,21 +60,6 @@ static ObjectPtr defaultValue( Parameter &that )
 	return that.defaultValue()->copy();
 }
 
-static ObjectPtr getValue( Parameter &that )
-{
-	return that.getValue();
-}
-
-static ObjectPtr getValidatedValue( Parameter &that )
-{
-	return that.getValidatedValue();
-}
-
-static void validate( Parameter &that, ObjectPtr value )
-{
-	that.validate( value.get() );
-}
-
 static dict presets( Parameter &that )
 {
 	dict result;
@@ -106,11 +91,6 @@ static boost::python::tuple presetValues( const Parameter &that )
 		result.append( it->second->copy() );
 	}
 	return boost::python::tuple( result );
-}
-
-static CompoundObjectPtr userData( Parameter &that )
-{
-	return that.userData();
 }
 
 class ParameterWrap : public Parameter, public Wrapper<Parameter>
@@ -154,17 +134,17 @@ void bindParameter()
 		.def( "setValue", (void (Parameter::*)( ObjectPtr ))&Parameter::setValue )
 		.def( "setValue", (void (Parameter::*)( const std::string & ))&Parameter::setValue )
 		.def( "setValidatedValue", &Parameter::setValidatedValue )
-		.def( "getValue", &getValue )
-		.def( "getValidatedValue", &getValidatedValue )
+		.def( "getValue", (ObjectPtr (Parameter::*)())&Parameter::getValue )
+		.def( "getValidatedValue", (ObjectPtr (Parameter::*)())&Parameter::getValidatedValue )
 		.def( "getCurrentPresetName", &Parameter::getCurrentPresetName )
 		.IE_COREPYTHON_DEFPARAMETERWRAPPERFNS( Parameter )
 		.def( "validate", (void (Parameter::*)() const)&Parameter::validate )
-		.def( "validate", &validate )
+		.def( "validate", (void (Parameter::*)( ConstObjectPtr ) const)&Parameter::validate )
 		.add_property( "presetsOnly", &Parameter::presetsOnly )
 		.def( "presets", &presets, "Returns a dictionary containing presets for the parameter." )
 		.def( "presetNames", &presetNames, "Returns a tuple containing the names of all presets for the parameter." )
 		.def( "presetValues", &presetValues, "Returns a tuple containing the values of all presets for the parameter." )
-		.def( "userData", &userData )
+		.def( "userData", (CompoundObjectPtr (Parameter::*)())&Parameter::userData )
 	;
 
 }

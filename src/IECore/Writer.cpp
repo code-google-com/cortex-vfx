@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -51,14 +51,14 @@ using namespace boost::filesystem;
 
 IE_CORE_DEFINERUNTIMETYPED( Writer )
 
-Writer::Writer( const std::string &description, TypeId writableType )
-	:	Op( description, new ObjectParameter( "output", "A pass through of the input object", new NullObject, writableType ) )
+Writer::Writer( const std::string &name, const std::string &description, TypeId writableType )
+	:	Op( name, description, new ObjectParameter( "output", "A pass through of the input object", new NullObject, writableType ) )
 {
 	constructParameters();
 }
 
-Writer::Writer( const std::string &description, const ObjectParameter::TypeIdSet &writableTypes )
-	:	Op( description, new ObjectParameter( "output", "A pass through of the input object", new NullObject, writableTypes ) )
+Writer::Writer( const std::string &name, const std::string &description, const ObjectParameter::TypeIdSet &writableTypes )
+	:	Op( name, description, new ObjectParameter( "output", "A pass through of the input object", new NullObject, writableTypes ) )
 {
 	constructParameters();
 }
@@ -76,7 +76,7 @@ const std::string &Writer::fileName() const
 	return m_fileNameParameter->getTypedValue();
 }
 
-const Object *Writer::object() const
+ConstObjectPtr Writer::object() const
 {
 	return m_objectParameter->getValue();
 }
@@ -89,7 +89,7 @@ void Writer::write()
 
 ObjectPtr Writer::doOperation( ConstCompoundObjectPtr operands )
 {
-	doWrite( operands.get() );
+	doWrite();
 	return m_objectParameter->getValue();
 }
 

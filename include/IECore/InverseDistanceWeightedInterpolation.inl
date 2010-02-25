@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include "OpenEXR/ImathLimits.h"
+#include "IECore/VectorOps.h"
 
 namespace IECore
 {
@@ -46,9 +47,16 @@ InverseDistanceWeightedInterpolation<PointIterator, ValueIterator>::InverseDista
 	ValueIterator lastValue,
 	unsigned int numNeighbours,
 	int maxLeafSize
-) : m_firstPoint( firstPoint ), m_firstValue( firstValue ), m_numNeighbours( numNeighbours )
+) : m_numNeighbours( numNeighbours )
 {
-	assert( lastPoint-firstPoint == lastValue-firstValue );
+	PointIterator pointIt = firstPoint;
+	ValueIterator valueIt = firstValue;
+	while ( pointIt != lastPoint )
+	{
+		assert( valueIt != lastValue );
+		m_map[pointIt++] = valueIt++;
+	}
+
 	m_tree = new Tree( firstPoint, lastPoint );
 }
 
@@ -62,34 +70,42 @@ InverseDistanceWeightedInterpolation<PointIterator, ValueIterator>::~InverseDist
 template<typename PointIterator, typename ValueIterator>
 typename InverseDistanceWeightedInterpolation<PointIterator, ValueIterator>::Value InverseDistanceWeightedInterpolation<PointIterator, ValueIterator>::operator()( const Point &p ) const
 {
-	NeighbourVector neighbours;
-	return operator() ( p, neighbours );
-}
-
-template<typename PointIterator, typename ValueIterator>
-typename InverseDistanceWeightedInterpolation<PointIterator, ValueIterator>::Value InverseDistanceWeightedInterpolation<PointIterator, ValueIterator>::operator()( const Point &p, NeighbourVector &neighbours ) const
-{
 	assert( m_tree );
+
+	typedef std::vector<PointIterator> PointIteratorVector;
 
 	Value result = Value();
 
-	neighbours.clear();
-	unsigned int neighbourCount = m_tree->nearestNNeighbours( p, m_numNeighbours, neighbours );
-	
-	if( neighbourCount )
-	{
+	PointIteratorVector nearNeighbours;
+	unsigned int neighbourCount = m_tree->nearestNNeighbours( p, m_numNeighbours, nearNeighbours );
 
-		PointBaseType distanceToFurthest = std::max<PointBaseType>( Imath::Math<PointBaseType>::sqrt( neighbours.rbegin()->distSquared ), 1.e-6 );
+	if ( neighbourCount )
+	{
+		PointBaseType distanceToFurthest = 0.0;
+
+		for ( typename PointIteratorVector::const_iterator it = nearNeighbours.begin(); it != nearNeighbours.end(); ++it )
+		{
+			const PointIterator &neighbourPointIt = *it;
+			const Point &neighbourPoint = *neighbourPointIt;
+
+			PointBaseType distanceToNeighbour = std::max<PointBaseType>( vecDistance( p, neighbourPoint ), 1.e-6 );
+			distanceToFurthest = std::max( distanceToNeighbour, distanceToFurthest );
+		}
 
 		PointBaseType totalNeighbourWeight = 0.0;
 
-		for( typename NeighbourVector::const_iterator it = neighbours.begin(); it != neighbours.end(); ++it )
+		for ( typename PointIteratorVector::const_iterator it = nearNeighbours.begin(); it != nearNeighbours.end(); ++it )
 		{
-			const PointIterator &neighbourPointIt = it->point;
+			const PointIterator &neighbourPointIt = *it;
+			const Point &neighbourPoint = *neighbourPointIt;
 
-			const Value &neighbourValue = *(m_firstValue + (neighbourPointIt - m_firstPoint));
+			typename ValueMap::const_iterator mapIt = m_map.find( neighbourPointIt );
+			assert( mapIt != m_map.end() );
 
-			PointBaseType distanceToNeighbour = std::max<PointBaseType>( Imath::Math<PointBaseType>::sqrt( it->distSquared ), 1.e-6 );
+			const ValueIterator &neighbourValueIt = mapIt->second;
+			const Value &neighbourValue = *neighbourValueIt;
+
+			PointBaseType distanceToNeighbour = std::max<PointBaseType>( vecDistance( p, neighbourPoint ), 1.e-6 );
 			assert( distanceToNeighbour <= distanceToFurthest );
 
 			// Franke & Nielson's (1980) improvement on Shephard's original weight function

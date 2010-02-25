@@ -109,7 +109,7 @@ class TestParameterisedHolder( unittest.TestCase ) :
 
 				def __init__( self ) :
 
-					IECore.Op.__init__( self, "Tests stuff",
+					IECore.Op.__init__( self, "TestOp", "Tests stuff",
 						IECore.IntParameter(
 							name = "result",
 							description = "",
@@ -420,6 +420,7 @@ class TestParameterisedHolder( unittest.TestCase ) :
 			def __init__( self ) :
 			
 				IECore.Op.__init__( self,
+					"test",
 					"",
 					IECore.FloatParameter(
 						"result",
@@ -449,15 +450,6 @@ class TestParameterisedHolder( unittest.TestCase ) :
 		fnOH.setParameterised( op )
 	
 		self.failUnless( cmds.objExists( node + ".result" ) )
-		
-		aAttr = fnOH.parameterPlugPath( op["a"] )
-
-		cmds.setAttr( aAttr, 10 )
-		self.assertEqual( cmds.getAttr( node + ".result" ), 10 )
-
-		cmds.setAttr( aAttr, 20 )
-		self.assertEqual( cmds.getAttr( node + ".result" ), 20 )
-
 
 	def testLazySettingFromCompoundPlugs( self ) :
 	

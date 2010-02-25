@@ -181,30 +181,18 @@ class SplineTest( unittest.TestCase ) :
 
 	def testInterval( self ) :
 
-		def computeInterval( s ):
-			# compute interval from spline until interval() is not fixed....
-			cc = s.basis.coefficients(0)
-			xs = s.keys()
-			xx = list( xs )[ 0:4 ]
-			start = cc[0]*xx[0]+cc[1]*xx[1]+cc[2]*xx[2]+cc[3]*xx[3]
-			cc = s.basis.coefficients(1)
-			xx = list( xs )[ len(xs)-4:len(xs) ]
-			end = cc[0]*xx[0]+cc[1]*xx[1]+cc[2]*xx[2]+cc[3]*xx[3]
-			return ( start, end )
-
-		def compareIntervals( i1, i2 ):
-			return ( abs(i1[0]-i2[0]) + abs(i1[1]-i2[1]) < 0.0001 )
+		s = IECore.Splineff()
+		s[10] = 100
+		s[20] = 200
+		self.assertEqual( s.interval(), ( 10, 20 ) )
 
 		s = IECore.Splineff( IECore.CubicBasisf.bSpline(), ( ( 0, 1 ), ( 10, 2 ), ( 20, 0 ), ( 21, 2 ) ) )
-		self.assert_( compareIntervals( computeInterval( s ), s.interval() ) )
-		s = IECore.Splineff( IECore.CubicBasisf.bSpline(), ( ( 0, 1 ), ( 10, 2 ), ( 20, 0 ), ( 21, 2 ), ( 21, 2 ), ( 22, 4 ) ) )
-		self.assert_( compareIntervals( computeInterval( s ), s.interval() ) )
 		(t,seg) = s.solve( s.interval()[0] )
 		(t2,seg2) = s.solve( s.interval()[0] + 0.1 )
-		self.assert_( t2 > t )
+		self.assert_( t2 > t ) # Known problem to fix in Cortex 5
 		(t,seg) = s.solve( s.interval()[1] )
 		(t2,seg2) = s.solve( s.interval()[1] - 0.1 )
-		self.assert_( t2 < t )
+		self.assert_( t2 < t ) # Known problem to fix in Cortex 5
 
 	def testIntegral( self ) :
 	
@@ -213,7 +201,16 @@ class SplineTest( unittest.TestCase ) :
 			if interval:
 				integral = s.integral( interval[0], interval[1] )
 			else:
-				interval = s.interval()
+				interval = []
+				# compute interval from spline until interval() is not fixed....
+				cc = s.basis.coefficients(0)
+				xs = s.keys()
+				xx = list( xs )[ 0:4 ]
+				interval.append( cc[0]*xx[0]+cc[1]*xx[1]+cc[2]*xx[2]+cc[3]*xx[3] )
+				cc = s.basis.coefficients(1)
+				xx = list( xs )[ len(xs)-4:len(xs) ]
+				interval.append( cc[0]*xx[0]+cc[1]*xx[1]+cc[2]*xx[2]+cc[3]*xx[3] )
+
 				integral = s.integral()
 
 			base = interval[0]

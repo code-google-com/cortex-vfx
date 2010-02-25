@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -81,13 +81,13 @@ IE_CORE_DEFINERUNTIMETYPED( TGAImageReader );
 const Reader::ReaderDescription<TGAImageReader> TGAImageReader::m_readerDescription( "tga" );
 
 TGAImageReader::TGAImageReader() :
-		ImageReader( "Reads version 1 Truevision Targa files." ),
+		ImageReader( "TGAImageReader", "Reads version 1 Truevision Targa files." ),
 		m_header()
 {
 }
 
 TGAImageReader::TGAImageReader( const string &fileName ) :
-		ImageReader( "Reads version 1 Truevision Targa files." ),
+		ImageReader( "TGAImageReader", "Reads version 1 Truevision Targa files." ),
 		m_header()
 {
 	m_fileNameParameter->setTypedValue( fileName );
@@ -156,7 +156,7 @@ std::string TGAImageReader::sourceColorSpace() const
 	return "srgb";
 }
 
-DataPtr TGAImageReader::readChannel( const string &name, const Imath::Box2i &dataWindow, bool raw )
+DataPtr TGAImageReader::readChannel( const string &name, const Imath::Box2i &dataWindow )
 {
 	if ( !open() )
 	{
@@ -167,25 +167,9 @@ DataPtr TGAImageReader::readChannel( const string &name, const Imath::Box2i &dat
 
 	assert( m_header );
 
-	DataPtr dataContainer = NULL;
+	FloatVectorDataPtr dataContainer = new FloatVectorData();
 
-	if ( raw )
-		dataContainer = readTypedChannel< unsigned char >( name, dataWindow );
-	else
-		dataContainer = readTypedChannel< float >( name, dataWindow );
-
-	return dataContainer;		
-}
-
-template<typename V>
-DataPtr TGAImageReader::readTypedChannel( const std::string &name, const Box2i &dataWindow )
-{
-
-	typedef TypedData< std::vector< V > > TargetVector;
-
-	typename TargetVector::Ptr dataContainer = new TargetVector();
-
-	typename TargetVector::ValueType &data = dataContainer->writable();
+	FloatVectorData::ValueType &data = dataContainer->writable();
 
 	std::vector<std::string> names;
 	channelNames( names );
@@ -207,7 +191,7 @@ DataPtr TGAImageReader::readTypedChannel( const std::string &name, const Box2i &
 	int dataWidth = 1 + dataWindow.size().x;
 	int bufferDataWidth = 1 + m_dataWindow.size().x;
 
-	ScaledDataConversion<uint8_t, V> converter;
+	ScaledDataConversion<uint8_t, float> converter;
 
 	const int samplesPerPixel = m_header->pixelDepth == 24 ? 3 : 4 ;
 
@@ -239,7 +223,7 @@ DataPtr TGAImageReader::readTypedChannel( const std::string &name, const Box2i &
 			const uint8_t* buf = reinterpret_cast< uint8_t* >( & m_buffer[0] );
 			assert( buf );
 
-			typename TargetVector::ValueType::size_type dataOffset = dataY * dataWidth + dataX;
+			FloatVectorData::ValueType::size_type dataOffset = dataY * dataWidth + dataX;
 			assert( dataOffset < data.size() );
 
 			data[dataOffset] = converter( buf[ samplesPerPixel * ( y * bufferDataWidth + x ) + channelOffset ] );

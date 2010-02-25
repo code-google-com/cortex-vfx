@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,6 +38,8 @@
 #include <set>
 #include <map>
 #include <string>
+
+#include "boost/utility.hpp"
 
 #include "IECore/RunTimeTyped.h"
 #include "IECore/IndexedIOInterface.h"
@@ -94,7 +96,7 @@ IE_CORE_FORWARDDECLARE( Object );
 	const IECore::Object::AbstractTypeDescription<TYPENAME> TYPENAME::m_typeDescription									\
 
 /// A base class defining copying and streaming.
-class Object : public RunTimeTyped
+class Object : public RunTimeTyped, private boost::noncopyable
 {
 	public:
 

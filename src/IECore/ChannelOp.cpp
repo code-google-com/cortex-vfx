@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,8 +45,8 @@ using namespace boost;
 
 IE_CORE_DEFINERUNTIMETYPED( ChannelOp );
 
-ChannelOp::ChannelOp( const std::string &description )
-	:	ImagePrimitiveOp( description )
+ChannelOp::ChannelOp( const std::string &name, const std::string &description )
+	:	ImagePrimitiveOp( name, description )
 {
 
 	StringVectorDataPtr defaultChannels = new StringVectorData;
@@ -112,9 +112,11 @@ void ChannelOp::modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObje
 			throw Exception( str( format( "Primitive variable \"%s\" has no data." ) % channelNames[i] ) );
 		}
 
-		if( !it->second.data->isInstanceOf( FloatVectorData::staticTypeId() ) )
+		if( !it->second.data->isInstanceOf( FloatVectorData::staticTypeId() ) &&
+			!it->second.data->isInstanceOf( HalfVectorData::staticTypeId() ) &&
+			!it->second.data->isInstanceOf( IntVectorData::staticTypeId() ) )
 		{
-			throw Exception( str( format( "Primitive variable \"%s\" is not a float vector." ) % channelNames[i] ) );
+			throw Exception( str( format( "Primitive variable \"%s\" has inappropriate type." ) % channelNames[i] ) );
 		}
 
 		size_t size = despatchTypedData<TypedDataSize>( it->second.data );

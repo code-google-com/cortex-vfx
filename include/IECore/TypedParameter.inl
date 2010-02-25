@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -170,13 +170,13 @@ bool TypedParameter<T>::inheritsFrom( const char *typeName )
 /////////////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-bool TypedParameter<T>::valueValid( const Object *value, std::string *reason ) const
+bool TypedParameter<T>::valueValid( ConstObjectPtr value, std::string *reason ) const
 {
 	if( !Parameter::valueValid( value, reason ) )
 	{
 		return false;
 	}
-	const ObjectType *tValue = runTimeCast<const ObjectType>( value );
+	ConstObjectTypePtr tValue = runTimeCast<const ObjectType>( value );
 	if( !tValue )
 	{
 		if( reason )
@@ -191,29 +191,29 @@ bool TypedParameter<T>::valueValid( const Object *value, std::string *reason ) c
 template<typename T>
 const typename TypedParameter<T>::ValueType &TypedParameter<T>::typedDefaultValue() const
 {
-	return static_cast<const ObjectType *>( defaultValue() )->readable();
+	return boost::static_pointer_cast<const ObjectType>( defaultValue() )->readable();
 }
 
 template<typename T>
 typename TypedParameter<T>::ValueType &TypedParameter<T>::getTypedValue()
 {
-	ObjectType *tValue = runTimeCast<ObjectType>( getValue() );
+	ConstObjectTypePtr tValue = runTimeCast<const ObjectType>( getValue() );
 	if( !tValue )
 	{
 		throw Exception( std::string( "Value is not an instance of \"" ) + ObjectType::staticTypeName() + "\"");
 	}
-	return tValue->writable();
+	return boost::static_pointer_cast<ObjectType>( getValue() )->writable();
 }
 
 template<typename T>
 const typename TypedParameter<T>::ValueType &TypedParameter<T>::getTypedValue() const
 {
-	const ObjectType *tValue = runTimeCast<const ObjectType>( getValue() );
+	ConstObjectTypePtr tValue = runTimeCast<const ObjectType>( getValue() );
 	if( !tValue )
 	{
 		throw Exception( std::string( "Value is not an instance of \"" ) + ObjectType::staticTypeName() + "\"");
 	}
-	return tValue->readable();
+	return boost::static_pointer_cast<const ObjectType>( getValue() )->readable();
 }
 
 template<typename T>
