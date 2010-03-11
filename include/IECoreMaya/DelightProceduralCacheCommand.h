@@ -41,6 +41,7 @@
 #include "maya/MPxCommand.h"
 
 #include "IECore/ParameterisedProcedural.h"
+#include "IECore/CompoundObject.h"
 
 namespace IECoreMaya
 {
@@ -68,6 +69,7 @@ class DelightProceduralCacheCommand : public MPxCommand
 			int classVersion;
 			Imath::Box3f bound; // the union of the procedural bound across all sample times
 			IECore::ParameterisedProceduralPtr procedural;
+			IECore::ObjectPtr values;
 		};		
 		typedef std::map<std::string, CachedProcedural> ProceduralMap;
 		static ProceduralMap g_procedurals;
