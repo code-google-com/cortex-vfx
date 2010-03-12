@@ -132,23 +132,23 @@ class TestRunTimeTyped( unittest.TestCase ) :
 		# should raise because 100009 is already been registered as OptionalCompoundParameter
 		self.assertRaises( RuntimeError, IECore.registerRunTimeTyped, IECore.FileSequenceParameter, 100009, IECore.PathParameter )
 
-		self.assertEqual( IECore.TypeId.FileSequenceParameter, IECore.FileSequenceParameter.staticTypeId() )
-		self.assertEqual( IECore.TypeId.FileSequenceParameter, IECore.FileSequenceParameter( "", "" ).typeId() )
+		self.assertEqual( IECore.TypeId.OptionalCompoundParameter, IECore.OptionalCompoundParameter.staticTypeId() )
+		self.assertEqual( IECore.TypeId.OptionalCompoundParameter, IECore.OptionalCompoundParameter( "", "" ).typeId() )
+		self.assertEqual( "OptionalCompoundParameter", IECore.OptionalCompoundParameter( "", "" ).typeName() )
+		self.assertEqual( "OptionalCompoundParameter", IECore.OptionalCompoundParameter.staticTypeName() )
 
-		self.assert_( IECore.FileSequenceParameter.inheritsFrom( "PathParameter" ) )
-		self.assert_( IECore.FileSequenceParameter.inheritsFrom( IECore.TypeId.PathParameter ) )
-		self.assert_( IECore.FileSequenceParameter.inheritsFrom( "StringParameter" ) )
-		self.assert_( IECore.FileSequenceParameter.inheritsFrom( IECore.TypeId.StringParameter ) )
-		self.assert_( IECore.FileSequenceParameter.inheritsFrom( "Parameter" ) )
-		self.assert_( IECore.FileSequenceParameter.inheritsFrom( IECore.TypeId.Parameter ) )
-		self.assert_( IECore.FileSequenceParameter.inheritsFrom( "RunTimeTyped" ) )
-		self.assert_( IECore.FileSequenceParameter.inheritsFrom( IECore.TypeId.RunTimeTyped ) )
+		self.assert_( IECore.OptionalCompoundParameter.inheritsFrom( "CompoundParameter" ) )
+		self.assert_( IECore.OptionalCompoundParameter.inheritsFrom( IECore.TypeId.CompoundParameter ) )
+		self.assert_( IECore.OptionalCompoundParameter.inheritsFrom( "Parameter" ) )
+		self.assert_( IECore.OptionalCompoundParameter.inheritsFrom( IECore.TypeId.Parameter ) )
+		self.assert_( IECore.OptionalCompoundParameter.inheritsFrom( "RunTimeTyped" ) )
+		self.assert_( IECore.OptionalCompoundParameter.inheritsFrom( IECore.TypeId.RunTimeTyped ) )
 
-		self.assert_( IECore.FileSequenceParameter( "", "" ).isInstanceOf( "FileSequenceParameter" ) )
-		self.assert_( IECore.FileSequenceParameter( "", "" ).isInstanceOf( IECore.TypeId.FileSequenceParameter ) )
-		self.assert_( IECore.FileSequenceParameter( "", "" ).isInstanceOf( "PathParameter" ) )
-		self.assert_( IECore.FileSequenceParameter( "", "" ).isInstanceOf( IECore.TypeId.PathParameter ) )
-		self.assertRaises( TypeError, IECore.FileSequenceParameter( "", "" ).isInstanceOf, 10 )
+		self.assert_( IECore.OptionalCompoundParameter( "", "" ).isInstanceOf( "OptionalCompoundParameter" ) )
+		self.assert_( IECore.OptionalCompoundParameter( "", "" ).isInstanceOf( IECore.TypeId.OptionalCompoundParameter ) )
+		self.assert_( IECore.OptionalCompoundParameter( "", "" ).isInstanceOf( "CompoundParameter" ) )
+		self.assert_( IECore.OptionalCompoundParameter( "", "" ).isInstanceOf( IECore.TypeId.CompoundParameter ) )
+		self.assertRaises( TypeError, IECore.OptionalCompoundParameter( "", "" ).isInstanceOf, 10 )
 
 
 
