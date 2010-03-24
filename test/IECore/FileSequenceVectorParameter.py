@@ -36,7 +36,6 @@ import unittest
 
 import IECore
 import os
-import shutil
 
 class TestFileSequenceVectorParameter( unittest.TestCase ) :
 
@@ -165,11 +164,11 @@ class TestFileSequenceVectorParameter( unittest.TestCase ) :
 
 	def tearDown( self ):
 
-		directory = "test/sequences"
+		directory = "test/sequences/parameterTest"
 
 		if os.path.exists( directory ) :
 
-			shutil.rmtree( directory )
+			os.system( "rm -rf " + directory )
 
 
 

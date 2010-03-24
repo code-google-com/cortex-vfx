@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,7 +45,7 @@ namespace IECore
 /// This class uses the MedianCutSampler to calculate a distribution
 /// of light positions and orientations based on a lat-long environment
 /// map image.
-/// \todo: use SphericalToEuclideanTransform that is based on right-hand coordinate system. Currently it is left-hand to match 3delight environment light mapping. But maya and nuke and the spherical harmonics implementation in IECore are right-handed.
+/// \todo: use SphericalToEuclidianTransform that is based on right-hand coordinate system. Currently it is left-hand to match 3delight environment light mapping. But maya and nuke and the spherical harmonics implementation in IECore are right-handed.
 class EnvMapSampler : public Op
 {
 	public :
@@ -55,15 +55,15 @@ class EnvMapSampler : public Op
 		EnvMapSampler();
 		virtual ~EnvMapSampler();
 
-		ImagePrimitiveParameter * imageParameter();
-		const ImagePrimitiveParameter * imageParameter() const;
+		ImagePrimitiveParameterPtr imageParameter();
+		ConstImagePrimitiveParameterPtr imageParameter() const;
 
-		IntParameter * subdivisionDepthParameter();
-		const IntParameter * subdivisionDepthParameter() const;
+		IntParameterPtr subdivisionDepthParameter();
+		ConstIntParameterPtr subdivisionDepthParameter() const;
 
 	protected :
 
-		ObjectPtr doOperation( const CompoundObject * operands );
+		ObjectPtr doOperation( ConstCompoundObjectPtr operands );
 
 	private :
 

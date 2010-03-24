@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,7 +41,13 @@ using namespace boost;
 using namespace std;
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPED( ValidatedStringParameter );
+const unsigned int ValidatedStringParameter::g_ioVersion = 1;
+
+IE_CORE_DEFINEOBJECTTYPEDESCRIPTION( ValidatedStringParameter );
+
+ValidatedStringParameter::ValidatedStringParameter()
+{
+}
 
 ValidatedStringParameter::ValidatedStringParameter( const std::string &name, const std::string &description,
 	const std::string &regex, const std::string &regexDescription, const std::string &defaultValue, bool allowEmptyString, const StringParameter::PresetsContainer &presets, bool presetsOnly, ConstCompoundObjectPtr userData )
@@ -64,14 +70,14 @@ bool ValidatedStringParameter::allowEmptyString() const
 	return m_allowEmptyString;
 }
 
-bool ValidatedStringParameter::valueValid( const Object *value, std::string *reason ) const
+bool ValidatedStringParameter::valueValid( ConstObjectPtr value, std::string *reason ) const
 {
 	if( !StringParameter::valueValid( value, reason ) )
 	{
 		return false;
 	}
 	// if the above passed we know we have a string
-	const StringData *s = static_cast<const StringData *>( value );
+	ConstStringDataPtr s = static_pointer_cast<const StringData>( value );
 	if( m_allowEmptyString && s->readable()=="" )
 	{
 		return true;
@@ -96,4 +102,60 @@ bool ValidatedStringParameter::valueValid( const Object *value, std::string *rea
 		}
 	}
 	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Object implementation
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ValidatedStringParameter::copyFrom( ConstObjectPtr other, CopyContext *context )
+{
+	StringParameter::copyFrom( other, context );
+	const ValidatedStringParameter *tOther = static_cast<const ValidatedStringParameter *>( other.get() );
+
+	m_regex = tOther->m_regex;
+	m_regexDescription = tOther->m_regexDescription;
+	m_allowEmptyString = tOther->m_allowEmptyString;
+}
+
+void ValidatedStringParameter::save( SaveContext *context ) const
+{
+	StringParameter::save( context );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), g_ioVersion );
+
+	container->write( "regex", m_regex );
+	container->write( "regexDescription", m_regexDescription );
+	unsigned char tmp = m_allowEmptyString;
+	container->write( "m_allowEmptyString", tmp );
+
+}
+
+void ValidatedStringParameter::load( LoadContextPtr context )
+{
+	StringParameter::load( context );
+	unsigned int v = g_ioVersion;
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
+
+	container->read( "regex", m_regex );
+	container->read( "regexDescription", m_regexDescription );
+	unsigned char tmp;
+	container->read( "allowEmptyString", tmp );
+	m_allowEmptyString = tmp;
+}
+
+bool ValidatedStringParameter::isEqualTo( ConstObjectPtr other ) const
+{
+	if( !StringParameter::isEqualTo( other ) )
+	{
+		return false;
+	}
+
+	const ValidatedStringParameter *tOther = static_cast<const ValidatedStringParameter *>( other.get() );
+	return m_regex==tOther->m_regex && m_regexDescription==tOther->m_regexDescription && m_allowEmptyString==tOther->m_allowEmptyString;
+}
+
+void ValidatedStringParameter::memoryUsage( Object::MemoryAccumulator &a ) const
+{
+	StringParameter::memoryUsage( a );
+	a.accumulate( sizeof( m_regex ) + sizeof( m_regexDescription ) + sizeof( m_allowEmptyString ) );
 }

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -58,12 +58,12 @@ IE_CORE_DEFINERUNTIMETYPED( PDCParticleReader );
 const Reader::ReaderDescription<PDCParticleReader> PDCParticleReader::m_readerDescription( "pdc" );
 
 PDCParticleReader::PDCParticleReader( )
-	:	ParticleReader( "Reads Maya .pdc format particle caches" ), m_iStream( 0 ), m_idAttribute( 0 )
+	:	ParticleReader( "PDCParticleReader", "Reads Maya .pdc format particle caches" ), m_iStream( 0 ), m_idAttribute( 0 )
 {
 }
 
 PDCParticleReader::PDCParticleReader( const std::string &fileName )
-	:	ParticleReader( "Reads Maya .pdc format particle caches" ), m_iStream( 0 ), m_idAttribute( 0 )
+	:	ParticleReader( "PDCParticleReader", "Reads Maya .pdc format particle caches" ), m_iStream( 0 ), m_idAttribute( 0 )
 {
 	m_fileNameParameter->setTypedValue( fileName );
 }
@@ -247,7 +247,7 @@ void PDCParticleReader::readElements( T *buffer, std::streampos pos, unsigned lo
 }
 
 template<typename T, typename F>
-typename T::Ptr PDCParticleReader::filterAttr( const F *attr, float percentage )
+typename T::Ptr PDCParticleReader::filterAttr( typename F::ConstPtr attr, float percentage )
 {
 	if( percentage < 100.0f )
 	{
@@ -291,7 +291,7 @@ typename T::Ptr PDCParticleReader::filterAttr( const F *attr, float percentage )
 	}
 
 	// no filtering of any sort needed
-	return typename T::Ptr( (T *)attr );
+	return typename T::Ptr( (T *)attr.get() );
 }
 
 DataPtr PDCParticleReader::readAttribute( const std::string &name )
@@ -412,7 +412,7 @@ DataPtr PDCParticleReader::readAttribute( const std::string &name )
 	return result;
 }
 
-const DoubleVectorData * PDCParticleReader::idAttribute()
+ConstDoubleVectorDataPtr PDCParticleReader::idAttribute()
 {
 	if( !open() )
 	{

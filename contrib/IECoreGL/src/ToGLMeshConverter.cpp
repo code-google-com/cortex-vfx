@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -83,9 +83,9 @@ class ToGLMeshConverter::ToFaceVaryingConverter
 };
 
 ToGLMeshConverter::ToGLMeshConverter( IECore::ConstMeshPrimitivePtr toConvert )
-	:	ToGLConverter( "Converts IECore::MeshPrimitive objects to IECoreGL::MeshPrimitive objects.", IECore::MeshPrimitiveTypeId )
+	:	ToGLConverter( staticTypeName(), "Converts IECore::MeshPrimitive objects to IECoreGL::MeshPrimitive objects.", IECore::MeshPrimitiveTypeId )
 {
-	srcParameter()->setValue( IECore::constPointerCast<IECore::MeshPrimitive>( toConvert ) );
+	srcParameter()->setValue( boost::const_pointer_cast<IECore::MeshPrimitive>( toConvert ) );
 }
 
 ToGLMeshConverter::~ToGLMeshConverter()
@@ -94,7 +94,7 @@ ToGLMeshConverter::~ToGLMeshConverter()
 
 IECore::RunTimeTypedPtr ToGLMeshConverter::doConversion( IECore::ConstObjectPtr src, IECore::ConstCompoundObjectPtr operands ) const
 {
-	IECore::MeshPrimitivePtr mesh = IECore::staticPointerCast<IECore::MeshPrimitive>( src->copy() ); // safe because the parameter validated it for us
+	IECore::MeshPrimitivePtr mesh = boost::static_pointer_cast<IECore::MeshPrimitive>( src->copy() ); // safe because the parameter validated it for us
 
 	IECore::TriangulateOpPtr op = new IECore::TriangulateOp();
 	op->inputParameter()->setValue( mesh );
@@ -172,10 +172,6 @@ IECore::RunTimeTypedPtr ToGLMeshConverter::doConversion( IECore::ConstObjectPtr 
 			else if ( pIt->second.interpolation==IECore::PrimitiveVariable::FaceVarying )
 			{
 				glMesh->addVertexAttribute( pIt->first, pIt->second.data );
-			}
-			else if ( pIt->second.interpolation==IECore::PrimitiveVariable::Constant )
-			{
-				glMesh->addUniformAttribute( pIt->first, pIt->second.data );
 			}
 		}
 		else

@@ -34,7 +34,7 @@
 
 #include "boost/python.hpp"
 
-#include "IECorePython/RefCountedBinding.h"
+#include "IECore/bindings/RefCountedBinding.h"
 
 #include "IECoreMaya/MessageHandler.h"
 
@@ -46,7 +46,7 @@ namespace IECoreMaya
 void bindMessageHandler()
 {
 
-	IECorePython::RefCountedClass<IECoreMaya::MessageHandler, IECore::MessageHandler>( "MessageHandler" )
+	IECore::RefCountedClass<IECoreMaya::MessageHandler, IECore::MessageHandler>( "MessageHandler" )
 		.def( init<>() )
 	;
 

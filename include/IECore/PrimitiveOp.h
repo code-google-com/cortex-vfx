@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -50,15 +50,15 @@ class PrimitiveOp : public ModifyOp
 
 		IE_CORE_DECLARERUNTIMETYPED( PrimitiveOp, ModifyOp );
 
-		PrimitiveOp( const std::string &description );
+		PrimitiveOp( const std::string &name, const std::string &description );
 		virtual ~PrimitiveOp();
 
 	protected :
 
 		/// Implemented to call modifyPrimitive()
-		virtual void modify( Object * object, const CompoundObject * operands );
+		virtual void modify( ObjectPtr object, ConstCompoundObjectPtr operands );
 		/// Must be implemented by all subclasses.
-		virtual void modifyPrimitive( Primitive * primitive, const CompoundObject * operands ) = 0;
+		virtual void modifyPrimitive( PrimitivePtr primitive, ConstCompoundObjectPtr operands ) = 0;
 
 };
 

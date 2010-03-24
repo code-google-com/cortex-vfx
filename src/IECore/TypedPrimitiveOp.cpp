@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,8 +45,8 @@
 using namespace IECore;
 
 template<typename T>
-TypedPrimitiveOp<T>::TypedPrimitiveOp( const std::string &description )
-	:	ModifyOp( description, new ObjectParameter( "result", "The result", new T(), T::staticTypeId() ), new ObjectParameter( "input", "The Primitive to modify", new T(), T::staticTypeId() ) )
+TypedPrimitiveOp<T>::TypedPrimitiveOp( const std::string &name, const std::string &description )
+	:	ModifyOp( name, description, new ObjectParameter( "result", "The result", new T(), T::staticTypeId() ), new ObjectParameter( "input", "The Primitive to modify", new T(), T::staticTypeId() ) )
 {
 }
 
@@ -56,9 +56,9 @@ TypedPrimitiveOp<T>::~TypedPrimitiveOp()
 }
 
 template<typename T>
-void TypedPrimitiveOp<T>::modify( Object * primitive, const CompoundObject * operands )
+void TypedPrimitiveOp<T>::modify( ObjectPtr primitive, ConstCompoundObjectPtr operands )
 {
-	T * typedPrimitive = runTimeCast< T, Object >( primitive );
+	typename T::Ptr typedPrimitive = boost::dynamic_pointer_cast<T>( primitive );
 
 	// Parameter validation should ensure that this is object is of the correct type, hence the assertion
 	assert( typedPrimitive );

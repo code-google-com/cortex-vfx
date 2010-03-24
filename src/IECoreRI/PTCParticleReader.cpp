@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -64,12 +64,12 @@ IE_CORE_DEFINERUNTIMETYPED( PTCParticleReader );
 const Reader::ReaderDescription<PTCParticleReader> PTCParticleReader::m_readerDescription( "3Dbake 3DWbake ptc" );
 
 PTCParticleReader::PTCParticleReader( )
-	:	ParticleReader( "Reads Renderman point cloud format" ), m_ptcFile( 0 ), m_userDataBuffer( 0 )
+	:	ParticleReader( "PTCParticleReader", "Reads Renderman point cloud format" ), m_ptcFile( 0 ), m_userDataBuffer( 0 )
 {
 }
 
 PTCParticleReader::PTCParticleReader( const std::string &fileName )
-	:	ParticleReader( "Reads Renderman point cloud format" ), m_ptcFile( 0 ), m_userDataBuffer( 0 )
+	:	ParticleReader( "PTCParticleReader", "Reads Renderman point cloud format" ), m_ptcFile( 0 ), m_userDataBuffer( 0 )
 {
 	m_fileNameParameter->setTypedValue( fileName );
 }
@@ -253,7 +253,7 @@ void PTCParticleReader::attributeNames( std::vector<std::string> &names )
 	}
 }
 
-ObjectPtr PTCParticleReader::doOperation( const CompoundObject * operands )
+ObjectPtr PTCParticleReader::doOperation( ConstCompoundObjectPtr operands )
 {
 	vector<string> attributes;
 	particleAttributes( attributes );
@@ -278,7 +278,7 @@ ObjectPtr PTCParticleReader::doOperation( const CompoundObject * operands )
 
 		DataPtr d = itData->second;
 
-		PrimitiveVariable::Interpolation interp = despatchTypedData< TypedDataInterpolation, TypeTraits::IsTypedData, DespatchTypedDataIgnoreError >( constPointerCast<Data>( d ) );
+		PrimitiveVariable::Interpolation interp = despatchTypedData< TypedDataInterpolation, TypeTraits::IsTypedData, DespatchTypedDataIgnoreError >( boost::const_pointer_cast<Data>( d ) );
 
 		if ( interp == PrimitiveVariable::Invalid )
 		{
@@ -366,12 +366,12 @@ copy( std::vector< M44f >::const_iterator inBegin,
 
 
 template<typename T, typename F>
-IECore::IntrusivePtr<T> PTCParticleReader::filterAttr( IECore::IntrusivePtr<F> attr, float percentage )
+boost::intrusive_ptr<T> PTCParticleReader::filterAttr( boost::intrusive_ptr<F> attr, float percentage )
 {
 	if( percentage < 100.0f )
 	{
 		// percentage filtering (and type conversion if necessary)
-		IECore::IntrusivePtr<T> result( new T );
+		boost::intrusive_ptr<T> result( new T );
 		const typename F::ValueType &in = attr->readable();
 		typename T::ValueType &out = result->writable();
 		int seed = particlePercentageSeed();
@@ -391,7 +391,7 @@ IECore::IntrusivePtr<T> PTCParticleReader::filterAttr( IECore::IntrusivePtr<F> a
 	if( T::staticTypeId()!=F::staticTypeId() )
 	{
 		// type conversion only
-		IECore::IntrusivePtr<T> result( new T );
+		boost::intrusive_ptr<T> result( new T );
 		const typename F::ValueType &in = attr->readable();
 		typename T::ValueType &out = result->writable();
 		out.resize( in.size() );
@@ -400,7 +400,7 @@ IECore::IntrusivePtr<T> PTCParticleReader::filterAttr( IECore::IntrusivePtr<F> a
 	}
 
 	// no filtering of any sort needed
-	return IECore::IntrusivePtr<T>( (T *)attr.get() );
+	return boost::intrusive_ptr<T>( (T *)attr.get() );
 }
 
 DataPtr PTCParticleReader::readAttribute( const std::string &name )
@@ -539,7 +539,7 @@ CompoundDataPtr PTCParticleReader::readAttributes( const std::vector<std::string
 			{
 			case Color3fVectorDataTypeId :
 				{
-					Color3f &c = staticPointerCast<Color3fVectorData>(it->second.targetData)->writable()[ i ];
+					Color3f &c = boost::static_pointer_cast<Color3fVectorData>(it->second.targetData)->writable()[ i ];
 					c[0] = attributePtr[0];
 					c[1] = attributePtr[1];
 					c[2] = attributePtr[2];
@@ -547,18 +547,18 @@ CompoundDataPtr PTCParticleReader::readAttributes( const std::vector<std::string
 				}
 			case V3fVectorDataTypeId:
 				{
-					V3f &p = staticPointerCast<V3fVectorData>(it->second.targetData)->writable()[ i ];
+					V3f &p = boost::static_pointer_cast<V3fVectorData>(it->second.targetData)->writable()[ i ];
 					p[0] = attributePtr[0];
 					p[1] = attributePtr[1];
 					p[2] = attributePtr[2];
 					break;
 				}
 			case FloatVectorDataTypeId:
-				staticPointerCast<FloatVectorData>(it->second.targetData)->writable()[ i ] = attributePtr[0];
+				boost::static_pointer_cast<FloatVectorData>(it->second.targetData)->writable()[ i ] = attributePtr[0];
 				break;
 			case M44fVectorDataTypeId:
 				{
-					M44f &m = staticPointerCast<M44fVectorData>(it->second.targetData)->writable()[ i ];
+					M44f &m = boost::static_pointer_cast<M44fVectorData>(it->second.targetData)->writable()[ i ];
 					m = M44f(	attributePtr[0], attributePtr[1], attributePtr[2], attributePtr[3],
 								attributePtr[4], attributePtr[5], attributePtr[6], attributePtr[7],
 								attributePtr[8], attributePtr[9], attributePtr[9], attributePtr[10],
@@ -583,10 +583,10 @@ CompoundDataPtr PTCParticleReader::readAttributes( const std::vector<std::string
 			{
 				case ParticleReader::Native :
 				case ParticleReader::Float :
-					filteredData = filterAttr<Color3fVectorData, Color3fVectorData>( staticPointerCast<Color3fVectorData>(attrIt->second.targetData), particlePercentage() );
+					filteredData = filterAttr<Color3fVectorData, Color3fVectorData>( boost::static_pointer_cast<Color3fVectorData>(attrIt->second.targetData), particlePercentage() );
 					break;
 				case ParticleReader::Double :
-					filteredData = filterAttr<Color3dVectorData, Color3fVectorData>( staticPointerCast<Color3fVectorData>(attrIt->second.targetData), particlePercentage() );
+					filteredData = filterAttr<Color3dVectorData, Color3fVectorData>( boost::static_pointer_cast<Color3fVectorData>(attrIt->second.targetData), particlePercentage() );
 					break;
 			}
 			break;
@@ -597,10 +597,10 @@ CompoundDataPtr PTCParticleReader::readAttributes( const std::vector<std::string
 			{
 				case ParticleReader::Native :
 				case ParticleReader::Float :
-					filteredData = filterAttr<V3fVectorData, V3fVectorData>( staticPointerCast<V3fVectorData>(attrIt->second.targetData), particlePercentage() );
+					filteredData = filterAttr<V3fVectorData, V3fVectorData>( boost::static_pointer_cast<V3fVectorData>(attrIt->second.targetData), particlePercentage() );
 					break;
 				case ParticleReader::Double :
-					filteredData = filterAttr<V3dVectorData, V3fVectorData>( staticPointerCast<V3fVectorData>(attrIt->second.targetData), particlePercentage() );
+					filteredData = filterAttr<V3dVectorData, V3fVectorData>( boost::static_pointer_cast<V3fVectorData>(attrIt->second.targetData), particlePercentage() );
 					break;
 			}
 			break;
@@ -609,10 +609,10 @@ CompoundDataPtr PTCParticleReader::readAttributes( const std::vector<std::string
 			{
 				case ParticleReader::Native :
 				case ParticleReader::Float :
-					filteredData = filterAttr<FloatVectorData, FloatVectorData>( staticPointerCast<FloatVectorData>(attrIt->second.targetData), particlePercentage() );
+					filteredData = filterAttr<FloatVectorData, FloatVectorData>( boost::static_pointer_cast<FloatVectorData>(attrIt->second.targetData), particlePercentage() );
 					break;
 				case ParticleReader::Double :
-					filteredData = filterAttr<DoubleVectorData, FloatVectorData>( staticPointerCast<FloatVectorData>(attrIt->second.targetData), particlePercentage() );
+					filteredData = filterAttr<DoubleVectorData, FloatVectorData>( boost::static_pointer_cast<FloatVectorData>(attrIt->second.targetData), particlePercentage() );
 					break;
 			}
 			break;
@@ -621,10 +621,10 @@ CompoundDataPtr PTCParticleReader::readAttributes( const std::vector<std::string
 			{
 				case ParticleReader::Native :
 				case ParticleReader::Float :
-					filteredData = filterAttr<M44fVectorData, M44fVectorData>( staticPointerCast<M44fVectorData>(attrIt->second.targetData), particlePercentage() );
+					filteredData = filterAttr<M44fVectorData, M44fVectorData>( boost::static_pointer_cast<M44fVectorData>(attrIt->second.targetData), particlePercentage() );
 					break;
 				case ParticleReader::Double :
-					filteredData = filterAttr<M44dVectorData, M44fVectorData>( staticPointerCast<M44fVectorData>(attrIt->second.targetData), particlePercentage() );
+					filteredData = filterAttr<M44dVectorData, M44fVectorData>( boost::static_pointer_cast<M44fVectorData>(attrIt->second.targetData), particlePercentage() );
 					break;
 			}
 			break;

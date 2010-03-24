@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -60,12 +60,12 @@ IE_CORE_DEFINERUNTIMETYPED( TGAImageWriter )
 const Writer::WriterDescription<TGAImageWriter> TGAImageWriter::m_writerDescription( "tga" );
 
 TGAImageWriter::TGAImageWriter() :
-		ImageWriter( "Serializes images to the Truevision Targa format" )
+		ImageWriter( "TGAImageWriter", "Serializes images to the Truevision Targa format" )
 {
 }
 
 TGAImageWriter::TGAImageWriter( ObjectPtr image, const string &fileName ) :
-		ImageWriter( "Serializes images to the Truevision Targa format" )
+		ImageWriter( "TGAImageWriter", "Serializes images to the Truevision Targa format" )
 {
 	m_objectParameter->setValue( image );
 	m_fileNameParameter->setTypedValue( fileName );
@@ -85,19 +85,19 @@ struct TGAImageWriter::ChannelConverter
 	typedef void ReturnType;
 
 	std::string m_channelName;
-	const ImagePrimitive * m_image;
+	ConstImagePrimitivePtr m_image;
 	Box2i m_dataWindow;
 	int m_numChannels;
 	int m_channelOffset;
 	std::vector<uint8_t> &m_imageBuffer;
 
-	ChannelConverter( const std::string &channelName, const ImagePrimitive * image, const Box2i &dataWindow, int numChannels, int channelOffset, std::vector<uint8_t> &imageBuffer )
+	ChannelConverter( const std::string &channelName, ConstImagePrimitivePtr image, const Box2i &dataWindow, int numChannels, int channelOffset, std::vector<uint8_t> &imageBuffer )
 			: m_channelName( channelName ), m_image( image ), m_dataWindow( dataWindow ), m_numChannels( numChannels ), m_channelOffset( channelOffset ), m_imageBuffer( imageBuffer )
 	{
 	}
 
 	template<typename T>
-	ReturnType operator()( T * dataContainer )
+	ReturnType operator()( typename T::Ptr dataContainer )
 	{
 		assert( dataContainer );
 
@@ -125,7 +125,7 @@ struct TGAImageWriter::ChannelConverter
 	struct ErrorHandler
 	{
 		template<typename T, typename F>
-		void operator()( const T * data, const F& functor )
+		void operator()( typename T::ConstPtr data, const F& functor )
 		{
 			throw InvalidArgumentException(( boost::format( "TGAImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId( data->typeId() ) % functor.m_channelName ).str() );
 		}
@@ -139,7 +139,7 @@ static void writeLittleEndian( std::ostream &f, T n )
 	f.write(( const char* ) &nl, sizeof( T ) );
 }
 
-void TGAImageWriter::writeImage( const vector<string> &names, const ImagePrimitive * image, const Box2i &dataWindow ) const
+void TGAImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow ) const
 {
 	vector<string>::const_iterator rIt = std::find( names.begin(), names.end(), "R" );
 	vector<string>::const_iterator gIt = std::find( names.begin(), names.end(), "G" );

@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -109,7 +109,7 @@ class TestParameterisedHolder( unittest.TestCase ) :
 
 				def __init__( self ) :
 
-					IECore.Op.__init__( self, "Tests stuff",
+					IECore.Op.__init__( self, "TestOp", "Tests stuff",
 						IECore.IntParameter(
 							name = "result",
 							description = "",
@@ -144,6 +144,275 @@ class TestParameterisedHolder( unittest.TestCase ) :
 		dv = cmds.attributeQuery ( "parm_c", node = n, listDefault = True )
 		self.assertEqual( dv, [ 1, 1, 1 ] )
 
+	def testDynamicParameters( self ) :
+
+		fnPH = IECoreMaya.FnOpHolder.create( "holder", "maths/multiply", 2 )
+
+		p = fnPH.getParameterised()[0]
+
+		p.parameters().addParameter(
+
+			IECore.IntParameter(
+				"iAmDynamic",
+				"",
+				2
+			)
+
+		)
+
+		fnPH.updateParameterised()
+
+		self.assert_( cmds.objExists( fnPH.fullPathName() + ".parm_iAmDynamic" ) )
+		plug = fnPH.parameterPlug( p["iAmDynamic"] )
+		self.assertEqual( plug.partialName(), "parm_iAmDynamic" )
+		self.assertEqual( plug.asInt(), 2 )
+
+		plug.setInt( 3 )
+		fnPH.setParameterisedValue( p["iAmDynamic"] )
+		self.assertEqual( p["iAmDynamic"].getNumericValue(), 3 )
+
+		plug.setInt( 4 )
+		fnPH.setParameterisedValues()
+		self.assertEqual( p["iAmDynamic"].getNumericValue(), 4 )
+
+		p["iAmDynamic"].setNumericValue( 5 )
+		fnPH.setNodeValue( p["iAmDynamic"] )
+		self.assertEqual( plug.asInt(), 5 )
+
+		p["iAmDynamic"].setNumericValue( 6 )
+		fnPH.setNodeValues()
+		self.assertEqual( plug.asInt(), 6 )
+
+		p.parameters().removeParameter( p["iAmDynamic"] )
+		fnPH.updateParameterised()
+		self.assert_( not cmds.objExists( fnPH.fullPathName() + ".parm_iAmDynamic" ) )
+
+	def testDynamicParametersDuplicate( self ) :
+
+		fnPH = IECoreMaya.FnOpHolder.create( "holder", "maths/multiply", 2 )
+
+		p = fnPH.getParameterised()[0]
+
+		p.parameters().addParameter(
+
+			IECore.IntParameter(
+				"iAmDynamic",
+				"iAmADescription",
+				2
+			)
+
+		)
+
+		fnPH.updateParameterised()
+
+		dd = cmds.duplicate( fnPH.fullPathName() )[0]
+
+		fnPH2 = IECoreMaya.FnParameterisedHolder( dd )
+		p2 = fnPH2.getParameterised()[0]
+
+		self.assert_( p2["iAmDynamic"].isInstanceOf( IECore.IntParameter.staticTypeId() ) )
+		self.assertEqual( p2["iAmDynamic"].description, "iAmADescription" )
+		self.assertEqual( p2["iAmDynamic"].defaultValue, IECore.IntData( 2 ) )
+		self.assert_( not p2["iAmDynamic"].isSame( p["iAmDynamic"] ) )
+
+		plug = fnPH2.parameterPlug( p2["iAmDynamic"] )
+		self.assertEqual( plug.asInt(), 2 )
+
+		p["iAmDynamic"].setNumericValue( 10 )
+		p2["iAmDynamic"].setNumericValue( 20 )
+		fnPH.setNodeValues()
+		fnPH2.setNodeValues()
+		self.assertEqual( fnPH.parameterPlug( p["iAmDynamic"] ).asInt(), 10 )
+		self.assertEqual( fnPH2.parameterPlug( p2["iAmDynamic"] ).asInt(), 20 )
+
+	def testDynamicParametersAddRemoveAndDuplicate( self ) :
+
+		fnPH = IECoreMaya.FnOpHolder.create( "holder", "maths/multiply", 2 )
+
+		p = fnPH.getParameterised()[0]
+
+		p.parameters().addParameter(
+
+			IECore.IntParameter(
+				"iAmDynamic",
+				"iAmADescription",
+				2
+			)
+
+		)
+
+		fnPH.updateParameterised()
+
+		p.parameters().removeParameter( p["iAmDynamic"] )
+		fnPH.updateParameterised()
+		self.assert_( not cmds.objExists( fnPH.fullPathName() + ".parm_iAmDynamic" ) )
+		self.assert_( not "iAmDynamic" in p.parameters() )
+
+		dd = cmds.duplicate( fnPH.fullPathName() )[0]
+
+		fnPH2 = IECoreMaya.FnParameterisedHolder( dd )
+		p2 = fnPH2.getParameterised()[0]
+
+		self.assert_( not cmds.objExists( fnPH2.fullPathName() + ".parm_iAmDynamic" ) )
+		self.assert_( not "iAmDynamic" in p2.parameters() )
+
+	def testDynamicParametersSaveAndLoad( self ) :
+
+		fnPH = IECoreMaya.FnOpHolder.create( "holder", "maths/multiply", 2 )
+
+		p = fnPH.getParameterised()[0]
+
+		p.parameters().addParameter(
+
+			IECore.IntParameter(
+				"iAmDynamic",
+				"iAmADescription",
+				2
+			)
+
+		)
+
+		fnPH.updateParameterised()
+
+		cmds.file( rename = os.path.join( os.getcwd(), "test", "IECoreMaya", "dynamicParameters.ma" ) )
+		scene = cmds.file( force = True, type = "mayaAscii", save = True )
+		cmds.file( new = True, force = True )
+		cmds.file( scene, open = True )
+
+		fnPH = IECoreMaya.FnOpHolder( "holder" )
+		p = fnPH.getParameterised()[0]
+
+		self.assert_( cmds.objExists( fnPH.fullPathName() + ".parm_iAmDynamic" ) )
+		plug = fnPH.parameterPlug( p["iAmDynamic"] )
+		self.assertEqual( plug.partialName(), "parm_iAmDynamic" )
+		self.assertEqual( plug.asInt(), 2 )
+		self.assert_( p["iAmDynamic"].isInstanceOf( IECore.IntParameter.staticTypeId() ) )
+		self.assertEqual( p["iAmDynamic"].description, "iAmADescription" )
+		self.assertEqual( p["iAmDynamic"].defaultValue, IECore.IntData( 2 ) )
+
+	def testDynamicParametersReload( self ) :
+
+		fnPH = IECoreMaya.FnOpHolder.create( "holder", "maths/multiply", 1 )
+
+		p = fnPH.getParameterised()[0]
+
+		p.parameters().addParameter(
+
+			IECore.IntParameter(
+				"iAmDynamic",
+				"iAmADescription",
+				2
+			)
+
+		)
+
+		fnPH.updateParameterised()
+		fnPH.setOp( "maths/multiply", 2 )
+
+		p = fnPH.getParameterised()[0]
+		plug = fnPH.parameterPlug( p["iAmDynamic"] )
+		self.assertEqual( plug.asInt(), 2 )
+		self.assert_( p["iAmDynamic"].isInstanceOf( IECore.IntParameter.staticTypeId() ) )
+		self.assertEqual( p["iAmDynamic"].description, "iAmADescription" )
+		self.assertEqual( p["iAmDynamic"].defaultValue, IECore.IntData( 2 ) )
+
+	def testEmptyDynamicCompoundParameters( self ) :
+
+		fnPH = IECoreMaya.FnOpHolder.create( "holder", "maths/multiply", 1 )
+
+		p = fnPH.getParameterised()[0]
+
+		p.parameters().addParameter(
+
+			IECore.CompoundParameter(
+				"iAmDynamic",
+				"andIAmACompoundParameter",
+			)
+
+		)
+
+		fnPH.updateParameterised()
+
+		dd = cmds.duplicate( fnPH.fullPathName() )[0]
+
+		fnPH2 = IECoreMaya.FnParameterisedHolder( dd )
+		p2 = fnPH2.getParameterised()[0]
+
+		self.assert_( p2["iAmDynamic"].isInstanceOf( IECore.CompoundParameter.staticTypeId() ) )
+		self.assert_( not p["iAmDynamic"].isSame( p2["iAmDynamic"] ) )
+		self.assertEqual( len( p2["iAmDynamic"] ), 0 )
+		self.assert_( not fnPH2.parameterPlug( p2["iAmDynamic"] ).isNull() )
+
+	def testDynamicCompoundParametersWithDynamicChildren( self ) :
+
+		fnPH = IECoreMaya.FnOpHolder.create( "holder", "maths/multiply", 1 )
+
+		p = fnPH.getParameterised()[0]
+
+		p.parameters().addParameter(
+
+			IECore.CompoundParameter(
+				"iAmDynamic",
+				"andIAmACompoundParameter",
+			)
+
+		)
+
+		p["iAmDynamic"].addParameter(
+
+			IECore.IntParameter(
+				"iAmDynamicToo",
+				"iAmADescriptionToo",
+				2
+			)
+
+		)
+
+		fnPH.updateParameterised()
+		self.assertEqual( fnPH.parameterPlug( p["iAmDynamic"]["iAmDynamicToo"] ).asInt(), 2 )
+
+		dd = cmds.duplicate( fnPH.fullPathName() )[0]
+
+		fnPH2 = IECoreMaya.FnParameterisedHolder( dd )
+		p2 = fnPH2.getParameterised()[0]
+		self.assertEqual( fnPH2.parameterPlug( p2["iAmDynamic"]["iAmDynamicToo"] ).asInt(), 2 )
+
+	def testDynamicCompoundParametersWithDynamicChildrenAddedLater( self ) :
+
+		fnPH = IECoreMaya.FnOpHolder.create( "holder", "maths/multiply", 1 )
+
+		p = fnPH.getParameterised()[0]
+
+		p.parameters().addParameter(
+
+			IECore.CompoundParameter(
+				"iAmDynamic",
+				"andIAmACompoundParameter",
+			)
+
+		)
+
+		fnPH.updateParameterised()
+
+		p["iAmDynamic"].addParameter(
+
+			IECore.IntParameter(
+				"iAmDynamicToo",
+				"iAmADescriptionToo",
+				2
+			)
+
+		)
+
+		fnPH.updateParameterised()
+		self.assertEqual( fnPH.parameterPlug( p["iAmDynamic"]["iAmDynamicToo"] ).asInt(), 2 )
+
+		dd = cmds.duplicate( fnPH.fullPathName() )[0]
+
+		fnPH2 = IECoreMaya.FnParameterisedHolder( dd )
+		p2 = fnPH2.getParameterised()[0]
+		self.assertEqual( fnPH2.parameterPlug( p2["iAmDynamic"]["iAmDynamicToo"] ).asInt(), 2 )
+
 	def testDirectSettingOfOp( self ) :
 	
 		class TestOp( IECore.Op ) :
@@ -151,6 +420,7 @@ class TestParameterisedHolder( unittest.TestCase ) :
 			def __init__( self ) :
 			
 				IECore.Op.__init__( self,
+					"test",
 					"",
 					IECore.FloatParameter(
 						"result",
@@ -180,15 +450,6 @@ class TestParameterisedHolder( unittest.TestCase ) :
 		fnOH.setParameterised( op )
 	
 		self.failUnless( cmds.objExists( node + ".result" ) )
-		
-		aAttr = fnOH.parameterPlugPath( op["a"] )
-
-		cmds.setAttr( aAttr, 10 )
-		self.assertEqual( cmds.getAttr( node + ".result" ), 10 )
-
-		cmds.setAttr( aAttr, 20 )
-		self.assertEqual( cmds.getAttr( node + ".result" ), 20 )
-
 
 	def testLazySettingFromCompoundPlugs( self ) :
 	
@@ -301,7 +562,7 @@ class TestParameterisedHolder( unittest.TestCase ) :
 		p.parameters()["image"].setValue( image )
 		fnPH.setNodeValues()
 		
-		cmds.file( rename = os.getcwd() + "/test/IECoreMaya/objectParameterIO.ma" )
+		cmds.file( rename = os.getcwd() + "/test/IECoreMaya/dynamicParameters.ma" )
 		scene = cmds.file( force = True, type = "mayaAscii", save = True )
 
 		cmds.file( new = True, force = True )
@@ -314,66 +575,13 @@ class TestParameterisedHolder( unittest.TestCase ) :
 		i2 = p.parameters()["image"].getValue()
 		
 		self.assertEqual( p.parameters()["image"].getValue(), image )
-
-	def testOpHolder( self ) :
-	
-		fnOH = IECoreMaya.FnOpHolder.create( "opHolder", "maths/multiply", 2 )
-		op = fnOH.getOp()
-		
-		self.assertEqual( cmds.attributeQuery( "result", node="opHolder", storable=True ), False )
-		self.assertEqual( cmds.attributeQuery( "result", node="opHolder", writable=True ), False )
-		
-		aPlug = fnOH.parameterPlugPath( op["a"] )
-		bPlug = fnOH.parameterPlugPath( op["b"] )
-		
-		cmds.setAttr( aPlug, 20 )
-		cmds.setAttr( bPlug, 100 )
-		
-		self.failUnless( cmds.getAttr( "opHolder.result" ), 2000 )
-
-	def testParameterTypes( self ) :
-	
-		node = cmds.createNode( "ieOpHolderNode" )
-		fnPH = IECoreMaya.FnParameterisedHolder( node )
-
-		op = IECore.ClassLoader.defaultOpLoader().load( "parameterTypes", 1 )()
-		op.parameters().removeParameter( "m" ) # no color4f support in maya
-
-		fnPH.setParameterised( op )
-		
-		for parameter in op.parameters().values() :
-		
-			self.failUnless( cmds.objExists( fnPH.parameterPlugPath( parameter ) ) )
-		
-	def testCompoundObjectConnections( self ) :
-	
-		fnOHA = IECoreMaya.FnOpHolder.create( "opA", "compoundObjectInOut", 1 )
-				
-		fnOHB = IECoreMaya.FnOpHolder.create( "opB", "compoundObjectInOut", 1 )
-		opB = fnOHB.getOp()
-				
-		inputPlug = fnOHB.parameterPlugPath( opB["input"] )
-		cmds.connectAttr( "opA.result", inputPlug )
-		
-		self.assertEqual( cmds.listConnections( inputPlug, source=True, destination=False, plugs=True ), [ "opA.result" ] )
-		self.assertEqual( cmds.listConnections( inputPlug, source=False, destination=True, plugs=True ), None )
-				
-		cmds.file( rename = os.path.join( os.getcwd(), "test", "IECoreMaya", "compoundObjectConnections.ma" ) )
-		scene = cmds.file( force = True, type = "mayaAscii", save = True )
-				
-		cmds.file( new = True, force = True )
-		cmds.file( scene, open = True )
-				
-		self.assertEqual( cmds.listConnections( inputPlug, source=True, destination=False, plugs=True ), [ "opA.result" ] )
-		self.assertEqual( cmds.listConnections( inputPlug, source=False, destination=True, plugs=True ), None )
-					
+			
 	def tearDown( self ) :
 
 		for f in [
-			"test/IECoreMaya/compoundObjectConnections.ma" ,
 			"test/IECoreMaya/reference.ma" ,
 			"test/IECoreMaya/referenceMaster.ma",
-			"test/IECoreMaya/objectParameterIO.ma",
+			"test/IECoreMaya/dynamicParameters.ma",
 			"test/IECoreMaya/imageProcedural.ma",
 		] :
 

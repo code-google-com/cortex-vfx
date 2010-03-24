@@ -42,6 +42,10 @@ class TestParticleMeshOp( unittest.TestCase ) :
 
 		o = ParticleMeshOp()
 
+		points = V3fVectorData()
+		radius = DoubleVectorData()
+		strength = DoubleVectorData()
+
 		bound = Box3f( V3f( -5, -7, -2 ), V3f( 3, 3, 3 ) )
 		resolution = V3i( 80, 80, 80 )
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -83,7 +83,7 @@ struct LuminanceTexture::Constructor
 		typedef typename T::ValueType::value_type ElementType;
 
 		const std::vector<ElementType> &ry = y->readable();
-		const std::vector<ElementType> *ra = alpha ? &(staticPointerCast<const T>( alpha )->readable()) : 0;
+		const std::vector<ElementType> *ra = alpha ? &(static_pointer_cast<const T>( alpha )->readable()) : 0;
 
 		unsigned int n = width * height;
 		if( ry.size()!=n || (ra && ra->size()!=n) )
@@ -149,13 +149,13 @@ void LuminanceTexture::construct( unsigned int width, unsigned int height, IECor
 	c.width = width;
 	c.height = height;
 	c.mipMap = mipMap;
-	m_texture = IECore::despatchTypedData<Constructor, IECore::TypeTraits::IsNumericVectorTypedData>( constPointerCast<Data>( y ), c );
+	m_texture = IECore::despatchTypedData<Constructor, IECore::TypeTraits::IsNumericVectorTypedData>( const_pointer_cast<Data>( y ), c );
 }
 
 
 ImagePrimitivePtr LuminanceTexture::imagePrimitive() const
 {
-	glPushAttrib( GL_TEXTURE_BIT );
+	glPushAttrib( mask() );
 
 		bind();
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -78,16 +78,16 @@ IECoreRI::RendererImplementation::AttributeState::AttributeState( const Attribut
 ////////////////////////////////////////////////////////////////////////
 
 const unsigned int IECoreRI::RendererImplementation::g_shaderCacheSize = 10 * 1024 * 1024;
-tbb::queuing_rw_mutex IECoreRI::RendererImplementation::g_nLoopsMutex;
 std::vector<int> IECoreRI::RendererImplementation::g_nLoops;
 
-IECoreRI::RendererImplementation::RendererImplementation()
-	:	m_context( 0 )
+IECoreRI::RendererImplementation::RendererImplementation( IECoreRI::Renderer *parent )
+	:	m_parent( parent ), m_context( 0 )
 {
 	constructCommon();
 }
 
-IECoreRI::RendererImplementation::RendererImplementation( const std::string &name )
+IECoreRI::RendererImplementation::RendererImplementation( IECoreRI::Renderer *parent, const std::string &name )
+	:	m_parent( parent )
 {
 	constructCommon();
 	if( name!="" )
@@ -961,7 +961,7 @@ void IECoreRI::RendererImplementation::shader( const std::string &type, const st
 			{
 				if( it->second->typeId()==StringData::staticTypeId() )
 				{
-					state.primVarTypeHints.insert( std::pair<string, string>( it->first, staticPointerCast<const StringData>( it->second )->readable() ) );
+					state.primVarTypeHints.insert( std::pair<string, string>( it->first, static_pointer_cast<const StringData>( it->second )->readable() ) );
 				}
 			}
 		}
@@ -974,6 +974,10 @@ void IECoreRI::RendererImplementation::shader( const std::string &type, const st
 	else if( type=="displacement" || type=="ri:displacement" )
 	{
 		RiDisplacementV( (char *)name.c_str(), pl.n(), pl.tokens(), pl.values() );
+	}
+	else if( type=="light" || type=="ri:light" )
+	{
+		RiLightSourceV( (char *)name.c_str(), pl.n(), pl.tokens(), pl.values() );
 	}
 	else if( type=="atmosphere" || type=="ri:atmosphere" )
 	{
@@ -994,19 +998,10 @@ void IECoreRI::RendererImplementation::shader( const std::string &type, const st
 
 }
 
-void IECoreRI::RendererImplementation::light( const std::string &name, const std::string &handle, const IECore::CompoundDataMap &parameters )
+void IECoreRI::RendererImplementation::light( const std::string &name, const IECore::CompoundDataMap &parameters )
 {
 	ScopedContext scopedContext( m_context );
-	IECore::CompoundDataMap parametersCopy = parameters;
-	parametersCopy["__handleid"] = new StringData( handle );
-	ParameterList pl( parametersCopy );
-	RiLightSourceV( name.c_str(), pl.n(), pl.tokens(), pl.values() );
-}
-
-void IECoreRI::RendererImplementation::illuminate( const std::string &lightHandle, bool on )
-{
-	ScopedContext scopedContext( m_context );
-	RiIlluminate( (RtLightHandle)lightHandle.c_str(), on );
+	shader( "light", name, parameters );
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -1168,15 +1163,9 @@ void IECoreRI::RendererImplementation::mesh( IECore::ConstIntVectorDataPtr verts
 		msg( Msg::Warning, "IECoreRI::RendererImplementation::mesh", boost::format( "Unsupported interpolation type \"%s\" - rendering as polygons." ) % interpolation );
 	}
 
-	tbb::queuing_rw_mutex::scoped_lock lock( g_nLoopsMutex, false /* read only */ );
 	if( g_nLoops.size()<vertsPerFace->readable().size() )
 	{
-		lock.upgrade_to_writer();
-			if( g_nLoops.size()<vertsPerFace->readable().size() ) // checking again as i think g_nLoops may have been resized by another thread getting the write lock first
-			{
-				g_nLoops.resize( vertsPerFace->readable().size(), 1 );
-			}
-		lock.downgrade_to_reader();
+		g_nLoops.resize( vertsPerFace->readable().size(), 1 );
 	}
 
 	vector<int> &vertsPerFaceV = const_cast<vector<int> &>( vertsPerFace->readable() );
@@ -1275,26 +1264,22 @@ void IECoreRI::RendererImplementation::procedural( IECore::Renderer::ProceduralP
 	riBound[3] = bound.max.y;
 	riBound[4] = bound.min.z;
 	riBound[5] = bound.max.z;
-
-	proc->addRef(); // we'll remove the reference in procFree
-	RiProcedural( proc.get(), riBound, procSubdivide, procFree );
+	ProcData *data = new ProcData;
+	data->proc = proc;
+	data->renderer = m_parent;
+	RiProcedural( data, riBound, procSubdivide, procFree );
 }
 
 void IECoreRI::RendererImplementation::procSubdivide( void *data, float detail )
 {
-	IECore::Renderer::Procedural *procedural = reinterpret_cast<IECore::Renderer::Procedural *>( data );
-	// we used to try to use the same IECoreRI::Renderer that had the original procedural() call issued to it.
-	// this turns out to be incorrect as each procedural subdivide invocation is in a new RtContextHandle
-	// and the original renderer would be trying to switch to its original context. so we just create a temporary
-	// renderer which doesn't own a context and therefore use the context 3delight has arranged to call subdivide with.
-	IECoreRI::RendererPtr renderer = new IECoreRI::Renderer();
-	procedural->render( renderer );
+	ProcData *procData = (ProcData *)data;
+	procData->proc->render( procData->renderer );
 }
 
 void IECoreRI::RendererImplementation::procFree( void *data )
 {
-	IECore::Renderer::Procedural *procedural = reinterpret_cast<IECore::Renderer::Procedural *>( data );
-	procedural->removeRef();
+	ProcData *procData = (ProcData *)data;
+	delete procData;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

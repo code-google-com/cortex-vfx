@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -85,18 +85,18 @@ CompoundDataPtr Shader::parametersData()
 	return m_parameters;
 }
 
-void Shader::render( Renderer *renderer ) const
+void Shader::render( RendererPtr renderer ) const
 {
 	renderer->shader( m_type, m_name, parameters() );
 }
 
-bool Shader::isEqualTo( const Object *other ) const
+bool Shader::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !StateRenderable::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const Shader *s = static_cast<const Shader *>( other );
+	ConstShaderPtr s = static_pointer_cast<const Shader>( other );
 	if( m_name!=s->m_name )
 	{
 		return false;
@@ -116,10 +116,10 @@ void Shader::memoryUsage( Object::MemoryAccumulator &a ) const
 	a.accumulate( m_parameters );
 }
 
-void Shader::copyFrom( const Object *other, CopyContext *context )
+void Shader::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	StateRenderable::copyFrom( other, context );
-	const Shader *s = static_cast<const Shader *>( other );
+	ConstShaderPtr s = static_pointer_cast<const Shader>( other );
 	m_name = s->m_name;
 	m_type = s->m_type;
 	m_parameters = context->copy<CompoundData>( m_parameters );

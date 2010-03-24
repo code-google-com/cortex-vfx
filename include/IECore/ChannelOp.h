@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,24 +47,24 @@ class ChannelOp : public ImagePrimitiveOp
 {
 	public:
 
-		ChannelOp( const std::string &description );
+		ChannelOp( const std::string &name, const std::string &description );
 		virtual ~ChannelOp();
 
 		IE_CORE_DECLARERUNTIMETYPED( ChannelOp, ImagePrimitiveOp );
 
-		StringVectorParameter *channelNamesParameter();
-		const StringVectorParameter *channelNamesParameter() const;
+		StringVectorParameterPtr channelNamesParameter();
+		ConstStringVectorParameterPtr channelNamesParameter() const;
 
 	protected :
 
-		typedef std::vector<FloatVectorDataPtr> ChannelVector;
+		typedef std::vector<DataPtr> ChannelVector;
 
 		/// Should be implemented by derived classes to modify the data in the passes channels in place.
 		/// The base class will already have verified the following :
 		///
 		///		* the channels have an appropriate interpolation value - vertex, varying or facevarying.
-		/// 	* the channels contain the appropriate number of elements for the dataWindow.
-		///		* the channels are all of type FloatVectorData.
+		/// 		* the channels contain the appropriate number of elements for the dataWindow.
+		///		* the channels are all of type FloatVectorData, HalfVectorData or IntVectorData.
 		///		* the dataWindow is not empty.
 		/// \todo ChannelVector doesn't contain any indicator as to which channel is which, so why not just pass a single channel at a time? As
 		/// things are right now, every derived class is iterating over the channels vector - there's not much else they can do - so it would
@@ -75,7 +75,7 @@ class ChannelOp : public ImagePrimitiveOp
 	private :
 
 		/// Implemented to call modifyChannels().
-		virtual void modifyTypedPrimitive( ImagePrimitive *image, const CompoundObject *operands );
+		virtual void modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObjectPtr operands );
 
 		StringVectorParameterPtr m_channelNamesParameter;
 

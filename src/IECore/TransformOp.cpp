@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,7 +42,7 @@ using namespace IECore;
 IE_CORE_DEFINERUNTIMETYPED( TransformOp );
 
 TransformOp::TransformOp()
-	:	PrimitiveOp( "Applies a matrix transformation to primitive variables." )
+	:	PrimitiveOp( staticTypeName(), "Applies a matrix transformation to primitive variables." )
 {
 	m_multiplyOp = new MatrixMultiplyOp;
 	m_multiplyOp->copyParameter()->setTypedValue( false );
@@ -75,47 +75,47 @@ TransformOp::TransformOp()
 	parameters()->addParameter( m_normalPrimVarsParameter );
 }
 
-ObjectParameter * TransformOp::matrixParameter()
+ObjectParameterPtr TransformOp::matrixParameter()
 {
 	return m_multiplyOp->matrixParameter();
 }
 
-const ObjectParameter * TransformOp::matrixParameter() const
+ConstObjectParameterPtr TransformOp::matrixParameter() const
 {
 	return m_multiplyOp->matrixParameter();
 }
 
-StringVectorParameter * TransformOp::pointPrimVarsParameter()
+StringVectorParameterPtr TransformOp::pointPrimVarsParameter()
 {
 	return m_pointPrimVarsParameter;
 }
 
-const StringVectorParameter * TransformOp::pointPrimVarsParameter() const
+ConstStringVectorParameterPtr TransformOp::pointPrimVarsParameter() const
 {
 	return m_pointPrimVarsParameter;
 }
 
-StringVectorParameter * TransformOp::vectorPrimVarsParameter()
+StringVectorParameterPtr TransformOp::vectorPrimVarsParameter()
 {
 	return m_vectorPrimVarsParameter;
 }
 
-const StringVectorParameter * TransformOp::vectorPrimVarsParameter() const
+ConstStringVectorParameterPtr TransformOp::vectorPrimVarsParameter() const
 {
 	return m_vectorPrimVarsParameter;
 }
 
-StringVectorParameter * TransformOp::normalPrimVarsParameter()
+StringVectorParameterPtr TransformOp::normalPrimVarsParameter()
 {
 	return m_normalPrimVarsParameter;
 }
 
-const StringVectorParameter * TransformOp::normalPrimVarsParameter() const
+ConstStringVectorParameterPtr TransformOp::normalPrimVarsParameter() const
 {
 	return m_normalPrimVarsParameter;
 }
 
-void TransformOp::modifyPrimitive( Primitive * primitive, const CompoundObject * operands )
+void TransformOp::modifyPrimitive( PrimitivePtr primitive, ConstCompoundObjectPtr operands )
 {
 	m_multiplyOp->modeParameter()->setNumericValue( MatrixMultiplyOp::Point );
 	const std::vector<std::string> &p = m_pointPrimVarsParameter->getTypedValue();

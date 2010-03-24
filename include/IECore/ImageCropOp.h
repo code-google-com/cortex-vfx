@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -53,21 +53,21 @@ class ImageCropOp : public ImagePrimitiveOp
 		ImageCropOp();
 		virtual ~ImageCropOp();
 
-		Box2iParameter * cropBoxParameter();
-		const Box2iParameter * cropBoxParameter() const;
+		Box2iParameterPtr cropBoxParameter();
+		ConstBox2iParameterPtr cropBoxParameter() const;
 
-		BoolParameter * matchDataWindowParameter();
-		const BoolParameter * matchDataWindowParameter() const;
+		BoolParameterPtr matchDataWindowParameter();
+		ConstBoolParameterPtr matchDataWindowParameter() const;
 
-		BoolParameter * resetOriginParameter();
-		const BoolParameter * resetOriginParameter() const;
+		BoolParameterPtr resetOriginParameter();
+		ConstBoolParameterPtr resetOriginParameter() const;
 
-		BoolParameter * intersectParameter();
-		const BoolParameter * intersectParameter() const;
+		BoolParameterPtr intersectParameter();
+		ConstBoolParameterPtr intersectParameter() const;
 
 	protected :
 
-		virtual void modifyTypedPrimitive( ImagePrimitive * image, const CompoundObject * operands );
+		virtual void modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObjectPtr operands );
 
 	private :
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -88,7 +88,7 @@ MotionPrimitive::SnapshotMap &MotionPrimitive::snapshots()
 	return m_snapshots;
 }
 
-void MotionPrimitive::render( Renderer *renderer ) const
+void MotionPrimitive::render( RendererPtr renderer ) const
 {
 	if( !m_snapshots.size() )
 	{
@@ -147,10 +147,10 @@ Imath::Box3f MotionPrimitive::bound() const
 // Object interface
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-void MotionPrimitive::copyFrom( const Object *other, Object::CopyContext *context )
+void MotionPrimitive::copyFrom( IECore::ConstObjectPtr other, IECore::Object::CopyContext *context )
 {
 	VisibleRenderable::copyFrom( other, context );
-	const MotionPrimitive *tOther = static_cast<const MotionPrimitive *>( other );
+	const MotionPrimitive *tOther = static_cast<const MotionPrimitive *>( other.get() );
 	m_snapshots.clear();
 	for( SnapshotMap::const_iterator it=tOther->m_snapshots.begin(); it!=tOther->m_snapshots.end(); it++ )
 	{
@@ -197,13 +197,13 @@ void MotionPrimitive::load( IECore::Object::LoadContextPtr context )
 	container->chdir( ".." );
 }
 
-bool MotionPrimitive::isEqualTo( const Object *other ) const
+bool MotionPrimitive::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !VisibleRenderable::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const MotionPrimitive *tOther = static_cast<const MotionPrimitive *>( other );
+	const MotionPrimitive *tOther = static_cast<const MotionPrimitive *>( other.get() );
 	if( tOther->m_snapshots.size()!=m_snapshots.size() )
 	{
 		return false;

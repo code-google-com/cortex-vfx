@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -49,7 +49,7 @@ using namespace Imath;
 IE_CORE_DEFINERUNTIMETYPED( CubeColorTransformOp );
 
 CubeColorTransformOp::CubeColorTransformOp()
-	:	ColorTransformOp( "description" ), m_data( 0 )
+	:	ColorTransformOp( "name", "description" ), m_data( 0 )
 {
 	m_cubeParameter = new CubeColorLookupfParameter(
 		"cube",
@@ -65,17 +65,17 @@ CubeColorTransformOp::~CubeColorTransformOp()
 {
 }
 
-CubeColorLookupfParameter * CubeColorTransformOp::cubeParameter()
+CubeColorLookupfParameterPtr CubeColorTransformOp::cubeParameter()
 {
 	return m_cubeParameter;
 }
 
-const CubeColorLookupfParameter * CubeColorTransformOp::cubeParameter() const
+ConstCubeColorLookupfParameterPtr CubeColorTransformOp::cubeParameter() const
 {
 	return m_cubeParameter;
 }
 
-void CubeColorTransformOp::begin( const CompoundObject * operands )
+void CubeColorTransformOp::begin( ConstCompoundObjectPtr operands )
 {
 	assert( operands );
 

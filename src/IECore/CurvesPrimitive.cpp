@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -67,13 +67,13 @@ CurvesPrimitive::~CurvesPrimitive()
 {
 }
 
-bool CurvesPrimitive::isEqualTo( const Object *other ) const
+bool CurvesPrimitive::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !Primitive::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const CurvesPrimitive *tOther = static_cast<const CurvesPrimitive *>( other );
+	const CurvesPrimitive *tOther = static_cast<const CurvesPrimitive *>( other.get() );
 	if( m_basis!=tOther->m_basis )
 	{
 		return false;
@@ -90,10 +90,10 @@ bool CurvesPrimitive::isEqualTo( const Object *other ) const
 	return true;
 }
 
-void CurvesPrimitive::copyFrom( const Object *other, CopyContext *context )
+void CurvesPrimitive::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	Primitive::copyFrom( other, context );
-	const CurvesPrimitive *tOther = static_cast<const CurvesPrimitive *>( other );
+	const CurvesPrimitive *tOther = static_cast<const CurvesPrimitive *>( other.get() );
 	m_basis = tOther->m_basis;
 	m_linear = tOther->m_linear;
 	m_periodic = tOther->m_periodic;
@@ -148,9 +148,9 @@ size_t CurvesPrimitive::numCurves() const
 	return m_vertsPerCurve->readable().size();
 }
 
-const IntVectorData *CurvesPrimitive::verticesPerCurve() const
+ConstIntVectorDataPtr CurvesPrimitive::verticesPerCurve() const
 {
-	return m_vertsPerCurve.get();
+	return m_vertsPerCurve;
 }
 
 const CubicBasisf &CurvesPrimitive::basis() const
@@ -188,7 +188,7 @@ void CurvesPrimitive::setTopology( ConstIntVectorDataPtr verticesPerCurve, const
 	}
 }
 
-void CurvesPrimitive::render( Renderer *renderer ) const
+void CurvesPrimitive::render( RendererPtr renderer ) const
 {
 	renderer->curves( m_basis, m_periodic, m_vertsPerCurve, variables );
 }

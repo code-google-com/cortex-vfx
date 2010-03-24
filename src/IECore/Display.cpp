@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,10 +52,10 @@ Display::~Display()
 {
 }
 
-void Display::copyFrom( const Object *other, CopyContext *context )
+void Display::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	PreWorldRenderable::copyFrom( other, context );
-	const Display *tOther = static_cast<const Display *>( other );
+	const Display *tOther = static_cast<const Display *>( other.get() );
 	m_name = tOther->m_name;
 	m_type = tOther->m_type;
 	m_data = tOther->m_data;
@@ -83,14 +83,14 @@ void Display::load( LoadContextPtr context )
 	m_parameters = context->load<CompoundData>( container, "parameters" );
 }
 
-bool Display::isEqualTo( const Object *other ) const
+bool Display::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !PreWorldRenderable::isEqualTo( other ) )
 	{
 		return false;
 	}
 
-	const Display *tOther = static_cast<const Display *>( other );
+	const Display *tOther = static_cast<const Display *>( other.get() );
 
 	// check name
 	if( m_name!=tOther->m_name )
@@ -173,7 +173,7 @@ CompoundDataPtr Display::parametersData()
 	return m_parameters;
 }
 
-void Display::render( Renderer *renderer ) const
+void Display::render( RendererPtr renderer ) const
 {
 	renderer->display( m_name, m_type, m_data, m_parameters->readable() );
 }

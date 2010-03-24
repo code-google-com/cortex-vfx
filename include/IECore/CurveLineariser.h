@@ -51,12 +51,12 @@ class CurveLineariser : public CurvesPrimitiveOp
 
 		IE_CORE_DECLARERUNTIMETYPED( CurveLineariser, CurvesPrimitiveOp );
 
-		FloatParameter * verticesPerSegmentParameter();
-		const FloatParameter * verticesPerSegmentParameter() const;
+		FloatParameterPtr verticesPerSegmentParameter();
+		ConstFloatParameterPtr verticesPerSegmentParameter() const;
 
 	protected :
 
-		virtual void modifyTypedPrimitive( CurvesPrimitive * curves, const CompoundObject * operands );
+		virtual void modifyTypedPrimitive( CurvesPrimitivePtr curves, ConstCompoundObjectPtr operands );
 
 };
 

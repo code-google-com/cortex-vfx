@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,6 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include "IECoreMaya/Parameter.h"
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaObjectConverter.h"
 #include "IECoreMaya/ObjectMFnDataParameterHandler.h"
@@ -64,7 +65,7 @@ ParameterHandler::Description< ObjectMFnDataParameterHandler< IECore::DoubleVect
 ParameterHandler::Description< ObjectMFnDataParameterHandler< IECore::IntVectorParameter,    MFnData::kIntArray > >    intVectorRegistrar( IECore::IntVectorParameter::staticTypeId(), IECore::IntVectorData::staticTypeId() );
 
 template<typename T, MFnData::Type D>
-MStatus ObjectMFnDataParameterHandler<T, D>::doUpdate( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus ObjectMFnDataParameterHandler<T, D>::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
 {
 	if (!IECore::runTimeCast<const IECore::ObjectParameter>( parameter ) && !IECore::runTimeCast<const T>( parameter ))
 	{
@@ -83,7 +84,7 @@ MStatus ObjectMFnDataParameterHandler<T, D>::doUpdate( IECore::ConstParameterPtr
 }
 
 template<typename T, MFnData::Type D>
-MObject ObjectMFnDataParameterHandler<T, D>::doCreate( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MObject ObjectMFnDataParameterHandler<T, D>::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
 {
 	if (!IECore::runTimeCast<const IECore::ObjectParameter>( parameter ) && !IECore::runTimeCast<const T>( parameter ))
 	{
@@ -104,7 +105,7 @@ MObject ObjectMFnDataParameterHandler<T, D>::doCreate( IECore::ConstParameterPtr
 }
 
 template<typename T, MFnData::Type D>
-MStatus ObjectMFnDataParameterHandler<T, D>::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus ObjectMFnDataParameterHandler<T, D>::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	if (!IECore::runTimeCast<const IECore::ObjectParameter>( parameter ) && !IECore::runTimeCast<const T>( parameter ))
 	{
@@ -142,7 +143,7 @@ MStatus ObjectMFnDataParameterHandler<T, D>::doSetValue( IECore::ConstParameterP
 }
 
 template<typename T, MFnData::Type D>
-MStatus ObjectMFnDataParameterHandler<T, D>::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus ObjectMFnDataParameterHandler<T, D>::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	if (!IECore::runTimeCast<IECore::ObjectParameter>( parameter ) && !IECore::runTimeCast<T>( parameter ))
 	{

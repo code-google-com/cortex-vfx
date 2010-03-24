@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,6 +52,7 @@ IE_CORE_DEFINERUNTIMETYPED( HdrMergeOp );
 
 HdrMergeOp::HdrMergeOp()
 	:	Op(
+		staticTypeName(),
 		"Merges all the given input images into a single HDR image.",
 		new ObjectParameter(
 			"result",
@@ -109,56 +110,56 @@ HdrMergeOp::~HdrMergeOp()
 {
 }
 
-ObjectParameter * HdrMergeOp::inputGroupParameter()
+ObjectParameterPtr HdrMergeOp::inputGroupParameter()
 {
 	return m_inputGroupParameter;
 }
 
-const ObjectParameter * HdrMergeOp::inputGroupParameter() const
+ConstObjectParameterPtr HdrMergeOp::inputGroupParameter() const
 {
 	return m_inputGroupParameter;
 }
 
-FloatParameter * HdrMergeOp::exposureStepParameter()
+FloatParameterPtr HdrMergeOp::exposureStepParameter()
 {
 	return m_exposureStepParameter;
 }
 
-const FloatParameter * HdrMergeOp::exposureStepParameter() const
+ConstFloatParameterPtr HdrMergeOp::exposureStepParameter() const
 {
 	return m_exposureStepParameter;
 }
 
-FloatParameter * HdrMergeOp::exposureAdjustmentParameter()
+FloatParameterPtr HdrMergeOp::exposureAdjustmentParameter()
 {
 	return m_exposureAdjustmentParameter;
 }
 
-const FloatParameter * HdrMergeOp::exposureAdjustmentParameter() const
+ConstFloatParameterPtr HdrMergeOp::exposureAdjustmentParameter() const
 {
 	return m_exposureAdjustmentParameter;
 }
 
-Box2fParameter * HdrMergeOp::windowingParameter()
+Box2fParameterPtr HdrMergeOp::windowingParameter()
 {
 	return m_windowingParameter;
 }
 
-const Box2fParameter * HdrMergeOp::windowingParameter() const
+ConstBox2fParameterPtr HdrMergeOp::windowingParameter() const
 {
 	return m_windowingParameter;
 }
 
 template< typename T >
 inline void merge( bool firstImage, size_t &pixelCount,
-					const ImagePrimitive * img, ImagePrimitive * outImg,
+					ImagePrimitivePtr img, ImagePrimitivePtr outImg,
 					const Imath::Box2f &windowing, float intensityMultiplier,
-					FloatVectorData * outR, FloatVectorData * outG, FloatVectorData * outB, FloatVectorData * outA )
+					FloatVectorDataPtr outR, FloatVectorDataPtr outG, FloatVectorDataPtr outB, FloatVectorDataPtr outA )
 {
 
-	const TypedData< std::vector< T > > *inR = img->getChannel< T >( "R" );
-	const TypedData< std::vector< T > > *inG = img->getChannel< T >( "G" );
-	const TypedData< std::vector< T > > *inB = img->getChannel< T >( "B" );
+	boost::intrusive_ptr< TypedData< std::vector< T > > > inR = img->getChannel< T >( "R" );
+	boost::intrusive_ptr< TypedData< std::vector< T > > > inG = img->getChannel< T >( "G" );
+	boost::intrusive_ptr< TypedData< std::vector< T > > > inB = img->getChannel< T >( "B" );
 
 	if ( firstImage )
 	{
@@ -207,9 +208,9 @@ inline void merge( bool firstImage, size_t &pixelCount,
 	}
 }
 
-ObjectPtr HdrMergeOp::doOperation( const CompoundObject * operands )
+ObjectPtr HdrMergeOp::doOperation( ConstCompoundObjectPtr operands )
 {
-	Group *imageGroup = static_cast<Group *>( m_inputGroupParameter->getValue() );
+	GroupPtr imageGroup = static_pointer_cast< Group >( m_inputGroupParameter->getValue() );
 
 	// first of all, check if the group contains ImagePrimitive objects with float or half vector data types and "R","G","B" channels.
 	const Group::ChildContainer &images = imageGroup->children();
@@ -219,7 +220,7 @@ ObjectPtr HdrMergeOp::doOperation( const CompoundObject * operands )
 		{
 			throw Exception( "Input group should contain images only!" );
 		}
-		ImagePrimitivePtr img = staticPointerCast< ImagePrimitive >(*it);
+		ImagePrimitivePtr img = static_pointer_cast< ImagePrimitive >(*it);
 		if ( !((img->getChannel< float >( "R" ) &&
 				img->getChannel< float >( "G" ) &&
 				img->getChannel< float >( "B" )) ||
@@ -260,7 +261,7 @@ ObjectPtr HdrMergeOp::doOperation( const CompoundObject * operands )
 	bool firstImage = true;
 	for ( Group::ChildContainer::const_iterator it = images.begin(); it != images.end(); it++, firstImage = false )
 	{
-		const ImagePrimitive *img = staticPointerCast< ImagePrimitive >(*it);
+		ImagePrimitivePtr img = static_pointer_cast< ImagePrimitive >(*it);
 		float intensityMultiplier = pow( 2.0f, exposure );
 		if ( img->getChannel< float >( "R" ) )
 		{

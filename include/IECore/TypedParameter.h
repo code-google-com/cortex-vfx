@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -66,8 +66,15 @@ class TypedParameter : public Parameter
 
 		IECORE_RUNTIMETYPED_DECLARETEMPLATE( TypedParameter<T>, Parameter );
 
+		//! @name Object functions
+		////////////////////////////////////
+		//@{
+		typename TypedParameter<T>::Ptr copy() const;
+		virtual bool isEqualTo( ConstObjectPtr other ) const;
+		//@}
+
 		/// Implemented to return true only if value is of type TypedData<T>.
-		virtual bool valueValid( const Object *value, std::string *reason = 0 ) const;
+		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
 
 		/// Convenience function for getting the default value, which avoids all the hoop jumping
 		/// needed to extract the value from the Object returned by Parameter::defaultValue().
@@ -76,17 +83,28 @@ class TypedParameter : public Parameter
 		/// Convenience function for value getting, which avoids all the hoop jumping
 		/// needed to extract the value from the Object returned by Parameter::getValue().
 		/// Throws an Exception if the value is not valid.
-		/// \threading Multiple concurrent threads may read the value provided that
-		/// no other thread is modifying it.
+		/// \threading This is not threadsafe due to the use of intrusive_ptrs
+		/// internally to validate the value.
+		/// \todo Make this safe to call from multiple threads.
 		ValueType &getTypedValue();
 		const ValueType &getTypedValue() const;
 		/// Convenience function for value setting, constructs a TypedData<T> from value
 		/// and calls Parameter::setValue().
 		void setTypedValue( const T &value );
 
+	protected :
+
+		TypedParameter();
+
+		virtual void copyFrom( ConstObjectPtr other, CopyContext *context );
+		virtual void save( SaveContext *context ) const;
+		virtual void load( LoadContextPtr context );
+		virtual void memoryUsage( Object::MemoryAccumulator &accumulator ) const;
+
 	private :
 
 		static const TypeDescription<TypedParameter<T> > g_typeDescription;
+		friend class TypeDescription<TypedParameter<T> >;
 
 };
 

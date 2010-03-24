@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -57,30 +57,30 @@ class PointMeshOp : public Op
 		virtual ~PointMeshOp();
 
 		/// The Parameter for the input point cloud.
-		ObjectParameter * pointParameter();
-		const ObjectParameter * pointParameter() const;
+		ObjectParameterPtr pointParameter();
+		ConstObjectParameterPtr pointParameter() const;
 
 		/// The Parameter that specifies the radius of each point-centered sphere
-		DoubleVectorParameter * radiusParameter();
-		const DoubleVectorParameter * radiusParameter() const;
+		DoubleVectorParameterPtr radiusParameter();
+		ConstDoubleVectorParameterPtr radiusParameter() const;
 
 		/// The Parameter that specifies the strength fo each sphere
-		DoubleVectorParameter * strengthParameter();
-		const DoubleVectorParameter * strengthParameter() const;
+		DoubleVectorParameterPtr strengthParameter();
+		ConstDoubleVectorParameterPtr strengthParameter() const;
 
 		/// The Parameter that specifies the threshold at which to build the mesh
-		FloatParameter * thresholdParameter();
-		const FloatParameter * thresholdParameter() const;
+		FloatParameterPtr thresholdParameter();
+		ConstFloatParameterPtr thresholdParameter() const;
 
-		V3iParameter * resolutionParameter();
-		const V3iParameter * resolutionParameter() const;
+		V3iParameterPtr resolutionParameter();
+		ConstV3iParameterPtr resolutionParameter() const;
 
-		Box3fParameter * boundParameter();
-		const Box3fParameter * boundParameter() const;
+		Box3fParameterPtr boundParameter();
+		ConstBox3fParameterPtr boundParameter() const;
 
 	protected :
 
-		virtual ObjectPtr doOperation( const CompoundObject * operands );
+		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
 
 	private :
 

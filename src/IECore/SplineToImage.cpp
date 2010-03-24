@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,7 +47,7 @@ using namespace Imath;
 IE_CORE_DEFINERUNTIMETYPED( SplineToImage );
 
 SplineToImage::SplineToImage()
-	:	Op( "Creates ImagePrimitives from SplineData", new IECore::ObjectParameter( "result", "An image of the spline.", new IECore::NullObject(), ImagePrimitiveTypeId ) )
+	:	Op( staticTypeName(), "Creates ImagePrimitives from SplineData", new IECore::ObjectParameter( "result", "An image of the spline.", new IECore::NullObject(), ImagePrimitiveTypeId ) )
 {
 
 	static TypeId splineTypes[] = { SplineffDataTypeId, SplinefColor3fDataTypeId, InvalidTypeId };
@@ -73,22 +73,22 @@ SplineToImage::~SplineToImage()
 {
 }
 
-ObjectParameter * SplineToImage::splineParameter()
+ObjectParameterPtr SplineToImage::splineParameter()
 {
 	return m_splineParameter;
 }
 
-const ObjectParameter * SplineToImage::splineParameter() const
+ConstObjectParameterPtr SplineToImage::splineParameter() const
 {
 	return m_splineParameter;
 }
 
-V2iParameter * SplineToImage::resolutionParameter()
+V2iParameterPtr SplineToImage::resolutionParameter()
 {
 	return m_resolutionParameter;
 }
 
-const V2iParameter * SplineToImage::resolutionParameter() const
+ConstV2iParameterPtr SplineToImage::resolutionParameter() const
 {
 	return m_resolutionParameter;
 }
@@ -103,7 +103,7 @@ struct SplineToImage::CreateImage
 	}
 
 	template<typename T>
-	ReturnType operator()( T * data )
+	ReturnType operator()( typename T::Ptr data )
 	{
 		typedef typename T::ValueType SplineType;
 		typedef typename SplineType::YType YType;
@@ -157,10 +157,10 @@ struct SplineToImage::CreateImage
 	SplineToImage *m_parent;
 };
 
-ObjectPtr SplineToImage::doOperation( const CompoundObject * operands )
+ObjectPtr SplineToImage::doOperation( ConstCompoundObjectPtr operands )
 {
 
 	CreateImage f( this );
-	return despatchTypedData<CreateImage, TypeTraits::IsSplineTypedData>( static_cast<Data *>( m_splineParameter->getValue() ), f );
+	return despatchTypedData<CreateImage, TypeTraits::IsSplineTypedData>( boost::static_pointer_cast<Data>( m_splineParameter->getValue() ), f );
 
 }

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -72,14 +72,14 @@ TypedData<T>::~TypedData()
 template <class T>
 typename TypedData<T>::Ptr TypedData<T>::copy() const
 {
-	return staticPointerCast<TypedData<T> >( Data::copy() );
+	return boost::static_pointer_cast<TypedData<T> >( Data::copy() );
 }
 
 template <class T>
-void TypedData<T>::copyFrom( const Object *other, CopyContext *context )
+void TypedData<T>::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	Data::copyFrom( other, context );
-	const TypedData<T> *tOther = static_cast<const TypedData<T> *>( other );
+	const TypedData<T> *tOther = static_cast<const TypedData<T> *>( other.get() );
 	m_data = tOther->m_data;
 }
 
@@ -111,13 +111,13 @@ void TypedData<T>::load( LoadContextPtr context )
 }
 
 template <class T>
-bool TypedData<T>::isEqualTo( const Object *other ) const
+bool TypedData<T>::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !Data::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const TypedData<T> *tOther = static_cast<const TypedData<T> *>( other );
+	typename TypedData<T>::ConstPtr tOther = boost::static_pointer_cast<const TypedData<T> >( other );
 	if( m_data==tOther->m_data )
 	{
 		// comparing the pointers is quick and that's good

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -65,6 +65,13 @@ class NumericParameter : public Parameter
 
 		IECORE_RUNTIMETYPED_DECLARETEMPLATE( NumericParameter<T>, Parameter );
 
+		//! @name Object functions
+		////////////////////////////////////
+		//@{
+		typename NumericParameter<T>::Ptr copy() const;
+		virtual bool isEqualTo( ConstObjectPtr other ) const;
+		//@}
+
 		bool hasMinValue() const;
 		T minValue() const;
 
@@ -80,8 +87,9 @@ class NumericParameter : public Parameter
 		/// jumping needed to extract the value from the Object returned
 		/// by Parameter::getValue(). Throws an exception if the value is not
 		/// valid.
-		/// \threading Multiple concurrent threads may read the value provided that
-		/// no other thread is modifying it.
+		/// \threading This is not threadsafe due to the use of intrusive_ptrs
+		/// internally to validate the value.
+		/// \todo Make this safe to call from multiple threads.
 		T getNumericValue() const;
 		/// Convenience function for value setting - constructs a TypedData<T>
 		/// from value and calls Parameter::setValue()
@@ -89,7 +97,17 @@ class NumericParameter : public Parameter
 
 		/// Implemented to return true only if value is of type TypedData<T> and if
 		/// min <= value->readable() <= max.
-		virtual bool valueValid( const Object *value, std::string *reason = 0 ) const;
+		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
+
+	protected :
+
+		// constructor for use during load/copy
+		NumericParameter();
+
+		virtual void copyFrom( ConstObjectPtr other, CopyContext *context );
+		virtual void save( SaveContext *context ) const;
+		virtual void load( LoadContextPtr context );
+		virtual void memoryUsage( Object::MemoryAccumulator &accumulator ) const;
 
 	private :
 
@@ -97,7 +115,9 @@ class NumericParameter : public Parameter
 		T m_max;
 
 		static TypeDescription<NumericParameter<T> > g_typeDescription;
+		friend class TypeDescription<NumericParameter<T> >;
 
+		static const unsigned int g_ioVersion;
 };
 
 typedef NumericParameter<int> IntParameter;

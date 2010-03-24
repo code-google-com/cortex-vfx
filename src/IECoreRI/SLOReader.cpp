@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,8 +32,6 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "tbb/mutex.h"
-
 #include "IECoreRI/SLOReader.h"
 
 #include "IECore/Shader.h"
@@ -58,15 +56,14 @@ using namespace std;
 using namespace Imath;
 
 const Reader::ReaderDescription<SLOReader> SLOReader::m_readerDescription( "sdl" );
-static tbb::mutex g_mutex;
 
 SLOReader::SLOReader()
-	:	Reader( "Reads compiled renderman shaders.", new ObjectParameter( "result", "The loaded shader", new NullObject, Shader::staticTypeId() ) )
+	:	Reader( "SLOReader", "Reads compiled renderman shaders.", new ObjectParameter( "result", "The loaded shader", new NullObject, Shader::staticTypeId() ) )
 {
 }
 
 SLOReader::SLOReader( const std::string &fileName )
-	:	Reader( "Reads compiled renderman shaders.", new ObjectParameter( "result", "The loaded shader", new NullObject, Shader::staticTypeId() ) )
+	:	Reader( "SLOReader", "Reads compiled renderman shaders.", new ObjectParameter( "result", "The loaded shader", new NullObject, Shader::staticTypeId() ) )
 {
 	m_fileNameParameter->setTypedValue( fileName );
 }
@@ -77,8 +74,6 @@ SLOReader::~SLOReader()
 
 bool SLOReader::canRead( const std::string &fileName )
 {
-	tbb::mutex::scoped_lock lock( g_mutex );
-	
 	if( Slo_SetShader( (char *)fileName.c_str() ) )
 	{
 		return false;
@@ -87,10 +82,8 @@ bool SLOReader::canRead( const std::string &fileName )
 	return true;
 }
 
-ObjectPtr SLOReader::doOperation( const CompoundObject * operands )
+ObjectPtr SLOReader::doOperation( ConstCompoundObjectPtr operands )
 {
-	tbb::mutex::scoped_lock lock( g_mutex );
-	
 	if( Slo_SetShader( (char *)fileName().c_str() ) )
 	{
 		return 0;

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -161,15 +161,15 @@ void ColorTexture::castConstruct( unsigned int width, unsigned int height, IECor
 	IECore::ConstDataPtr g, IECore::ConstDataPtr b, IECore::ConstDataPtr a )
 {
 	templateConstruct( width, height,
-		staticPointerCast<const T>( r ),
-		staticPointerCast<const T>( g ),
-		staticPointerCast<const T>( b ),
-		staticPointerCast<const T>( a )	);
+		static_pointer_cast<const T>( r ),
+		static_pointer_cast<const T>( g ),
+		static_pointer_cast<const T>( b ),
+		static_pointer_cast<const T>( a )	);
 }
 
 template<typename T>
-void ColorTexture::templateConstruct( unsigned int width, unsigned int height, IECore::IntrusivePtr<const T> r,
-	IECore::IntrusivePtr<const T> g,  IECore::IntrusivePtr<const T> b, IECore::IntrusivePtr<const T> a )
+void ColorTexture::templateConstruct( unsigned int width, unsigned int height, boost::intrusive_ptr<const T> r,
+	boost::intrusive_ptr<const T> g,  boost::intrusive_ptr<const T> b, boost::intrusive_ptr<const T> a )
 {
 	typedef typename T::ValueType::value_type ElementType;
 
@@ -226,7 +226,7 @@ void ColorTexture::templateConstruct( unsigned int width, unsigned int height, I
 ImagePrimitivePtr ColorTexture::imagePrimitive() const
 {
 
-	glPushAttrib( GL_TEXTURE_BIT );
+	glPushAttrib( mask() );
 
 		bind();
 

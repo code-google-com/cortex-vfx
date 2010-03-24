@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -56,68 +56,68 @@ class BINParticleWriter : public ParticleWriter
 		BINParticleWriter( );
 		BINParticleWriter( ObjectPtr object, const std::string &fileName );
 
-		IntParameter * fluidTypeParameter();
-		const IntParameter * fluidTypeParameter() const;
+		IntParameterPtr fluidTypeParameter();
+		ConstIntParameterPtr fluidTypeParameter() const;
 
-		IntParameter * frameNumberParameter();
-		const IntParameter * frameNumberParameter() const;
+		IntParameterPtr frameNumberParameter();
+		ConstIntParameterPtr frameNumberParameter() const;
 
-		FloatParameter * radiusParameter();
-		const FloatParameter * radiusParameter() const;
+		FloatParameterPtr radiusParameter();
+		ConstFloatParameterPtr radiusParameter() const;
 
-		FloatParameter * scaleSceneParameter();
-		const FloatParameter * scaleSceneParameter() const;
+		FloatParameterPtr scaleSceneParameter();
+		ConstFloatParameterPtr scaleSceneParameter() const;
 
-		FloatParameter * elapsedSimulationTimeParameter();
-		const FloatParameter * elapsedSimulationTimeParameter() const;
+		FloatParameterPtr elapsedSimulationTimeParameter();
+		ConstFloatParameterPtr elapsedSimulationTimeParameter() const;
 
-		IntParameter * frameRateParameter();
-		const IntParameter * frameRateParameter() const;
+		IntParameterPtr frameRateParameter();
+		ConstIntParameterPtr frameRateParameter() const;
 
-		StringParameter * positionPrimVarParameter();
-		const StringParameter * positionPrimVarParameter() const;
+		StringParameterPtr positionPrimVarParameter();
+		ConstStringParameterPtr positionPrimVarParameter() const;
 
-		StringParameter * velocityPrimVarParameter();
-		const StringParameter * velocityPrimVarParameter() const;
+		StringParameterPtr velocityPrimVarParameter();
+		ConstStringParameterPtr velocityPrimVarParameter() const;
 
-		StringParameter * forcePrimVarParameter();
-		const StringParameter * forcePrimVarParameter() const;
+		StringParameterPtr forcePrimVarParameter();
+		ConstStringParameterPtr forcePrimVarParameter() const;
 
-		StringParameter * vortisityPrimVarParameter();
-		const StringParameter * vortisityPrimVarParameter() const;
+		StringParameterPtr vortisityPrimVarParameter();
+		ConstStringParameterPtr vortisityPrimVarParameter() const;
 
-		StringParameter * normalPrimVarParameter();
-		const StringParameter * normalPrimVarParameter() const;
+		StringParameterPtr normalPrimVarParameter();
+		ConstStringParameterPtr normalPrimVarParameter() const;
 
-		StringParameter * numNeighboursPrimVarParameter();
-		const StringParameter * numNeighboursPrimVarParameter() const;
+		StringParameterPtr numNeighboursPrimVarParameter();
+		ConstStringParameterPtr numNeighboursPrimVarParameter() const;
 
-		StringParameter * uvwPrimVarParameter();
-		const StringParameter * uvwPrimVarParameter() const;
+		StringParameterPtr uvwPrimVarParameter();
+		ConstStringParameterPtr uvwPrimVarParameter() const;
 
-		StringParameter * agePrimVarParameter();
-		const StringParameter * agePrimVarParameter() const;
+		StringParameterPtr agePrimVarParameter();
+		ConstStringParameterPtr agePrimVarParameter() const;
 
-		StringParameter * isolationTimePrimVarParameter();
-		const StringParameter * isolationTimePrimVarParameter() const;
+		StringParameterPtr isolationTimePrimVarParameter();
+		ConstStringParameterPtr isolationTimePrimVarParameter() const;
 
-		StringParameter * viscosityPrimVarParameter();
-		const StringParameter * viscosityPrimVarParameter() const;
+		StringParameterPtr viscosityPrimVarParameter();
+		ConstStringParameterPtr viscosityPrimVarParameter() const;
 
-		StringParameter * densityPrimVarParameter();
-		const StringParameter * densityPrimVarParameter() const;
+		StringParameterPtr densityPrimVarParameter();
+		ConstStringParameterPtr densityPrimVarParameter() const;
 
-		StringParameter * pressurePrimVarParameter();
-		const StringParameter * pressurePrimVarParameter() const;
+		StringParameterPtr pressurePrimVarParameter();
+		ConstStringParameterPtr pressurePrimVarParameter() const;
 
-		StringParameter * massPrimVarParameter();
-		const StringParameter * massPrimVarParameter() const;
+		StringParameterPtr massPrimVarParameter();
+		ConstStringParameterPtr massPrimVarParameter() const;
 
-		StringParameter * temperaturePrimVarParameter();
-		const StringParameter * temperaturePrimVarParameter() const;
+		StringParameterPtr temperaturePrimVarParameter();
+		ConstStringParameterPtr temperaturePrimVarParameter() const;
 
-		StringParameter * particleIdPrimVarParameter();
-		const StringParameter * particleIdPrimVarParameter() const;
+		StringParameterPtr particleIdPrimVarParameter();
+		ConstStringParameterPtr particleIdPrimVarParameter() const;
 
 	protected :
 
@@ -148,10 +148,10 @@ class BINParticleWriter : public ParticleWriter
 		StringParameterPtr m_temperaturePrimVarParameter;
 		StringParameterPtr m_particleIdPrimVarParameter;
 
-		void getMaxMinAvg( const FloatVectorData * data, float &mx, float &mn, float &avg ) const;
+		void getMaxMinAvg( ConstFloatVectorDataPtr data, float &mx, float &mn, float &avg ) const;
 
 		template<typename T>
-		typename T::ConstPtr getPrimVar( const StringParameter * parameter );
+		typename T::ConstPtr getPrimVar( ConstStringParameterPtr parameter );
 
 		template<typename T>
 		void writeParticlePrimVar( std::ofstream &f, typename T::ConstPtr data, uint32_t i ) const;
@@ -160,7 +160,7 @@ class BINParticleWriter : public ParticleWriter
 
 		void constructParameters();
 
-		virtual void doWrite( const CompoundObject *operands );
+		virtual void doWrite();
 
 		static const WriterDescription<BINParticleWriter> m_writerDescription;
 

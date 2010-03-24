@@ -59,19 +59,19 @@ class CurveExtrudeOp : public Op
 		CurveExtrudeOp();
 		virtual ~CurveExtrudeOp();
 
-		CurvesPrimitiveParameter *curvesParameter();
-		const CurvesPrimitiveParameter *curvesParameter() const;
+		CurvesPrimitiveParameterPtr curvesParameter();
+		ConstCurvesPrimitiveParameterPtr curvesParameter() const;
 
-		V2iParameter *resolutionParameter();
-		const V2iParameter *resolutionParameter() const;
+		V2iParameterPtr resolutionParameter();
+		ConstV2iParameterPtr resolutionParameter() const;
 
 	protected :
 
-		virtual ObjectPtr doOperation( const CompoundObject *operands );
+		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
 
 		void buildReferenceFrames( const std::vector< Imath::V3f > &points, std::vector< Imath::V3f > &tangents, std::vector< Imath::M44f > &frames ) const;
 
-		PatchMeshPrimitivePtr buildPatchMesh( const CurvesPrimitive * curves, unsigned curveIndex, unsigned vertexOffset, unsigned varyingOffset ) const;
+		PatchMeshPrimitivePtr buildPatchMesh( ConstCurvesPrimitivePtr curves, unsigned curveIndex, unsigned vertexOffset, unsigned varyingOffset ) const;
 
 	private :
 

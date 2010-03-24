@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,7 +48,12 @@ using namespace boost;
 using namespace std;
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPED( FileNameParameter );
+IE_CORE_DEFINEOBJECTTYPEDESCRIPTION( FileNameParameter );
+const unsigned int FileNameParameter::g_ioVersion = 1;
+
+FileNameParameter::FileNameParameter()
+{
+}
 
 FileNameParameter::FileNameParameter( const std::string &name, const std::string &description,
 			const std::string &extensions, const std::string &defaultValue, bool allowEmptyString, PathParameter::CheckType check,
@@ -66,14 +71,14 @@ const std::vector<std::string> &FileNameParameter::extensions() const
 	return m_extensions;
 }
 
-bool FileNameParameter::valueValid( const Object *value, std::string *reason ) const
+bool FileNameParameter::valueValid( ConstObjectPtr value, std::string *reason ) const
 {
 	if (!PathParameter::valueValid( value, reason ) )
 	{
 		return false;
 	}
 
-	const StringData *s = static_cast<const StringData *>( value );
+	ConstStringDataPtr s = static_pointer_cast<const StringData>( value );
 
 	// empty check
 	if( s->readable()=="" )
@@ -120,4 +125,59 @@ bool FileNameParameter::valueValid( const Object *value, std::string *reason ) c
 		return false;
 	}
 	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Object implementation
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void FileNameParameter::copyFrom( ConstObjectPtr other, CopyContext *context )
+{
+	PathParameter::copyFrom( other, context );
+	const FileNameParameter *tOther = static_cast<const FileNameParameter *>( other.get() );
+	m_extensions = tOther->m_extensions;
+}
+
+void FileNameParameter::save( SaveContext *context ) const
+{
+	PathParameter::save( context );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), g_ioVersion );
+
+	std::string extensions = join( m_extensions.begin(), m_extensions.end(), " " );
+	
+	container->write( "extensions", extensions );
+}
+
+void FileNameParameter::load( LoadContextPtr context )
+{
+	PathParameter::load( context );
+	unsigned int v = g_ioVersion;
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
+
+	m_extensions.clear();
+	std::string extensions;
+	container->read( "extensions", extensions );
+	if( extensions!="" )
+	{
+		split( m_extensions, extensions, is_any_of( " " ) );
+	}
+}
+
+bool FileNameParameter::isEqualTo( ConstObjectPtr other ) const
+{
+	if( !PathParameter::isEqualTo( other ) )
+	{
+		return false;
+	}
+	const FileNameParameter *tOther = static_cast<const FileNameParameter *>( other.get() );
+	return m_extensions == tOther->m_extensions;
+}
+
+void FileNameParameter::memoryUsage( Object::MemoryAccumulator &a ) const
+{
+	PathParameter::memoryUsage( a );
+	for( std::vector<std::string>::const_iterator it=m_extensions.begin(); it!=m_extensions.end(); it++ )
+	{
+		a.accumulate( it->capacity() );
+	}
 }

@@ -363,7 +363,7 @@ PrimitiveEvaluator::ResultPtr CurvesPrimitiveEvaluator::createResult() const
 
 void CurvesPrimitiveEvaluator::validateResult( const PrimitiveEvaluator::ResultPtr &result ) const
 {
-	if( ! dynamicPointerCast<CurvesPrimitiveEvaluator::Result>( result ) )
+	if( ! boost::dynamic_pointer_cast<CurvesPrimitiveEvaluator::Result>( result ) )
 	{
 		throw InvalidArgumentException( "CurvesPrimitiveEvaluator: Invalid result type" );
 	}
@@ -549,14 +549,7 @@ void CurvesPrimitiveEvaluator::buildTree()
 	{
 		return;
 	}
-	
-	TreeMutex::scoped_lock lock( m_treeMutex );
-	if( m_haveTree )
-	{
-		// another thread may have built the tree while we waited for the mutex
-		return;
-	}
-	
+		
 	bool linear = m_curvesPrimitive->basis() == CubicBasisf::linear();
 	const std::vector<V3f> &p = static_cast<const V3fVectorData *>( m_p.data.get() )->readable();
 	PrimitiveEvaluator::ResultPtr result = createResult();

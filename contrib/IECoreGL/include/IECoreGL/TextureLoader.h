@@ -71,8 +71,6 @@ class TextureLoader : public IECore::RefCounted
 
 	private :
 
-		void freeUnusedTextures();
-
 		typedef std::map<std::string, TexturePtr> TexturesMap;
 		TexturesMap m_loadedTextures;
 

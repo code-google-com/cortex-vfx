@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,7 +46,7 @@ using namespace std;
 IE_CORE_DEFINERUNTIMETYPED( MeshMergeOp );
 
 MeshMergeOp::MeshMergeOp()
-	:	MeshPrimitiveOp( "Merges one mesh with another." )
+	:	MeshPrimitiveOp( staticTypeName(), "Merges one mesh with another." )
 {
 	m_meshParameter = new MeshPrimitiveParameter(
 		"mesh",
@@ -61,12 +61,12 @@ MeshMergeOp::~MeshMergeOp()
 {
 }
 
-MeshPrimitiveParameter * MeshMergeOp::meshParameter()
+MeshPrimitiveParameterPtr MeshMergeOp::meshParameter()
 {
 	return m_meshParameter;
 }
 
-const MeshPrimitiveParameter * MeshMergeOp::meshParameter() const
+ConstMeshPrimitiveParameterPtr MeshMergeOp::meshParameter() const
 {
 	return m_meshParameter;
 }
@@ -75,19 +75,19 @@ struct MeshMergeOp::AppendPrimVars
 {
 	typedef void ReturnType;
 
-	AppendPrimVars( const MeshPrimitive * mesh2, const std::string &name )
+	AppendPrimVars( ConstMeshPrimitivePtr mesh2, const std::string &name )
 		:	m_mesh2( mesh2 ), m_name( name )
 	{
 	}
 
 	template<typename T>
-	ReturnType operator()( T * data )
+	ReturnType operator()( typename T::Ptr data )
 	{
 
 		PrimitiveVariableMap::const_iterator it = m_mesh2->variables.find( m_name );
 		if( it!=m_mesh2->variables.end() )
 		{
-			const T *data2 = runTimeCast<const T>( it->second.data );
+			typename T::ConstPtr data2 = runTimeCast<const T>( it->second.data );
 			if( data2 )
 			{
 				data->writable().insert( data->writable().end(), data2->readable().begin(), data2->readable().end() );
@@ -97,14 +97,14 @@ struct MeshMergeOp::AppendPrimVars
 
 	private :
 
-		const MeshPrimitive * m_mesh2;
+		ConstMeshPrimitivePtr m_mesh2;
 		std::string m_name;
 
 };
 
-void MeshMergeOp::modifyTypedPrimitive( MeshPrimitive * mesh, const CompoundObject * operands )
+void MeshMergeOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands )
 {
-	const MeshPrimitive *mesh2 = static_cast<const MeshPrimitive *>( m_meshParameter->getValue() );
+	ConstMeshPrimitivePtr mesh2 = boost::static_pointer_cast<const MeshPrimitive>( m_meshParameter->getValue() );
 
 	const vector<int> &verticesPerFace1 = mesh->verticesPerFace()->readable();
 	const vector<int> &vertexIds1 = mesh->vertexIds()->readable();

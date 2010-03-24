@@ -58,12 +58,12 @@ class CubeColorTransformOp : public ColorTransformOp
 		CubeColorTransformOp();
 		virtual ~CubeColorTransformOp();
 
-		CubeColorLookupfParameter * cubeParameter();
-		const CubeColorLookupfParameter * cubeParameter() const;
+		CubeColorLookupfParameterPtr cubeParameter();
+		ConstCubeColorLookupfParameterPtr cubeParameter() const;
 
 	protected :
 
-		virtual void begin( const CompoundObject * operands );
+		virtual void begin( ConstCompoundObjectPtr operands );
 
 		virtual void transform( Imath::Color3f &color ) const ;
 

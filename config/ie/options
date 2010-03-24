@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -155,19 +155,10 @@ if compilerVersionInt < 350 :
 	# versions.
 	##########################################################################################################
 	LINKFLAGS += [ "-Wl,--noinhibit-exec" ]
-
-# determine the python version and use it to choose the boost version
-pythonVersion = getOption( "PYTHON_VERSION", "2.6" )
-if pythonVersion == "2.6" :
-	boostVersion = "1.42.0"
-	boostVersionSuffix = "-mt-1_42"
-else :
-	boostVersion = "1.38.0"
-	boostVersionSuffix = "-mt-1_38"
+	
 
 # set the include paths
-TBB_INCLUDE_PATH = "/software/tools/include/" + platform + "/tbb/2.2"
-BOOST_INCLUDE_PATH = os.path.join( "/software/tools/include", IEEnv.platform(), "boost", boostVersion )
+BOOST_INCLUDE_PATH = "/software/tools/include/boost/1.38.0"
 OPENEXR_INCLUDE_PATH = "/software/tools/include/OpenEXR/" + openEXRVersion
 TIFF_INCLUDE_PATH = "/software/tools/include/tiff/3.8.2"
 JPEG_INCLUDE_PATH = "/software/tools/include/jpeg/6b"
@@ -178,9 +169,9 @@ CPPPATH = "/software/tools/include/freetype/2.3.5"
 # figure out the boost lib suffix
 compilerVersionSplit = compilerVersion.split( "." )
 if IEEnv.platformOS().startswith( "osx" ) :
-	BOOST_LIB_SUFFIX = "-xgcc" + compilerVersionSplit[0] + compilerVersionSplit[1] + boostVersionSuffix
+	BOOST_LIB_SUFFIX = "-xgcc" + compilerVersionSplit[0] + compilerVersionSplit[1] + "-mt-1_38"
 else:
-	BOOST_LIB_SUFFIX = "-" + compiler + compilerVersionSplit[0] + compilerVersionSplit[1] + boostVersionSuffix
+	BOOST_LIB_SUFFIX = "-" + compiler + compilerVersionSplit[0] + compilerVersionSplit[1] + "-mt-1_38"
 	
 	
 OPENEXR_LIB_SUFFIX = "-" + openEXRVersion
@@ -193,6 +184,7 @@ if targetApp :
 	LIBPATH = targetAppReg["location"] + ":" + LIBPATH
 
 # ignore python-config stuff and specify it all explicitly ourselves
+pythonVersion = getOption( "PYTHON_VERSION", "2.5" )
 pythonReg = IEEnv.registry['apps']['python'][pythonVersion][IEEnv.platform()]
 
 pythonRoot = os.path.join( pythonReg["location"], compiler, compilerVersion )
@@ -232,7 +224,6 @@ if targetApp=="maya" :
 	mayaMajorVersion = mayaReg["majorVersion"]
 	MAYA_ROOT = mayaReg["location"]
 	MAYA_LICENSE_FILE=mayaReg["wrapperEnvVars"]["LM_LICENSE_FILE"]
-	MAYA_ADLM_ENV_FILE=mayaReg["wrapperEnvVars"].get( "AUTODESK_ADLM_THINCLIENT_ENV", "" )
 	INSTALL_MAYALIB_NAME = "$INSTALL_PREFIX/tools/" + targetApp + "/" + targetAppVersion + "/lib/" + platform + "/$IECORE_NAME-$IECORE_MAJORMINORPATCH_VERSION"
 	INSTALL_MEL_DIR = "$INSTALL_PREFIX/tools/maya/" + mayaMajorVersion + "/mel/cortexBase/$IECORE_MAJORMINORPATCH_VERSION/$IECORE_NAME"
 	INSTALL_MAYAPLUGIN_NAME = "$INSTALL_PREFIX/tools/maya/" + mayaMajorVersion + "/plugins/" + platform + "/cortexBase/$IECORE_MAJORMINORPATCH_VERSION/$IECORE_NAME"
@@ -249,13 +240,8 @@ if IEEnv.platform() != "osx104.i686" and IEEnv.platform() != "osx105.i686" and t
 		nukeReg = IEEnv.registry["apps"]["nuke"][nukeVersion][platform]
 		if compiler==nukeReg["compiler"] and compilerVersion==nukeReg["compilerVersion"] :
 			NUKE_ROOT = nukeReg["location"]
-			NUKE_LICENSE_FILE = nukeReg["wrapperEnvVars"]["LM_LICENSE_FILE"]
 			INSTALL_NUKELIB_NAME = "$INSTALL_PREFIX/tools/nuke/" + nukeVersion + "/lib/" + platform + "/$IECORE_NAME-$IECORE_MAJORMINORPATCH_VERSION"
 			INSTALL_NUKEPYTHON_DIR = "$INSTALL_PREFIX/tools/nuke/" + nukeVersion + "/python/" + platform + "/cortexBase/$IECORE_MAJORMINORPATCH_VERSION"
-			boostVersion = "1.38.0"
-			boostVersionSuffix = "-mt-1_38"
-			BOOST_INCLUDE_PATH = "/software/tools/include/" + platform + "/boost/" + boostVersion
-			BOOST_LIB_SUFFIX = "-" + compiler + compilerVersionSplit[0] + compilerVersionSplit[1] + boostVersionSuffix
 	except :
 		pass
 
@@ -266,8 +252,9 @@ if targetApp=="houdini" :
 
 	houdiniReg = IEEnv.registry["apps"]["houdini"][houdiniVersion][platform]
 	boostVersion = houdiniReg["boostVersion"]
+	boost_Version = boostVersion.replace( ".", "_" )
 	BOOST_INCLUDE_PATH = "/software/tools/include/boost/" + boostVersion
-	BOOST_LIB_SUFFIX = "-" + compiler + compilerVersionSplit[0] + compilerVersionSplit[1] + "-mt-" + boostVersion.replace( ".", "_" )
+	BOOST_LIB_SUFFIX = "-" + compiler + compilerVersionSplit[0] + compilerVersionSplit[1] + "-mt-" + boost_Version
 	
 	## \todo: debug boost 1.33.1 backward compatibility issues within IECoreGL
 	WITH_GL=0
@@ -290,15 +277,13 @@ ENV_VARS_TO_IMPORT="PATH COMPILER COMPILER_VERSION PYTHONPATH IEENV_ROOT IEENV_W
 
 # make sure the tests can run
 TEST_LIBPATH = ":".join( [ pythonReg["location"] + "/" + compiler + "/" + compilerVersion + "/lib", compilerReg["location"] + "/lib" ] )
-TEST_LIBRARY_PATH_ENV_VAR = "IEENV_LIBRARY_PREFIX_PATH"
 
 # get the installation locations right
 INSTALL_PREFIX = getOption( "INSTALL_PREFIX", os.path.expanduser( "~" ) )
 
 if targetApp :
-	INSTALL_HEADER_DIR = "$INSTALL_PREFIX/tools/" + targetApp + "/" + targetAppVersion + "/include/" + platform + "/cortex/$IECORE_MAJORMINORPATCH_VERSION"
+	INSTALL_HEADER_DIR = "$INSTALL_PREFIX/tools/" + targetApp + "/" + targetAppVersion + "/include/cortex/$IECORE_MAJORMINORPATCH_VERSION"
 	INSTALL_LIB_NAME = "$INSTALL_PREFIX/tools/" + targetApp + "/" + targetAppVersion + "/lib/" + platform + "/$IECORE_NAME-$IECORE_MAJORMINORPATCH_VERSION"
-	INSTALL_PYTHONLIB_NAME = "$INSTALL_PREFIX/tools/" + targetApp + "/" + targetAppVersion + "/lib/" + platform + "/$IECORE_NAME-$IECORE_MAJORMINORPATCH_VERSION-python$PYTHON_VERSION"
 	INSTALL_PYTHON_DIR = "$INSTALL_PREFIX/tools/" + targetApp + "/" + targetAppVersion + "/python/" + platform + "/cortexBase/$IECORE_MAJORMINORPATCH_VERSION"
 	# we don't want to build the renderman procedurals when we build houdini, as otherwise they end
 	# up causing linking conflicts at rendertime. this is because the procedural would be linking to the
@@ -307,9 +292,8 @@ if targetApp :
 	# install the procedurals into /tmp where they can't do any harm.
 	INSTALL_RMANPROCEDURAL_NAME = "/tmp/unwantedRManProcedurals/$IECORE_NAME-$IECORE_MAJORMINORPATCH_VERSION"
 else :
-	INSTALL_HEADER_DIR = "$INSTALL_PREFIX/tools/include/" + platform + "/cortex/$IECORE_MAJORMINORPATCH_VERSION"
+	INSTALL_HEADER_DIR = "$INSTALL_PREFIX/tools/include/cortex/$IECORE_MAJORMINORPATCH_VERSION"
 	INSTALL_LIB_NAME = "$INSTALL_PREFIX/tools/lib/" + platform + "/" + compiler + "/" + compilerVersion + "/$IECORE_NAME-$IECORE_MAJORMINORPATCH_VERSION"
-	INSTALL_PYTHONLIB_NAME = "$INSTALL_PREFIX/tools/lib/" + platform + "/" + compiler + "/" + compilerVersion + "/$IECORE_NAME-$IECORE_MAJORMINORPATCH_VERSION-python$PYTHON_VERSION"
 	INSTALL_PYTHON_DIR = "$INSTALL_PREFIX/tools/python/" + pythonVersion + "/" + platform + "/" + compiler + "/" + compilerVersion + "/cortexBase/$IECORE_MAJORMINORPATCH_VERSION"
 	INSTALL_RMANPROCEDURAL_NAME = "$INSTALL_PREFIX/tools/3delight/" + dlVersion + "/procedurals/" + platform + "/cortex/$IECORE_MAJOR_VERSION/$IECORE_NAME-$IECORE_MAJORMINORPATCH_VERSION"
 

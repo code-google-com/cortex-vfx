@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -118,13 +118,13 @@ PatchMeshPrimitive::~PatchMeshPrimitive()
 {
 }
 
-bool PatchMeshPrimitive::isEqualTo( const Object *other ) const
+bool PatchMeshPrimitive::isEqualTo( ConstObjectPtr other ) const
 {
 	if ( !Primitive::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const PatchMeshPrimitive *tOther = static_cast<const PatchMeshPrimitive *>( other );
+	const PatchMeshPrimitive *tOther = static_cast<const PatchMeshPrimitive *>( other.get() );
 	if ( m_uPoints!=tOther->m_uPoints || m_vPoints!=tOther->m_vPoints )
 	{
 		return false;
@@ -149,10 +149,10 @@ bool PatchMeshPrimitive::isEqualTo( const Object *other ) const
 	return true;
 }
 
-void PatchMeshPrimitive::copyFrom( const Object *other, CopyContext *context )
+void PatchMeshPrimitive::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	Primitive::copyFrom( other, context );
-	const PatchMeshPrimitive *tOther = static_cast<const PatchMeshPrimitive *>( other );
+	const PatchMeshPrimitive *tOther = static_cast<const PatchMeshPrimitive *>( other.get() );
 	m_uPoints = tOther->m_uPoints;
 	m_vPoints = tOther->m_vPoints;
 	m_uBasis = tOther->m_uBasis;
@@ -295,7 +295,7 @@ bool PatchMeshPrimitive::vPeriodic() const
 	return m_vPeriodic;
 }
 
-void PatchMeshPrimitive::render( Renderer *renderer ) const
+void PatchMeshPrimitive::render( RendererPtr renderer ) const
 {
 	renderer->patchMesh(
 		m_uBasis,

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -54,26 +54,26 @@ class ModifyOp : public Op
 
 		IE_CORE_DECLARERUNTIMETYPED( ModifyOp, Op );
 
-		ModifyOp( const std::string &description, ParameterPtr resultParameter, ParameterPtr inputParameter );
+		ModifyOp( const std::string &name, const std::string &description, ParameterPtr resultParameter, ParameterPtr inputParameter );
 		virtual ~ModifyOp();
 
-		Parameter *inputParameter();
-		const Parameter *inputParameter() const;
+		ParameterPtr inputParameter();
+		ConstParameterPtr inputParameter() const;
 
-		BoolParameter *copyParameter();
-		const BoolParameter *copyParameter() const;
+		BoolParameterPtr copyParameter();
+		BoolParameterPtr copyParameter() const;
 
-		BoolParameter *enableParameter();
-		const BoolParameter *enableParameter() const;
+		BoolParameterPtr enableParameter();
+		BoolParameterPtr enableParameter() const;
 
 	protected :
 
 		/// Implemented to call modify() - implement modify rather than this.
-		virtual ObjectPtr doOperation( const CompoundObject *operands );
+		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
 
 		/// Should be implemented by all subclasses to modify object.
 		/// This won't be called if the Op is not enabled.
-		virtual void modify( Object *object, const CompoundObject *operands ) = 0;
+		virtual void modify( ObjectPtr object, ConstCompoundObjectPtr operands ) = 0;
 
 	private :
 

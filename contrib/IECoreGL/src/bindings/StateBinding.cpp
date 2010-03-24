@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,7 @@
 #include "IECoreGL/bindings/StateBinding.h"
 
 #include "IECore/MessageHandler.h"
-#include "IECorePython/RunTimeTypedBinding.h"
+#include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
 
@@ -48,13 +48,12 @@ namespace IECoreGL
 
 static StatePtr defaultState()
 {
-	return IECore::constPointerCast< State >( State::defaultState() );
+	return boost::const_pointer_cast< State >( State::defaultState() );
 }
 
 void bindState()
 {
-	// \todo: add custom attribute get/add/remove/list? access functions
-	IECorePython::RunTimeTypedClass<State>()
+	IECore::RunTimeTypedClass<State>()
 		.def( init<bool>() )
 		.def( "add", (void (State::*)( StatePtr ) )&State::add )
 		.def( "add", (void (State::*)( StateComponentPtr ) )&State::add )

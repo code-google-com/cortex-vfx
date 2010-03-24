@@ -32,6 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include "IECoreMaya/Parameter.h"
 #include "IECoreMaya/NumericTraits.h"
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaObjectConverter.h"
@@ -54,7 +55,7 @@ static ParameterHandler::Description< BoxParameterHandler<V2d> > box2dRegistrar(
 static ParameterHandler::Description< BoxParameterHandler<V3d> > box3dRegistrar( IECore::Box3dParameter::staticTypeId() );
 
 template<typename T>
-MStatus BoxParameterHandler<T>::doUpdate( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus BoxParameterHandler<T>::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
 {
 	typename IECore::TypedParameter<Box<T> >::ConstPtr p = IECore::runTimeCast<const IECore::TypedParameter<Box<T> > >( parameter );
 	if( !p )
@@ -134,7 +135,7 @@ MStatus BoxParameterHandler<T>::doUpdate( IECore::ConstParameterPtr parameter, M
 }
 
 template<typename T>
-MObject BoxParameterHandler<T>::doCreate( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MObject BoxParameterHandler<T>::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
 {
 	typename IECore::TypedParameter<Box<T> >::ConstPtr p = IECore::runTimeCast<const IECore::TypedParameter<Box<T > > >( parameter );
 	if( !p )
@@ -174,7 +175,7 @@ MObject BoxParameterHandler<T>::doCreate( IECore::ConstParameterPtr parameter, c
 }
 
 template<typename T>
-MStatus BoxParameterHandler<T>::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus BoxParameterHandler<T>::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	typename IECore::TypedParameter<Box<T> >::ConstPtr p = IECore::runTimeCast<const IECore::TypedParameter<Box<T> > >( parameter );
 	if( !p )
@@ -214,7 +215,7 @@ MStatus BoxParameterHandler<T>::doSetValue( IECore::ConstParameterPtr parameter,
 }
 
 template<typename T>
-MStatus BoxParameterHandler<T>::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus BoxParameterHandler<T>::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	typename IECore::TypedParameter<Box<T> >::Ptr p = IECore::runTimeCast<IECore::TypedParameter<Box<T> > >( parameter );
 	if( !p )

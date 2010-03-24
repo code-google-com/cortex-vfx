@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -56,6 +56,11 @@ template<typename T>
 TypedObjectParameter<T>::TypeDescription<TypedObjectParameter<T> > TypedObjectParameter<T>::g_typeDescription;
 
 template<typename T>
+TypedObjectParameter<T>::TypedObjectParameter()
+{
+}
+
+template<typename T>
 TypedObjectParameter<T>::TypedObjectParameter( const std::string &name, const std::string &description, typename T::Ptr defaultValue, const ObjectPresetsContainer &presets, bool presetsOnly, ConstCompoundObjectPtr userData )
 	: ObjectParameter(  name, description, defaultValue, T::staticTypeId(), makePresets( presets) , presetsOnly, userData )
 {
@@ -72,13 +77,19 @@ Parameter::PresetsContainer TypedObjectParameter<T>::makePresets( const ObjectPr
 }
 
 template<typename T>
-bool TypedObjectParameter<T>::valueValid( const Object *value, std::string *reason ) const
+typename TypedObjectParameter<T>::Ptr TypedObjectParameter<T>::copy() const
+{
+	return boost::static_pointer_cast<TypedObjectParameter<T> >( copy() );
+}
+
+template<typename T>
+bool TypedObjectParameter<T>::valueValid( ConstObjectPtr value, std::string *reason ) const
 {
 	if( !ObjectParameter::valueValid( value, reason ) )
 	{
 		return false;
 	}
-	const ObjectType *tValue = runTimeCast<const ObjectType>( value );
+	ConstObjectTypePtr tValue = runTimeCast<const ObjectType>( value );
 	if( !tValue )
 	{
 		if( reason )

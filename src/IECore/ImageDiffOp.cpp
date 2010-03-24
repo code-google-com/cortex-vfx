@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -62,6 +62,7 @@ IE_CORE_DEFINERUNTIMETYPED( ImageDiffOp );
 
 ImageDiffOp::ImageDiffOp()
 		:	Op(
+		        staticTypeName(),
 			"Evaluates the root-mean-squared error between two images and returns true if it "
 			"exceeds a specified threshold. Unless the \"skip missing channels\" parameter is "
 			"enabled, it will also return true if either image contains a channel which  "
@@ -108,42 +109,42 @@ ImageDiffOp::~ImageDiffOp()
 {
 }
 
-ImagePrimitiveParameter * ImageDiffOp::imageAParameter()
+ImagePrimitiveParameterPtr ImageDiffOp::imageAParameter()
 {
 	return m_imageAParameter;
 }
 
-const ImagePrimitiveParameter * ImageDiffOp::imageAParameter() const
+ConstImagePrimitiveParameterPtr ImageDiffOp::imageAParameter() const
 {
 	return m_imageAParameter;
 }
 
-ImagePrimitiveParameter * ImageDiffOp::imageBParameter()
+ImagePrimitiveParameterPtr ImageDiffOp::imageBParameter()
 {
 	return m_imageBParameter;
 }
 
-const ImagePrimitiveParameter * ImageDiffOp::imageBParameter() const
+ConstImagePrimitiveParameterPtr ImageDiffOp::imageBParameter() const
 {
 	return m_imageBParameter;
 }
 
-FloatParameter * ImageDiffOp::maxErrorParameter()
+FloatParameterPtr ImageDiffOp::maxErrorParameter()
 {
 	return m_maxErrorParameter;
 }
 
-const FloatParameter * ImageDiffOp::maxErrorParameter() const
+ConstFloatParameterPtr ImageDiffOp::maxErrorParameter() const
 {
 	return m_maxErrorParameter;
 }
 
-BoolParameter * ImageDiffOp::skipMissingChannels()
+BoolParameterPtr ImageDiffOp::skipMissingChannels()
 {
 	return m_skipMissingChannelsParameter;
 }
 
-const BoolParameter * ImageDiffOp::skipMissingChannels() const
+ConstBoolParameterPtr ImageDiffOp::skipMissingChannels() const
 {
 	return m_skipMissingChannelsParameter;
 }
@@ -161,12 +162,12 @@ struct ImageDiffOp::FloatConverter
 
 		return DataConvert < T, FloatVectorData, ScaledDataConversion< typename T::ValueType::value_type, float > >()
 		       (
-		               staticPointerCast<const T>( data )
+		               boost::static_pointer_cast<const T>( data )
 		       );
 	};
 };
 
-ObjectPtr ImageDiffOp::doOperation( const CompoundObject * operands )
+ObjectPtr ImageDiffOp::doOperation( ConstCompoundObjectPtr operands )
 {
 	ImagePrimitivePtr imageA = m_imageAParameter->getTypedValue< ImagePrimitive >();
 	ImagePrimitivePtr imageB = m_imageBParameter->getTypedValue< ImagePrimitive >();

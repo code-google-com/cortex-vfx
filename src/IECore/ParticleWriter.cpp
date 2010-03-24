@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,8 +48,8 @@ using namespace boost;
 
 IE_CORE_DEFINERUNTIMETYPED( ParticleWriter )
 
-ParticleWriter::ParticleWriter( const std::string &description )
-	:	Writer( description, PointsPrimitiveTypeId )
+ParticleWriter::ParticleWriter( const std::string &name, const std::string &description )
+	:	Writer( name, description, PointsPrimitiveTypeId )
 {
 	m_attributesParameter = new StringVectorParameter(
 		"attributes",
@@ -63,11 +63,11 @@ bool ParticleWriter::canWrite( ConstObjectPtr object, const std::string &fileNam
 	return runTimeCast<const PointsPrimitive>( object );
 }
 
-const PointsPrimitive * ParticleWriter::particleObject()
+ConstPointsPrimitivePtr ParticleWriter::particleObject()
 {
 	/// \todo this cast is no longer ok - once we've adjusted the input object Parameter we can use the validation
 	/// on there to do our work for us.
-	return static_cast<const PointsPrimitive *>( object() );
+	return static_pointer_cast<const PointsPrimitive>( object() );
 }
 
 size_t ParticleWriter::particleCount()
@@ -105,7 +105,7 @@ void ParticleWriter::particleAttributes( std::vector<std::string> &names )
 		}
 	}
 
-	const StringVectorData *d = static_cast<const StringVectorData *>( parameters()->parameter<StringVectorParameter>( "attributes" )->getValue() );
+	ConstStringVectorDataPtr d = static_pointer_cast<const StringVectorData>( parameters()->parameter<StringVectorParameter>( "attributes" )->getValue() );
 	if( !d->readable().size() )
 	{
 		names = allNames;

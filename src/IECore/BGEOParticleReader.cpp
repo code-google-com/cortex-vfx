@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -62,12 +62,12 @@ IE_CORE_DEFINERUNTIMETYPED( BGEOParticleReader );
 const Reader::ReaderDescription<BGEOParticleReader> BGEOParticleReader::m_readerDescription( "bgeo" );
 
 BGEOParticleReader::BGEOParticleReader( )
-	:	ParticleReader( "Reads Houdini .bgeo format particle caches" ), m_iStream( 0 )
+	:	ParticleReader( "BGEOParticleReader", "Reads Houdini .bgeo format particle caches" ), m_iStream( 0 )
 {
 }
 
 BGEOParticleReader::BGEOParticleReader( const std::string &fileName )
-	:	ParticleReader( "Reads Houdini .bgeo  format particle caches" ), m_iStream( 0 )
+	:	ParticleReader( "BGEOParticleReader", "Reads Houdini .bgeo  format particle caches" ), m_iStream( 0 )
 {
 	m_fileNameParameter->setTypedValue( fileName );
 }
@@ -243,7 +243,7 @@ void BGEOParticleReader::attributeNames( std::vector<std::string> &names )
 	}
 }
 
-ObjectPtr BGEOParticleReader::doOperation( const CompoundObject *operands )
+ObjectPtr BGEOParticleReader::doOperation( ConstCompoundObjectPtr operands )
 {
 	vector<string> attributes;
 	particleAttributes( attributes );
@@ -296,12 +296,12 @@ ObjectPtr BGEOParticleReader::doOperation( const CompoundObject *operands )
 }
 
 template<typename T, typename F>
-IntrusivePtr<T> BGEOParticleReader::filterAttr( IntrusivePtr<F> attr, float percentage )
+boost::intrusive_ptr<T> BGEOParticleReader::filterAttr( boost::intrusive_ptr<F> attr, float percentage )
 {
 	if( percentage < 100.0f )
 	{
 		// percentage filtering (and type conversion if necessary)
-		IntrusivePtr<T> result( new T );
+		boost::intrusive_ptr<T> result( new T );
 		const typename F::ValueType &in = attr->readable();
 		typename T::ValueType &out = result->writable();
 		int seed = particlePercentageSeed();
@@ -323,7 +323,7 @@ IntrusivePtr<T> BGEOParticleReader::filterAttr( IntrusivePtr<F> attr, float perc
 	if( T::staticTypeId()!=F::staticTypeId() )
 	{
 		// type conversion only
-		IntrusivePtr<T> result( new T );
+		boost::intrusive_ptr<T> result( new T );
 		const typename F::ValueType &in = attr->readable();
 		typename T::ValueType &out = result->writable();
 		out.resize( in.size() );
@@ -332,7 +332,7 @@ IntrusivePtr<T> BGEOParticleReader::filterAttr( IntrusivePtr<F> attr, float perc
 	}
 
 	// no filtering of any sort needed
-	return IntrusivePtr<T>( (T *)attr.get() );
+	return boost::intrusive_ptr<T>( (T *)attr.get() );
 }
 
 template<typename T>
@@ -464,7 +464,7 @@ CompoundDataPtr BGEOParticleReader::readAttributes( const std::vector<std::strin
 			{
 			case V3fVectorDataTypeId:
 				{
-					V3f &p = staticPointerCast<V3fVectorData>(it->targetData)->writable()[ i ];
+					V3f &p = boost::static_pointer_cast<V3fVectorData>(it->targetData)->writable()[ i ];
 					p[0] = floatAttributePtr[0];
 					p[1] = floatAttributePtr[1];
 					p[2] = floatAttributePtr[2];
@@ -472,21 +472,21 @@ CompoundDataPtr BGEOParticleReader::readAttributes( const std::vector<std::strin
 				}
 			case V2fVectorDataTypeId:
 				{
-					V2f &p = staticPointerCast<V2fVectorData>(it->targetData)->writable()[ i ];
+					V2f &p = boost::static_pointer_cast<V2fVectorData>(it->targetData)->writable()[ i ];
 					p[0] = floatAttributePtr[0];
 					p[1] = floatAttributePtr[1];
 					break;
 				}
 			case FloatVectorDataTypeId:
-				staticPointerCast<FloatVectorData>(it->targetData)->writable()[ i ] = floatAttributePtr[0];
+				boost::static_pointer_cast<FloatVectorData>(it->targetData)->writable()[ i ] = floatAttributePtr[0];
 				break;
 			case IntVectorDataTypeId:
-				staticPointerCast<IntVectorData>(it->targetData)->writable()[ i ] = intAttributePtr[0];
+				boost::static_pointer_cast<IntVectorData>(it->targetData)->writable()[ i ] = intAttributePtr[0];
 				break;
 			case StringVectorDataTypeId:
 				{
 					std::string value = it->info.indexableValues.at( intAttributePtr[0] );
-					staticPointerCast<StringVectorData>(it->targetData)->writable()[ i ] = value;
+					boost::static_pointer_cast<StringVectorData>(it->targetData)->writable()[ i ] = value;
 					break;
 				}
 			default:
@@ -514,20 +514,20 @@ CompoundDataPtr BGEOParticleReader::readAttributes( const std::vector<std::strin
 				{
 				case ParticleReader::Native :
 				case ParticleReader::Float :
-					filteredData = filterAttr<FloatVectorData, FloatVectorData>( staticPointerCast<FloatVectorData>(attrIt->targetData), particlePercentage() );
+					filteredData = filterAttr<FloatVectorData, FloatVectorData>( boost::static_pointer_cast<FloatVectorData>(attrIt->targetData), particlePercentage() );
 					break;
 				case ParticleReader::Double :
-					filteredData = filterAttr<DoubleVectorData, FloatVectorData>( staticPointerCast<FloatVectorData>(attrIt->targetData), particlePercentage() );
+					filteredData = filterAttr<DoubleVectorData, FloatVectorData>( boost::static_pointer_cast<FloatVectorData>(attrIt->targetData), particlePercentage() );
 					break;
 				}
 			}
 			else if ( attrIt->info.type == Integer )
 			{
-				filteredData = filterAttr<IntVectorData, IntVectorData>( staticPointerCast<IntVectorData>(attrIt->targetData), particlePercentage() );
+				filteredData = filterAttr<IntVectorData, IntVectorData>( boost::static_pointer_cast<IntVectorData>(attrIt->targetData), particlePercentage() );
 			}
 			else if ( attrIt->info.type == Index )
 			{
-				filteredData = filterAttr<StringVectorData, StringVectorData>( staticPointerCast<StringVectorData>(attrIt->targetData), particlePercentage() );
+				filteredData = filterAttr<StringVectorData, StringVectorData>( boost::static_pointer_cast<StringVectorData>(attrIt->targetData), particlePercentage() );
 			}
 		}
 		else if ( attrIt->info.size == 2 )
@@ -538,10 +538,10 @@ CompoundDataPtr BGEOParticleReader::readAttributes( const std::vector<std::strin
 				{
 				case ParticleReader::Native :
 				case ParticleReader::Float :
-					filteredData = filterAttr<V2fVectorData, V2fVectorData>( staticPointerCast<V2fVectorData>(attrIt->targetData), particlePercentage() );
+					filteredData = filterAttr<V2fVectorData, V2fVectorData>( boost::static_pointer_cast<V2fVectorData>(attrIt->targetData), particlePercentage() );
 					break;
 				case ParticleReader::Double :
-					filteredData = filterAttr<V2dVectorData, V2fVectorData>( staticPointerCast<V2fVectorData>(attrIt->targetData), particlePercentage() );
+					filteredData = filterAttr<V2dVectorData, V2fVectorData>( boost::static_pointer_cast<V2fVectorData>(attrIt->targetData), particlePercentage() );
 					break;
 				}
 			}
@@ -554,10 +554,10 @@ CompoundDataPtr BGEOParticleReader::readAttributes( const std::vector<std::strin
 				{
 				case ParticleReader::Native :
 				case ParticleReader::Float :
-					filteredData = filterAttr<V3fVectorData, V3fVectorData>( staticPointerCast<V3fVectorData>(attrIt->targetData), particlePercentage() );
+					filteredData = filterAttr<V3fVectorData, V3fVectorData>( boost::static_pointer_cast<V3fVectorData>(attrIt->targetData), particlePercentage() );
 					break;
 				case ParticleReader::Double :
-					filteredData = filterAttr<V3dVectorData, V3fVectorData>( staticPointerCast<V3fVectorData>(attrIt->targetData), particlePercentage() );
+					filteredData = filterAttr<V3dVectorData, V3fVectorData>( boost::static_pointer_cast<V3fVectorData>(attrIt->targetData), particlePercentage() );
 					break;
 				}
 			}

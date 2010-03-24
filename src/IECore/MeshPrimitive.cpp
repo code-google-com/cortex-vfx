@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -67,14 +67,14 @@ size_t MeshPrimitive::numFaces() const
 	return m_verticesPerFace->readable().size();
 }
 
-const IntVectorData *MeshPrimitive::verticesPerFace() const
+ConstIntVectorDataPtr MeshPrimitive::verticesPerFace() const
 {
-	return m_verticesPerFace.get();
+	return m_verticesPerFace;
 }
 
-const IntVectorData *MeshPrimitive::vertexIds() const
+ConstIntVectorDataPtr MeshPrimitive::vertexIds() const
 {
-	return m_vertexIds.get();
+	return m_vertexIds;
 }
 
 const std::string &MeshPrimitive::interpolation() const
@@ -161,15 +161,15 @@ size_t MeshPrimitive::variableSize( PrimitiveVariable::Interpolation interpolati
 	}
 }
 
-void MeshPrimitive::render( Renderer *renderer ) const
+void MeshPrimitive::render( RendererPtr renderer ) const
 {
 	renderer->mesh( m_verticesPerFace, m_vertexIds, m_interpolation, variables );
 }
 
-void MeshPrimitive::copyFrom( const Object *other, IECore::Object::CopyContext *context )
+void MeshPrimitive::copyFrom( ConstObjectPtr other, IECore::Object::CopyContext *context )
 {
 	Primitive::copyFrom( other, context );
-	const MeshPrimitive *tOther = static_cast<const MeshPrimitive *>( other );
+	const MeshPrimitive *tOther = static_cast<const MeshPrimitive *>( other.get() );
 	m_verticesPerFace = tOther->m_verticesPerFace->copy();
 	m_vertexIds = tOther->m_vertexIds->copy();
 	m_numVertices = tOther->m_numVertices;
@@ -208,14 +208,14 @@ void MeshPrimitive::load( IECore::Object::LoadContextPtr context )
 	container->read( "interpolation", m_interpolation );
 }
 
-bool MeshPrimitive::isEqualTo( const Object *other ) const
+bool MeshPrimitive::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !Primitive::isEqualTo( other ) )
 	{
 		return false;
 	}
 
-	const MeshPrimitive *tOther = static_cast<const MeshPrimitive *>( other );
+	const MeshPrimitive *tOther = static_cast<const MeshPrimitive *>( other.get() );
 
 	if( m_numVertices!=tOther->m_numVertices )
 	{
@@ -244,7 +244,7 @@ void MeshPrimitive::memoryUsage( Object::MemoryAccumulator &a ) const
 	a.accumulate( m_vertexIds );
 }
 
-MeshPrimitivePtr MeshPrimitive::createBox( const Box3f &b )
+MeshPrimitivePtr MeshPrimitive::createBox( Box3f b )
 {
 	vector< int > verticesPerFaceVec;
 	vector< int > vertexIdsVec;
@@ -280,7 +280,7 @@ MeshPrimitivePtr MeshPrimitive::createBox( const Box3f &b )
 	return new MeshPrimitive( new IntVectorData(verticesPerFaceVec), new IntVectorData(vertexIdsVec), interpolation, new V3fVectorData(p) );
 }
 
-MeshPrimitivePtr MeshPrimitive::createPlane( const Box2f &b )
+MeshPrimitivePtr MeshPrimitive::createPlane( Box2f b )
 {
 	IntVectorDataPtr verticesPerFace = new IntVectorData;
 	verticesPerFace->writable().push_back( 4 );

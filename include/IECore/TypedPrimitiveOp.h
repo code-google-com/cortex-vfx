@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -51,7 +51,7 @@ class TypedPrimitiveOp : public ModifyOp
 	
 		typedef T PrimitiveType;
 
-		TypedPrimitiveOp( const std::string &description );
+		TypedPrimitiveOp( const std::string &name, const std::string &description );
 		virtual ~TypedPrimitiveOp();
 		
 		IECORE_RUNTIMETYPED_DECLARETEMPLATE( TypedPrimitiveOp<T>, ModifyOp );
@@ -59,12 +59,12 @@ class TypedPrimitiveOp : public ModifyOp
 	protected :
 
 		/// Must be implemented by all subclasses.
-		virtual void modifyTypedPrimitive( T *typedPrimitive, const CompoundObject *operands ) = 0;
+		virtual void modifyTypedPrimitive( typename T::Ptr typedPrimitive, ConstCompoundObjectPtr operands ) = 0;
 
 	private :
 
 		/// Implemented to call modifyTypedPrimitive
-		void modify( Object *primitive, const CompoundObject *operands );
+		void modify( ObjectPtr primitive, ConstCompoundObjectPtr operands );
 
 		IE_CORE_DECLARERUNTIMETYPEDDESCRIPTION( TypedPrimitiveOp<T> );
 

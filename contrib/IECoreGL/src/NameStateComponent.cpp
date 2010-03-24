@@ -69,6 +69,11 @@ void NameStateComponent::bind() const
 	glLoadName( m_it->second );
 }
 
+GLbitfield NameStateComponent::mask() const
+{
+	return 0;
+}
+
 const std::string &NameStateComponent::nameFromGLName( GLuint glName )
 {
 	const NameMap::nth_index<1>::type &index = g_nameMap.get<1>();

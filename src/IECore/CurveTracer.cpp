@@ -55,6 +55,7 @@ IE_CORE_DEFINERUNTIMETYPED( CurveTracer );
 CurveTracer::CurveTracer()
 	:
 	Op(
+		staticTypeName(),
 		"Traces curves from an ImagePrimitive prepared previously using the ImageThinner.",
 		new ObjectParameter( "result",
 			"A CurvesPrimitive with curves traced from the input.",
@@ -155,77 +156,77 @@ CurveTracer::~CurveTracer()
 {
 }
 
-ImagePrimitiveParameter * CurveTracer::imageParameter()
+ImagePrimitiveParameterPtr CurveTracer::imageParameter()
 {
 	return parameters()->parameter<ImagePrimitiveParameter>( "image" );
 }
 
-const ImagePrimitiveParameter * CurveTracer::imageParameter() const
+ConstImagePrimitiveParameterPtr CurveTracer::imageParameter() const
 {
 	return parameters()->parameter<ImagePrimitiveParameter>( "image" );
 }
 
-StringParameter * CurveTracer::channelNameParameter()
+StringParameterPtr CurveTracer::channelNameParameter()
 {
 	return parameters()->parameter<StringParameter>( "channelName" );
 }
 
-const StringParameter * CurveTracer::channelNameParameter() const
+ConstStringParameterPtr CurveTracer::channelNameParameter() const
 {
 	return parameters()->parameter<StringParameter>( "channelName" );
 }
 
-FloatParameter * CurveTracer::vertexMergeDistanceParameter()
+FloatParameterPtr CurveTracer::vertexMergeDistanceParameter()
 {
 	return parameters()->parameter<FloatParameter>( "vertexMergeDistance" );
 }
 
-const FloatParameter * CurveTracer::vertexMergeDistanceParameter() const
+ConstFloatParameterPtr CurveTracer::vertexMergeDistanceParameter() const
 {
 	return parameters()->parameter<FloatParameter>( "vertexMergeDistance" );
 }
 		
-FloatParameter * CurveTracer::minimumLengthParameter()
+FloatParameterPtr CurveTracer::minimumLengthParameter()
 {
 	return parameters()->parameter<FloatParameter>( "minimumLength" );
 }
 
-const FloatParameter * CurveTracer::minimumLengthParameter() const
+ConstFloatParameterPtr CurveTracer::minimumLengthParameter() const
 {
 	return parameters()->parameter<FloatParameter>( "minimumLength" );
 }
 
-IntParameter * CurveTracer::outputTypeParameter()
+IntParameterPtr CurveTracer::outputTypeParameter()
 {
 	return parameters()->parameter<IntParameter>( "outputType" );
 }
 
-const IntParameter * CurveTracer::outputTypeParameter() const
+ConstIntParameterPtr CurveTracer::outputTypeParameter() const
 {
 	return parameters()->parameter<IntParameter>( "outputType" );
 }
 
-IntParameter * CurveTracer::catmullRomStepParameter()
+IntParameterPtr CurveTracer::catmullRomStepParameter()
 {
 	return parameters()->parameter<IntParameter>( "catmullRomStep" );
 }
 
-const IntParameter * CurveTracer::catmullRomStepParameter() const
+ConstIntParameterPtr CurveTracer::catmullRomStepParameter() const
 {
 	return parameters()->parameter<IntParameter>( "catmullRomStep" );
 }
 
-IntParameter * CurveTracer::outputSpaceParameter()
+IntParameterPtr CurveTracer::outputSpaceParameter()
 {
 	return parameters()->parameter<IntParameter>( "outputSpace" );
 }
 
-const IntParameter * CurveTracer::outputSpaceParameter() const
+ConstIntParameterPtr CurveTracer::outputSpaceParameter() const
 {
 	return parameters()->parameter<IntParameter>( "outputSpace" );
 }
 		
-ObjectPtr CurveTracer::doOperation( const CompoundObject * operands )
+ObjectPtr CurveTracer::doOperation( ConstCompoundObjectPtr operands )
 {
 	
 	// find the channel to operate on
@@ -582,7 +583,7 @@ CurvesPrimitivePtr CurveTracer::buildCurves( Graph &graph, OutputType type, int 
 	);
 }
 
-void CurveTracer::colorCurves( CurvesPrimitive * curves ) const
+void CurveTracer::colorCurves( CurvesPrimitivePtr curves ) const
 {
 	Color3fVectorDataPtr colors = new Color3fVectorData;
 

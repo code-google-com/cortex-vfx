@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,7 +48,7 @@ using namespace std;
 
 IE_CORE_DEFINERUNTIMETYPED( MeshTangentsOp );
 
-MeshTangentsOp::MeshTangentsOp() : MeshPrimitiveOp( "Calculates mesh tangents with respect to texture coordinates." )
+MeshTangentsOp::MeshTangentsOp() : MeshPrimitiveOp( staticTypeName(), "Calculates mesh tangents with respect to texture coordinates." )
 {
 	/// \todo Add this parameter to a member variable and update pPrimVarNameParameter() functions.
 	StringParameterPtr pPrimVarNameParameter = new StringParameter(
@@ -110,73 +110,73 @@ MeshTangentsOp::~MeshTangentsOp()
 {
 }
 
-StringParameter * MeshTangentsOp::pPrimVarNameParameter()
+StringParameterPtr MeshTangentsOp::pPrimVarNameParameter()
 {
 	return parameters()->parameter<StringParameter>( "pPrimVarName" );
 }
 
-const StringParameter * MeshTangentsOp::pPrimVarNameParameter() const
+ConstStringParameterPtr MeshTangentsOp::pPrimVarNameParameter() const
 {
 	return parameters()->parameter<StringParameter>( "pPrimVarName" );
 }
 
-BoolParameter * MeshTangentsOp::orthogonalizeTangentsParameter()
+BoolParameterPtr MeshTangentsOp::orthogonalizeTangentsParameter()
 {
 	return parameters()->parameter<BoolParameter>( "orthogonalizeTangents" );
 }
 
-const BoolParameter * MeshTangentsOp::orthogonalizeTangentsParameter() const
+ConstBoolParameterPtr MeshTangentsOp::orthogonalizeTangentsParameter() const
 {
 	return parameters()->parameter<BoolParameter>( "orthogonalizeTangents" );
 }
 
 
-StringParameter * MeshTangentsOp::uPrimVarNameParameter()
+StringParameterPtr MeshTangentsOp::uPrimVarNameParameter()
 {
 	return m_uPrimVarNameParameter;
 }
 
-const StringParameter * MeshTangentsOp::uPrimVarNameParameter() const
+ConstStringParameterPtr MeshTangentsOp::uPrimVarNameParameter() const
 {
 	return m_uPrimVarNameParameter;
 }
 
-StringParameter * MeshTangentsOp::vPrimVarNameParameter()
+StringParameterPtr MeshTangentsOp::vPrimVarNameParameter()
 {
 	return m_vPrimVarNameParameter;
 }
 
-const StringParameter * MeshTangentsOp::vPrimVarNameParameter() const
+ConstStringParameterPtr MeshTangentsOp::vPrimVarNameParameter() const
 {
 	return m_vPrimVarNameParameter;
 }
 
-StringParameter * MeshTangentsOp::uvIndicesPrimVarNameParameter()
+StringParameterPtr MeshTangentsOp::uvIndicesPrimVarNameParameter()
 {
 	return parameters()->parameter<StringParameter>( "uvIndicesPrimVarName" );
 }
 
-const StringParameter * MeshTangentsOp::uvIndicesPrimVarNameParameter() const
+ConstStringParameterPtr MeshTangentsOp::uvIndicesPrimVarNameParameter() const
 {
 	return parameters()->parameter<StringParameter>( "uvIndicesPrimVarName" );
 }
 		
-StringParameter * MeshTangentsOp::uTangentPrimVarNameParameter()
+StringParameterPtr MeshTangentsOp::uTangentPrimVarNameParameter()
 {
 	return m_uTangentPrimVarNameParameter;
 }
 
-const StringParameter * MeshTangentsOp::uTangentPrimVarNameParameter() const
+ConstStringParameterPtr MeshTangentsOp::uTangentPrimVarNameParameter() const
 {
 	return m_uTangentPrimVarNameParameter;
 }
 
-StringParameter * MeshTangentsOp::vTangentPrimVarNameParameter()
+StringParameterPtr MeshTangentsOp::vTangentPrimVarNameParameter()
 {
 	return m_vTangentPrimVarNameParameter;
 }
 
-const StringParameter * MeshTangentsOp::vTangentPrimVarNameParameter() const
+ConstStringParameterPtr MeshTangentsOp::vTangentPrimVarNameParameter() const
 {
 	return m_vTangentPrimVarNameParameter;
 }
@@ -192,7 +192,7 @@ struct MeshTangentsOp::CalculateTangents
 	}
 
 	template<typename T>
-	ReturnType operator()( T * data )
+	ReturnType operator()( typename T::Ptr data )
 	{
 		typedef typename T::ValueType VecContainer;
 		typedef typename VecContainer::value_type Vec;
@@ -327,14 +327,14 @@ struct MeshTangentsOp::CalculateTangents
 struct MeshTangentsOp::HandleErrors
 {
 	template<typename T, typename F>
-	void operator()( const T *d, const F &f )
+	void operator()( typename T::ConstPtr d, const F &f )
 	{
 		string e = boost::str( boost::format( "MeshTangentsOp : pPrimVarName parameter has unsupported data type \"%s\"." ) % d->typeName() );
 		throw InvalidArgumentException( e );
 	}
 };
 
-void MeshTangentsOp::modifyTypedPrimitive( MeshPrimitive * mesh, const CompoundObject * operands )
+void MeshTangentsOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands )
 {
 	if( !mesh->arePrimitiveVariablesValid( ) )
 	{
@@ -342,14 +342,14 @@ void MeshTangentsOp::modifyTypedPrimitive( MeshPrimitive * mesh, const CompoundO
 	}
 	
 	const std::string &pPrimVarName = pPrimVarNameParameter()->getTypedValue();
-	Data * pData = mesh->variableData<Data>( pPrimVarName, PrimitiveVariable::Vertex );
+	DataPtr pData = mesh->variableData<Data>( pPrimVarName, PrimitiveVariable::Vertex );
 	if( !pData )
 	{
 		string e = boost::str( boost::format( "MeshTangentsOp : MeshPrimitive has no Vertex \"%s\" primitive variable." ) % pPrimVarName );
 		throw InvalidArgumentException( e );
 	}
 
-	const IntVectorData * vertsPerFace = mesh->verticesPerFace();
+	ConstIntVectorDataPtr vertsPerFace = mesh->verticesPerFace();
 	for ( IntVectorData::ValueType::const_iterator it = vertsPerFace->readable().begin(); it != vertsPerFace->readable().end(); ++it )
 	{
 		if ( *it != 3 )

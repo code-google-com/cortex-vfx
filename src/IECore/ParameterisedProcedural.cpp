@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -59,10 +59,10 @@ const std::string &ParameterisedProcedural::description() const
 }
 
 
-void ParameterisedProcedural::copyFrom( const Object *other, CopyContext *context )
+void ParameterisedProcedural::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	VisibleRenderable::copyFrom( other, context );
-	const ParameterisedProcedural *tOther = static_cast<const ParameterisedProcedural *>( other );
+	const ParameterisedProcedural *tOther = static_cast<const ParameterisedProcedural *>( other.get() );
 	m_parameters->setValue( tOther->m_parameters->getValue()->copy() );
 }
 
@@ -81,14 +81,14 @@ void ParameterisedProcedural::load( LoadContextPtr context )
 	m_parameters->setValue( context->load<Object>( container, "parameters" ) );
 }
 
-bool ParameterisedProcedural::isEqualTo( const Object *other ) const
+bool ParameterisedProcedural::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !VisibleRenderable::isEqualTo( other ) )
 	{
 		return false;
 	}
 
-	const ParameterisedProcedural *tOther = static_cast<const ParameterisedProcedural *>( other );
+	const ParameterisedProcedural *tOther = static_cast<const ParameterisedProcedural *>( other.get() );
 	return m_parameters->getValue()->isEqualTo( tOther->m_parameters->getValue() );
 }
 
@@ -121,12 +121,12 @@ class ParameterisedProcedural::Forwarder : public Renderer::Procedural
 		ConstCompoundObjectPtr validatedArgs;
 };
 
-void ParameterisedProcedural::render( Renderer *renderer ) const
+void ParameterisedProcedural::render( RendererPtr renderer ) const
 {
 	render( renderer, true, true, true, false );
 }
 
-void ParameterisedProcedural::render( Renderer *renderer, bool inAttributeBlock, bool withState, bool withGeometry, bool immediateGeometry ) const
+void ParameterisedProcedural::render( RendererPtr renderer, bool inAttributeBlock, bool withState, bool withGeometry, bool immediateGeometry ) const
 {
 	ConstCompoundObjectPtr validatedArgs = parameters()->getTypedValidatedValue<CompoundObject>();
 

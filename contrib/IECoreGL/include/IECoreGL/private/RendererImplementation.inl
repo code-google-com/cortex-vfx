@@ -7,13 +7,7 @@ namespace IECoreGL
 template <class T>
 typename T::Ptr RendererImplementation::getState()
 {
-	return IECore::staticPointerCast<T>( getState( T::staticTypeId() ) );
-}
-
-template <class T>
-typename T::Ptr RendererImplementation::getUserAttribute( const IECore::InternedString &name )
-{
-	return IECore::dynamicPointerCast<T>( getUserAttribute( name ) );
+	return boost::static_pointer_cast<T>( getState( T::staticTypeId() ) );
 }
 
 } // namespace IECoreGL

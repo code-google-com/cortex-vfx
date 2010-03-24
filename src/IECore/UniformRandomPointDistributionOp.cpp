@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -61,6 +61,7 @@ IE_CORE_DEFINERUNTIMETYPED( UniformRandomPointDistributionOp );
 
 UniformRandomPointDistributionOp::UniformRandomPointDistributionOp()
 	:	Op(
+		staticTypeName(),
 		"The UniformRandomPointDistributionOp distributes points over a mesh using a random distribution.",
 		new PointsPrimitiveParameter(
 			"result",
@@ -72,8 +73,9 @@ UniformRandomPointDistributionOp::UniformRandomPointDistributionOp()
 	constructCommon();
 }
 
-UniformRandomPointDistributionOp::UniformRandomPointDistributionOp( const std::string &description )
+UniformRandomPointDistributionOp::UniformRandomPointDistributionOp( const std::string &name, const std::string &description )
 	: Op(
+		name,
 		description,
 		new PointsPrimitiveParameter(
 			"result",
@@ -125,47 +127,47 @@ UniformRandomPointDistributionOp::~UniformRandomPointDistributionOp()
 {
 }
 
-MeshPrimitiveParameter * UniformRandomPointDistributionOp::meshParameter()
+MeshPrimitiveParameterPtr UniformRandomPointDistributionOp::meshParameter()
 {
 	return m_meshParameter;
 }
 
-const MeshPrimitiveParameter * UniformRandomPointDistributionOp::meshParameter() const
+ConstMeshPrimitiveParameterPtr UniformRandomPointDistributionOp::meshParameter() const
 {
 	return m_meshParameter;
 }
 
-IntParameter * UniformRandomPointDistributionOp::numPointsParameter()
+IntParameterPtr UniformRandomPointDistributionOp::numPointsParameter()
 {
 	return m_numPointsParameter;
 }
 
-const IntParameter * UniformRandomPointDistributionOp::numPointsParameter() const
+ConstIntParameterPtr UniformRandomPointDistributionOp::numPointsParameter() const
 {
 	return m_numPointsParameter;
 }
 
-IntParameter * UniformRandomPointDistributionOp::seedParameter()
+IntParameterPtr UniformRandomPointDistributionOp::seedParameter()
 {
 	return m_seedParameter;
 }
 
-const IntParameter * UniformRandomPointDistributionOp::seedParameter() const
+ConstIntParameterPtr UniformRandomPointDistributionOp::seedParameter() const
 {
 	return m_seedParameter;
 }
 
-BoolParameter * UniformRandomPointDistributionOp::addSTParameter()
+BoolParameterPtr UniformRandomPointDistributionOp::addSTParameter()
 {
 	return m_addSTParameter;
 }
 
-const BoolParameter * UniformRandomPointDistributionOp::addSTParameter() const
+ConstBoolParameterPtr UniformRandomPointDistributionOp::addSTParameter() const
 {
 	return m_addSTParameter;
 }
 
-float UniformRandomPointDistributionOp::density( const MeshPrimitive * mesh, const Imath::V3f &point, const Imath::V2f &uv ) const
+float UniformRandomPointDistributionOp::density( ConstMeshPrimitivePtr mesh, const Imath::V3f &point, const Imath::V2f &uv ) const
 {
 	return 1.0f;
 }
@@ -174,21 +176,21 @@ struct UniformRandomPointDistributionOp::DistributeFn
 {
 	typedef PointsPrimitivePtr ReturnType;
 
-	const UniformRandomPointDistributionOp * m_op;
-	const MeshPrimitive * m_mesh;
+	ConstUniformRandomPointDistributionOpPtr m_op;
+	ConstMeshPrimitivePtr m_mesh;
 	const int m_numPoints;
 	const int m_seed;
-	FloatVectorData * m_sData, * m_tData;
+	FloatVectorDataPtr m_sData, m_tData;
 	bool m_addST;
 
-	DistributeFn( UniformRandomPointDistributionOp * op, const MeshPrimitive * mesh, int numPoints, int seed, FloatVectorData * sData, FloatVectorData * tData, bool addST )
+	DistributeFn( UniformRandomPointDistributionOpPtr op, ConstMeshPrimitivePtr mesh, int numPoints, int seed, FloatVectorDataPtr sData, FloatVectorDataPtr tData, bool addST )
 	: m_op( op ), m_mesh( mesh ), m_numPoints( numPoints ), m_seed( seed ), m_sData( sData ), m_tData( tData ), m_addST( addST )
 	{
 		assert( m_mesh );
 	}
 
 	template<typename T>
-	ReturnType operator()( const T * p ) const
+	ReturnType operator()( typename T::ConstPtr p ) const
 	{
 		typedef typename T::ValueType::value_type Vec;
 		typedef std::vector<double> ProbabilityVector;
@@ -336,7 +338,7 @@ struct UniformRandomPointDistributionOp::DistributeFn
 	struct ErrorHandler
 	{
 		template<typename T, typename F>
-		void operator()( const T * data, const F& functor )
+		void operator()( typename T::ConstPtr data, const F& functor )
 		{
 			assert( data );
 
@@ -345,7 +347,7 @@ struct UniformRandomPointDistributionOp::DistributeFn
 	};
 };
 
-ObjectPtr UniformRandomPointDistributionOp::doOperation( const CompoundObject * operands )
+ObjectPtr UniformRandomPointDistributionOp::doOperation( ConstCompoundObjectPtr operands )
 {
 	MeshPrimitivePtr mesh = m_meshParameter->getTypedValue<MeshPrimitive>();
 	assert( mesh );
@@ -353,7 +355,7 @@ ObjectPtr UniformRandomPointDistributionOp::doOperation( const CompoundObject * 
 	TriangulateOpPtr op = new TriangulateOp();
 	op->inputParameter()->setValue( mesh );
 	op->toleranceParameter()->setNumericValue( 1.e-3 );
-	mesh = runTimeCast< MeshPrimitive > ( op->operate() );
+        mesh = runTimeCast< MeshPrimitive > ( op->operate() );
 	assert( mesh );
 
 	bool addST = m_addSTParameter->getTypedValue();

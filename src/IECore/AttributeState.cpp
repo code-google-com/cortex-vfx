@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -65,7 +65,7 @@ CompoundDataPtr AttributeState::attributesData()
 	return m_attributes;
 }
 
-void AttributeState::render( Renderer *renderer ) const
+void AttributeState::render( RendererPtr renderer ) const
 {
 	for( CompoundDataMap::const_iterator it=attributes().begin(); it!=attributes().end(); it++ )
 	{
@@ -73,13 +73,13 @@ void AttributeState::render( Renderer *renderer ) const
 	}
 }
 
-bool AttributeState::isEqualTo( const Object *other ) const
+bool AttributeState::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !StateRenderable::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const AttributeState *s = static_cast<const AttributeState *>( other );
+	ConstAttributeStatePtr s = static_pointer_cast<const AttributeState>( other );
 	return m_attributes->isEqualTo( s->m_attributes );
 }
 
@@ -89,10 +89,10 @@ void AttributeState::memoryUsage( Object::MemoryAccumulator &a ) const
 	a.accumulate( m_attributes );
 }
 
-void AttributeState::copyFrom( const Object *other, CopyContext *context )
+void AttributeState::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	StateRenderable::copyFrom( other, context );
-	const AttributeState *s = static_cast<const AttributeState *>( other );
+	ConstAttributeStatePtr s = static_pointer_cast<const AttributeState>( other );
 	m_attributes = context->copy<CompoundData>( s->m_attributes );
 }
 

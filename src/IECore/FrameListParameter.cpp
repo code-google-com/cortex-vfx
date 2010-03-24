@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,7 +41,8 @@
 
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPED( FrameListParameter );
+IE_CORE_DEFINEOBJECTTYPEDESCRIPTION( FrameListParameter );
+const unsigned int FrameListParameter::g_ioVersion = 1;
 
 static StringParameter::ObjectPresetsContainer convertPresets( const FrameListParameter::PresetsContainer &p )
 {
@@ -51,6 +52,10 @@ static StringParameter::ObjectPresetsContainer convertPresets( const FrameListPa
 		result.push_back( StringParameter::ObjectPresetsContainer::value_type( it->first, new StringData( it->second ) ) );
 	}
 	return result;
+}
+
+FrameListParameter::FrameListParameter()
+{
 }
 
 FrameListParameter::FrameListParameter( const std::string &name, const std::string &description, const std::string &defaultValue, bool allowEmptyList,
@@ -72,14 +77,14 @@ FrameListParameter::~FrameListParameter()
 {
 }
 
-bool FrameListParameter::valueValid( const Object *value, std::string *reason ) const
+bool FrameListParameter::valueValid( ConstObjectPtr value, std::string *reason ) const
 {
 	if( !StringParameter::valueValid( value, reason ) )
 	{
 		return false;
 	}
 
-	const StringData *stringValue = assertedStaticCast<const StringData>( value );
+	ConstStringDataPtr stringValue = assertedStaticCast<const StringData>( value );
 
 	try
 	{
@@ -119,4 +124,51 @@ void FrameListParameter::setFrameListValue( ConstFrameListPtr frameList )
 FrameListPtr FrameListParameter::getFrameListValue() const
 {
 	return FrameList::parse( getTypedValue() );
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Object implementation
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void FrameListParameter::copyFrom( ConstObjectPtr other, CopyContext *context )
+{
+	StringParameter::copyFrom( other, context );
+	const FrameListParameter *tOther = static_cast<const FrameListParameter *>( other.get() );
+	m_allowEmptyList = tOther->m_allowEmptyList;
+}
+
+void FrameListParameter::save( SaveContext *context ) const
+{
+	StringParameter::save( context );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), g_ioVersion );
+
+	unsigned char tmp = m_allowEmptyList;
+	container->write( "allowEmptyList", tmp );
+}
+
+void FrameListParameter::load( LoadContextPtr context )
+{
+	StringParameter::load( context );
+	unsigned int v = g_ioVersion;
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
+
+	unsigned char tmp;
+	container->read( "allowEmptyList", tmp );
+	m_allowEmptyList = tmp;
+}
+
+bool FrameListParameter::isEqualTo( ConstObjectPtr other ) const
+{
+	if( !StringParameter::isEqualTo( other ) )
+	{
+		return false;
+	}
+	const FrameListParameter *tOther = static_cast<const FrameListParameter *>( other.get() );
+	return m_allowEmptyList == tOther->m_allowEmptyList;
+}
+
+void FrameListParameter::memoryUsage( Object::MemoryAccumulator &a ) const
+{
+	StringParameter::memoryUsage( a );
+	a.accumulate( sizeof( m_allowEmptyList ) );
 }

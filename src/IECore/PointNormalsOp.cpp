@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -50,6 +50,7 @@ static TypeId pointTypes[] = { V3fVectorDataTypeId, V3dVectorDataTypeId, Invalid
 
 PointNormalsOp::PointNormalsOp()
 	:	Op(
+		staticTypeName(),
 		"Calculates normals for a volume of points.",
 		new ObjectParameter(
 			"result",
@@ -79,22 +80,22 @@ PointNormalsOp::~PointNormalsOp()
 {
 }
 
-ObjectParameter * PointNormalsOp::pointParameter()
+ObjectParameterPtr PointNormalsOp::pointParameter()
 {
 	return m_pointParameter;
 }
 
-const ObjectParameter * PointNormalsOp::pointParameter() const
+ConstObjectParameterPtr PointNormalsOp::pointParameter() const
 {
 	return m_pointParameter;
 }
 
-IntParameter * PointNormalsOp::numNeighboursParameter()
+IntParameterPtr PointNormalsOp::numNeighboursParameter()
 {
 	return m_numNeighboursParameter;
 }
 
-const IntParameter * PointNormalsOp::numNeighboursParameter() const
+ConstIntParameterPtr PointNormalsOp::numNeighboursParameter() const
 {
 	return m_numNeighboursParameter;
 }
@@ -102,10 +103,10 @@ const IntParameter * PointNormalsOp::numNeighboursParameter() const
 /// Calculates density at a point by finding the volume of a sphere holding numNeighbours. Doesn't bother
 /// with any constant factors for the density (PI, 4/3, numNeighbours) as these are factored out in the use below anyway.
 template<typename T>
-static inline typename T::Point::BaseType density( const T tree, const typename T::Point &p, int numNeighbours, vector<typename T::Neighbour> &neighbours )
+static inline typename T::Point::BaseType density( const T tree, const typename T::Point &p, int numNeighbours, vector<typename T::Iterator> &neighbours )
 {
 	tree.nearestNNeighbours( p, numNeighbours, neighbours );
-	typename T::Point::BaseType r = ((*(neighbours.rbegin()->point)) - p).length();
+	typename T::Point::BaseType r = ((**neighbours.begin()) - p).length();
 	return 1.0/(r*r*r);
 }
 
@@ -117,7 +118,7 @@ static void normals( const vector<T> &points, int numNeighbours, vector<T> &resu
 	typedef typename T::BaseType Real;
 
 	Tree tree( points.begin(), points.end() );
-	vector<typename Tree::Neighbour> neighbours;
+	vector<typename Tree::Iterator> neighbours;
 
 	result.resize( points.size() );
 
@@ -132,25 +133,25 @@ static void normals( const vector<T> &points, int numNeighbours, vector<T> &resu
 	}
 }
 
-ObjectPtr PointNormalsOp::doOperation( const CompoundObject *operands )
+ObjectPtr PointNormalsOp::doOperation( ConstCompoundObjectPtr operands )
 {
 	const int numNeighbours = m_numNeighboursParameter->getNumericValue();
 
-	const Object * points = pointParameter()->getValue();
+	ConstObjectPtr points = pointParameter()->getValue();
 	ObjectPtr result = 0;
 	switch( points->typeId() )
 	{
 		case V3fVectorDataTypeId :
 			{
 				V3fVectorDataPtr resultT = new V3fVectorData;
-				normals<V3f>( static_cast<const V3fVectorData *>( points )->readable(), numNeighbours, resultT->writable() );
+				normals<V3f>( boost::static_pointer_cast<const V3fVectorData>( points )->readable(), numNeighbours, resultT->writable() );
 				result = resultT;
 			}
 			break;
 		case V3dVectorDataTypeId :
 			{
 				V3dVectorDataPtr resultT = new V3dVectorData;
-				normals<V3d>( static_cast<const V3dVectorData *>( points )->readable(), numNeighbours, resultT->writable() );
+				normals<V3d>( boost::static_pointer_cast<const V3dVectorData>( points )->readable(), numNeighbours, resultT->writable() );
 				result = resultT;
 			}
 			break;

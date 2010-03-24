@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,18 +41,22 @@ using namespace IECore;
 using namespace boost::filesystem;
 using namespace std;
 
-CachedReader::Getter::Getter( const SearchPath &paths )
-	:	m_paths( paths )
+bool CachedReader::CacheFn::get( const std::string &file, ConstObjectPtr &object, Cost &cost )
 {
-}
-
-ConstObjectPtr CachedReader::Getter::operator()( const std::string &file, size_t &cost )
-{
+	object = 0;
 	cost = 0;
 
+	// if we've failed to read it before then don't try again
+	if( m_unreadables.count( file ) )
+	{
+		throw Exception( "Unreadable file '" + file + "'" );
+	}
+
+	// then try to load it normally
 	path resolvedPath = m_paths.find( file );
 	if( resolvedPath.empty() )
 	{
+		m_unreadables.insert( file );
 		string pathList;
 		for( list<path>::const_iterator it = m_paths.paths.begin(); it!=m_paths.paths.end(); it++ )
 		{
@@ -71,35 +75,46 @@ ConstObjectPtr CachedReader::Getter::operator()( const std::string &file, size_t
 	ReaderPtr r = Reader::create( resolvedPath.string() );
 	if( !r )
 	{
+		m_unreadables.insert( file );
 		throw Exception( "Could not create reader for '" + resolvedPath.string() + "'" );
 	}
 
-	ObjectPtr result = r->read();
+	object = r->read();
 	/// \todo Why would this ever be NULL? Wouldn't we have thrown an exception already if
 	/// we were unable to read the file?
-	if( !result )
+	if( !object )
 	{
+		m_unreadables.insert( file );
 		throw Exception( "Reader for '" + resolvedPath.string() + "' returned no data" );
 	}
 
-	cost = result->memoryUsage();
+	cost = object->memoryUsage();
 
-	return result;
+	return true;
 }
 
 CachedReader::CachedReader( const SearchPath &paths, size_t maxMemory )
-	:	m_paths( paths ), m_cache( Getter( m_paths ), maxMemory )
 {
+	m_fn.m_paths = paths;
+
+	m_cache.setMaxCost( maxMemory );
 }
 
 ConstObjectPtr CachedReader::read( const std::string &file )
 {
-	return m_cache.get( file );
+	ConstObjectPtr data;
+
+	bool result = m_cache.get( file, m_fn, data );
+	assert( result );
+	(void) result;
+
+	return data;
 }
 
 void CachedReader::insert( const std::string &file, ConstObjectPtr obj )
 {
 	m_cache.set( file, obj, obj->memoryUsage() );
+	m_fn.m_unreadables.erase( file );
 }
 
 bool CachedReader::cached( const std::string &file ) const
@@ -115,25 +130,24 @@ size_t CachedReader::memoryUsage() const
 void CachedReader::clear()
 {
 	m_cache.clear();
+	m_fn.m_unreadables.clear();
 }
 
 void CachedReader::clear( const std::string &file )
 {
 	m_cache.erase( file );
+	m_fn.m_unreadables.erase( file );
 }
 
 const SearchPath &CachedReader::getSearchPath() const
 {
-	return m_paths;
+	return m_fn.m_paths;
 }
 
 void CachedReader::setSearchPath( const SearchPath &paths )
 {
-	if( m_paths!=paths )
-	{
-		m_paths = paths;
-		clear();
-	}
+	m_fn.m_paths = paths;
+	clear();
 }
 
 size_t CachedReader::getMaxMemory() const

@@ -69,7 +69,7 @@ class PTCParticleReader : public IECore::ParticleReader
 		/// with the information available in the pointcloud header file
 		/// (worldToEye, worldToNdc, boundingBox, xResolution, yResolution and aspectRatio, variableTypes).
 		/// This method overwrites the base class implementation.
-		virtual IECore::ObjectPtr doOperation( const IECore::CompoundObject * operands );
+		virtual IECore::ObjectPtr doOperation( IECore::ConstCompoundObjectPtr operands );
 
 	private :
 
@@ -97,7 +97,7 @@ class PTCParticleReader : public IECore::ParticleReader
 		float *m_userDataBuffer;
 
 		template<typename T, typename F>
-		IECore::IntrusivePtr<T> filterAttr( IECore::IntrusivePtr<F> attr, float percentage );
+		boost::intrusive_ptr<T> filterAttr( boost::intrusive_ptr<F> attr, float percentage );
 
 		// reads several attributes in one operation and returns them in a CompoundData.
 		IECore::CompoundDataPtr readAttributes( const std::vector<std::string> &names );

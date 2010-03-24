@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -55,7 +55,7 @@ MatrixMotionTransform::~MatrixMotionTransform()
 {
 }
 
-void MatrixMotionTransform::render( Renderer *renderer ) const
+void MatrixMotionTransform::render( RendererPtr renderer ) const
 {
 	if( !m_snapshots.size() )
 	{
@@ -111,10 +111,10 @@ MatrixMotionTransform::SnapshotMap &MatrixMotionTransform::snapshots()
 	return m_snapshots;
 }
 
-void MatrixMotionTransform::copyFrom( const Object *other, CopyContext *context )
+void MatrixMotionTransform::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	Transform::copyFrom( other, context );
-	const MatrixMotionTransform *t = static_cast<const MatrixMotionTransform *>( other );
+	const MatrixMotionTransform *t = static_cast<const MatrixMotionTransform *>( other.get() );
 	m_snapshots = t->m_snapshots;
 }
 
@@ -160,13 +160,13 @@ void MatrixMotionTransform::load( LoadContextPtr context )
 	container->chdir( ".." );
 }
 
-bool MatrixMotionTransform::isEqualTo( const Object *other ) const
+bool MatrixMotionTransform::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !Transform::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const MatrixMotionTransform *t = static_cast<const MatrixMotionTransform *>( other );
+	ConstMatrixMotionTransformPtr t = static_pointer_cast<const MatrixMotionTransform>( other );
 	return m_snapshots == t->m_snapshots;
 }
 

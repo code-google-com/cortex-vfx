@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,8 +45,8 @@ using namespace boost;
 
 IE_CORE_DEFINERUNTIMETYPED( ChannelOp );
 
-ChannelOp::ChannelOp( const std::string &description )
-	:	ImagePrimitiveOp( description )
+ChannelOp::ChannelOp( const std::string &name, const std::string &description )
+	:	ImagePrimitiveOp( name, description )
 {
 
 	StringVectorDataPtr defaultChannels = new StringVectorData;
@@ -67,17 +67,17 @@ ChannelOp::~ChannelOp()
 {
 }
 
-StringVectorParameter * ChannelOp::channelNamesParameter()
+StringVectorParameterPtr ChannelOp::channelNamesParameter()
 {
 	return m_channelNamesParameter;
 }
 
-const StringVectorParameter * ChannelOp::channelNamesParameter() const
+ConstStringVectorParameterPtr ChannelOp::channelNamesParameter() const
 {
 	return m_channelNamesParameter;
 }
 
-void ChannelOp::modifyTypedPrimitive( ImagePrimitive * image, const CompoundObject * operands )
+void ChannelOp::modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObjectPtr operands )
 {
 	if( image->getDataWindow().isEmpty() )
 	{
@@ -112,9 +112,11 @@ void ChannelOp::modifyTypedPrimitive( ImagePrimitive * image, const CompoundObje
 			throw Exception( str( format( "Primitive variable \"%s\" has no data." ) % channelNames[i] ) );
 		}
 
-		if( !it->second.data->isInstanceOf( FloatVectorData::staticTypeId() ) )
+		if( !it->second.data->isInstanceOf( FloatVectorData::staticTypeId() ) &&
+			!it->second.data->isInstanceOf( HalfVectorData::staticTypeId() ) &&
+			!it->second.data->isInstanceOf( IntVectorData::staticTypeId() ) )
 		{
-			throw Exception( str( format( "Primitive variable \"%s\" is not a float vector." ) % channelNames[i] ) );
+			throw Exception( str( format( "Primitive variable \"%s\" has inappropriate type." ) % channelNames[i] ) );
 		}
 
 		size_t size = despatchTypedData<TypedDataSize>( it->second.data );
@@ -123,7 +125,7 @@ void ChannelOp::modifyTypedPrimitive( ImagePrimitive * image, const CompoundObje
 			throw Exception( str( format( "Primitive variable \"%s\" has wrong size (%d but should be %d)." ) % channelNames[i] % size % numPixels ) );
 		}
 
-		channels.push_back( staticPointerCast< FloatVectorData >( it->second.data ) );
+		channels.push_back( it->second.data );
 	}
 
 	modifyChannels( image->getDisplayWindow(), image->getDataWindow(), channels );

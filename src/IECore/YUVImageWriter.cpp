@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -58,13 +58,13 @@ IE_CORE_DEFINERUNTIMETYPED( YUVImageWriter )
 const Writer::WriterDescription<YUVImageWriter> YUVImageWriter::m_writerDescription("yuv");
 
 YUVImageWriter::YUVImageWriter() :
-		ImageWriter( "Serializes images to the Joint Photographic Experts Group (JPEG) format")
+		ImageWriter("YUVImageWriter", "Serializes images to the Joint Photographic Experts Group (JPEG) format")
 {
 	constructParameters();
 }
 
 YUVImageWriter::YUVImageWriter(ObjectPtr image, const string &fileName) :
-		ImageWriter( "Serializes images to the YUV (YCbCr)")
+		ImageWriter("YUVImageWriter", "Serializes images to the YUV (YCbCr)")
 {
 	constructParameters();
 	m_objectParameter->setValue( image );
@@ -136,32 +136,32 @@ std::string YUVImageWriter::destinationColorSpace() const
 	return "srgb";
 }
 
-IntParameter * YUVImageWriter::formatParameter()
+IntParameterPtr YUVImageWriter::formatParameter()
 {
 	return m_formatParameter;
 }
 
-const IntParameter * YUVImageWriter::formatParameter() const
+ConstIntParameterPtr YUVImageWriter::formatParameter() const
 {
 	return m_formatParameter;
 }
 
-V2fParameter * YUVImageWriter::kBkRParameter()
+V2fParameterPtr YUVImageWriter::kBkRParameter()
 {
 	return m_kBkRParameter;
 }
 
-const V2fParameter * YUVImageWriter::kBkRParameter() const
+ConstV2fParameterPtr YUVImageWriter::kBkRParameter() const
 {
 	return m_kBkRParameter;
 }
 
-Box3fParameter * YUVImageWriter::rangeParameter()
+Box3fParameterPtr YUVImageWriter::rangeParameter()
 {
 	return m_rangeParameter;
 }
 
-const Box3fParameter * YUVImageWriter::rangeParameter() const
+ConstBox3fParameterPtr YUVImageWriter::rangeParameter() const
 {
 	return m_rangeParameter;
 }
@@ -171,18 +171,18 @@ struct YUVImageWriter::ChannelConverter
 	typedef void ReturnType;
 
 	std::string m_channelName;
-	const ImagePrimitive * m_image;
+	ConstImagePrimitivePtr m_image;
 	Box2i m_dataWindow;
 	int m_channelOffset;
-	Color3fVectorData * m_rgbData;
+	Color3fVectorDataPtr m_rgbData;
 
-	ChannelConverter( const std::string &channelName, const ImagePrimitive * image, const Box2i &dataWindow, int channelOffset, Color3fVectorData * rgbData  )
+	ChannelConverter( const std::string &channelName, ConstImagePrimitivePtr image, const Box2i &dataWindow, int channelOffset, Color3fVectorDataPtr rgbData  )
 	: m_channelName( channelName ), m_image( image ), m_dataWindow( dataWindow ), m_channelOffset( channelOffset ), m_rgbData( rgbData )
 	{
 	}
 
 	template<typename T>
-	ReturnType operator()( T * dataContainer )
+	ReturnType operator()( typename T::Ptr dataContainer )
 	{
 		assert( dataContainer );
 
@@ -210,14 +210,14 @@ struct YUVImageWriter::ChannelConverter
 	struct ErrorHandler
 	{
 		template<typename T, typename F>
-		void operator()( const T * data, const F& functor )
+		void operator()( typename T::ConstPtr data, const F& functor )
 		{
 			throw InvalidArgumentException( ( boost::format( "YUVImageWriter: Invalid data type \"%s\" for channel \"%s\"." ) % Object::typeNameFromTypeId( data->typeId() ) % functor.m_channelName ).str() );
 		}
 	};
 };
 
-void YUVImageWriter::writeImage( const vector<string> &names, const ImagePrimitive * image, const Box2i &dataWindow ) const
+void YUVImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow ) const
 {
 	const V2f &kBkR = m_kBkRParameter->getTypedValue();
 	const Box3f &range = m_rangeParameter->getTypedValue();

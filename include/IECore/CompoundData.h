@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,40 +32,30 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+//! \file CompoundData.h
+/// Defines the CompoundData type.
 
-#ifndef IECORE_COMPOUNDDATA_H
-#define IECORE_COMPOUNDDATA_H
+#ifndef IE_CORE_COMPOUNDDATA_H
+#define IE_CORE_COMPOUNDDATA_H
 
-#include "IECore/CompoundDataBase.h"
+#include "IECore/TypedData.h"
+#include "IECore/Interned.h"
+
+#include <map>
+#include <string>
 
 namespace IECore
 {
 
-/// A class for storing a map of named Data items.
-class CompoundData : public CompoundDataBase
-{
-	public :
-	
-		CompoundData();
-		CompoundData( const CompoundDataMap &members );
+/// The type of Data held by the CompoundData typedef.
+typedef std::map< InternedString, DataPtr > CompoundDataMap;
+/// A subclass of Data which stores a map of other named Data
+/// objects - a CompoundDataMap. This is accessible as usual
+/// via the readable() and writable() member functions.
+typedef TypedData< CompoundDataMap > CompoundData;
 
-		IE_CORE_DECLAREOBJECT( CompoundData, CompoundDataBase );
-		
-		/// Convenience functions to find a child Data object. In the case of
-		/// the child not existing or not matching the specified type, behaviour
-		/// is defined by the throwExceptions parameter. When true a descriptive
-		/// Exception is thrown, and when false 0 is returned.
-		template<typename T>
-		T *member( const InternedString &name, bool throwExceptions=false );
-		template<typename T>
-		const T *member( const InternedString &name, bool throwExceptions=false ) const;
-		
-};
-
-IE_CORE_DECLAREPTR( CompoundData );
+IE_CORE_DECLAREPTR(CompoundData);
 
 } // namespace IECore
-
-#include "IECore/CompoundData.inl"
 
 #endif // IE_CORE_COMPOUNDDATA_H

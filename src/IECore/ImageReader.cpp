@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,7 +41,6 @@
 #include "IECore/ObjectParameter.h"
 #include "IECore/NullObject.h"
 #include "IECore/BoxOps.h"
-#include "IECore/ColorSpaceTransformOp.h"
 
 using namespace std;
 using namespace IECore;
@@ -50,8 +49,8 @@ using namespace Imath;
 
 IE_CORE_DEFINERUNTIMETYPED( ImageReader );
 
-ImageReader::ImageReader( const std::string &description ) :
-		Reader( description, new ObjectParameter( "result", "The loaded object", new NullObject, ImagePrimitive::staticTypeId() ) )
+ImageReader::ImageReader( const std::string &name, const std::string &description ) :
+		Reader( name, description, new ObjectParameter( "result", "The loaded object", new NullObject, ImagePrimitive::staticTypeId() ) )
 {
 	m_dataWindowParameter = new Box2iParameter(
 		"dataWindow",
@@ -74,44 +73,14 @@ ImageReader::ImageReader( const std::string &description ) :
 		"then all channels are loaded."
 	);
 
-	std::vector< std::string > colorSpaces;
-	ColorSpaceTransformOp::inputColorSpaces( colorSpaces );
-	StringParameter::PresetsContainer colorSpacesPresets;
-	colorSpacesPresets.push_back( StringParameter::Preset( "Auto Detect", "autoDetect" ) );
-	for ( std::vector< std::string >::const_iterator it = colorSpaces.begin(); it != colorSpaces.end(); it++ )
-	{
-		colorSpacesPresets.push_back( StringParameter::Preset( *it, *it ) );
-	}
-
-	m_colorspaceParameter = new StringParameter(
-		"colorSpace",
-		"Specifies color space that the loaded image was stored. "
-		"The reader always try to return you a linear color space image. "
-		"So if you don't want color maniputation select 'linear'. "
-		"Use Auto Detect for using the default conversions specific to "
-		"the file format of the image.",
-		"autoDetect",
-		colorSpacesPresets,
-		true
-	);
-
-	m_rawChannelsParameter = new BoolParameter(
-		"rawChannels",
-		"Specifies if the returned data channels should be what's stored in the file. That's not possible when "
-		"the image pixels are not byte aligned. Color space settings will not take effect when this parameter is "
-		"on.",
-		false
-	);
-
 	parameters()->addParameter( m_dataWindowParameter );
 	parameters()->addParameter( m_displayWindowParameter );
 	parameters()->addParameter( m_channelNamesParameter );
-	parameters()->addParameter( m_colorspaceParameter );
-	parameters()->addParameter( m_rawChannelsParameter );
 }
 
-ObjectPtr ImageReader::doOperation( const CompoundObject *operands )
+ObjectPtr ImageReader::doOperation( ConstCompoundObjectPtr operands )
 {
+
 	Box2i displayWind = displayWindowParameter()->getTypedValue();
 	if( displayWind.isEmpty() )
 	{
@@ -119,12 +88,6 @@ ObjectPtr ImageReader::doOperation( const CompoundObject *operands )
 	}
 	Box2i dataWind = dataWindowToRead();
 
-	bool rawChannels = operands->member< BoolData >( "rawChannels" )->readable();
-	std::string colorspace = operands->member< StringData >( "colorSpace" )->readable();
-	if ( colorspace == "autoDetect" )
-	{
-		colorspace = sourceColorSpace();
-	}
 
 	// create our ImagePrimitive
 	ImagePrimitivePtr image = new ImagePrimitive( dataWind, displayWind );
@@ -139,33 +102,23 @@ ObjectPtr ImageReader::doOperation( const CompoundObject *operands )
 	vector<string>::const_iterator ci = channelNames.begin();
 	while( ci != channelNames.end() )
 	{
-		DataPtr d = readChannel( *ci, dataWind, rawChannels );
+		DataPtr d = readChannel( *ci, dataWind );
+
 		assert( d  );
-		assert( rawChannels || d->typeId()==FloatVectorDataTypeId );
+		assert( d->typeId()==FloatVectorDataTypeId || d->typeId()==HalfVectorDataTypeId || d->typeId()==UIntVectorDataTypeId );
 
 		PrimitiveVariable p( PrimitiveVariable::Vertex, d );
 		assert( image->isPrimitiveVariableValid( p ) );
 
 		image->variables[*ci] = p;
-		ci++;
-	}
 
-	if ( colorspace != "linear" && !rawChannels )
-	{
-		// color convert the image to linear colorspace if R,G,B are there.
-		ColorSpaceTransformOpPtr transformOp = new ColorSpaceTransformOp();
-		transformOp->inputColorSpaceParameter()->setTypedValue( colorspace );
-		transformOp->outputColorSpaceParameter()->setTypedValue( "linear" );
-		transformOp->inputParameter()->setValue( image );
-		transformOp->copyParameter()->setTypedValue( false );
-		transformOp->channelsParameter()->setTypedValue( channelNames );
-		transformOp->operate();
+		ci++;
 	}
 
 	return image;
 }
 
-DataPtr ImageReader::readChannel( const std::string &name, bool raw )
+DataPtr ImageReader::readChannel( const std::string &name )
 {
 	vector<string> allNames;
 	channelNames( allNames );
@@ -176,7 +129,7 @@ DataPtr ImageReader::readChannel( const std::string &name, bool raw )
 	}
 
 	Box2i d = dataWindowToRead();
-	return readChannel( name, d, raw );
+	return readChannel( name, d );
 }
 
 void ImageReader::channelsToRead( vector<string> &names )
@@ -184,8 +137,8 @@ void ImageReader::channelsToRead( vector<string> &names )
 	vector<string> allNames;
 	channelNames( allNames );
 
-	ConstStringVectorParameterPtr p = channelNamesParameter();
-	const StringVectorData *d = static_cast<const StringVectorData *>( p->getValue() );
+	ConstStringVectorParameterPtr p = parameters()->parameter<StringVectorParameter>("channels");
+	ConstStringVectorDataPtr d = static_pointer_cast<const StringVectorData>(p->getValue());
 
 	// give all channels when no list is provided
 	if (!d->readable().size())
@@ -225,54 +178,34 @@ Imath::Box2i ImageReader::dataWindowToRead()
 	return d;
 }
 
-Box2iParameter * ImageReader::dataWindowParameter()
+Box2iParameterPtr ImageReader::dataWindowParameter()
 {
 	return m_dataWindowParameter;
 }
 
-const Box2iParameter * ImageReader::dataWindowParameter() const
+ConstBox2iParameterPtr ImageReader::dataWindowParameter() const
 {
 	return m_dataWindowParameter;
 }
 
-Box2iParameter * ImageReader::displayWindowParameter()
+Box2iParameterPtr ImageReader::displayWindowParameter()
 {
 	return m_displayWindowParameter;
 }
 
-const Box2iParameter * ImageReader::displayWindowParameter() const
+ConstBox2iParameterPtr ImageReader::displayWindowParameter() const
 {
 	return m_displayWindowParameter;
 }
 
-StringVectorParameter * ImageReader::channelNamesParameter()
+StringVectorParameterPtr ImageReader::channelNamesParameter()
 {
 	return m_channelNamesParameter;
 }
 
-const StringVectorParameter * ImageReader::channelNamesParameter() const
+ConstStringVectorParameterPtr ImageReader::channelNamesParameter() const
 {
 	return m_channelNamesParameter;
-}
-
-StringParameter * ImageReader::colorspaceParameter()
-{
-	return m_colorspaceParameter;
-}
-
-const StringParameter * ImageReader::colorspaceParameter() const
-{
-	return m_colorspaceParameter;
-}
-
-BoolParameter * ImageReader::rawChannelsParameter()
-{
-	return m_rawChannelsParameter;
-}
-
-const BoolParameter * ImageReader::rawChannelsParameter() const
-{
-	return m_rawChannelsParameter;
 }
 
 CompoundObjectPtr ImageReader::readHeader()

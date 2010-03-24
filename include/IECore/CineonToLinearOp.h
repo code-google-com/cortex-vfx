@@ -52,14 +52,14 @@ class CineonToLinearOp : public ChannelOp
 
 		IE_CORE_DECLARERUNTIMETYPED( CineonToLinearOp, ChannelOp );
 
-		FloatParameter *filmGammaParameter();
-		const FloatParameter *filmGammaParameter() const;
+		FloatParameterPtr filmGammaParameter();
+		ConstFloatParameterPtr filmGammaParameter() const;
 
-		IntParameter *refWhiteValParameter();
-		const IntParameter *refWhiteValParameter() const;
+		IntParameterPtr refWhiteValParameter();
+		ConstIntParameterPtr refWhiteValParameter() const;
 
-		IntParameter *refBlackValParameter();
-		const IntParameter *refBlackValParameter() const;
+		IntParameterPtr refBlackValParameter();
+		ConstIntParameterPtr refBlackValParameter() const;
 
 		static CompoundParameterPtr createCineonSettings();
 

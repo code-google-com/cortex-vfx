@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -61,9 +61,6 @@ class SphericalHarmonics
 
 		const SphericalHarmonics & operator =( const SphericalHarmonics &sh );
 
-		// assign the same value to all coefficients
-		const SphericalHarmonics & operator =( const V &v );
-
 		// return number of spherical harmonics bands represented by this object
 		unsigned int bands() const
 		{
@@ -111,7 +108,7 @@ class SphericalHarmonics
 		}
 
 		// convolves a given SH kernel on the current SH object.
-		// The kernel should be a function dependent only on theta (non-zero coefficients at i*(i+1) for i in [0 to bands-1]).
+		// The kernel should be a function dependent only on theta.
 		template < typename T >
 		void convolve( const SphericalHarmonics<T> &s );
 

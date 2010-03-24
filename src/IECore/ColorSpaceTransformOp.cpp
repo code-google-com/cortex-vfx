@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -55,7 +55,9 @@ using namespace boost;
 IE_CORE_DEFINERUNTIMETYPED( ColorSpaceTransformOp );
 
 ColorSpaceTransformOp::ColorSpaceTransformOp()
-	:	ImagePrimitiveOp( "Converts channels from one named colorspace to another. Additional colorspaces can be registered at runtime." )
+	:	ImagePrimitiveOp( "ColorSpaceTransformOp",
+				   "Converts channels from one named colorspace to another. Additional colorspaces can be registered at runtime."
+		)
 {
 	m_inputColorSpaceParameter = new StringParameter(
 		"inputColorSpace",
@@ -70,14 +72,10 @@ ColorSpaceTransformOp::ColorSpaceTransformOp()
 	);
 
 	StringVectorData::ValueType defaultChannels;
-	defaultChannels.push_back( "R" );
-	defaultChannels.push_back( "G" );
-	defaultChannels.push_back( "B" );
-	m_channelsParameter = new StringVectorParameter(
-		"channels",
-		"The names of all channels to convert on the image. "
-		"The order of the channels listed is important if the conversion is done by a ColorTransformOp. "
-		"In that case it is expected to receive Red,Green,Blue channels respectively.",
+	defaultChannels.push_back( "R,G,B" );
+	m_channelSetsParameter = new StringVectorParameter(
+		"channelSets",
+		"todo",
 		new StringVectorData( defaultChannels )
 	);
 
@@ -97,7 +95,7 @@ ColorSpaceTransformOp::ColorSpaceTransformOp()
 
 	parameters()->addParameter( m_inputColorSpaceParameter );
 	parameters()->addParameter( m_outputColorSpaceParameter );
-	parameters()->addParameter( m_channelsParameter );
+	parameters()->addParameter( m_channelSetsParameter );
 	parameters()->addParameter( m_alphaPrimVarParameter );
 	parameters()->addParameter( m_premultipliedParameter );
 }
@@ -106,57 +104,57 @@ ColorSpaceTransformOp::~ColorSpaceTransformOp()
 {
 }
 
-StringParameter *ColorSpaceTransformOp::inputColorSpaceParameter()
+StringParameterPtr ColorSpaceTransformOp::inputColorSpaceParameter()
 {
 	return m_inputColorSpaceParameter;
 }
 
-const StringParameter *ColorSpaceTransformOp::inputColorSpaceParameter() const
+ConstStringParameterPtr ColorSpaceTransformOp::inputColorSpaceParameter() const
 {
 	return m_inputColorSpaceParameter;
 }
 
-StringParameter *ColorSpaceTransformOp::outputColorSpaceParameter()
+StringParameterPtr ColorSpaceTransformOp::outputColorSpaceParameter()
 {
 	return m_outputColorSpaceParameter;
 }
 
-const StringParameter *ColorSpaceTransformOp::outputColorSpaceParameter() const
+ConstStringParameterPtr ColorSpaceTransformOp::outputColorSpaceParameter() const
 {
 	return m_outputColorSpaceParameter;
 }
 
-StringVectorParameter *ColorSpaceTransformOp::channelsParameter()
+StringVectorParameterPtr ColorSpaceTransformOp::channelSetsParameter()
 {
-	return m_channelsParameter;
+	return m_channelSetsParameter;
 }
 
-const StringVectorParameter *ColorSpaceTransformOp::channelsParameter() const
+ConstStringVectorParameterPtr ColorSpaceTransformOp::channelSetsParameter() const
 {
-	return m_channelsParameter;
+	return m_channelSetsParameter;
 }
 
-StringParameter *ColorSpaceTransformOp::alphaPrimVarParameter()
-{
-	return m_alphaPrimVarParameter;
-}
-
-const StringParameter *ColorSpaceTransformOp::alphaPrimVarParameter() const
+StringParameterPtr ColorSpaceTransformOp::alphaPrimVarParameter()
 {
 	return m_alphaPrimVarParameter;
 }
 
-BoolParameter *ColorSpaceTransformOp::premultipliedParameter()
+ConstStringParameterPtr ColorSpaceTransformOp::alphaPrimVarParameter() const
+{
+	return m_alphaPrimVarParameter;
+}
+
+BoolParameterPtr ColorSpaceTransformOp::premultipliedParameter()
 {
 	return m_premultipliedParameter;
 }
 
-const BoolParameter *ColorSpaceTransformOp::premultipliedParameter() const
+ConstBoolParameterPtr ColorSpaceTransformOp::premultipliedParameter() const
 {
 	return m_premultipliedParameter;
 }
 
-void ColorSpaceTransformOp::registerConversion( const InputColorSpace &inputColorSpace, const OutputColorSpace &outputColorSpace, const CreatorFn &creator )
+void ColorSpaceTransformOp::registerConversion( const InputColorSpace &inputColorSpace, const OutputColorSpace &outputColorSpace, CreatorFn creator, void *data )
 {
 	if ( inputColorSpace != outputColorSpace )
 	{
@@ -168,11 +166,9 @@ void ColorSpaceTransformOp::registerConversion( const InputColorSpace &inputColo
 		}
 		conversionsSet().insert( conversion );
 
-		CreatorFn *pCreator = new CreatorFn( creator );
+		converterTypes()[ creator ] = conversion;
 
-		converterTypes()[ pCreator ] = conversion;
-
-		ConversionInfo info( pCreator, inputColorSpace, outputColorSpace );
+		ConversionInfo info( creator, inputColorSpace, outputColorSpace, data );
 
 		converters().insert(
 			ConvertersMap::value_type(
@@ -312,7 +308,7 @@ void ColorSpaceTransformOp::findConversion(
 	}
 }
 
-void ColorSpaceTransformOp::modifyTypedPrimitive( ImagePrimitive * image, const CompoundObject * operands )
+void ColorSpaceTransformOp::modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObjectPtr operands )
 {
 	const InputColorSpace &inputColorSpace = m_inputColorSpaceParameter->getTypedValue();
 	const OutputColorSpace &outputColorSpace = m_outputColorSpaceParameter->getTypedValue();
@@ -333,47 +329,22 @@ void ColorSpaceTransformOp::modifyTypedPrimitive( ImagePrimitive * image, const 
 	std::vector< std::string > channelNames;
 	typedef std::vector< std::vector< std::string > > ChannelSets;
 	ChannelSets channelSets;
-	std::vector< std::string > channels;
 
-	for ( std::vector< std::string >::const_iterator it = channelsParameter()->getTypedValue().begin(); it != channelsParameter()->getTypedValue().end(); ++it )
+	typedef boost::tokenizer<boost::char_separator<char> > Tokenizer;
+	for ( std::vector< std::string >::const_iterator it = channelSetsParameter()->getTypedValue().begin(); it != channelSetsParameter()->getTypedValue().end(); ++it )
 	{
-		const std::string &channelName = *it;
+		boost::tokenizer<boost::char_separator<char> > t( *it, char_separator<char>( ", " ) );
 
-		channelNames.push_back( channelName );
+		std::vector< std::string > channels;
+		copy( t.begin(), t.end(), back_insert_iterator< std::vector< std::string > >( channels ) );
+		copy( t.begin(), t.end(), back_insert_iterator< std::vector< std::string > >( channelNames ) );
 
-		PrimitiveVariableMap::iterator channelIt = image->variables.find( channelName );
-		if( channelIt==image->variables.end() || !(channelIt->second.data) )
+		if ( channels.size() != 1 && channels.size() != 3 )
 		{
-			throw Exception( str( format( "Channel \"%s\" does not exist." ) % channelName ) );
+			throw InvalidArgumentException( ( boost::format( "ColorSpaceTransformOp: Don't know what to do with channel set '%s' - must specify either 1 or 3 elements" ) % *it ).str()  );
 		}
 
-		TypeId type = channelIt->second.data->typeId();
-
-		if ( type == Color3fVectorDataTypeId || type == Color3dVectorDataTypeId )
-		{
-			// color data types define the three channels.
-
-			if ( channels.size() )
-			{
-				/// silently ignores malformed sets.
-				channels.clear();
-			}
-			channels.push_back( channelName );
-			channelSets.push_back( channels );
-			channels.clear();
-		}
-		else
-		{
-			// simple data types are assigned to one image channel.
-
-			channels.push_back( channelName );
-
-			if ( channels.size() == 3 )
-			{
-				channelSets.push_back( channels );
-				channels.clear();
-			}
-		}
+		channelSets.push_back( channels );
 	}
 
 	bool first = true;
@@ -394,7 +365,7 @@ void ColorSpaceTransformOp::modifyTypedPrimitive( ImagePrimitive * image, const 
 		{
 			assert( previous.get<2>() == current.get<1>() );
 		}
-		ModifyOpPtr currentConversion = (*current.get<0>())( current.get<1>(), current.get<2>() );
+		ModifyOpPtr currentConversion = (current.get<0>())( current.get<1>(), current.get<2>(), current.get<3>() );
 		assert( currentConversion );
 
 		if ( !currentConversion->isInstanceOf( ChannelOpTypeId ) && !currentConversion->isInstanceOf( ColorTransformOpTypeId ) )
@@ -416,7 +387,7 @@ void ColorSpaceTransformOp::modifyTypedPrimitive( ImagePrimitive * image, const 
 		{
 			assert( currentConversion->isInstanceOf( ColorTransformOpTypeId ) );
 
-			ColorTransformOpPtr op = dynamicPointerCast< ColorTransformOp >( currentConversion );
+			ColorTransformOpPtr op = boost::dynamic_pointer_cast< ColorTransformOp >( currentConversion );
 
 			for ( ChannelSets::const_iterator it = channelSets.begin(); it != channelSets.end(); ++it )
 			{
@@ -446,11 +417,11 @@ void ColorSpaceTransformOp::modifyTypedPrimitive( ImagePrimitive * image, const 
 
 				}
 				result = runTimeCast< ImagePrimitive >( op->operate() );
-				assert( result.get() == image );
+				assert( result.get() == image.get() );
 			}
 		}
 
-		assert( result.get() == image );
+		assert( result.get() == image.get() );
 		( void ) result;
 
 		previous = current;

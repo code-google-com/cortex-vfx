@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -49,6 +49,7 @@ IE_CORE_DEFINERUNTIMETYPED( UVDistortOp );
 
 UVDistortOp::UVDistortOp()
 	:	WarpOp(
+			"UVDistortOp",
 			"Distorts an ImagePrimitive by using a UV map as reference. The UV map must have the same pixel aspect then the image to be distorted. "
 			"The resulting image will have the same data window as the reference UV map."
 		), m_u(0), m_v(0)
@@ -67,20 +68,20 @@ UVDistortOp::~UVDistortOp()
 {
 }
 
-ObjectParameter * UVDistortOp::uvMapParameter()
+ObjectParameterPtr UVDistortOp::uvMapParameter()
 {
 	return m_uvMapParameter;
 }
 
-const ObjectParameter * UVDistortOp::uvMapParameter() const
+ConstObjectParameterPtr UVDistortOp::uvMapParameter() const
 {
 	return m_uvMapParameter;
 }
 
-void UVDistortOp::begin( const CompoundObject * operands )
+void UVDistortOp::begin( ConstCompoundObjectPtr operands )
 {
 	assert( runTimeCast< ImagePrimitive >(m_uvMapParameter->getValue()) );
-	ImagePrimitive *uvImage = static_cast<ImagePrimitive *>(m_uvMapParameter->getValue());
+	ImagePrimitivePtr uvImage = static_pointer_cast<ImagePrimitive>(m_uvMapParameter->getValue());
 	PrimitiveVariableMap::iterator mit;
 	mit = uvImage->variables.find( "R" );
 	if ( mit == uvImage->variables.end() )
@@ -111,7 +112,7 @@ void UVDistortOp::begin( const CompoundObject * operands )
 	}
 
 	assert( runTimeCast< ImagePrimitive >(inputParameter()->getValue()) );
-	ImagePrimitive *inputImage = static_cast<ImagePrimitive *>( inputParameter()->getValue() );
+	ImagePrimitivePtr inputImage = static_pointer_cast<ImagePrimitive>( inputParameter()->getValue() );
 	m_uvSize = uvImage->getDataWindow().size();
 	m_uvOrigin = uvImage->getDataWindow().min;
 	m_imageSize = inputImage->getDisplayWindow().size();
@@ -154,8 +155,8 @@ Imath::V2f UVDistortOp::warp( const Imath::V2f &p ) const
 	UVDistortOp::Lookup lookup( pos );
 
 	return Imath::V2f(
-		despatchTypedData< UVDistortOp::Lookup, TypeTraits::IsFloatVectorTypedData>( constPointerCast<Data>(m_u), lookup ),
-		despatchTypedData< UVDistortOp::Lookup, TypeTraits::IsFloatVectorTypedData>( constPointerCast<Data>(m_v), lookup )
+		despatchTypedData< UVDistortOp::Lookup, TypeTraits::IsFloatVectorTypedData>( const_pointer_cast<Data>(m_u), lookup ),
+		despatchTypedData< UVDistortOp::Lookup, TypeTraits::IsFloatVectorTypedData>( const_pointer_cast<Data>(m_v), lookup )
 	) * m_imageSize + m_imageOrigin;
 }
 

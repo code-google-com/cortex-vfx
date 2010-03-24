@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,6 +39,8 @@
 #include <map>
 #include <string>
 
+#include "boost/utility.hpp"
+
 #include "IECore/RunTimeTyped.h"
 #include "IECore/IndexedIOInterface.h"
 
@@ -59,10 +61,10 @@ IE_CORE_FORWARDDECLARE( Object );
 
 #define IE_CORE_DECLAREOBJECTMEMBERFNS( TYPENAME )																		\
 	public :																											\
-		TYPENAME::Ptr copy() const { return IECore::staticPointerCast<TYPENAME>( IECore::Object::copy() ); }			\
-		bool isEqualTo( const IECore::Object *other ) const;															\
+		TYPENAME::Ptr copy() const { return boost::static_pointer_cast<TYPENAME>( Object::copy() ); }	\
+		bool isEqualTo( IECore::ConstObjectPtr other ) const;															\
 	protected :																											\
-		virtual void copyFrom( const IECore::Object *other, IECore::Object::CopyContext *context );						\
+		virtual void copyFrom( IECore::ConstObjectPtr other, IECore::Object::CopyContext *context );					\
 		virtual void save( IECore::Object::SaveContext *context ) const;								 				\
 		virtual void load( IECore::Object::LoadContextPtr context );  								   					\
 		virtual void memoryUsage( IECore::Object::MemoryAccumulator & ) const;											\
@@ -94,7 +96,7 @@ IE_CORE_FORWARDDECLARE( Object );
 	const IECore::Object::AbstractTypeDescription<TYPENAME> TYPENAME::m_typeDescription									\
 
 /// A base class defining copying and streaming.
-class Object : public RunTimeTyped
+class Object : public RunTimeTyped, private boost::noncopyable
 {
 	public:
 
@@ -126,14 +128,14 @@ class Object : public RunTimeTyped
 		/// your base class isEqualTo() and returning false straight away
 		/// if that returns false. The Object level implementation checks that
 		/// the types are identical, so you can safely perform a
-		/// staticPointerCast<YourClass>( other ) if your base class isEqualTo()
+		/// static_pointer_cast<YourClass>( other ) if your base class isEqualTo()
 		/// doesn't return false.
-		virtual bool isEqualTo( const Object *other ) const = 0;
+		virtual bool isEqualTo( ConstObjectPtr other ) const = 0;
 		/// Returns true if this object is not equal to the other. A default
 		/// implementation for this returns the negation of isEqualTo(), but you
 		/// may wish to override it if you can provide a faster implementation
 		/// for a specific subclass.
-		virtual bool isNotEqualTo( const Object *other ) const;
+		virtual bool isNotEqualTo( ConstObjectPtr other ) const;
 		/// Calls isEqualTo() for people who prefer to use the operator syntax.
 		bool operator==( const Object &other ) const;
 		/// Calls isNotEqualTo() for people who prefer to use the operator syntax.
@@ -213,9 +215,9 @@ class Object : public RunTimeTyped
 			public :
 				/// Returns a copy of the specified object.
 				template<class T>
-				IntrusivePtr<T> copy( const T *toCopy );
+				boost::intrusive_ptr<T> copy( boost::intrusive_ptr<const T> toCopy );
 			private :
-				std::map<const Object *, Object *> m_copies;
+				std::map<ConstObjectPtr, ObjectPtr> m_copies;
 		};
 
 		/// Must be implemented in all subclasses to make a deep copy of
@@ -225,7 +227,7 @@ class Object : public RunTimeTyped
 		/// rather than calling copy() or copyFrom() yourself.
 		/// \todo Think about adding public access to copyFrom() by providing a small
 		/// method which creates a new CopyContext, similar to how copy, load, and save work.
-		virtual void copyFrom( const Object *other, CopyContext *context ) = 0;
+		virtual void copyFrom( ConstObjectPtr other, CopyContext *context ) = 0;
 
 		/// The class provided to the save() method implemented by subclasses.
 		class SaveContext
@@ -244,7 +246,7 @@ class Object : public RunTimeTyped
 				IndexedIOInterfacePtr container( const std::string &typeName, unsigned int ioVersion );
 				/// Saves an Object instance, saving only a reference in the case that the object has
 				/// already been saved.
-				void save( const Object *toSave, IndexedIOInterfacePtr o, const IndexedIO::EntryID &name );
+				void save( ConstObjectPtr toSave, IndexedIOInterfacePtr o, const IndexedIO::EntryID &name );
 				/// Returns an interface to an alternative container in which to save class data. This container
 				/// is provided for optimisation reasons and should be used only in extreme cases. The container
 				/// provides no protection from overwriting of your class data by base or derived classes, and
@@ -257,7 +259,7 @@ class Object : public RunTimeTyped
 				IndexedIOInterfacePtr rawContainer();
 			private :
 
-				typedef std::map<const Object *, IndexedIO::EntryID> SavedObjectMap;
+				typedef std::map<ConstObjectPtr, IndexedIO::EntryID> SavedObjectMap;
 				typedef std::map<IndexedIOInterfacePtr, IndexedIO::EntryID> ContainerRootsMap;
 
 				SaveContext( IndexedIOInterfacePtr ioInterface, const IndexedIO::EntryID &root,
@@ -329,7 +331,7 @@ class Object : public RunTimeTyped
 				void accumulate( size_t bytes );
 				/// Adds object->memoryUsage() to the total, but only
 				/// if that object hasn't been accumulated already.
-				void accumulate( const Object *object );
+				void accumulate( ConstObjectPtr object );
 				/// Adds bytes to the total, but only if the specified
 				/// pointer hasn't been passed to this call already.
 				void accumulate( const void *ptr, size_t bytes );

@@ -41,6 +41,7 @@
 #include "maya/MPxCommand.h"
 
 #include "IECore/ParameterisedProcedural.h"
+#include "IECore/CompoundObject.h"
 
 namespace IECoreMaya
 {

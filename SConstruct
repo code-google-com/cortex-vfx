@@ -41,9 +41,9 @@ import re
 EnsureSConsVersion( 0, 97 )
 SConsignFile()
 
-ieCoreMajorVersion=5
-ieCoreMinorVersion=0
-ieCorePatchVersion=0
+ieCoreMajorVersion=4
+ieCoreMinorVersion=17
+ieCorePatchVersion=5
 
 ###########################################################################################
 # Command line options
@@ -89,26 +89,6 @@ o.Add(
 	[]
 )
 
-# TBB options
-
-o.Add(
-	"TBB_INCLUDE_PATH",
-	"The path to the tbb include directory.",
-	"/usr/local/include/tbb",
-)
-
-o.Add(
-	"TBB_LIB_PATH",
-	"The path to the tbb library directory.",
-	"/usr/local/lib",
-)
-
-o.Add(
-	"TBB_LIB_SUFFIX",
-	"The suffix appended to the names of the tbb libraries. You can modify this "
-	"to link against libraries installed with non-defalt names.",
-	"",
-)
 
 # Boost options
 
@@ -256,12 +236,6 @@ o.Add(
 	"/usr/local/foundry/nuke"
 )
 
-o.Add(
-	"NUKE_LICENSE_FILE",
-	"The path to the FlexLM license file to use for Nuke. This is necessary to run the tests.",
-	"/usr/local/foundry/FLEXlm",
-)
-
 # Truelight options
 
 o.Add(
@@ -302,11 +276,6 @@ o.Add(
 	"/usr/flexlm/license.dat",
 )
 
-o.Add(
-	"MAYA_ADLM_ENV_FILE",
-	"The path to ADLM env xml file to use as of Maya 2010.",
-	"/usr/adlm/AdlmThinClientCustomEnv.xml",
-)
 
 o.Add(
 	BoolOption( 
@@ -354,13 +323,6 @@ o.Add(
 o.Add(
 	"INSTALL_LIB_NAME",
 	"The name under which to install the libraries.",
-	"$INSTALL_PREFIX/lib/$IECORE_NAME",
-)
-
-o.Add(
-	"INSTALL_PYTHONLIB_NAME",
-	"The name under which to install the python library. This can "
-	"be used to build and install the library for multiple python versions.",
 	"$INSTALL_PREFIX/lib/$IECORE_NAME",
 )
 
@@ -533,14 +495,13 @@ o.Add(
 	""
 )
 	
-libraryPathEnvVar = "DYLD_LIBRARY_PATH" if Environment()["PLATFORM"]=="darwin" else "LD_LIBRARY_PATH"
 o.Add(
 	"TEST_LIBRARY_PATH_ENV_VAR",
 	"This is a curious one, probably only ever necessary at image engine. It "
 	"specifies the name of an environment variable used to specify the library "
 	"search paths correctly when running the tests. Defaults to LD_LIBRARY_PATH on "
 	"Linux and DYLD_LIBRARY_PATH on OSX.",
-	libraryPathEnvVar
+	"DYLD_LIBRARY_PATH" if Environment()["PLATFORM"]=="darwin" else "LD_LIBRARY_PATH"
 )
 
 # Documentation options
@@ -589,7 +550,6 @@ env.Append(
 env.Prepend(
 	CPPPATH = [
 		"include",
-		"$TBB_INCLUDE_PATH",
 		"$OPENEXR_INCLUDE_PATH",
 		# we use "OpenEXR/x.h" and they use "x.h"
 		os.path.join( "$OPENEXR_INCLUDE_PATH","OpenEXR" ),
@@ -599,7 +559,6 @@ env.Prepend(
 		"$FREETYPE_INCLUDE_PATH",
 	],
 	LIBPATH = [
-		"$TBB_LIB_PATH",
 		"$BOOST_LIB_PATH",
 		"$OPENEXR_LIB_PATH",
 		"$JPEG_LIB_PATH",
@@ -677,10 +636,6 @@ if doConfigure :
 		sys.stderr.write( "ERROR : unable to find the OpenEXR libraries - check OPENEXR_INCLUDE_PATH and OPENEXR_LIB_PATH.\n" )
 		Exit( 1 )
 		
-	if not c.CheckLibWithHeader( "tbb" + env["TBB_LIB_SUFFIX"], "tbb/tbb.h", "C++" ) :
-		sys.stderr.write( "ERROR : unable to find the TBB libraries - check TBB_INCLUDE_PATH and TBB_LIB_PATH.\n" )
-		Exit( 1 )	
-		
 	c.Finish()
 		
 env.Append( LIBS = [
@@ -742,14 +697,11 @@ pythonEnv.Append( LIBS = [
 	]
 )
 pythonEnv.Prepend( LIBPATH = [ "./lib" ] )
+pythonEnv["SHLIBPREFIX"] = ""
+pythonEnv["SHLIBSUFFIX"] = ".so"
 
-pythonModuleEnv = pythonEnv.Copy()
-
-pythonModuleEnv["SHLIBPREFIX"] = ""
-pythonModuleEnv["SHLIBSUFFIX"] = ".so"
-
-if pythonModuleEnv["PLATFORM"]=="darwin" :
-	pythonModuleEnv.Append( SHLINKFLAGS = "-single_module" )
+if pythonEnv["PLATFORM"]=="darwin" :
+	pythonEnv.Append( SHLINKFLAGS = "-single_module" )
 	
 ###########################################################################################
 # An environment for running tests
@@ -765,7 +717,7 @@ if testEnv["TEST_LIBPATH"] != "" :
 	testEnvLibPath += ":" + testEnv["TEST_LIBPATH"]
 
 testEnv["ENV"][testEnv["TEST_LIBRARY_PATH_ENV_VAR"]] = testEnvLibPath
-testEnv["ENV"][libraryPathEnvVar] = testEnvLibPath
+testEnv["ENV"]["DYLD_LIBRARY_PATH" if Environment()["PLATFORM"]=="darwin" else "LD_LIBRARY_PATH"] = testEnvLibPath
 testEnv["ENV"]["IECORE_PROCEDURAL_PATHS"] = "test/IECore/procedurals"
 testEnv["ENV"]["IECORE_OP_PATHS"] = "test/IECore/ops"
 
@@ -861,18 +813,14 @@ def makeSymLink( target, source ) :
 ###########################################################################################
 
 coreEnv = env.Copy( IECORE_NAME="IECore" )
-corePythonEnv = pythonEnv.Copy( IECORE_NAME="IECorePython" )
-corePythonModuleEnv = pythonModuleEnv.Copy( IECORE_NAME="IECore" )
+corePythonEnv = pythonEnv.Copy( IECORE_NAME="IECore" )
 coreTestEnv = testEnv.Copy()
-
-allCoreEnvs = ( coreEnv, corePythonEnv, corePythonModuleEnv, coreTestEnv )
 
 # lists of sources
 coreSources = sorted( glob.glob( "src/IECore/*.cpp" ) )
 coreHeaders = glob.glob( "include/IECore/*.h" ) + glob.glob( "include/IECore/*.inl" )
-corePythonHeaders = glob.glob( "include/IECorePython/*.h" ) + glob.glob( "include/IECorePython/*.inl" )
-corePythonSources = sorted( glob.glob( "src/IECorePython/*.cpp" ) )
-corePythonModuleSources = sorted( glob.glob( "src/IECorePythonModule/*.cpp" ) )
+coreBindingHeaders = glob.glob( "include/IECore/bindings/*.h" ) + glob.glob( "include/IECore/bindings/*.inl" )
+corePythonSources = sorted( glob.glob( "src/IECore/bindings/*.cpp" ) )
 corePythonScripts = glob.glob( "python/IECore/*.py" )
 
 # configure checks
@@ -881,65 +829,62 @@ if doConfigure :
 	c = Configure( coreEnv )
 		
 	if c.CheckCXXHeader( "boost/asio.hpp" ) :
-		for e in allCoreEnvs :
-			e.Append( CPPFLAGS = '-DIECORE_WITH_ASIO' )
+		coreEnv.Append( CPPFLAGS = '-DIECORE_WITH_ASIO' )
+		corePythonEnv.Append( CPPFLAGS = '-DIECORE_WITH_ASIO' )
 	else :
 		sys.stderr.write( "WARNING: boost/asio.hpp not found, some functionality will be disabled.\n" )
 		coreSources.remove( "src/IECore/ClientDisplayDriver.cpp" )
 		coreSources.remove( "src/IECore/DisplayDriver.cpp" )
 		coreSources.remove( "src/IECore/ImageDisplayDriver.cpp" )
 		coreSources.remove( "src/IECore/DisplayDriverServer.cpp" )
-		corePythonSources.remove( "src/IECorePython/ClientDisplayDriverBinding.cpp" )
-		corePythonSources.remove( "src/IECorePython/DisplayDriverServerBinding.cpp" )
-		corePythonSources.remove( "src/IECorePython/DisplayDriverBinding.cpp" )
-		corePythonSources.remove( "src/IECorePython/ImageDisplayDriverBinding.cpp" )
+		corePythonSources.remove( "src/IECore/bindings/ClientDisplayDriverBinding.cpp" )
+		corePythonSources.remove( "src/IECore/bindings/DisplayDriverServerBinding.cpp" )
+		corePythonSources.remove( "src/IECore/bindings/DisplayDriverBinding.cpp" )
+		corePythonSources.remove( "src/IECore/bindings/ImageDisplayDriverBinding.cpp" )
 		## \todo: OBJReader needs a version of boost::bind that doesn't give warnings when some
 		## placeholders aren't bound (which is true of any boost version that includes asio.hpp)
 		coreSources.remove( "src/IECore/OBJReader.cpp" )
-		corePythonSources.remove( "src/IECorePython/OBJReaderBinding.cpp" )
+		corePythonSources.remove( "src/IECore/bindings/OBJReaderBinding.cpp" )
 	
 	if c.CheckCXXHeader( "boost/math/special_functions/factorials.hpp" ) :
-		for e in allCoreEnvs :
-			e.Append( CPPFLAGS = '-DIECORE_WITH_BOOSTFACTORIAL' )
+		coreEnv.Append( CPPFLAGS = '-DIECORE_WITH_BOOSTFACTORIAL' )
+		coreTestEnv.Append( CPPFLAGS = '-DIECORE_WITH_BOOSTFACTORIAL' )
+		corePythonEnv.Append( CPPFLAGS = '-DIECORE_WITH_BOOSTFACTORIAL' )
 	else :
 		sys.stderr.write( "WARNING: boost/math/special_functions/factorials.hpp not found, some functionality will be disabled.\n" )
 		coreSources.remove( "src/IECore/AssociatedLegendre.cpp" )
 		coreSources.remove( "src/IECore/SphericalHarmonics.cpp" )
-		coreSources.remove( "src/IECore/SphericalHarmonicsTensor.cpp" )
 		coreSources.remove( "src/IECore/SphericalHarmonicsRotationMatrix.cpp" )
-		coreSources.remove( "src/IECore/SphericalHarmonicsTransferMatrix.cpp" )
 		coreSources.remove( "src/IECore/SphericalHarmonicsProjector.cpp" )
-		coreSources.remove( "src/IECore/ImageConvolveOp.cpp" )
-		corePythonSources.remove( "src/IECorePython/ImageConvolveOpBinding.cpp" )
 	
 	if c.CheckLibWithHeader( "tiff", "tiff.h", "CXX" ) :
-		for e in allCoreEnvs :
-			e.Append( CPPFLAGS = '-DIECORE_WITH_TIFF' )
+		c.env.Append( CPPFLAGS = '-DIECORE_WITH_TIFF' )
+		corePythonEnv.Append( CPPFLAGS = '-DIECORE_WITH_TIFF' )
 	else :
 		sys.stderr.write( "WARNING: no TIFF library found, no TIFF support, check TIFF_INCLUDE_PATH and TIFF_LIB_PATH.\n" )
 		coreSources.remove( "src/IECore/TIFFImageWriter.cpp" )
 		coreSources.remove( "src/IECore/TIFFImageReader.cpp" )
 		coreSources.remove( "src/IECore/ScopedTIFFErrorHandler.cpp" )		
-		corePythonSources.remove( "src/IECorePython/TIFFImageReaderBinding.cpp" )
-		corePythonSources.remove( "src/IECorePython/TIFFImageWriterBinding.cpp" )
+		corePythonSources.remove( "src/IECore/bindings/TIFFImageReaderBinding.cpp" )
+		corePythonSources.remove( "src/IECore/bindings/TIFFImageWriterBinding.cpp" )
 		
 	if c.CheckLibWithHeader( "jpeg", ["stdio.h", "jpeglib.h"], "CXX" ) :
-		for e in allCoreEnvs :
-			e.Append( CPPFLAGS = '-DIECORE_WITH_JPEG' )
+		c.env.Append( CPPFLAGS = '-DIECORE_WITH_JPEG' )
+		corePythonEnv.Append( CPPFLAGS = '-DIECORE_WITH_JPEG' )
 	else :
 		sys.stderr.write( "WARNING: no JPEG library found, no JPEG support, check JPEG_INCLUDE_PATH and JPEG_LIB_PATH.\n" )
 		coreSources.remove( "src/IECore/JPEGImageWriter.cpp" )
 		coreSources.remove( "src/IECore/JPEGImageReader.cpp" )
-		corePythonSources.remove( "src/IECorePython/JPEGImageReaderBinding.cpp" )
-		corePythonSources.remove( "src/IECorePython/JPEGImageWriterBinding.cpp" )
+		corePythonSources.remove( "src/IECore/bindings/JPEGImageReaderBinding.cpp" )
+		corePythonSources.remove( "src/IECore/bindings/JPEGImageWriterBinding.cpp" )
 	
 	if c.CheckLibWithHeader( "freetype", ["ft2build.h"], "CXX" ) :
-		for e in allCoreEnvs :
-			e.Append( CPPFLAGS = "-DIECORE_WITH_FREETYPE" )
+		c.env.Append( CPPFLAGS = "-DIECORE_WITH_FREETYPE" )
+		corePythonEnv.Append( CPPFLAGS = "-DIECORE_WITH_FREETYPE" )
 	else :
 		sys.stderr.write( "WARNING: no FreeType library found, no font support, check FREETYPE_INCLUDE_PATH and FREETYPE_LIB_PATH.\n" )
 		coreSources.remove( "src/IECore/Font.cpp" )
-		corePythonSources.remove( "src/IECorePython/FontBinding.cpp" )
+		corePythonSources.remove( "src/IECore/bindings/FontBinding.cpp" )
 				
 	c.Finish()
 
@@ -954,37 +899,22 @@ coreEnv.Alias( "installLib", [ coreLibraryInstall ] )
 
 # headers
 headerInstall = coreEnv.Install( "$INSTALL_HEADER_DIR/IECore", coreHeaders )
+headerInstall += coreEnv.Install( "$INSTALL_HEADER_DIR/IECore/bindings", coreBindingHeaders )
 coreEnv.AddPostAction( "$INSTALL_HEADER_DIR/IECore", lambda target, source, env : makeSymLinks( coreEnv, coreEnv["INSTALL_HEADER_DIR"] ) )
 coreEnv.Alias( "install", headerInstall )
 coreEnv.Alias( "installCore", headerInstall )
 
-# python library
-corePythonEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
-corePythonLibrary = corePythonEnv.SharedLibrary( "lib/" + os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ), corePythonSources )
-corePythonLibraryInstall = corePythonEnv.Install( os.path.dirname( corePythonEnv.subst( "$INSTALL_LIB_NAME" ) ), corePythonLibrary )
-corePythonEnv.NoCache( corePythonLibraryInstall )
-corePythonEnv.AddPostAction( corePythonLibraryInstall, lambda target, source, env : makeLibSymLinks( corePythonEnv, libNameVar="INSTALL_PYTHONLIB_NAME" ) )
-corePythonEnv.Alias( "install", [ corePythonLibraryInstall ] )
-corePythonEnv.Alias( "installCore", [ corePythonLibraryInstall ] )
-corePythonEnv.Alias( "installLib", [ corePythonLibraryInstall ] )
-
-# python headers
-pythonHeaderInstall = coreEnv.Install( "$INSTALL_HEADER_DIR/IECorePython", corePythonHeaders )
-coreEnv.Alias( "install", pythonHeaderInstall )
-coreEnv.Alias( "installCore", pythonHeaderInstall )
-
 # python module
-corePythonModuleEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
-corePythonModuleEnv.Append( LIBS = os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ) )
-corePythonModule = corePythonModuleEnv.SharedLibrary( "python/IECore/_IECore", corePythonModuleSources )
-corePythonModuleEnv.Depends( corePythonModule, coreLibrary )
+corePythonEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
+corePythonModule = corePythonEnv.SharedLibrary( "python/IECore/_IECore", corePythonSources )
+corePythonEnv.Depends( corePythonModule, coreLibrary )
 
-corePythonModuleInstall = corePythonModuleEnv.Install( "$INSTALL_PYTHON_DIR/IECore", corePythonScripts + corePythonModule )
-corePythonModuleEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECore", lambda target, source, env : makeSymLinks( corePythonEnv, corePythonEnv["INSTALL_PYTHON_DIR"] ) )
-corePythonModuleEnv.Alias( "install", corePythonModuleInstall )
-corePythonModuleEnv.Alias( "installCore", corePythonModuleInstall )
+corePythonModuleInstall = corePythonEnv.Install( "$INSTALL_PYTHON_DIR/IECore", corePythonScripts + corePythonModule )
+corePythonEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECore", lambda target, source, env : makeSymLinks( corePythonEnv, corePythonEnv["INSTALL_PYTHON_DIR"] ) )
+corePythonEnv.Alias( "install", corePythonModuleInstall )
+corePythonEnv.Alias( "installCore", corePythonModuleInstall )
 
-Default( coreLibrary, corePythonLibrary, corePythonModule )
+Default( coreLibrary, corePythonModule )
 
 # post installation script
 
@@ -1025,11 +955,11 @@ riEnv = coreEnv.Copy( IECORE_NAME = "IECoreRI" )
 riEnv.Append( CPPPATH = [ "$RMAN_ROOT/include" ] )
 riEnv.Append( LIBPATH = [ "$RMAN_ROOT/lib" ] )
 
-riPythonModuleEnv = pythonModuleEnv.Copy( IECORE_NAME = "IECoreRI" )
-riPythonModuleEnv.Append( CPPPATH = [ "$RMAN_ROOT/include" ] )
-riPythonModuleEnv.Append( LIBPATH = [ "$RMAN_ROOT/lib" ] )
+riPythonEnv = pythonEnv.Copy( IECORE_NAME = "IECoreRI" )
+riPythonEnv.Append( CPPPATH = [ "$RMAN_ROOT/include" ] )
+riPythonEnv.Append( LIBPATH = [ "$RMAN_ROOT/lib" ] )
 
-riPythonProceduralEnv = riPythonModuleEnv.Copy( IECORE_NAME = "iePython" )
+riPythonProceduralEnv = riPythonEnv.Copy( IECORE_NAME = "iePython" )
 
 haveRI = False
 riLibs = []
@@ -1054,7 +984,7 @@ if doConfigure :
 		else :
 			riLibs = [ "prman" ]
 		riEnv.Append( LIBS = riLibs )
-		riPythonModuleEnv.Append( LIBS = riLibs )
+		riPythonEnv.Append( LIBS = riLibs )
 		
 		riSources = glob.glob( "src/IECoreRI/*.cpp" )
 		riHeaders = glob.glob( "include/IECoreRI/*.h" ) + glob.glob( "include/IECoreRI/*.inl" )
@@ -1064,7 +994,7 @@ if doConfigure :
 		if c.CheckHeader( "pointcloud.h" ) :
 			
 			riEnv.Append( CPPFLAGS = "-DIECORERI_WITH_PTC" )
-			riPythonModuleEnv.Append( CPPFLAGS = "-DIECORERI_WITH_PTC" )
+			riPythonEnv.Append( CPPFLAGS = "-DIECORERI_WITH_PTC" )
 			
 		else :
 		
@@ -1076,26 +1006,13 @@ if doConfigure :
 		if c.CheckFunc( "RiObjectBeginV" ) :
 			
 			riEnv.Append( CPPFLAGS = [ "-DIECORERI_WITH_OBJECTBEGINV" ] )
-		
-		if c.CheckCXXHeader( "sx.h" ) :
-		
-			riEnv.Append( CPPFLAGS = "-DIECORERI_WITH_SX" )
-			riPythonModuleEnv.Append( CPPFLAGS = "-DIECORERI_WITH_SX" )
 			
-		else :
-		
-			riSources.remove( "src/IECoreRI/SXRenderer.cpp" )
-			riSources.remove( "src/IECoreRI/SXRendererImplementation.cpp" )
-			riSources.remove( "src/IECoreRI/SXExecutor.cpp" )
-			riPythonSources.remove( "src/IECoreRI/bindings/SXRendererBinding.cpp" )
-		
 		c.Finish()	
 
 		# we can't append this before configuring, as then it gets built as
 		# part of the configure process
 		riEnv.Prepend( LIBPATH = [ "./lib" ] )
 		riEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
-		riPythonModuleEnv.Append( LIBS = os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ) )
 	
 		# library
 		riLibrary = riEnv.SharedLibrary( "lib/" + os.path.basename( riEnv.subst( "$INSTALL_LIB_NAME" ) ), riSources )
@@ -1129,31 +1046,31 @@ if doConfigure :
 		riEnv.Alias( "installRI", rslHeaderInstall )
 		
 		# python module
-		riPythonModuleEnv.Append(
+		riPythonEnv.Append(
 			LIBS = [
 				os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ),
 				os.path.basename( riEnv.subst( "$INSTALL_LIB_NAME" ) ),
 			]
 		)
-		riPythonModule = riPythonModuleEnv.SharedLibrary( "python/IECoreRI/_IECoreRI", riPythonSources )
-		riPythonModuleEnv.Depends( riPythonModule, riLibrary )
+		riPythonModule = riPythonEnv.SharedLibrary( "python/IECoreRI/_IECoreRI", riPythonSources )
+		riPythonEnv.Depends( riPythonModule, riLibrary )
 
-		riPythonModuleInstall = riPythonModuleEnv.Install( "$INSTALL_PYTHON_DIR/IECoreRI", riPythonScripts + riPythonModule )
-		riPythonModuleEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreRI", lambda target, source, env : makeSymLinks( riPythonModuleEnv, riPythonModuleEnv["INSTALL_PYTHON_DIR"] ) )
-		riPythonModuleEnv.Alias( "install", riPythonModuleInstall )
-		riPythonModuleEnv.Alias( "installRI", riPythonModuleInstall )
+		riPythonModuleInstall = riPythonEnv.Install( "$INSTALL_PYTHON_DIR/IECoreRI", riPythonScripts + riPythonModule )
+		riPythonEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreRI", lambda target, source, env : makeSymLinks( riPythonEnv, riPythonEnv["INSTALL_PYTHON_DIR"] ) )
+		riPythonEnv.Alias( "install", riPythonModuleInstall )
+		riPythonEnv.Alias( "installRI", riPythonModuleInstall )
 
 		if coreEnv["INSTALL_CORERI_POST_COMMAND"]!="" :
 			# this is the only way we could find to get a post action to run for an alias
-			riPythonModuleEnv.Alias( "install", riPythonModuleInstall, "$INSTALL_CORERI_POST_COMMAND" ) 
-			riPythonModuleEnv.Alias( "installRI", riPythonModuleInstall, "$INSTALL_CORERI_POST_COMMAND" ) 
+			riPythonEnv.Alias( "install", riPythonModuleInstall, "$INSTALL_CORERI_POST_COMMAND" ) 
+			riPythonEnv.Alias( "installRI", riPythonModuleInstall, "$INSTALL_CORERI_POST_COMMAND" ) 
 
 		Default( [ riLibrary, riPythonModule, riPythonProcedural ] )
 		
 		# tests
 		riTestEnv = testEnv.Copy()
 
-		riTestEnv["ENV"][testEnv["TEST_LIBRARY_PATH_ENV_VAR"]] += ":" + riEnv.subst( ":".join( [ "./lib" ] + riPythonModuleEnv["LIBPATH"] ) )
+		riTestEnv["ENV"][testEnv["TEST_LIBRARY_PATH_ENV_VAR"]] += ":" + riEnv.subst( ":".join( [ "./lib" ] + riPythonEnv["LIBPATH"] ) )
 		riTestEnv["ENV"]["SHADER_PATH"] = riEnv.subst( "$RMAN_ROOT/shaders" )
 		riTestEnv["ENV"]["DELIGHT"] = riEnv.subst( "$RMAN_ROOT" )
 		riTestEnv["ENV"]["DL_SHADERS_PATH"] = riEnv.subst( "$RMAN_ROOT/shaders" ) + ":./"
@@ -1257,29 +1174,28 @@ if env["WITH_GL"] and doConfigure :
 		glEnv.Alias( "installGL", glslHeaderInstall )
 		
 		glPythonSources = glob.glob( "contrib/IECoreGL/src/bindings/*.cpp" )
-		glPythonModuleEnv = pythonModuleEnv.Copy( **glEnvSets )
-		glPythonModuleEnv.Append( **glEnvAppends )
-		glPythonModuleEnv.Prepend( **glEnvPrepends )
-		glPythonModuleEnv.Append(
+		glPythonEnv = pythonEnv.Copy( **glEnvSets )
+		glPythonEnv.Append( **glEnvAppends )
+		glPythonEnv.Prepend( **glEnvPrepends )
+		glPythonEnv.Append(
 			LIBS = [
 				os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ),
 				os.path.basename( glEnv.subst( "$INSTALL_LIB_NAME" ) ),
-				os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ),
 			]
 		)
-		glPythonModule = glPythonModuleEnv.SharedLibrary( "contrib/IECoreGL/python/IECoreGL/_IECoreGL", glPythonSources )
-		glPythonModuleEnv.Depends( glPythonModule, glLibrary )
+		glPythonModule = glPythonEnv.SharedLibrary( "contrib/IECoreGL/python/IECoreGL/_IECoreGL", glPythonSources )
+		glPythonEnv.Depends( glPythonModule, glLibrary )
 
 		glPythonScripts = glob.glob( "contrib/IECoreGL/python/IECoreGL/*.py" )
-		glPythonModuleInstall = glPythonModuleEnv.Install( "$INSTALL_PYTHON_DIR/IECoreGL", glPythonScripts + glPythonModule )		
-		glPythonModuleEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreGL", lambda target, source, env : makeSymLinks( glPythonModuleEnv, glPythonModuleEnv["INSTALL_PYTHON_DIR"] ) )
-		glPythonModuleEnv.Alias( "install", glPythonModuleInstall )
-		glPythonModuleEnv.Alias( "installGL", glPythonModuleInstall )
+		glPythonModuleInstall = glPythonEnv.Install( "$INSTALL_PYTHON_DIR/IECoreGL", glPythonScripts + glPythonModule )		
+		glPythonEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreGL", lambda target, source, env : makeSymLinks( glPythonEnv, glPythonEnv["INSTALL_PYTHON_DIR"] ) )
+		glPythonEnv.Alias( "install", glPythonModuleInstall )
+		glPythonEnv.Alias( "installGL", glPythonModuleInstall )
 
 		if coreEnv["INSTALL_COREGL_POST_COMMAND"]!="" :
 			# this is the only way we could find to get a post action to run for an alias
-			glPythonModuleEnv.Alias( "install", glPythonModuleInstall, "$INSTALL_COREGL_POST_COMMAND" ) 
-			glPythonModuleEnv.Alias( "installGL", glPythonModuleInstall, "$INSTALL_COREGL_POST_COMMAND" ) 
+			glPythonEnv.Alias( "install", glPythonModuleInstall, "$INSTALL_COREGL_POST_COMMAND" ) 
+			glPythonEnv.Alias( "installGL", glPythonModuleInstall, "$INSTALL_COREGL_POST_COMMAND" ) 
 
 		Default( [ glLibrary, glPythonModule ] )
 
@@ -1340,8 +1256,8 @@ mayaEnv.Append( **mayaEnvAppends )
 
 mayaEnv.Append( SHLINKFLAGS = pythonEnv["PYTHON_LINK_FLAGS"].split() )
 
-mayaPythonModuleEnv = pythonModuleEnv.Copy( **mayaEnvSets )
-mayaPythonModuleEnv.Append( **mayaEnvAppends )
+mayaPythonEnv = pythonEnv.Copy( **mayaEnvSets )
+mayaPythonEnv.Append( **mayaEnvAppends )
 
 mayaPluginEnv = mayaEnv.Copy( IECORE_NAME="ieCore" )
 
@@ -1382,7 +1298,6 @@ if doConfigure :
 		mayaEnv.Prepend( LIBPATH = [ "./lib" ] )
 		mayaEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
 		mayaEnv.Append( LIBS = os.path.basename( glEnv.subst( "$INSTALL_LIB_NAME" ) ) )
-		mayaEnv.Append( LIBS = os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ) )
 
 		# maya library
 		mayaLibrary = mayaEnv.SharedLibrary( "lib/" + os.path.basename( mayaEnv.subst( "$INSTALL_MAYALIB_NAME" ) ), mayaSources )
@@ -1451,35 +1366,32 @@ if doConfigure :
 		mayaPluginEnv.Alias( "installMaya", mayaPluginInstall )
 				
 		# maya python
-		mayaPythonModuleEnv.Append(
+		mayaPythonEnv.Append(
 			LIBS = [
 				os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ),
 				os.path.basename( mayaEnv.subst( "$INSTALL_LIB_NAME" ) ),
-				os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ),
 			]
 		)
-		mayaPythonModule = mayaPythonModuleEnv.SharedLibrary( "python/IECoreMaya/_IECoreMaya", mayaPythonSources )
-		mayaPythonModuleEnv.Depends( mayaPythonModule, mayaLibrary )
+		mayaPythonModule = mayaPythonEnv.SharedLibrary( "python/IECoreMaya/_IECoreMaya", mayaPythonSources )
+		mayaPythonEnv.Depends( mayaPythonModule, mayaLibrary )
 
-		mayaPythonModuleInstall = mayaPythonModuleEnv.Install( "$INSTALL_PYTHON_DIR/IECoreMaya", mayaPythonScripts + mayaPythonModule )
-		mayaPythonModuleEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreMaya", lambda target, source, env : makeSymLinks( mayaPythonModuleEnv, mayaPythonModuleEnv["INSTALL_PYTHON_DIR"] ) )
-		mayaPythonModuleEnv.Alias( "install", mayaPythonModuleInstall )
-		mayaPythonModuleEnv.Alias( "installMaya", mayaPythonModuleInstall )
+		mayaPythonModuleInstall = mayaPythonEnv.Install( "$INSTALL_PYTHON_DIR/IECoreMaya", mayaPythonScripts + mayaPythonModule )
+		mayaPythonEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreMaya", lambda target, source, env : makeSymLinks( mayaPythonEnv, mayaPythonEnv["INSTALL_PYTHON_DIR"] ) )
+		mayaPythonEnv.Alias( "install", mayaPythonModuleInstall )
+		mayaPythonEnv.Alias( "installMaya", mayaPythonModuleInstall )
 
 		if coreEnv["INSTALL_COREMAYA_POST_COMMAND"]!="" :
 			# this is the only way we could find to get a post action to run for an alias
-			mayaPythonModuleEnv.Alias( "install", mayaPythonModuleInstall, "$INSTALL_COREMAYA_POST_COMMAND" ) 
-			mayaPythonModuleEnv.Alias( "installMaya", mayaPythonModuleInstall, "$INSTALL_COREMAYA_POST_COMMAND" ) 
+			mayaPythonEnv.Alias( "install", mayaPythonModuleInstall, "$INSTALL_COREMAYA_POST_COMMAND" ) 
+			mayaPythonEnv.Alias( "installMaya", mayaPythonModuleInstall, "$INSTALL_COREMAYA_POST_COMMAND" ) 
 
 		Default( [ mayaLibrary, mayaPlugin, mayaPythonModule ] )
 		
 		mayaTestEnv = testEnv.Copy()
 		
-		mayaTestLibPaths = mayaEnv.subst( ":".join( [ "./lib" ] + mayaPythonModuleEnv["LIBPATH"] ) )
+		mayaTestEnv["ENV"][mayaTestEnv["TEST_LIBRARY_PATH_ENV_VAR"]] += ":" + mayaEnv.subst( ":".join( [ "./lib" ] + mayaPythonEnv["LIBPATH"] ) )
 		if haveRI :
-			mayaTestLibPaths += ":" + mayaEnv.subst( "$RMAN_ROOT/lib" )
-		mayaTestEnv["ENV"][mayaTestEnv["TEST_LIBRARY_PATH_ENV_VAR"]] += ":" + mayaTestLibPaths
-		mayaTestEnv["ENV"][libraryPathEnvVar] += ":" + mayaTestLibPaths
+			mayaTestEnv["ENV"][mayaTestEnv["TEST_LIBRARY_PATH_ENV_VAR"]] += ":" + mayaEnv.subst( "$RMAN_ROOT/lib" )
 		
 		mayaTestEnv["ENV"]["PATH"] = mayaEnv.subst( "$MAYA_ROOT/bin:" ) + mayaEnv["ENV"]["PATH"]
 		mayaTestEnv["ENV"]["MAYA_PLUG_IN_PATH"] = "./plugins/maya:./test/IECoreMaya/plugins"
@@ -1498,8 +1410,7 @@ if doConfigure :
 		mayaTestEnv["ENV"]["PYTHONHOME"] = mayaTestEnv.subst( "$MAYA_ROOT" )
 		mayaTestEnv["ENV"]["MAYA_LOCATION"] = mayaTestEnv.subst( "$MAYA_ROOT" )
 		mayaTestEnv["ENV"]["LM_LICENSE_FILE"] = env["MAYA_LICENSE_FILE"]
-		mayaTestEnv["ENV"]["AUTODESK_ADLM_THINCLIENT_ENV"] = env["MAYA_ADLM_ENV_FILE"]
-		
+				
 		mayaTestProgram = mayaTestEnv.Program( "test/IECoreMaya/IECoreMayaTest", glob.glob( "test/IECoreMaya/*.cpp" ) )
 		mayaTest = mayaTestEnv.Command( "test/IECoreMaya/results.txt", mayaTestProgram, "test/IECoreMaya/IECoreMayaTest >& test/IECoreMaya/results.txt" )
 		NoCache( mayaTest )
@@ -1530,7 +1441,6 @@ nukeEnv.Prepend( LIBS = [ "GLEW" ] )
 nukePythonEnv = pythonEnv.Copy( IECORE_NAME = "IECoreNuke" )
 
 nukeTestEnv = testEnv.Copy()
-nukeTestEnv["ENV"]["LM_LICENSE_FILE"] = nukeTestEnv["NUKE_LICENSE_FILE"]
 
 if doConfigure :
 
@@ -1652,7 +1562,7 @@ truelightEnv.Prepend( LIBPATH = [
 	]
 )
 
-truelightPythonModuleEnv = pythonModuleEnv.Copy( IECORE_NAME="IECoreTruelight" )
+truelightPythonEnv = pythonEnv.Copy( IECORE_NAME="IECoreTruelight" )
 
 if doConfigure :
 
@@ -1694,21 +1604,20 @@ if doConfigure :
 		truelightEnv.Alias( "install", truelightHeaderInstall )
 		
 		# python
-		truelightPythonModuleEnv.Append( LIBS = [
+		truelightPythonEnv.Append( LIBS = [
 				os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ),
 				os.path.basename( truelightEnv.subst( "$INSTALL_LIB_NAME" ) ),
-				os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ),
 			]
 		)
 
-		truelightPythonModule = truelightPythonModuleEnv.SharedLibrary( "python/IECoreTruelight/_IECoreTruelight", truelightPythonSources )
-		truelightPythonModuleEnv.Depends( truelightPythonModule, corePythonModule )
-		truelightPythonModuleEnv.Depends( truelightPythonModule, truelightLibrary )
+		truelightPythonModule = truelightPythonEnv.SharedLibrary( "python/IECoreTruelight/_IECoreTruelight", truelightPythonSources )
+		truelightPythonEnv.Depends( truelightPythonModule, corePythonModule )
+		truelightPythonEnv.Depends( truelightPythonModule, truelightLibrary )
 		
-		truelightPythonModuleInstall = truelightPythonModuleEnv.Install( "$INSTALL_PYTHON_DIR/IECoreTruelight", truelightPythonScripts + truelightPythonModule )
-		truelightPythonModuleEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreTruelight", lambda target, source, env : makeSymLinks( truelightPythonModuleEnv, truelightPythonModuleEnv["INSTALL_PYTHON_DIR"] ) )
-		truelightPythonModuleEnv.Alias( "install", truelightPythonModuleInstall )
-		truelightPythonModuleEnv.Alias( "installTruelight", truelightPythonModuleInstall )
+		truelightPythonModuleInstall = truelightPythonEnv.Install( "$INSTALL_PYTHON_DIR/IECoreTruelight", truelightPythonScripts + truelightPythonModule )
+		truelightPythonEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreTruelight", lambda target, source, env : makeSymLinks( truelightPythonEnv, truelightPythonEnv["INSTALL_PYTHON_DIR"] ) )
+		truelightPythonEnv.Alias( "install", truelightPythonModuleInstall )
+		truelightPythonEnv.Alias( "installTruelight", truelightPythonModuleInstall )
 		
 		if coreEnv["INSTALL_CORETRUELIGHT_POST_COMMAND"]!="" :
 			# this is the only way we could find to get a post action to run for an alias
@@ -1719,7 +1628,7 @@ if doConfigure :
 		
 		# tests
 		truelightTestEnv = testEnv.Copy()
-		#riTestEnv["ENV"][testEnv["TEST_LIBRARY_PATH_ENV_VAR"]] = riEnv.subst( ":".join( [ "./lib" ] + riPythonModuleEnv["LIBPATH"] ) )
+		#riTestEnv["ENV"][testEnv["TEST_LIBRARY_PATH_ENV_VAR"]] = riEnv.subst( ":".join( [ "./lib" ] + riPythonEnv["LIBPATH"] ) )
 		truelightTestEnv["ENV"]["TRUELIGHT_ROOT"] = truelightEnv.subst( "$TRUELIGHT_ROOT" )
 		truelightTest = truelightTestEnv.Command( "test/IECoreTruelight/results.txt", truelightPythonModule, pythonExecutable + " $TEST_TRUELIGHT_SCRIPT" )
 		NoCache( truelightTest )

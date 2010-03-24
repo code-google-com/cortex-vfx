@@ -66,8 +66,6 @@ class Primitive : public Renderable
 		/// OpenGL context. The Primitive will draw itself
 		/// using the style represented by state, allowing
 		/// representations such as wireframe over shaded etc.
-		/// It temporarily changes the shader parameters that 
-		/// match the primitive's uniform variables.
 		/// An exception is thrown if state->isComplete() is not
 		/// true.
 		///
@@ -89,9 +87,6 @@ class Primitive : public Renderable
 		/// Takes a copy of data. Throws an Exception if this primitive doesn't support
 		/// vertex attributes, or if the data supplied is not suitable.
 		void addVertexAttribute( const std::string &name, IECore::ConstDataPtr data );
-
-		/// Takes a copy of data. Throws an Exception if the data supplied is not suitable.
-		void addUniformAttribute( const std::string &name, IECore::ConstDataPtr data );
 
 	protected :
 
@@ -151,17 +146,15 @@ class Primitive : public Renderable
 			const float *data;
 			unsigned int dimensions;
 		};
-		void setupVertexAttributesAsUniform( const Shader *s ) const;
+		void setupVertexAttributesAsUniform( Shader *s ) const;
 		mutable struct {
-			const Shader *shader;
+			Shader *shader;
 			std::map<GLint, IntData> intDataMap;
 			std::map<GLint, FloatData> floatDataMap;
 		} m_vertexToUniform;
 
-		typedef std::map<std::string, IECore::ConstDataPtr> AttributeMap;
-		AttributeMap m_vertexAttributes;
-		AttributeMap m_uniformAttributes;
-
+		typedef std::map<std::string, IECore::ConstDataPtr> VertexAttributeMap;
+		VertexAttributeMap m_vertexAttributes;
 };
 
 IE_CORE_DECLAREPTR( Primitive );

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,28 +38,26 @@
 #include "IECoreGL/bindings/WindowBinding.h"
 
 #include "IECore/MessageHandler.h"
-#include "IECorePython/RefCountedBinding.h"
-#include "IECorePython/Wrapper.h"
-#include "IECorePython/ScopedGILLock.h"
+#include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/Wrapper.h"
 
 using namespace boost::python;
 
 namespace IECoreGL
 {
 
-class WindowWrap : public Window, public IECorePython::Wrapper<Window>
+class WindowWrap : public Window, public IECore::Wrapper<Window>
 {
 
 	public :
 
 		WindowWrap( PyObject *self, const std::string &title )
-			:	Window( title ), IECorePython::Wrapper<Window>( self, this )
+			:	Window( title ), IECore::Wrapper<Window>( self, this )
 		{
 		}
 
 		virtual void display()
 		{
-			IECorePython::ScopedGILLock gilLock;
 			try
 			{
 				override o = this->get_override( "display" );
@@ -88,7 +86,6 @@ class WindowWrap : public Window, public IECorePython::Wrapper<Window>
 
 		virtual void reshape( int width, int height )
 		{
-			IECorePython::ScopedGILLock gilLock;
 			try
 			{
 				override o = this->get_override( "reshape" );
@@ -122,7 +119,7 @@ IE_CORE_DECLAREPTR( WindowWrap );
 
 void bindWindow()
 {
-	IECorePython::RefCountedClass<Window, IECore::RefCounted, WindowWrapPtr>( "Window" )
+	IECore::RefCountedClass<Window, IECore::RefCounted, WindowWrapPtr>( "Window" )
 		.def( init<std::string>() )
 		.def( "setTitle", &Window::setTitle )
 		.def( "getTitle", &Window::getTitle, return_value_policy<copy_const_reference>() )

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -144,7 +144,7 @@ MStatus DelightProceduralCacheCommand::doIt( const MArgList &args )
 		}
 		else
 		{
-			pHolder->setParameterisedValues();
+			pHolder->setParameterisedValues(); // we're relying on nothing setting different values between now and the time we emit the procedural
 			
 			CachedProcedural cachedProcedural;
 			cachedProcedural.procedural = pHolder->getProcedural( &cachedProcedural.className, &cachedProcedural.classVersion );
@@ -160,7 +160,7 @@ MStatus DelightProceduralCacheCommand::doIt( const MArgList &args )
 				displayError( "DelightProceduralCacheCommand::doIt : failed to get parameter values from \"" + objectNames[0] + "\"." );
 				return MStatus::kFailure;
 			}
-			cachedProcedural.values = values->copy();				
+			cachedProcedural.values = values->copy();			
 			g_procedurals[objectNames[0].asChar()] = cachedProcedural;
 		}
 
@@ -209,12 +209,10 @@ MStatus DelightProceduralCacheCommand::doIt( const MArgList &args )
 				// in the python object dying before we properly extract the value, which results in corrupted
 				// strings, and therefore malformed ribs.
 				object serialisedResultObject = PythonCmd::globalContext()["IECore"].attr("ParameterParser")().attr("serialise")( it->second.procedural->parameters() );
-				object serialisedResultStringObject = serialisedResultObject.attr( "__str__" )();
-				
-				extract<std::string> serialisedResultExtractor( serialisedResultStringObject );
+				extract<std::string> serialisedResultExtractor( serialisedResultObject );
 				
 				std::string serialisedParameters = serialisedResultExtractor();
-				pythonString = boost::str( boost::format( "IECoreRI.executeProcedural( \"%s\", %d, %s )" ) % it->second.className % it->second.classVersion % serialisedParameters );
+				pythonString = boost::str( boost::format( "IECoreRI.executeProcedural( \"%s\", %d, \"%s\" )" ) % it->second.className % it->second.classVersion % serialisedParameters );
 			}
 			catch( ... )
 			{
@@ -238,7 +236,7 @@ MStatus DelightProceduralCacheCommand::doIt( const MArgList &args )
 			IECore::RendererPtr renderer = new IECoreRI::Renderer();
 			IECore::AttributeBlock attributeBlock( renderer, 1 );
 			
-				it->second.procedural->render( renderer.get(), false, true, false, false );
+				it->second.procedural->render( renderer, false, true, false, false );
 
 				// tell 3delight we can't run multiple python procedurals concurrently
 				int zero = 0;

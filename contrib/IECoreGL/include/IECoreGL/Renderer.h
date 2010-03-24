@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,8 +38,6 @@
 #include "IECoreGL/TypeIds.h"
 
 #include "IECore/Renderer.h"
-#include "IECoreGL/TextureLoader.h"
-#include "IECoreGL/ShaderManager.h"
 
 namespace IECoreGL
 {
@@ -302,8 +300,7 @@ class Renderer : public IECore::Renderer
 		/// \todo Add support for "textureParameterName:filter" and "textureParameterName:wrap" parameters which set wrapping
 		/// and filtering on a ShaderStateComponent.
 		virtual void shader( const std::string &type, const std::string &name, const IECore::CompoundDataMap &parameters );
-		virtual void light( const std::string &name, const std::string &handle, const IECore::CompoundDataMap &parameters );
-		virtual void illuminate( const std::string &lightHandle, bool on );
+		virtual void light( const std::string &name, const IECore::CompoundDataMap &parameters );
 
 		virtual void motionBegin( const std::set<float> &times );
 		virtual void motionEnd();
@@ -393,14 +390,6 @@ class Renderer : public IECore::Renderer
 		/// \todo Consider generalising an interface for scene edits and making it a standard part of the documentation
 		/// in IECore. Any such interface should take into account support for PRMan's new rerendering API.
 		virtual IECore::DataPtr command( const std::string &name, const IECore::CompoundDataMap &parameters );
-
-		/// Returns the internal ShaderManager object used to manage the shaders from this renderer.
-		/// If called before worldBegin it returns 0.
-		ShaderManager *shaderManager();
-
-		/// Returns the internal TextureLoader object.
-		/// If called before worldBegin it returns 0.
-		TextureLoader *textureLoader();
 
 		struct MemberData;
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -161,25 +161,7 @@ StateComponentPtr DeferredRendererImplementation::getState( IECore::TypeId type 
 			return c;
 		}
 	}
-	return IECore::constPointerCast<StateComponent>( State::defaultState()->get( type ) );
-}
-
-void DeferredRendererImplementation::addUserAttribute( const IECore::InternedString &name, IECore::DataPtr value )
-{
-	(*m_stateStack.rbegin())->userAttributes()[ name ] = value;
-}
-
-IECore::DataPtr DeferredRendererImplementation::getUserAttribute( const IECore::InternedString &name )
-{
-	for( StateStack::reverse_iterator it=m_stateStack.rbegin(); it!=m_stateStack.rend(); it++ )
-	{
-		State::UserAttributesMap::iterator attrIt = (*it)->userAttributes().find( name );
-		if( attrIt != (*it)->userAttributes().end() )
-		{
-			return attrIt->second;
-		}
-	}
-	return 0;
+	return boost::const_pointer_cast<StateComponent>( State::defaultState()->get( type ) );
 }
 
 void DeferredRendererImplementation::addPrimitive( PrimitivePtr primitive )
@@ -190,11 +172,6 @@ void DeferredRendererImplementation::addPrimitive( PrimitivePtr primitive )
 	g->addChild( primitive );
 
 	m_groupStack.top()->addChild( g );
-}
-
-void DeferredRendererImplementation::procedural( IECore::Renderer::ProceduralPtr proc, IECore::RendererPtr renderer )
-{
-	proc->render( renderer );
 }
 
 ScenePtr DeferredRendererImplementation::scene()

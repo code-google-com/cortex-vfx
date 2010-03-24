@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010 Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009 Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,6 +32,8 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include "IECoreMaya/Parameter.h"
+
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaMeshConverter.h"
@@ -49,7 +51,7 @@ using namespace boost;
 
 static ParameterHandler::Description< MeshParameterHandler > registrar( IECore::MeshPrimitiveParameter::staticTypeId(), IECore::MeshPrimitive::staticTypeId() );
 
-MStatus MeshParameterHandler::doUpdate( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus MeshParameterHandler::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -68,7 +70,7 @@ MStatus MeshParameterHandler::doUpdate( IECore::ConstParameterPtr parameter, MOb
 	return MS::kSuccess;
 }
 
-MObject MeshParameterHandler::doCreate( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MObject MeshParameterHandler::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -88,7 +90,7 @@ MObject MeshParameterHandler::doCreate( IECore::ConstParameterPtr parameter, con
 	return result;
 }
 
-MStatus MeshParameterHandler::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus MeshParameterHandler::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -115,7 +117,7 @@ MStatus MeshParameterHandler::doSetValue( IECore::ConstParameterPtr parameter, M
 	return MS::kSuccess;
 }
 
-MStatus MeshParameterHandler::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus MeshParameterHandler::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	IECore::ObjectParameterPtr p = IECore::runTimeCast<IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -128,7 +130,7 @@ MStatus MeshParameterHandler::doSetValue( const MPlug &plug, IECore::ParameterPt
 	if( result )
 	{
 		/// \todo Pull in userData from parameter to set up conversion parameters
-		FromMayaMeshConverterPtr converter = IECore::dynamicPointerCast< FromMayaMeshConverter > ( FromMayaObjectConverter::create( v, IECore::MeshPrimitive::staticTypeId() ) );
+		FromMayaMeshConverterPtr converter = boost::dynamic_pointer_cast< FromMayaMeshConverter > ( FromMayaObjectConverter::create( v, IECore::MeshPrimitive::staticTypeId() ) );
 		assert(converter);
 
 		converter->spaceParameter()->setNumericValue( (int)FromMayaMeshConverter::World );

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,7 +40,6 @@
 #include "IECoreRI/bindings/PTCParticleReaderBinding.h"
 #include "IECoreRI/bindings/PTCParticleWriterBinding.h"
 #include "IECoreRI/bindings/RIBWriterBinding.h"
-#include "IECoreRI/bindings/SXRendererBinding.h"
 
 using namespace IECoreRI;
 using namespace boost::python;
@@ -54,7 +53,4 @@ BOOST_PYTHON_MODULE( _IECoreRI )
 	bindPTCParticleWriter();
 #endif // IECORERI_WITH_PTC
 	bindRIBWriter();
-#ifdef IECORERI_WITH_SX
-	bindSXRenderer();	
-#endif // IECORERI_WITH_SX
 }

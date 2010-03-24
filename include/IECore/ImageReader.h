@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -49,11 +49,8 @@ IE_CORE_FORWARDDECLARE( ImagePrimitive );
 /// ImageReader's main purpose is to define a standard set of parameters
 /// which all concrete ImageReader implementations obey.  It also defines some pure virtual functions
 /// which allow interface implementors to focus on image-specific code for loading channels.
-/// The ImageReader will return by default an ImagePrimitive in linear colorspace with all channels
-/// converted to FloatVectorData.
-/// If 'rawChannels' is On, then it will return an ImagePrimitive with channels that are the close as 
-/// possible to the original data type stored on the file. Note that most image Ops available on IECore
-/// will only work on float data channels.
+/// \todo Define and support a parameter for conversion of image data type during loading
+/// \todo Define and support a parameter for conversion of colourspace during loading
 class ImageReader : public Reader
 {
 
@@ -61,7 +58,7 @@ class ImageReader : public Reader
 
 		IE_CORE_DECLARERUNTIMETYPED( ImageReader, Reader );
 
-		ImageReader( const std::string &description );
+		ImageReader( const std::string &name, const std::string &description );
 
 		virtual CompoundObjectPtr readHeader();
 
@@ -71,23 +68,14 @@ class ImageReader : public Reader
 		///////////////////////////////////////////////////////////////
 		//@{
 		/// The parameter specifying the dataWindow of the loaded image.
-		Box2iParameter * dataWindowParameter();
-		const Box2iParameter * dataWindowParameter() const;
+		Box2iParameterPtr dataWindowParameter();
+		ConstBox2iParameterPtr dataWindowParameter() const;
 		/// The parameter specifying the displayWindow of the loaded image.
-		Box2iParameter * displayWindowParameter();
-		const Box2iParameter * displayWindowParameter() const;
+		Box2iParameterPtr displayWindowParameter();
+		ConstBox2iParameterPtr displayWindowParameter() const;
 		/// The parameter specifying the channels to load.
-		StringVectorParameter * channelNamesParameter();
-		const StringVectorParameter * channelNamesParameter() const;
-		/// The parameter specifying the colorspace that the loaded image was stored.
-		/// If autoDetect is chosen than it will use the colorspace returned by sourceColorSpace().
-		StringParameter * colorspaceParameter();
-		const StringParameter * colorspaceParameter() const;
-		/// The parameter specifying if the returned data channels should be 
-		/// exactly or as close as possible to what's stored in the file. 
-		/// If True, then colorspace settings will not take effect.
-		BoolParameter * rawChannelsParameter();
-		const BoolParameter * rawChannelsParameter() const;
+		StringVectorParameterPtr channelNamesParameter();
+		ConstStringVectorParameterPtr channelNamesParameter() const;
 		//@}
 
 		//! @name Image specific reading functions
@@ -107,15 +95,10 @@ class ImageReader : public Reader
 		virtual Imath::Box2i displayWindow() = 0;
 		/// Reads the specified channel. This function obeys the dataWindowParameter(), so
 		/// that a subsection of the channel will be loaded if requested.
-		/// If raw is false it should return a FloatVectorData, otherwise
-		/// it returns the raw data without color transformations. It must return a 
-		/// vector data type and each element corresponds to a pixel. If that does not 
-		/// correspond to the native file format, then it should return a FloatVectorData.
-		DataPtr readChannel( const std::string &name, bool raw = false );
+		DataPtr readChannel( const std::string &name );
 
-		/// Returns the name of the colorspace in which the image is probably stored. For example,
+		/// Returns the name of the colorspace in which the image is stored. For example,
 		/// this would usually be "srgb" for a JPEG file or "linear" for an EXR file.
-		/// Note that this is a guess for most file formats.
 		virtual std::string sourceColorSpace() const = 0;
 
 		//@}
@@ -131,21 +114,20 @@ class ImageReader : public Reader
 
 		/// Implemented using displayWindow(), dataWindow(), channelNames() and readChannel().
 		/// Derived classes should implement those methods rather than reimplement this function.
-		virtual ObjectPtr doOperation( const CompoundObject *operands );
+		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
 
 		/// Read the specified area from the channel with the specified name - this is called
 		/// by the public readChannel() method and the doOperation() method, and must be implemented
-		/// in all derived classes. It is guaranteed that this function will not be called with 
+		/// in all derived classes. It is guaranteed that this function will not be called with
 		/// invalid names or dataWindows which are not wholly within the dataWindow in the file.
-		virtual DataPtr readChannel( const std::string &name, const Imath::Box2i &dataWindow, bool raw ) = 0;
+		virtual DataPtr readChannel( const std::string &name, const Imath::Box2i &dataWindow ) = 0;
 
 	private :
 
 		Box2iParameterPtr m_dataWindowParameter;
 		Box2iParameterPtr m_displayWindowParameter;
 		StringVectorParameterPtr m_channelNamesParameter;
-		BoolParameterPtr m_rawChannelsParameter;
-		StringParameterPtr m_colorspaceParameter;
+
 };
 
 IE_CORE_DECLAREPTR(ImageReader);

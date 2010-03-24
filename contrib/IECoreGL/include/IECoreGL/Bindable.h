@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,8 +36,11 @@
 #define IECOREGL_BINDABLE_H
 
 #include "IECoreGL/TypeIds.h"
+#include "IECoreGL/GL.h"
 
 #include "IECore/RunTimeTyped.h"
+
+#include "boost/utility.hpp"
 
 namespace IECoreGL
 {
@@ -45,7 +48,7 @@ namespace IECoreGL
 /// The Bindable class provides an abstract base class
 /// for all classes which can bind to OpenGL, modifying
 /// the state in some way.
-class Bindable : public IECore::RunTimeTyped
+class Bindable : public IECore::RunTimeTyped, boost::noncopyable
 {
 
 	public :
@@ -59,6 +62,9 @@ class Bindable : public IECore::RunTimeTyped
 		/// is relevant to that object (install a shader, make a texture current, enable/disable
 		/// something etc.).
 		virtual void bind() const = 0;
+		/// Returns the bitmask that would have to be used with glPushAttrib() in order to
+		/// save the state that will be modified by bind().
+		virtual GLbitfield mask() const = 0;
 
 };
 

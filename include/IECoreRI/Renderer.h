@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,10 +43,8 @@ namespace IECoreRI
 {
 
 /// An IECore::Renderer subclass which renders through the renderman interface.
-/// \threading Scenes should be described to this class from a single thread.
-/// However, when rendering live (with a Renderer constructed with Renderer( "" )), procedurals may
-/// be expanded concurrently in multiple threads, and in this case each procedural will see a separate
-/// Renderer instance to provide thread safety.
+/// \threading It is not safe to call the methods of this class from multiple concurrent threads.
+/// \todo Make this threadsafe (this means thinking of an alternative to RendererImplementation::m_inMotion)
 class Renderer : public IECore::Renderer
 {
 
@@ -212,8 +210,7 @@ class Renderer : public IECore::Renderer
 		/// Supports all attributes for which the RxAttribute query works.
 		virtual IECore::ConstDataPtr getAttribute( const std::string &name ) const;
 		virtual void shader( const std::string &type, const std::string &name, const IECore::CompoundDataMap &parameters );
-		virtual void light( const std::string &name, const std::string &handle, const IECore::CompoundDataMap &parameters );
-		virtual void illuminate( const std::string &lightHandle, bool on );
+		virtual void light( const std::string &name, const IECore::CompoundDataMap &parameters );
 
 		virtual void motionBegin( const std::set<float> &times );
 		virtual void motionEnd();
@@ -273,7 +270,6 @@ class Renderer : public IECore::Renderer
 		/// Calls RiIlluminate. Expects a StringData parameter called "handle" and a BoolData parameter
 		/// called "state" with the light state. This is provided as a stopgap until the Renderer base class specifies
 		/// an specific illuminate method.
-		/// \deprecated Use the illuminate method instead of the ri:illuminate command.
 		virtual IECore::DataPtr command( const std::string &name, const IECore::CompoundDataMap &parameters );
 
 	private :

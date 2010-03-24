@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -68,13 +68,13 @@ IE_CORE_DEFINERUNTIMETYPED( TIFFImageWriter )
 const Writer::WriterDescription<TIFFImageWriter> TIFFImageWriter::m_writerDescription("tiff tif");
 
 TIFFImageWriter::TIFFImageWriter()
-		: 	ImageWriter( "Serializes images to the Tagged Image File Format (TIFF) format")
+		: 	ImageWriter("TIFFImageWriter", "Serializes images to the Tagged Image File Format (TIFF) format")
 {
 	constructParameters();
 }
 
 TIFFImageWriter::TIFFImageWriter( ObjectPtr image, const string &fileName )
-		: 	ImageWriter( "Serializes images to the Tagged Image File Format (TIFF) format")
+		: 	ImageWriter("TIFFImageWriter", "Serializes images to the Tagged Image File Format (TIFF) format")
 {
 	constructParameters();
 	m_objectParameter->setValue( image );
@@ -150,20 +150,20 @@ struct TIFFImageWriter::ChannelConverter
 	}
 
 	template<typename T>
-	ReturnType operator()( T * data )
+	ReturnType operator()( typename T::Ptr data )
 	{
 		assert( data );
 
 		return DataConvert < T, ChannelData, ScaledDataConversion< typename T::ValueType::value_type, typename ChannelData::ValueType::value_type> >()
 		(
-			static_cast<const T *>( data )
+			boost::static_pointer_cast<const T>( data )
 		);
 	};
 
 	struct ErrorHandler
 	{
 		template<typename T, typename F>
-		void operator()( const T *data, const F& functor )
+		void operator()( typename T::ConstPtr data, const F& functor )
 		{
 			assert( data );
 
@@ -173,7 +173,7 @@ struct TIFFImageWriter::ChannelConverter
 };
 
 template<typename T>
-void TIFFImageWriter::encodeChannels( const ImagePrimitive * image, const vector<string> &names, const Imath::Box2i &dataWindow, tiff *tiffImage, size_t bufSize, unsigned int numStrips ) const
+void TIFFImageWriter::encodeChannels( ConstImagePrimitivePtr image, const vector<string> &names, const Imath::Box2i &dataWindow, tiff *tiffImage, size_t bufSize, unsigned int numStrips ) const
 {
 	assert( tiffImage );
 
@@ -238,9 +238,13 @@ void TIFFImageWriter::encodeChannels( const ImagePrimitive * image, const vector
 	}
 }
 
-void TIFFImageWriter::writeImage( const vector<string> &names, const ImagePrimitive * image, const Box2i &fullDataWindow ) const
+void TIFFImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &fullDataWindow ) const
 {
 	ScopedTIFFErrorHandler errorHandler;
+	if ( setjmp( errorHandler.m_jmpBuffer ) )
+	{
+		throw IOException( errorHandler.m_errorMessage );
+	}
 
 	// create the tiff file
 	TIFF *tiffImage;

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -51,6 +51,7 @@ IE_CORE_DEFINERUNTIMETYPED( EnvMapSampler );
 EnvMapSampler::EnvMapSampler()
 	:
 	Op(
+		staticTypeName(),
 		"Samples an environment map to generate lights.",
 		new ObjectParameter( "result",
 			"A CompoundObject containing the light directions and colours.",
@@ -82,29 +83,29 @@ EnvMapSampler::~EnvMapSampler()
 {
 }
 
-ImagePrimitiveParameter * EnvMapSampler::imageParameter()
+ImagePrimitiveParameterPtr EnvMapSampler::imageParameter()
 {
 	return m_imageParameter;
 }
 
-const ImagePrimitiveParameter * EnvMapSampler::imageParameter() const
+ConstImagePrimitiveParameterPtr EnvMapSampler::imageParameter() const
 {
 	return m_imageParameter;
 }
 
-IntParameter * EnvMapSampler::subdivisionDepthParameter()
+IntParameterPtr EnvMapSampler::subdivisionDepthParameter()
 {
 	return m_subdivisionDepthParameter;
 }
 
-const IntParameter * EnvMapSampler::subdivisionDepthParameter() const
+ConstIntParameterPtr EnvMapSampler::subdivisionDepthParameter() const
 {
 	return m_subdivisionDepthParameter;
 }
 
-ObjectPtr EnvMapSampler::doOperation( const CompoundObject * operands )
+ObjectPtr EnvMapSampler::doOperation( ConstCompoundObjectPtr operands )
 {
-	ImagePrimitivePtr image = static_cast<ImagePrimitive *>( imageParameter()->getValue() )->copy();
+	ImagePrimitivePtr image = static_pointer_cast<ImagePrimitive>( imageParameter()->getValue() )->copy();
 	Box2i dataWindow = image->getDataWindow();
 
 	// find the rgb channels
@@ -130,9 +131,9 @@ ObjectPtr EnvMapSampler::doOperation( const CompoundObject * operands )
 	MedianCutSamplerPtr sampler = new MedianCutSampler;
 	sampler->imageParameter()->setValue( image );
 	sampler->subdivisionDepthParameter()->setNumericValue( subdivisionDepthParameter()->getNumericValue() );
-	ConstCompoundObjectPtr samples = staticPointerCast<CompoundObject>( sampler->operate() );
-	const vector<V2f> &centroids = staticPointerCast<V2fVectorData>( samples->members().find( "centroids" )->second )->readable();
-	const vector<Box2i> &areas = staticPointerCast<Box2iVectorData>( samples->members().find( "areas" )->second )->readable();
+	ConstCompoundObjectPtr samples = static_pointer_cast<CompoundObject>( sampler->operate() );
+	const vector<V2f> &centroids = static_pointer_cast<V2fVectorData>( samples->members().find( "centroids" )->second )->readable();
+	const vector<Box2i> &areas = static_pointer_cast<Box2iVectorData>( samples->members().find( "areas" )->second )->readable();
 
 	// get light directions and colors from the samples
 	V3fVectorDataPtr directionsData = new V3fVectorData;

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,7 +43,7 @@ using namespace std;
 
 IE_CORE_DEFINERUNTIMETYPED( MeshVertexReorderOp );
 
-MeshVertexReorderOp::MeshVertexReorderOp() : MeshPrimitiveOp( "Calculates vertex normals for a mesh." )
+MeshVertexReorderOp::MeshVertexReorderOp() : MeshPrimitiveOp( staticTypeName(), "Calculates vertex normals for a mesh." )
 {
 	m_startingVerticesParameter = new V3iParameter(
 	        "startingVertices",
@@ -58,12 +58,12 @@ MeshVertexReorderOp::~MeshVertexReorderOp()
 {
 }
 
-V3iParameter * MeshVertexReorderOp::startingVerticesParameter()
+V3iParameterPtr MeshVertexReorderOp::startingVerticesParameter()
 {
 	return m_startingVerticesParameter;
 }
 
-const V3iParameter * MeshVertexReorderOp::startingVerticesParameter() const
+ConstV3iParameterPtr MeshVertexReorderOp::startingVerticesParameter() const
 {
 	return m_startingVerticesParameter;
 }
@@ -79,7 +79,7 @@ struct MeshVertexReorderOp::ReorderFn
 	}
 
 	template<typename T>
-	DataPtr operator()( T * d )
+	DataPtr operator()( typename T::Ptr d )
 	{
 		assert( d );
 		typename T::Ptr data = runTimeCast<T>( d->copy() );
@@ -105,7 +105,7 @@ private:
 struct MeshVertexReorderOp::HandleErrors
 {
 	template<typename T, typename F>
-	void operator()( const T *d, const F &f )
+	void operator()( typename T::ConstPtr d, const F &f )
 	{
 		assert( d );
 		string e = boost::str( boost::format( "MeshVertexReorderOp : \"%s\" has unsupported data type \"%s\"." ) % f.m_name % d->typeName() );
@@ -156,7 +156,7 @@ int MeshVertexReorderOp::faceDirection(	FaceId face, Edge edge )
 }
 
 void MeshVertexReorderOp::visitFace(
-        const MeshPrimitive * mesh,
+        ConstMeshPrimitivePtr mesh,
         FaceId currentFace,
         Edge currentEdge,
         std::vector<VertexId> &vertexMap,
@@ -285,7 +285,7 @@ void MeshVertexReorderOp::visitFace(
 	}
 }
 
-void MeshVertexReorderOp::buildInternalTopology( const MeshPrimitive * mesh )
+void MeshVertexReorderOp::buildInternalTopology( ConstMeshPrimitivePtr mesh )
 {
 	assert( mesh );
 
@@ -345,7 +345,7 @@ void MeshVertexReorderOp::buildInternalTopology( const MeshPrimitive * mesh )
 	}
 }
 
-void MeshVertexReorderOp::modifyTypedPrimitive( MeshPrimitive * mesh, const CompoundObject * operands )
+void MeshVertexReorderOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands )
 {
 	PrimitiveVariableMap::const_iterator pvIt = mesh->variables.find( "P" );
 	if ( pvIt==mesh->variables.end() || !pvIt->second.data )

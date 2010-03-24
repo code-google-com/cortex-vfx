@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -34,6 +34,7 @@
 
 #include <cassert>
 
+#include "IECoreMaya/Parameter.h"
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaObjectConverter.h"
 #include "IECoreMaya/ColorSplineParameterHandler.h"
@@ -63,7 +64,7 @@ template<> ParameterHandler::Description< ColorSplineParameterHandler< IECore::S
 		( IECore::SplinefColor4fParameter::staticTypeId() );
 
 template<typename S>
-MStatus ColorSplineParameterHandler<S>::doUpdate( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus ColorSplineParameterHandler<S>::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
 {
 	assert( parameter );
 
@@ -86,7 +87,7 @@ MStatus ColorSplineParameterHandler<S>::doUpdate( IECore::ConstParameterPtr para
 }
 
 template<typename S>
-MObject ColorSplineParameterHandler<S>::doCreate( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MObject ColorSplineParameterHandler<S>::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
 {
 	assert( parameter );
 
@@ -104,7 +105,7 @@ MObject ColorSplineParameterHandler<S>::doCreate( IECore::ConstParameterPtr para
 }
 
 template<typename S>
-MStatus ColorSplineParameterHandler<S>::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus ColorSplineParameterHandler<S>::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	assert( parameter );
 	typename IECore::TypedParameter< S >::ConstPtr p = IECore::runTimeCast<const IECore::TypedParameter< S > >( parameter );
@@ -240,7 +241,7 @@ MStatus ColorSplineParameterHandler<S>::doSetValue( IECore::ConstParameterPtr pa
 }
 
 template<typename S>
-MStatus ColorSplineParameterHandler<S>::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus ColorSplineParameterHandler<S>::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	assert( parameter );
 

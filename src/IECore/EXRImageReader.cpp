@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,8 +41,6 @@
 #include "IECore/FileNameParameter.h"
 #include "IECore/BoxOps.h"
 #include "IECore/MessageHandler.h"
-#include "IECore/DataConvert.h"
-#include "IECore/ScaledDataConversion.h"
 
 #include "boost/format.hpp"
 
@@ -67,13 +65,13 @@ IE_CORE_DEFINERUNTIMETYPED( EXRImageReader );
 const Reader::ReaderDescription<EXRImageReader> EXRImageReader::g_readerDescription("exr");
 
 EXRImageReader::EXRImageReader() :
-		ImageReader( "Reads ILM OpenEXR file format." ),
+		ImageReader( "EXRImageReader", "Reads ILM OpenEXR file format." ),
 		m_inputFile( 0 )
 {
 }
 
 EXRImageReader::EXRImageReader(const string &fileName) :
-		ImageReader( "Reads ILM OpenEXR file format." ),
+		ImageReader( "EXRImageReader", "Reads ILM OpenEXR file format." ),
 		m_inputFile( 0 )
 {
 	m_fileNameParameter->setTypedValue( fileName );
@@ -206,7 +204,7 @@ DataPtr EXRImageReader::readTypedChannel( const std::string &name, const Imath::
 	return data;
 }
 
-DataPtr EXRImageReader::readChannel( const string &name, const Imath::Box2i &dataWindow, bool raw )
+DataPtr EXRImageReader::readChannel( const string &name, const Imath::Box2i &dataWindow )
 {
 	open( true );
 
@@ -218,35 +216,15 @@ DataPtr EXRImageReader::readChannel( const string &name, const Imath::Box2i &dat
 		assert( channel->xSampling==1 ); /// \todo Support subsampling when we have a need for it
 		assert( channel->ySampling==1 );
 
-		DataPtr res;
 		switch( channel->type )
 		{
+
 			case UINT :
 				BOOST_STATIC_ASSERT( sizeof( unsigned int ) == 4 );
-				res = readTypedChannel<unsigned int>( name, dataWindow, channel );
-				if ( raw )
-				{
-					return res;
-				}
-				else
-				{
-					DataConvert< UIntVectorData, FloatVectorData, ScaledDataConversion< unsigned int, float > > converter;
-					ConstUIntVectorDataPtr vec = staticPointerCast< UIntVectorData >(res);
-					return converter( vec );
-				}
+				return readTypedChannel<unsigned int>( name, dataWindow, channel );
 
 			case HALF :
-				res = readTypedChannel<half>( name, dataWindow, channel );
-				if ( raw )
-				{
-					return res;
-				}
-				else
-				{
-					DataConvert< HalfVectorData, FloatVectorData, ScaledDataConversion< half, float > > converter;
-					ConstHalfVectorDataPtr vec = staticPointerCast< HalfVectorData >(res);
-					return converter( vec );
-				}
+				return readTypedChannel<half>( name, dataWindow, channel );
 
 			case FLOAT :
 				BOOST_STATIC_ASSERT( sizeof( float ) == 4 );
@@ -256,6 +234,7 @@ DataPtr EXRImageReader::readChannel( const string &name, const Imath::Box2i &dat
 				throw IOException( ( boost::format( "EXRImageReader : Unsupported data type for channel \"%s\"" ) % name ).str() );
 
 		}
+
 	}
 	catch ( Exception &e )
 	{

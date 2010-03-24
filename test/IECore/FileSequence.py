@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -37,7 +37,7 @@ import unittest
 import shutil
 from IECore import *
 
-# \todo use setUp to create directories
+# \todo use setUp and tearDown to remove directories, also use shutil.rmtree instead of os.system("rm -rf")
 
 class testFrameRange( unittest.TestCase ) :
 
@@ -124,17 +124,6 @@ class testFileSequence( unittest.TestCase ) :
 
 		s = FileSequence( "seq.#.tif", FrameRange( 0, 2 ) )
 		self.assertEqual( s.fileNames(), ["seq.0.tif", "seq.1.tif", "seq.2.tif"] )
-
-	def testFrameListConstructor( self ):
-		
-		s = FileSequence( "seq.#.tif 0-2" )
-		self.assertEqual( s.fileNames(), ["seq.0.tif", "seq.1.tif", "seq.2.tif"] )
-
-		s = FileSequence( "with space.#.tif 5-6" )
-		self.assertEqual( s.fileNames(), ["with space.5.tif", "with space.6.tif"] )
-
-		s = FileSequence( "seq.#.tif" )
-		self.assertEqual( s.fileNames(), [] )
 
 	def testPadding( self ) :
 
@@ -263,7 +252,7 @@ class testLs( unittest.TestCase ) :
 
 	def doSequences( self, sequences ) :
 
-		self.tearDown()
+		os.system( "rm -rf test/sequences/lsTest" )
 		os.system( "mkdir -p test/sequences/lsTest" )
 
 		for sequence in sequences :
@@ -281,6 +270,8 @@ class testLs( unittest.TestCase ) :
 					break
 
 			self.assert_( lsFoundSequence )
+
+		os.system( "rm -rf test/sequences/lsTest" )
 
 	def testSimple( self ) :
 
@@ -320,7 +311,7 @@ class testLs( unittest.TestCase ) :
 
 	def testUnorderedSequences( self ) :
 		
-		self.tearDown()
+		os.system( "rm -rf test/sequences/lsTest" )
 		os.system( "mkdir -p test/sequences/lsTest" )
 
 		s = FileSequence( "a.###.b", FrameRange.parse( '100-110, 1-10' ) )
@@ -340,6 +331,8 @@ class testLs( unittest.TestCase ) :
 		for f in fileNames :
 			i = fileNames.index( f )
 			self.assertEqual( f, lFileNames[i] )
+		
+		os.system( "rm -rf test/sequences/lsTest" )
 	
 	def testNumberedSequences( self ) :
 
@@ -350,7 +343,7 @@ class testLs( unittest.TestCase ) :
 
 	def testSpecificSequences( self ) :
 
-		self.tearDown()
+		os.system( "rm -rf test/sequences/lsTest" )
 		os.system( "mkdir -p test/sequences/lsTest" )
 
 		s1 = FileSequence( "test/sequences/lsTest/a.####.tif", FrameRange( 0, 100 ) )
@@ -372,13 +365,14 @@ class testLs( unittest.TestCase ) :
 
 		self.assertEqual( ls( "test/sequences/lsTest/c.####.tif" ), None )
 
+		os.system( "rm -rf test/sequences/lsTest" )
+
 	def testAmbiguousPadding( self ):
 		
-		self.tearDown()
+		os.system( "rm -rf test/sequences/lsTest" )
 		os.system( "mkdir -p test/sequences/lsTest" )
 
-		s1 = FileSequence( "test/sequences/lsTest/a.#.tif", FrameRange( 99, 110 ) )
-		s2 = FileSequence( "test/sequences/lsTest/a.##.tif", FrameRange( 99, 110 ) )
+		s1 = FileSequence( "test/sequences/lsTest/a.#.tif", FrameRange( 100, 110 ) )
 
 		for f in s1.fileNames() :
 			os.system( "touch '" + f + "'" )
@@ -386,54 +380,35 @@ class testLs( unittest.TestCase ) :
 		l = ls( "test/sequences/lsTest/a.#.tif" )
 		self.assertEqual( s1, l )
 
-		l = ls( "test/sequences/lsTest/a.##.tif" )
-		self.assertEqual( s2, l )
+		l = ls( "test/sequences/lsTest/a.###.tif" )
+		self.assertEqual( s1, l )
+
+		os.system( "rm -rf test/sequences/lsTest" )
 
 	def testMinLength( self ) :
 
 		"""Verify that single files on their own aren't treated as sequences even
 		if the name matches the something.#.ext pattern."""
-		
-		self.tearDown()
-		os.system( "mkdir -p test/sequences/lsTest" )
-		
+
 		l = findSequences( [ "a.0001.tif", "b.0010.gif", "b.0011.gif" ] )
 		self.assertEqual( len( l ), 1 )
 		self.assertEqual( l[0], FileSequence( "b.####.gif", FrameRange( 10, 11 ) ) )
 
-		s1 = FileSequence( "test/sequences/lsTest/a.#.tif", FrameRange( 1, 1 ) )
-		for f in s1.fileNames() :
-			os.system( "touch '" + f + "'" )
-
-		l = ls( "test/sequences/lsTest/a.#.tif" )
-		self.assertEqual( None, l )
-
-		l = ls( "test/sequences/lsTest/a.#.tif", 1 )
-		self.assertEqual( s1, l )
-
-	def testSpecialExtensions( self ):
-		l = findSequences( [ "a.001.cr2", "b.002.cr2", "b.003.cr2" ] )
-		self.assertEqual( len( l ), 1 )
-
 	def testErrors( self ):
 
-		self.tearDown()
+		os.system( "rm -rf test/sequences/lsTest" )
 		os.system( "mkdir -p test/sequences/lsTest" )
 
 		os.system( "touch test/sequences/lsTest/test100.#.tif.tmp" )
 		l = ls( "test/sequences/lsTest" )
 		self.assertEqual( len( l ), 0 )
 
-	def tearDown( self ) :
-
-		if os.path.exists( "test/sequences" ) :
-			shutil.rmtree( "test/sequences" )
 
 class testMv( unittest.TestCase ) :
 
 	def test( self ) :
 
-		self.tearDown()
+		os.system( "rm -rf test/sequences/mvTest" )
 		os.system( "mkdir -p test/sequences/mvTest" )
 		s = FileSequence( "test/sequences/mvTest/s.####.tif", FrameRange( 0, 100 ) )
 		for f in s.fileNames() :
@@ -445,9 +420,11 @@ class testMv( unittest.TestCase ) :
 		self.assertEqual( len( l ), 1 )
 		self.assertEqual( l[0], FileSequence( "s2.####.tif", FrameRange( 100, 200 ) ) )
 
+		os.system( "rm -rf test/sequences/mvTest" )
+
 	def testOverlapping( self ) :
 
-		self.tearDown()
+		os.system( "rm -rf test/sequences/mvTest" )
 		os.system( "mkdir -p test/sequences/mvTest" )
 		s = FileSequence( "test/sequences/mvTest/s.####.tif", FrameRange( 0, 100 ) )
 		for f in s.fileNames() :
@@ -459,10 +436,7 @@ class testMv( unittest.TestCase ) :
 		self.assertEqual( len( l ), 1 )
 		self.assertEqual( l[0], FileSequence( "s.####.tif", FrameRange( 50, 150 ) ) )
 
-	def tearDown( self ) :
-
-		if os.path.exists( "test/sequences" ) :
-			shutil.rmtree( "test/sequences" )
+		os.system( "rm -rf test/sequences/mvTest" )
 
 class testCp( unittest.TestCase ) :
 
@@ -474,7 +448,7 @@ class testCp( unittest.TestCase ) :
 
 	def test( self ) :
 
-		self.tearDown()
+		os.system( "rm -rf test/sequences/cpTest" )
 		os.system( "mkdir -p test/sequences/cpTest" )
 
 		s = FileSequence( "test/sequences/cpTest/s.####.tif", FrameRange( 0, 100 ) )
@@ -489,11 +463,8 @@ class testCp( unittest.TestCase ) :
 		l = ls( "test/sequences/cpTest" )
 		self.assertEqual( len( l ), 1 )
 		self.assertEqual( l[0], FileSequence( "t.####.tif", FrameRange( 50, 150 ) ) )
-	
-	def tearDown( self ) :
 
-		if os.path.exists( "test/sequences" ) :
-			shutil.rmtree( "test/sequences" )
+		os.system( "rm -rf test/sequences/cpTest" )
 
 class testBigNumbers( unittest.TestCase ) :
 
@@ -521,8 +492,8 @@ class testBigNumbers( unittest.TestCase ) :
 
 	def tearDown( self ) :
 
-		if os.path.exists( "test/IECore/sequences" ) :
-			shutil.rmtree( "test/IECore/sequences" )
+		if os.path.exists( "test/IECore/sequences/renumberTest" ) :
+			shutil.rmtree( "test/IECore/sequences/renumberTest" )
 
 class testMissingFrames( unittest.TestCase ) :
 

@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -60,59 +60,16 @@ def __registerTypeId( typeId, typeName, baseTypeId ) :
 	# register the new type id
 	IECore.RunTimeTyped.registerType( typeId, typeName, baseTypeId )
 
-__nextDynamicRunTimeTypedId = None
 
 ## This function adds the necessary function definitions to a python
 # class for it to properly implement the RunTimeTyped interface. It should
 # be called once for all python classes inheriting from RunTimeTyped. It also
 # calls registerTypeId() for you.
-# baseClass is deprecated.
-# \todo Remove deprecation warning and baseClass parameter on Cortex 6.
-# typId is optional and if not defined, this function will associate a dynamic Id
-#       in the range FirstDynamicTypeId and LastDynamicTypeId from TypeIds.h.
-#       It's necessary to specify type Id for Object derived class or anything that
-#       is serializable.
-def registerRunTimeTyped( typ, typId = None, baseClass = None ) :
-
-	if not baseClass is None :
-		IECore.warning( "%s: Passing base class is deprecated in registerRunTimeTyped." % typ )
+def registerRunTimeTyped( typ, typId, baseClass ) :
 
 	typeName = typ.__name__
-	runTypedBaseClass = filter( lambda c: issubclass( c, IECore.RunTimeTyped ), typ.__bases__ )[0]
 
-	# constants below are the same as in TypeIds.h
-	FirstDynamicTypeId = 300000
-	LastDynamicTypeId = 399999
-
-	# check if overwritting registration.
-	if not hasattr( IECore.TypeId, typeName ) :
-
-		if typId is None :
-
-			global __nextDynamicRunTimeTypedId
-
-			if __nextDynamicRunTimeTypedId is None :
-				__nextDynamicRunTimeTypedId = FirstDynamicTypeId
-			elif __nextDynamicRunTimeTypedId > LastDynamicTypeId:
-				raise Exception, "Too many dynamic RunTimeTyped registered classes! You must change TypeIds.h and rebuild Cortex."
-
-			typId = __nextDynamicRunTimeTypedId
-
-			__nextDynamicRunTimeTypedId += 1
-
-		__registerTypeId( IECore.TypeId( typId ), typeName, IECore.TypeId( runTypedBaseClass.staticTypeId() ) )
-
-	else :
-		# check if the new type Id is compatible with the previously registered one.
-		prevTypId = getattr( IECore.TypeId, typeName )
-		if prevTypId in xrange( FirstDynamicTypeId, LastDynamicTypeId+1 ) :
-			if not typId is None :
-				raise Exception, "Trying to set a type ID for %s previously registered as a dynamic type Id!" % typeName
-		else :
-			if typId is None :
-				raise Exception, "Trying to re-register type %s as dynamic type Id!" % typeName
-			elif typId != prevTypId :
-				raise Exception, "Trying to re-register %s under different type Id: %s != %s" % ( typeName, str(typId), prevTypId )
+	__registerTypeId( IECore.TypeId( typId ), typeName, IECore.TypeId( baseClass.staticTypeId() ) )
 
 	# Retrieve the correct value from the enum
 	tId = getattr( IECore.TypeId, typeName )
@@ -124,8 +81,8 @@ def registerRunTimeTyped( typ, typId = None, baseClass = None ) :
 	# add the staticTypeId, staticTypeName, baseTypeId, and baseTypeName overrides
 	typ.staticTypeId = staticmethod( lambda : tId )
 	typ.staticTypeName = staticmethod( lambda : typeName )
-	typ.baseTypeId = staticmethod( lambda : runTypedBaseClass.staticTypeId() )
-	typ.baseTypeName = staticmethod( lambda : runTypedBaseClass.staticTypeName() )
+	typ.baseTypeId = staticmethod( lambda : baseClass.staticTypeId() )
+	typ.baseTypeName = staticmethod( lambda : baseClass.staticTypeName() )
 
 	# add the inheritsFrom method override
 	def inheritsFrom( t, baseClass ) :
@@ -158,7 +115,7 @@ def registerRunTimeTyped( typ, typId = None, baseClass = None ) :
 
 		return False
 
-	typ.inheritsFrom = staticmethod( lambda t : inheritsFrom( t, runTypedBaseClass ) )
+	typ.inheritsFrom = staticmethod( lambda t : inheritsFrom( t, baseClass ) )
 
 
 	# add the isInstanceOf method override
@@ -175,4 +132,4 @@ def registerRunTimeTyped( typ, typId = None, baseClass = None ) :
 
 		return inheritsFrom( t, baseClass )
 
-	typ.isInstanceOf = lambda self, t : isInstanceOf( self, t, runTypedBaseClass )
+	typ.isInstanceOf = lambda self, t : isInstanceOf( self, t, baseClass )

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -184,10 +184,10 @@ ConstGroupPtr Group::parent() const
 	return m_parent;
 }
 
-void Group::copyFrom( const Object *other, CopyContext *context )
+void Group::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	VisibleRenderable::copyFrom( other, context );
-	const Group *tOther = static_cast<const Group *>( other );
+	const Group *tOther = static_cast<const Group *>( other.get() );
 	if( tOther->m_transform )
 	{
 		m_transform = context->copy<Transform>( tOther->m_transform );
@@ -269,14 +269,14 @@ void Group::load( LoadContextPtr context )
 	container->chdir( ".." );
 }
 
-bool Group::isEqualTo( const Object *other ) const
+bool Group::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !VisibleRenderable::isEqualTo( other ) )
 	{
 		return false;
 	}
 
-	const Group *tOther = static_cast<const Group *>( other );
+	const Group *tOther = static_cast<const Group *>( other.get() );
 
 	// check transform
 	if( (bool)m_transform != (bool)tOther->m_transform )
@@ -332,7 +332,7 @@ void Group::memoryUsage( Object::MemoryAccumulator &a ) const
 	}
 }
 
-void Group::render( Renderer *renderer ) const
+void Group::render( RendererPtr renderer ) const
 {
 	renderer->attributeBegin();
 		if( m_transform )

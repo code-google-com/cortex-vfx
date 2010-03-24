@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,33 +43,6 @@ using namespace std;
 
 IE_CORE_DEFINERUNTIMETYPED( State );
 
-State::ScopedBinding::ScopedBinding( State &s, const State &currentState )
-{
-	m_savedComponents.reserve( s.m_components.size() );
-
-	for( ComponentMap::const_iterator it=s.m_components.begin(); it!=s.m_components.end(); it++ )
-	{
-		m_savedComponents.push_back( currentState.get( it->first ) );
-	}
-	s.bind();
-
-	m_boundState = new State( currentState );
-	m_boundState->add( &s );
-}
-
-ConstStatePtr State::ScopedBinding::boundState() const
-{
-	return m_boundState;
-}
-
-State::ScopedBinding::~ScopedBinding()
-{
-	for( std::vector< ConstStateComponentPtr >::const_iterator it=m_savedComponents.begin(); it!=m_savedComponents.end(); it++ )
-	{
-		(*it)->bind();
-	}
-}
-
 State::State( bool complete )
 {
 	if( complete )
@@ -85,7 +58,6 @@ State::State( bool complete )
 State::State( const State &other )
 {
 	m_components = other.m_components;
-	m_userAttributes = other.m_userAttributes;
 }
 
 State::~State()
@@ -98,6 +70,16 @@ void State::bind() const
 	{
 		it->second->bind();
 	}
+}
+
+GLbitfield State::mask() const
+{
+	GLbitfield result = 0;
+	for( ComponentMap::const_iterator it=m_components.begin(); it!=m_components.end(); it++ )
+	{
+		result |= it->second->mask();
+	}
+	return result;
 }
 
 void State::add( StatePtr s )
@@ -141,16 +123,6 @@ void State::remove( IECore::TypeId componentType )
 		return;
 	}
 	m_components.erase( it );
-}
-
-State::UserAttributesMap &State::userAttributes()
-{
-	return m_userAttributes;
-}
-
-const State::UserAttributesMap &State::userAttributes() const
-{
-	return m_userAttributes;
 }
 
 bool State::isComplete() const

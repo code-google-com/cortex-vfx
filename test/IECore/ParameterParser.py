@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -34,7 +34,6 @@
 
 import unittest
 import IECore
-import shlex
 
 class testParameterParser( unittest.TestCase ) :
 
@@ -152,7 +151,7 @@ class testParameterParser( unittest.TestCase ) :
 
 		a = IECore.ClassLoader( IECore.SearchPath( "test/IECore/ops", ":" ) ).load( "stringParsing" )()
 
-		IECore.ParameterParser().parse( shlex.split("-emptyString '' -normalString 'hello' -stringWithSpace 'hello there' -stringWithManySpaces 'hello there old chap'"), a.parameters() )
+		IECore.ParameterParser().parse( "-emptyString '' -normalString 'hello' -stringWithSpace 'hello there' -stringWithManySpaces 'hello there old chap'", a.parameters() )
 
 		a()
 
@@ -353,13 +352,30 @@ class testParameterParser( unittest.TestCase ) :
 
 		parser = IECore.ParameterParser()
 
-		self.assertRaises( SyntaxError, parser.parse, ["-string"], p )
-		self.assertRaises( SyntaxError, parser.parse, ["-int"], p )
-		self.assertRaises( SyntaxError, parser.parse, ["-float"], p )
-		self.assertRaises( SyntaxError, parser.parse, ["-bool"], p )
-		self.assertRaises( SyntaxError, parser.parse, ["-v21"], p )
-		self.assertRaises( SyntaxError, parser.parse, ["-box3f"], p )
-		self.assertRaises( SyntaxError, parser.parse, ["-spline"], p )
+		self.assertRaises( SyntaxError, parser.parse, "-string", p )
+		self.assertRaises( SyntaxError, parser.parse, "-int", p )
+		self.assertRaises( SyntaxError, parser.parse, "-float", p )
+		self.assertRaises( SyntaxError, parser.parse, "-bool", p )
+		self.assertRaises( SyntaxError, parser.parse, "-v21", p )
+		self.assertRaises( SyntaxError, parser.parse, "-box3f", p )
+		self.assertRaises( SyntaxError, parser.parse, "-spline", p )
+
+
+	#def testQuotingOnStringParameters( self ):
+
+	#	a = IECore.ClassLoader( IECore.SearchPath( "test/IECore/ops", ":" ) ).load( "parameterTypes" )()
+
+	#	a.d = "-hello"
+	#	a.f = IECore.StringVectorData( [ '-hello', "`~!@#$%^&*( )_+-=[]{ }\\|'\";:/? ", "", "hello" ] )
+
+	#	oldParams = a.parameters().getValue().copy()
+
+	#	s = IECore.ParameterParser().serialise( a.parameters() )
+	#	IECore.ParameterParser().parse( s, a.parameters() )
+
+	#	self.assertEqual( a.parameters().getValue().d, oldParams.d )
+	#	self.assertEqual( a.parameters().getValue().f, oldParams.f )
+
 
 if __name__ == "__main__":
         unittest.main()

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -50,7 +50,7 @@ MatrixTransform::~MatrixTransform()
 {
 }
 
-void MatrixTransform::render( Renderer *renderer ) const
+void MatrixTransform::render( RendererPtr renderer ) const
 {
 	renderer->concatTransform( matrix );
 }
@@ -60,10 +60,10 @@ Imath::M44f MatrixTransform::transform( float time ) const
 	return matrix;
 }
 
-void MatrixTransform::copyFrom( const Object *other, CopyContext *context )
+void MatrixTransform::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	Transform::copyFrom( other, context );
-	const MatrixTransform *t = static_cast<const MatrixTransform *>( other );
+	const MatrixTransform *t = static_cast<const MatrixTransform *>( other.get() );
 	matrix = t->matrix;
 }
 
@@ -83,13 +83,13 @@ void MatrixTransform::load( LoadContextPtr context )
 	container->read( "matrix", f, 16 );
 }
 
-bool MatrixTransform::isEqualTo( const Object *other ) const
+bool MatrixTransform::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !Transform::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const MatrixTransform *t = static_cast<const MatrixTransform *>( other );
+	ConstMatrixTransformPtr t = static_pointer_cast<const MatrixTransform>( other );
 	return matrix == t->matrix;
 }
 

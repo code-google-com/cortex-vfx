@@ -43,6 +43,7 @@
 
 #include "IECore/ParameterisedProcedural.h"
 #include "IECore/Interned.h"
+#include "IECore/ClassData.h"
 
 #include "maya/MPxComponentShape.h"
 #include "maya/MArrayDataBuilder.h"
@@ -112,7 +113,8 @@ class ProceduralHolder : public ParameterisedHolderComponentShape
 
 		bool m_sceneDirty;
 		IECoreGL::ScenePtr m_scene;
-		IECoreGL::RendererPtr m_lastRenderer;
+		static IECore::ClassData<ProceduralHolder, IECoreGL::RendererPtr> g_lastRenderer;
+		IECoreGL::RendererPtr &lastRenderer();
 		
 		typedef std::map<IECore::InternedString,  std::pair< unsigned int, IECoreGL::GroupPtr > > ComponentsMap;
 		typedef std::map< int, std::set< std::pair< std::string, IECoreGL::GroupPtr > > > ComponentToGroupMap;

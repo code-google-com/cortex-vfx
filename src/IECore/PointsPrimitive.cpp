@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -61,10 +61,10 @@ PointsPrimitive::~PointsPrimitive()
 {
 }
 
-void PointsPrimitive::copyFrom( const Object *other, IECore::Object::CopyContext *context )
+void PointsPrimitive::copyFrom( IECore::ConstObjectPtr other, IECore::Object::CopyContext *context )
 {
 	Primitive::copyFrom( other, context );
-	const PointsPrimitive *tOther = static_cast<const PointsPrimitive *>( other );
+	const PointsPrimitive *tOther = static_cast<const PointsPrimitive *>( other.get() );
 	m_numPoints = tOther->getNumPoints();
 }
 
@@ -85,13 +85,13 @@ void PointsPrimitive::load( IECore::Object::LoadContextPtr context )
 	m_numPoints = static_cast<size_t>(numPoints);
 }
 
-bool PointsPrimitive::isEqualTo( const Object *other ) const
+bool PointsPrimitive::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !Primitive::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const PointsPrimitive *tOther = static_cast<const PointsPrimitive *>( other );
+	const PointsPrimitive *tOther = static_cast<const PointsPrimitive *>( other.get() );
 	if( tOther->getNumPoints()!=getNumPoints() )
 	{
 		return false;
@@ -128,7 +128,7 @@ size_t PointsPrimitive::variableSize( PrimitiveVariable::Interpolation interpola
 	}
 }
 
-void PointsPrimitive::render( Renderer *renderer ) const
+void PointsPrimitive::render( RendererPtr renderer ) const
 {
 	renderer->points( getNumPoints(), variables );
 }

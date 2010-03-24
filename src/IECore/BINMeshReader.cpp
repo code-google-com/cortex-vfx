@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -75,6 +75,7 @@ static void readLittleEndian( std::istream &f, T &n )
 
 BINMeshReader::BINMeshReader( const string &name )
 		: Reader(
+		        "BINMeshReader",
 		        "Realflow .bin mesh reader",
 		        new ObjectParameter( "result", "the loaded 3D object", new NullObject, MeshPrimitive::staticTypeId() )
 		)
@@ -96,7 +97,7 @@ bool BINMeshReader::canRead( const string &fileName )
 	return magic == 0xDADADADA && !in.fail() ;
 }
 
-ObjectPtr BINMeshReader::doOperation( const CompoundObject *operands )
+ObjectPtr BINMeshReader::doOperation( ConstCompoundObjectPtr operands )
 {
 	const std::string &fileName = m_fileNameParameter->getTypedValue();
 	ifstream f( fileName.c_str() );

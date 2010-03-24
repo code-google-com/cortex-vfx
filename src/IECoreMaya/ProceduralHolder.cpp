@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -75,14 +75,17 @@ MObject ProceduralHolder::aGLPreview;
 MObject ProceduralHolder::aTransparent;
 MObject ProceduralHolder::aDrawBound;
 MObject ProceduralHolder::aProceduralComponents;
+ClassData<ProceduralHolder, IECoreGL::RendererPtr> ProceduralHolder::g_lastRenderer;
 
 ProceduralHolder::ProceduralHolder()
-	:	m_boundDirty( true ), m_sceneDirty( true ), m_lastRenderer( 0 )
+	:	m_boundDirty( true ), m_sceneDirty( true )
 {
+	g_lastRenderer.create( this, 0 );
 }
 
 ProceduralHolder::~ProceduralHolder()
 {
+	g_lastRenderer.erase( this );
 }
 
 void ProceduralHolder::postConstructor()
@@ -206,7 +209,9 @@ MBoundingBox ProceduralHolder::boundingBox() const
 
 MStatus ProceduralHolder::setDependentsDirty( const MPlug &plug, MPlugArray &plugArray )
 {
-	if( std::string( plug.partialName().substring( 0, 4 ).asChar() ) == g_attributeNamePrefix )
+	/// \todo We should put "parm_" somewhere as a static const char * so everything can
+	/// reference it rather than repeating it.
+	if( std::string( plug.partialName().substring( 0, 4 ).asChar() ) == "parm_" )
 	{
 		// it's an input to the procedural
 		m_boundDirty = m_sceneDirty = true;
@@ -240,6 +245,7 @@ IECoreGL::ConstScenePtr ProceduralHolder::scene()
 		setParameterisedValues( true /* lazy */ );
 		try
 		{
+			IECoreGL::RendererPtr &m_lastRenderer = lastRenderer();
 			IECoreGL::RendererPtr rendererToReuse = 0;
 			boost::python::object pythonProcedural( p );
 			if( m_lastRenderer && PyObject_HasAttrString( pythonProcedural.ptr(), "willRerender" ) )
@@ -256,7 +262,7 @@ IECoreGL::ConstScenePtr ProceduralHolder::scene()
 
 			if( rendererToReuse )
 			{
-				p->render( rendererToReuse.get() );
+				p->render( rendererToReuse );
 				m_scene = rendererToReuse->scene();
 			}
 			else
@@ -265,7 +271,7 @@ IECoreGL::ConstScenePtr ProceduralHolder::scene()
 				renderer->setOption( "gl:mode", new StringData( "deferred" ) );
 				renderer->worldBegin();
 
-					p->render( renderer.get() );
+					p->render( renderer );
 
 				renderer->worldEnd();
 
@@ -479,4 +485,10 @@ void ProceduralHolder::buildComponents()
 	}
 
 #endif
+}
+
+
+IECoreGL::RendererPtr &ProceduralHolder::lastRenderer()
+{
+	return g_lastRenderer[this];
 }

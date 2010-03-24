@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -59,21 +59,21 @@ class ImageDiffOp : public Op
 		ImageDiffOp();
 		virtual ~ImageDiffOp();
 
-		ImagePrimitiveParameter * imageAParameter();
-		const ImagePrimitiveParameter * imageAParameter() const;
+		ImagePrimitiveParameterPtr imageAParameter();
+		ConstImagePrimitiveParameterPtr imageAParameter() const;
 
-		ImagePrimitiveParameter * imageBParameter();
-		const ImagePrimitiveParameter * imageBParameter() const;
+		ImagePrimitiveParameterPtr imageBParameter();
+		ConstImagePrimitiveParameterPtr imageBParameter() const;
 
-		FloatParameter * maxErrorParameter();
-		const FloatParameter * maxErrorParameter() const;
+		FloatParameterPtr maxErrorParameter();
+		ConstFloatParameterPtr maxErrorParameter() const;
 
-		BoolParameter * skipMissingChannels();
-		const BoolParameter * skipMissingChannels() const;
+		BoolParameterPtr skipMissingChannels();
+		ConstBoolParameterPtr skipMissingChannels() const;
 
 	protected :
 
-		virtual ObjectPtr doOperation( const CompoundObject * operands );
+		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
 
 	private :
 

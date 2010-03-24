@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -55,6 +55,7 @@ IE_CORE_DEFINERUNTIMETYPED( DataCastOp );
 
 DataCastOp::DataCastOp()
 	:	Op(
+		staticTypeName(),
 		"Performs cast conversion on Data types.",
 		new ObjectParameter(
 			"result",
@@ -85,22 +86,22 @@ DataCastOp::~DataCastOp()
 {
 }
 
-ObjectParameter * DataCastOp::objectParameter()
+ObjectParameterPtr DataCastOp::objectParameter()
 {
 	return m_objectParameter;
 }
 
-const ObjectParameter * DataCastOp::objectParameter() const
+ConstObjectParameterPtr DataCastOp::objectParameter() const
 {
 	return m_objectParameter;
 }
 
-IntParameter * DataCastOp::targetTypeParameter()
+IntParameterPtr DataCastOp::targetTypeParameter()
 {
 	return m_targetTypeParameter;
 }
 
-const IntParameter * DataCastOp::targetTypeParameter() const
+ConstIntParameterPtr DataCastOp::targetTypeParameter() const
 {
 	return m_targetTypeParameter;
 }
@@ -118,9 +119,9 @@ struct CastRawData
 
 template< typename S, typename T >
 static typename T::Ptr
-castToData( const Data *array )
+castToData( ConstDataPtr array )
 {
-	const S * dataArray = static_cast< const S * >( array );
+	typename S::ConstPtr dataArray = static_pointer_cast< const S >( array );
 	const typename S::BaseType *source = dataArray->baseReadable();
 	unsigned sourceSize = dataArray->baseSize();
 
@@ -139,9 +140,9 @@ castToData( const Data *array )
 
 template< typename S, typename T >
 static typename T::Ptr
-castToVectorData( Data * array )
+castToVectorData( DataPtr array )
 {
-	const S *dataArray = static_cast< const S * >( array );
+	typename S::ConstPtr dataArray = static_pointer_cast< const S >( array );
 	const typename S::BaseType *source = dataArray->baseReadable();
 	unsigned sourceSize = dataArray->baseSize();
 	unsigned targetItemSize = ( sizeof( typename T::ValueType::value_type ) / sizeof( typename T::BaseType ) );
@@ -167,11 +168,11 @@ castToVectorData( Data * array )
 				return castToVectorData< SOURCE ## Data, TARGET ## Data >( data );	\
 
 
-ObjectPtr DataCastOp::doOperation( const CompoundObject * operands )
+ObjectPtr DataCastOp::doOperation( ConstCompoundObjectPtr operands )
 {
 	const TypeId targetType = (TypeId) m_targetTypeParameter->getNumericValue();
 
-	Data *data = static_cast<Data *>( m_objectParameter->getValue() );
+	DataPtr data = static_pointer_cast< Data >( m_objectParameter->getValue() );
 
 	if ( data->typeId() == targetType )
 	{

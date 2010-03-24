@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,7 +45,7 @@ using namespace Imath;
 IE_CORE_DEFINERUNTIMETYPED( LuminanceOp );
 
 LuminanceOp::LuminanceOp()
-	:	PrimitiveOp( "Calculates luminance and adds it as a primitive variable." )
+	:	PrimitiveOp( staticTypeName(), "Calculates luminance and adds it as a primitive variable." )
 {
 
 	m_colorPrimVarParameter = new StringParameter(
@@ -111,73 +111,73 @@ LuminanceOp::~LuminanceOp()
 {
 }
 
-StringParameter * LuminanceOp::colorPrimVarParameter()
+StringParameterPtr LuminanceOp::colorPrimVarParameter()
 {
 	return m_colorPrimVarParameter;
 }
 
-const StringParameter * LuminanceOp::colorPrimVarParameter() const
+ConstStringParameterPtr LuminanceOp::colorPrimVarParameter() const
 {
 	return m_colorPrimVarParameter;
 }
 
-StringParameter * LuminanceOp::redPrimVarParameter()
+StringParameterPtr LuminanceOp::redPrimVarParameter()
 {
 	return m_redPrimVarParameter;
 }
 
-const StringParameter * LuminanceOp::redPrimVarParameter() const
+ConstStringParameterPtr LuminanceOp::redPrimVarParameter() const
 {
 	return m_redPrimVarParameter;
 }
 
-StringParameter * LuminanceOp::greenPrimVarParameter()
+StringParameterPtr LuminanceOp::greenPrimVarParameter()
 {
 	return m_greenPrimVarParameter;
 }
 
-const StringParameter * LuminanceOp::greenPrimVarParameter() const
+ConstStringParameterPtr LuminanceOp::greenPrimVarParameter() const
 {
 	return m_greenPrimVarParameter;
 }
 
-StringParameter * LuminanceOp::bluePrimVarParameter()
+StringParameterPtr LuminanceOp::bluePrimVarParameter()
 {
 	return m_bluePrimVarParameter;
 }
 
-const StringParameter * LuminanceOp::bluePrimVarParameter() const
+ConstStringParameterPtr LuminanceOp::bluePrimVarParameter() const
 {
 	return m_bluePrimVarParameter;
 }
 
-Color3fParameter * LuminanceOp::weightsParameter()
+Color3fParameterPtr LuminanceOp::weightsParameter()
 {
 	return m_weightsParameter;
 }
 
-const Color3fParameter * LuminanceOp::weightsParameter() const
+ConstColor3fParameterPtr LuminanceOp::weightsParameter() const
 {
 	return m_weightsParameter;
 }
 
 
-StringParameter * LuminanceOp::luminancePrimVarParameter()
+StringParameterPtr LuminanceOp::luminancePrimVarParameter()
 {
 	return m_luminancePrimVarParameter;
 }
 
-const StringParameter * LuminanceOp::luminancePrimVarParameter() const
+ConstStringParameterPtr LuminanceOp::luminancePrimVarParameter() const
 {
 	return m_luminancePrimVarParameter;
 }
 
-BoolParameter * LuminanceOp::removeColorPrimVarsParameter()
+BoolParameterPtr LuminanceOp::removeColorPrimVarsParameter()
 {
 	return m_removeColorPrimVarsParameter;
 }
 
-const BoolParameter * LuminanceOp::removeColorPrimVarsParameter() const
+ConstBoolParameterPtr LuminanceOp::removeColorPrimVarsParameter() const
 {
 	return m_removeColorPrimVarsParameter;
 }
@@ -195,7 +195,7 @@ void LuminanceOp::calculate( const T *r, const T *g, const T *b, int steps[3], i
 	}
 }
 
-void LuminanceOp::modifyPrimitive( Primitive * primitive, const CompoundObject * operands )
+void LuminanceOp::modifyPrimitive( PrimitivePtr primitive, ConstCompoundObjectPtr operands )
 {
 	DataPtr luminanceData = 0;
 	PrimitiveVariable::Interpolation interpolation = PrimitiveVariable::Invalid;
@@ -210,7 +210,7 @@ void LuminanceOp::modifyPrimitive( Primitive * primitive, const CompoundObject *
 			case Color3fDataTypeId :
 				{
 					FloatDataPtr l = new FloatData;
-					const float *d = staticPointerCast<Color3fData>( colorIt->second.data )->baseReadable();
+					const float *d = boost::static_pointer_cast<Color3fData>( colorIt->second.data )->baseReadable();
 					calculate( d, d + 1, d + 2, steps, 1, l->baseWritable() );
 					luminanceData = l;
 				}
@@ -218,7 +218,7 @@ void LuminanceOp::modifyPrimitive( Primitive * primitive, const CompoundObject *
 			case Color3fVectorDataTypeId :
 				{
 					FloatVectorDataPtr l = new FloatVectorData;
-					Color3fVectorDataPtr d = staticPointerCast<Color3fVectorData>( colorIt->second.data );
+					Color3fVectorDataPtr d = boost::static_pointer_cast<Color3fVectorData>( colorIt->second.data );
 					l->writable().resize( d->readable().size() );
 					const float *dd = d->baseReadable();
 					steps[0] = steps[1] = steps[2] = 3;
@@ -260,9 +260,9 @@ void LuminanceOp::modifyPrimitive( Primitive * primitive, const CompoundObject *
 				{
 					HalfDataPtr l = new HalfData;
 					calculate(
-						staticPointerCast<HalfData>( rIt->second.data )->baseReadable(),
-						staticPointerCast<HalfData>( gIt->second.data )->baseReadable(),
-						staticPointerCast<HalfData>( bIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<HalfData>( rIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<HalfData>( gIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<HalfData>( bIt->second.data )->baseReadable(),
 						steps,
 						rSize,
 						l->baseWritable()
@@ -275,9 +275,9 @@ void LuminanceOp::modifyPrimitive( Primitive * primitive, const CompoundObject *
 					HalfVectorDataPtr l = new HalfVectorData;
 					l->writable().resize( rSize );
 					calculate(
-						staticPointerCast<HalfVectorData>( rIt->second.data )->baseReadable(),
-						staticPointerCast<HalfVectorData>( gIt->second.data )->baseReadable(),
-						staticPointerCast<HalfVectorData>( bIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<HalfVectorData>( rIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<HalfVectorData>( gIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<HalfVectorData>( bIt->second.data )->baseReadable(),
 						steps,
 						rSize,
 						l->baseWritable()
@@ -289,9 +289,9 @@ void LuminanceOp::modifyPrimitive( Primitive * primitive, const CompoundObject *
 				{
 					FloatDataPtr l = new FloatData;
 					calculate(
-						staticPointerCast<FloatData>( rIt->second.data )->baseReadable(),
-						staticPointerCast<FloatData>( gIt->second.data )->baseReadable(),
-						staticPointerCast<FloatData>( bIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<FloatData>( rIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<FloatData>( gIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<FloatData>( bIt->second.data )->baseReadable(),
 						steps,
 						rSize,
 						l->baseWritable()
@@ -304,9 +304,9 @@ void LuminanceOp::modifyPrimitive( Primitive * primitive, const CompoundObject *
 					FloatVectorDataPtr l = new FloatVectorData;
 					l->writable().resize( rSize );
 					calculate(
-						staticPointerCast<FloatVectorData>( rIt->second.data )->baseReadable(),
-						staticPointerCast<FloatVectorData>( gIt->second.data )->baseReadable(),
-						staticPointerCast<FloatVectorData>( bIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<FloatVectorData>( rIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<FloatVectorData>( gIt->second.data )->baseReadable(),
+						boost::static_pointer_cast<FloatVectorData>( bIt->second.data )->baseReadable(),
 						steps,
 						rSize,
 						l->baseWritable()

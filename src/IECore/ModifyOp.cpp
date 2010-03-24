@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,8 +40,8 @@ using namespace IECore;
 
 IE_CORE_DEFINERUNTIMETYPED( ModifyOp );
 
-ModifyOp::ModifyOp( const std::string &description, ParameterPtr resultParameter, ParameterPtr inputParameter )
-	:	Op( description, resultParameter )
+ModifyOp::ModifyOp( const std::string &name, const std::string &description, ParameterPtr resultParameter, ParameterPtr inputParameter )
+	:	Op( name, description, resultParameter )
 {
 	parameters()->addParameter( inputParameter );
 	m_inputParameter = inputParameter;
@@ -66,37 +66,37 @@ ModifyOp::~ModifyOp()
 {
 }
 
-Parameter *ModifyOp::inputParameter()
+ParameterPtr ModifyOp::inputParameter()
 {
 	return m_inputParameter;
 }
 
-const Parameter *ModifyOp::inputParameter() const
+ConstParameterPtr ModifyOp::inputParameter() const
 {
 	return m_inputParameter;
 }
 
-BoolParameter *ModifyOp::copyParameter()
+BoolParameterPtr ModifyOp::copyParameter()
 {
 	return m_copyParameter;
 }
 
-const BoolParameter *ModifyOp::copyParameter() const
+BoolParameterPtr ModifyOp::copyParameter() const
 {
 	return m_copyParameter;
 }
 
-BoolParameter *ModifyOp::enableParameter()
+BoolParameterPtr ModifyOp::enableParameter()
 {
 	return m_enableParameter;
 }
 
-const BoolParameter *ModifyOp::enableParameter() const
+BoolParameterPtr ModifyOp::enableParameter() const
 {
 	return m_enableParameter;
 }
 
-ObjectPtr ModifyOp::doOperation( const CompoundObject *operands )
+ObjectPtr ModifyOp::doOperation( ConstCompoundObjectPtr operands )
 {
 	ObjectPtr object = m_inputParameter->getValue();
 	if( m_copyParameter->getTypedValue() )

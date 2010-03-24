@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -54,8 +54,8 @@ using namespace boost;
 
 IE_CORE_DEFINERUNTIMETYPED( ParticleReader );
 
-ParticleReader::ParticleReader( const std::string &description )
-		:	Reader( description, new ObjectParameter( "result", "The loaded object.", new NullObject, PointsPrimitive::staticTypeId() ) )
+ParticleReader::ParticleReader( const std::string &name, const std::string &description )
+		:	Reader( name, description, new ObjectParameter( "result", "The loaded object.", new NullObject, PointsPrimitive::staticTypeId() ) )
 {
 	m_percentageParameter = new FloatParameter(
 		"percentage",
@@ -97,47 +97,47 @@ ParticleReader::ParticleReader( const std::string &description )
 	parameters()->addParameter( m_realTypeParameter );
 }
 
-FloatParameter * ParticleReader::percentageParameter()
+FloatParameterPtr ParticleReader::percentageParameter()
 {
 	return m_percentageParameter;
 }
 
-const FloatParameter * ParticleReader::percentageParameter() const
+ConstFloatParameterPtr ParticleReader::percentageParameter() const
 {
 	return m_percentageParameter;
 }
 
-IntParameter * ParticleReader::percentageSeedParameter()
+IntParameterPtr ParticleReader::percentageSeedParameter()
 {
 	return m_percentageSeedParameter;
 }
 
-const IntParameter * ParticleReader::percentageSeedParameter() const
+ConstIntParameterPtr ParticleReader::percentageSeedParameter() const
 {
 	return m_percentageSeedParameter;
 }
 
-StringVectorParameter * ParticleReader::attributesParameter()
+StringVectorParameterPtr ParticleReader::attributesParameter()
 {
 	return m_attributesParameter;
 }
 
-const StringVectorParameter * ParticleReader::attributesParameter() const
+ConstStringVectorParameterPtr ParticleReader::attributesParameter() const
 {
 	return m_attributesParameter;
 }
 
-IntParameter * ParticleReader::realTypeParameter()
+IntParameterPtr ParticleReader::realTypeParameter()
 {
 	return m_realTypeParameter;
 }
 
-const IntParameter * ParticleReader::realTypeParameter() const
+ConstIntParameterPtr ParticleReader::realTypeParameter() const
 {
 	return m_realTypeParameter;
 }
 
-ObjectPtr ParticleReader::doOperation( const CompoundObject * operands )
+ObjectPtr ParticleReader::doOperation( ConstCompoundObjectPtr operands )
 {
 	vector<string> attributes;
 	particleAttributes( attributes );

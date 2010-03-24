@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,6 +39,7 @@
 #include "IECore/PrimitiveVariable.h"
 #include "IECore/VectorTypedData.h"
 #include "IECore/CompoundData.h"
+#include "IECore/Parameterised.h"
 #include "IECore/CubicBasis.h"
 
 #include "OpenEXR/ImathMatrix.h"
@@ -258,9 +259,9 @@ class Renderer : public RunTimeTyped
 		/// Specifies a shader to be applied to subsequent primitives.
 		virtual void shader( const std::string &type, const std::string &name, const CompoundDataMap &parameters ) = 0;
 		/// Specifies a light to apply to subsequent primitives.
-		virtual void light( const std::string &name, const std::string &handle, const CompoundDataMap &parameters ) = 0;
-		/// Turns the specified light on or off for the current attribute state.
-		virtual void illuminate( const std::string &lightHandle, bool on ) = 0;
+		/// \todo We need a way to define light handles, and an illuminate() method to turn them on
+		/// and off.
+		virtual void light( const std::string &name, const CompoundDataMap &parameters ) = 0;
 		//@}
 
 		//! @name Motion blur

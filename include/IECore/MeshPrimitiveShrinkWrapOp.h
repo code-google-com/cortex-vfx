@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -76,26 +76,26 @@ class MeshPrimitiveShrinkWrapOp : public TypedPrimitiveOp<MeshPrimitive>
 
 		IE_CORE_DECLARERUNTIMETYPED( MeshPrimitiveShrinkWrapOp, MeshPrimitiveOp );
 
-		MeshPrimitiveParameter * targetMeshParameter();
-		const MeshPrimitiveParameter * targetMeshParameter() const;
+		MeshPrimitiveParameterPtr targetMeshParameter();
+		ConstMeshPrimitiveParameterPtr targetMeshParameter() const;
 
-		IntParameter * directionParameter();
-		const IntParameter * directionParameter() const;
+		IntParameterPtr directionParameter();
+		ConstIntParameterPtr directionParameter() const;
 
-		IntParameter * methodParameter();
-		const IntParameter * methodParameter() const;
+		IntParameterPtr methodParameter();
+		ConstIntParameterPtr methodParameter() const;
 
-		MeshPrimitiveParameter * directionMeshParameter();
-		const MeshPrimitiveParameter * directionMeshParameter() const;
+		MeshPrimitiveParameterPtr directionMeshParameter();
+		ConstMeshPrimitiveParameterPtr directionMeshParameter() const;
 
-		FloatParameter * triangulationToleranceParameter();
-		const FloatParameter * triangulationToleranceParameter() const;
+		FloatParameterPtr triangulationToleranceParameter();
+		ConstFloatParameterPtr triangulationToleranceParameter() const;
 
 	protected:
 
 		struct ShrinkWrapFn;
 
-		virtual void modifyTypedPrimitive( MeshPrimitive * typedPrimitive, const CompoundObject * operands );
+		virtual void modifyTypedPrimitive( MeshPrimitivePtr typedPrimitive, ConstCompoundObjectPtr operands );
 
 	private:
 

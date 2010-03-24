@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -63,6 +63,7 @@ static TypeId resultTypes[] = { MeshPrimitiveTypeId, InvalidTypeId };
 
 PointMeshOp::PointMeshOp()
 	:	Op(
+		staticTypeName(),
 		"Calculates mesh from an isosurface defined by a set of points.",
 		new ObjectParameter(
 			"result",
@@ -122,83 +123,83 @@ PointMeshOp::~PointMeshOp()
 {
 }
 
-ObjectParameter * PointMeshOp::pointParameter()
+ObjectParameterPtr PointMeshOp::pointParameter()
 {
 	return m_pointParameter;
 }
 
-const ObjectParameter * PointMeshOp::pointParameter() const
+ConstObjectParameterPtr PointMeshOp::pointParameter() const
 {
 	return m_pointParameter;
 }
 
 
-DoubleVectorParameter * PointMeshOp::radiusParameter()
+DoubleVectorParameterPtr PointMeshOp::radiusParameter()
 {
 	return m_radiusParameter;
 }
 
-const DoubleVectorParameter * PointMeshOp::radiusParameter() const
+ConstDoubleVectorParameterPtr PointMeshOp::radiusParameter() const
 {
 	return m_radiusParameter;
 }
 
 
-DoubleVectorParameter * PointMeshOp::strengthParameter()
+DoubleVectorParameterPtr PointMeshOp::strengthParameter()
 {
 	return m_strengthParameter;
 }
 
-const DoubleVectorParameter * PointMeshOp::strengthParameter() const
+ConstDoubleVectorParameterPtr PointMeshOp::strengthParameter() const
 {
 	return m_strengthParameter;
 }
 
 
-FloatParameter * PointMeshOp::thresholdParameter()
+FloatParameterPtr PointMeshOp::thresholdParameter()
 {
 	return m_thresholdParameter;
 }
 
-const FloatParameter * PointMeshOp::thresholdParameter() const
+ConstFloatParameterPtr PointMeshOp::thresholdParameter() const
 {
 	return m_thresholdParameter;
 }
 
 
-V3iParameter * PointMeshOp::resolutionParameter()
+V3iParameterPtr PointMeshOp::resolutionParameter()
 {
 	return m_resolutionParameter;
 }
 
-const V3iParameter * PointMeshOp::resolutionParameter() const
+ConstV3iParameterPtr PointMeshOp::resolutionParameter() const
 {
 	return m_resolutionParameter;
 }
 
 
-Box3fParameter * PointMeshOp::boundParameter()
+Box3fParameterPtr PointMeshOp::boundParameter()
 {
 	return m_boundParameter;
 }
 
-const Box3fParameter * PointMeshOp::boundParameter() const
+ConstBox3fParameterPtr PointMeshOp::boundParameter() const
 {
 	return m_boundParameter;
 }
 
-ObjectPtr PointMeshOp::doOperation( const CompoundObject * operands )
+ObjectPtr PointMeshOp::doOperation( ConstCompoundObjectPtr operands )
 {
 	const float threshold = m_thresholdParameter->getNumericValue();
 
-	const Object * points = pointParameter()->getValue();
-	const Object * radius = radiusParameter()->getValue();
-	const Object * strength = strengthParameter()->getValue();
-	const Object * resolutionData = resolutionParameter()->getValue();
-	const Object * boundData = boundParameter()->getValue();
+	ConstObjectPtr points = pointParameter()->getValue();
+	ConstObjectPtr radius = radiusParameter()->getValue();
+	ConstObjectPtr strength = strengthParameter()->getValue();
+	ConstObjectPtr resolutionData = resolutionParameter()->getValue();
+	ConstObjectPtr boundData = boundParameter()->getValue();
 
-	V3i resolution = static_cast<const V3iData *>( resolutionData )->readable();
-	Box3f bound = static_cast<const Box3fData *>( boundData )->readable();
+	V3i resolution = boost::static_pointer_cast<const V3iData>( resolutionData )->readable();
+	Box3f bound = boost::static_pointer_cast<const Box3fData>( boundData )->readable();
 
 	/// Calculate a tolerance which is half the size of the smallest grid division
 	double cacheTolerance = ((bound.max.x - bound.min.x) / (double)resolution.x) / 2.0;
@@ -215,9 +216,9 @@ ObjectPtr PointMeshOp::doOperation( const CompoundObject * operands )
 
 				BlobbyImplicitSurfaceFunction< V3f, float >::Ptr fn = new BlobbyImplicitSurfaceFunction< V3f, float >
 				(
-					static_cast<const V3fVectorData *>( points ),
-					static_cast<const DoubleVectorData *>( radius ),
-					static_cast<const DoubleVectorData *>( strength )
+					boost::static_pointer_cast<const V3fVectorData>( points ),
+					boost::static_pointer_cast<const DoubleVectorData>( radius ),
+					boost::static_pointer_cast<const DoubleVectorData>( strength )
 				);
 
 				Marcher::Ptr m = new Marcher
@@ -239,9 +240,9 @@ ObjectPtr PointMeshOp::doOperation( const CompoundObject * operands )
 
 				BlobbyImplicitSurfaceFunction< V3d, double >::Ptr fn = new BlobbyImplicitSurfaceFunction< V3d, double >
 				(
-					static_cast<const V3dVectorData *>( points ),
-					static_cast<const DoubleVectorData *>( radius ),
-					static_cast<const DoubleVectorData *>( strength )
+					boost::static_pointer_cast<const V3dVectorData>( points ),
+					boost::static_pointer_cast<const DoubleVectorData>( radius ),
+					boost::static_pointer_cast<const DoubleVectorData>( strength )
 				);
 
 				Marcher::Ptr m = new Marcher

@@ -51,12 +51,12 @@ class CurvesMergeOp : public CurvesPrimitiveOp
 
 		IE_CORE_DECLARERUNTIMETYPED( CurvesMergeOp, CurvesPrimitiveOp );
 
-		CurvesPrimitiveParameter *curvesParameter();
-		const CurvesPrimitiveParameter *curvesParameter() const;
+		CurvesPrimitiveParameterPtr curvesParameter();
+		ConstCurvesPrimitiveParameterPtr curvesParameter() const;
 
 	protected :
 
-		virtual void modifyTypedPrimitive( CurvesPrimitive *curves, const CompoundObject *operands );
+		virtual void modifyTypedPrimitive( CurvesPrimitivePtr curves, ConstCompoundObjectPtr operands );
 
 	private :
 

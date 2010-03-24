@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,7 +46,7 @@ using namespace IECore;
 IE_CORE_DEFINERUNTIMETYPED( IECoreTruelight::TruelightColorTransformOp );
 
 TruelightColorTransformOp::TruelightColorTransformOp()
-	:	ColorTransformOp( "Applies truelight transforms." ), m_instance( 0 )
+	:	ColorTransformOp( "TruelightColorTransformOp", "Applies truelight transforms." ), m_instance( 0 )
 {
 
 	m_profileParameter = new StringParameter(
@@ -97,47 +97,47 @@ TruelightColorTransformOp::~TruelightColorTransformOp()
 	TruelightDestroyInstance( m_instance );
 }
 
-IECore::StringParameter * TruelightColorTransformOp::profileParameter()
+IECore::StringParameterPtr TruelightColorTransformOp::profileParameter()
 {
 	return m_profileParameter;
 }
 
-const IECore::StringParameter * TruelightColorTransformOp::profileParameter() const
+IECore::ConstStringParameterPtr TruelightColorTransformOp::profileParameter() const
 {
 	return m_profileParameter;
 }
 
-IECore::StringParameter * TruelightColorTransformOp::displayParameter()
+IECore::StringParameterPtr TruelightColorTransformOp::displayParameter()
 {
 	return m_displayParameter;
 }
 
-const IECore::StringParameter * TruelightColorTransformOp::displayParameter() const
+IECore::ConstStringParameterPtr TruelightColorTransformOp::displayParameter() const
 {
 	return m_displayParameter;
 }
 
-IECore::IntParameter * TruelightColorTransformOp::inputSpaceParameter()
+IECore::IntParameterPtr TruelightColorTransformOp::inputSpaceParameter()
 {
 	return m_inputSpaceParameter;
 }
 
-const IECore::IntParameter * TruelightColorTransformOp::inputSpaceParameter() const
+IECore::ConstIntParameterPtr TruelightColorTransformOp::inputSpaceParameter() const
 {
 	return m_inputSpaceParameter;
 }
 
-IECore::BoolParameter * TruelightColorTransformOp::rawTruelightOutputParameter()
+IECore::BoolParameterPtr TruelightColorTransformOp::rawTruelightOutputParameter()
 {
 	return m_rawTruelightOutputParameter;
 }
 
-const IECore::BoolParameter * TruelightColorTransformOp::rawTruelightOutputParameter() const
+IECore::ConstBoolParameterPtr TruelightColorTransformOp::rawTruelightOutputParameter() const
 {
 	return m_rawTruelightOutputParameter;
 }
 
-void TruelightColorTransformOp::begin( const IECore::CompoundObject * operands )
+void TruelightColorTransformOp::begin( IECore::ConstCompoundObjectPtr operands )
 {
 	assert( operands );
 	assert( m_instance );

@@ -155,9 +155,8 @@ class TestShader( unittest.TestCase ) :
 			"vec3Parm" : V3fData( V3f( 0 ) ),
 			"vec4Parm" : Color4fData( Color4f( 0 ) ),
 		}
-		# Initial values are not necessarily zero. So we just test for the value type here.
 		for name, value in expectedNamesAndValues.items() :
-			self.assertEqual( type(s.getParameter( name )), type(value) )
+			self.assertEqual( s.getParameter( name ), value )
 
 		# must bind a shader before setting parameters
 		s.bind()

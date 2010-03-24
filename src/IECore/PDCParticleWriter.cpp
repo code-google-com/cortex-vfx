@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,19 +52,19 @@ IE_CORE_DEFINERUNTIMETYPED( PDCParticleWriter )
 const Writer::WriterDescription<PDCParticleWriter> PDCParticleWriter::m_writerDescription( "pdc" );
 
 PDCParticleWriter::PDCParticleWriter( )
-	:	ParticleWriter( "Creates files in maya pdc format" )
+	:	ParticleWriter( "PDCParticleWriter", "Creates files in maya pdc format" )
 {
 }
 
 PDCParticleWriter::PDCParticleWriter( ObjectPtr object, const std::string &fileName )
-	:	ParticleWriter( "Creates files in maya pdc format" )
+	:	ParticleWriter( "PDCParticleWriter", "Creates files in maya pdc format" )
 {
 	m_objectParameter->setValue( object );
 	m_fileNameParameter->setTypedValue( fileName );
 }
 
 template<class T, class E, unsigned int n>
-static void writeAttr( ofstream &oStream, const T *attr )
+static void writeAttr( ofstream &oStream, typename T::ConstPtr attr )
 {
 	if( bigEndian() )
 	{
@@ -86,7 +86,7 @@ static void writeAttr( ofstream &oStream, const T *attr )
 }
 
 template<class T, class E, unsigned int n>
-static void writeSimpleAttr( ofstream &oStream, const T *attr )
+static void writeSimpleAttr( ofstream &oStream, typename T::ConstPtr attr )
 {
 	if( bigEndian() )
 	{
@@ -105,7 +105,7 @@ static void writeSimpleAttr( ofstream &oStream, const T *attr )
 	}
 }
 
-void PDCParticleWriter::doWrite( const CompoundObject *operands )
+void PDCParticleWriter::doWrite()
 {
 	// write the header
 	int numParticles = particleCount();
@@ -170,7 +170,7 @@ void PDCParticleWriter::doWrite( const CompoundObject *operands )
 				{
 					int type = 1; type = asBigEndian( type );
 					oStream.write( (const char *)&type, sizeof( type ) );
-					IntVectorDataPtr d = staticPointerCast<IntVectorData>( attr );
+					IntVectorDataPtr d = static_pointer_cast<IntVectorData>( attr );
 					writeAttr<IntVectorData, int, 1>( oStream, d );
 				}
 				break;
@@ -178,7 +178,7 @@ void PDCParticleWriter::doWrite( const CompoundObject *operands )
 				{
 					int type = 3; type = asBigEndian( type );
 					oStream.write( (const char *)&type, sizeof( type ) );
-					DoubleVectorDataPtr d = staticPointerCast<DoubleVectorData>( attr );
+					DoubleVectorDataPtr d = static_pointer_cast<DoubleVectorData>( attr );
 					writeAttr<DoubleVectorData, double, 1>( oStream, d );
 				}
 				break;
@@ -187,7 +187,7 @@ void PDCParticleWriter::doWrite( const CompoundObject *operands )
 				{
 					int type = 5; type = asBigEndian( type );
 					oStream.write( (const char *)&type, sizeof( type ) );
-					V3dVectorDataPtr d = staticPointerCast<V3dVectorData>( attr );
+					V3dVectorDataPtr d = static_pointer_cast<V3dVectorData>( attr );
 					writeAttr<V3dVectorData, double, 3>( oStream, d );
 				}
 				break;
@@ -195,7 +195,7 @@ void PDCParticleWriter::doWrite( const CompoundObject *operands )
 				{
 					int type = 0; type = asBigEndian( type );
 					oStream.write( (const char *)&type, sizeof( type ) );
-					IntDataPtr d = staticPointerCast<IntData>( attr );
+					IntDataPtr d = static_pointer_cast<IntData>( attr );
 					writeSimpleAttr<IntData, int, 1>( oStream, d );
 				}
 				break;
@@ -203,7 +203,7 @@ void PDCParticleWriter::doWrite( const CompoundObject *operands )
 				{
 					int type = 2; type = asBigEndian( type );
 					oStream.write( (const char *)&type, sizeof( type ) );
-					DoubleDataPtr d = staticPointerCast<DoubleData>( attr );
+					DoubleDataPtr d = static_pointer_cast<DoubleData>( attr );
 					writeSimpleAttr<DoubleData, double, 1>( oStream, d );
 				}
 				break;
@@ -211,7 +211,7 @@ void PDCParticleWriter::doWrite( const CompoundObject *operands )
 				{
 					int type = 4; type = asBigEndian( type );
 					oStream.write( (const char *)&type, sizeof( type ) );
-					V3dDataPtr d = staticPointerCast<V3dData>( attr );
+					V3dDataPtr d = static_pointer_cast<V3dData>( attr );
 					writeSimpleAttr<V3dData, double, 3>( oStream, d );
 				}
 				break;

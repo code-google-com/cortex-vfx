@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,7 +44,7 @@ using namespace IECore;
 
 IE_CORE_DEFINERUNTIMETYPED( ImageUnpremultiplyOp );
 
-ImageUnpremultiplyOp::ImageUnpremultiplyOp(): ChannelOp( "Unpremultiplies image channels by the alpha channel." )
+ImageUnpremultiplyOp::ImageUnpremultiplyOp(): ChannelOp( "ImageUnpremultiplyOp", "Unpremultiplies image channels by the alpha channel." )
 {
 	m_alphaChannelNameParameter = new StringParameter(
 		"alphaChannelName",
@@ -59,12 +59,12 @@ ImageUnpremultiplyOp::~ImageUnpremultiplyOp()
 {
 }
 
-StringParameter * ImageUnpremultiplyOp::alphaChannelNameParameter()
+StringParameterPtr ImageUnpremultiplyOp::alphaChannelNameParameter()
 {
 	return m_alphaChannelNameParameter;
 }
 
-const StringParameter * ImageUnpremultiplyOp::alphaChannelNameParameter() const
+ConstStringParameterPtr ImageUnpremultiplyOp::alphaChannelNameParameter() const
 {
 	return m_alphaChannelNameParameter;
 }
@@ -84,9 +84,9 @@ struct ImageUnpremultiplyOp::UnpremultFn
 {
 	typedef void ReturnType;
 
-	const FloatVectorData * m_alphaChannel;
+	ConstFloatVectorDataPtr m_alphaChannel;
 
-	UnpremultFn( const FloatVectorData * alphaChannel ) : m_alphaChannel( alphaChannel )
+	UnpremultFn( ConstFloatVectorDataPtr alphaChannel ) : m_alphaChannel( alphaChannel )
 	{
 		assert( m_alphaChannel );
 	}

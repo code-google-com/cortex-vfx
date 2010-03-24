@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -53,13 +53,13 @@ IE_CORE_DEFINERUNTIMETYPED( ObjectWriter )
 const Writer::WriterDescription<ObjectWriter> ObjectWriter::g_writerDescription( "cob" );
 
 ObjectWriter::ObjectWriter()
-	:	Writer( "Writes instances of a single Object to a file with a .cob extension", ObjectTypeId )
+	:	Writer( "ObjectWriter", "Writes instances of a single Object to a file with a .cob extension", ObjectTypeId )
 {
 	constructParameters();
 }
 
 ObjectWriter::ObjectWriter( ObjectPtr object, const std::string &fileName )
-	:	Writer( "Writes instances of a single Object to a file with a .cob extension", ObjectTypeId )
+	:	Writer( "ObjectWriter", "Writes instances of a single Object to a file with a .cob extension", ObjectTypeId )
 {
 	constructParameters();
 	m_objectParameter->setValue( object );
@@ -71,7 +71,7 @@ bool ObjectWriter::canWrite( ConstObjectPtr object, const std::string &fileName 
 	return true;
 }
 
-void ObjectWriter::doWrite( const CompoundObject *operands )
+void ObjectWriter::doWrite()
 {
 	IndexedIOInterfacePtr io = new FileIndexedIO( fileName(), "/", IndexedIO::Exclusive | IndexedIO::Write);
 
@@ -79,7 +79,7 @@ void ObjectWriter::doWrite( const CompoundObject *operands )
 	/// returns a CompoundObject
 
 	// write the header
-	CompoundDataPtr header = staticPointerCast<CompoundData>( m_headerParameter->getValue()->copy() );
+	CompoundDataPtr header = static_pointer_cast<CompoundData>( m_headerParameter->getValue()->copy() );
 
 	header->writable()["typeName"] = new StringData( object()->typeName() );
 
@@ -89,7 +89,7 @@ void ObjectWriter::doWrite( const CompoundObject *operands )
 		assert( it->second );
 		if ( it->second->isInstanceOf( Data::staticTypeId() ) )
 		{
-			header->writable()[ it->first ] = staticPointerCast< Data >( it->second );
+			header->writable()[ it->first ] = static_pointer_cast< Data >( it->second );
 		}
 	}
 

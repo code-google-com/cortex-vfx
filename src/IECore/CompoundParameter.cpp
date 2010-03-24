@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,7 +45,8 @@ using namespace std;
 using namespace IECore;
 using namespace boost;
 
-IE_CORE_DEFINERUNTIMETYPED( CompoundParameter );
+IE_CORE_DEFINEOBJECTTYPEDESCRIPTION( CompoundParameter );
+const unsigned int CompoundParameter::g_ioVersion = 1;
 
 CompoundParameter::CompoundParameter( const std::string &name, const std::string &description, ConstCompoundObjectPtr userData )
 	:	Parameter( name, description, new CompoundObject, PresetsContainer(), false, userData )
@@ -56,17 +57,17 @@ CompoundParameter::CompoundParameter( const std::string &name, const std::string
 // to date in addParameter(). But I'd anticipate us allowing the modification of the default and
 // the presets in future versions, in which case we'd need an implementation like that below, so
 // i'm going with that.
-const Object *CompoundParameter::defaultValue() const
+ConstObjectPtr CompoundParameter::defaultValue() const
 {
-	const CompoundObject *constValue = static_cast<const CompoundObject *>( Parameter::defaultValue() );
+	ConstCompoundObjectPtr constValue = static_pointer_cast<const CompoundObject>( Parameter::defaultValue() );
 	// naughty? not really i reckon - it results in the right semantics to the outside
 	// observer.
-	CompoundObject *value = const_cast<CompoundObject *>( constValue );
+	CompoundObjectPtr value = const_pointer_cast<CompoundObject>( constValue );
 	value->members().clear();
 	CompoundObject::ObjectMap &m = value->members();
 	for( ParameterMap::const_iterator it=m_namesToParameters.begin(); it!=m_namesToParameters.end(); it++ )
 	{
-		m[it->first] = const_cast<Object *>( it->second->defaultValue() );
+		m[it->first] = const_pointer_cast<Object>( it->second->defaultValue() );
 	}
 	return value;
 }
@@ -170,10 +171,10 @@ void CompoundParameter::setValue( ObjectPtr value )
 	}
 }
 
-Object *CompoundParameter::getValue()
+ObjectPtr CompoundParameter::getValue()
 {
-	Object *value = Parameter::getValue();
-	CompoundObject *tValue = runTimeCast<CompoundObject>( value );
+	ObjectPtr value = Parameter::getValue();
+	CompoundObjectPtr tValue = runTimeCast<CompoundObject>( value );
 	if( !tValue )
 	{
 		return value;
@@ -187,24 +188,24 @@ Object *CompoundParameter::getValue()
 	return tValue;
 }
 
-const Object *CompoundParameter::getValue() const
+ConstObjectPtr CompoundParameter::getValue() const
 {
 	// naughty?
 	// we cast away constness from this to allow us to update the compound value
 	// before returning it, which actually results in the correct semantics at the
 	// interface level.
 	CompoundParameter *mutableThis = const_cast<CompoundParameter *>( this );
-	Object *value = mutableThis->getValue();
+	ObjectPtr value = mutableThis->getValue();
 	return value;
 }
 
-bool CompoundParameter::valueValid( const Object *value, std::string *reason ) const
+bool CompoundParameter::valueValid( ConstObjectPtr value, std::string *reason ) const
 {
 	if( !Parameter::valueValid( value, reason ) )
 	{
 		return false;
 	}
-	const CompoundObject *tValue = runTimeCast<const CompoundObject>( value );
+	ConstCompoundObjectPtr tValue = runTimeCast<const CompoundObject>( value );
 	if( !tValue )
 	{
 		if( reason )
@@ -236,7 +237,7 @@ bool CompoundParameter::valueValid( const Object *value, std::string *reason ) c
 		else
 		{
 			/// \todo Prepend the child parameter name to the message to make it more useful.
-			if( !pIt->second->valueValid( it->second.get(), reason ) )
+			if( !pIt->second->valueValid( it->second, reason ) )
 			{
 				return false;
 			}
@@ -341,9 +342,9 @@ void CompoundParameter::setValidatedParameterValue( const std::string &name, Obj
 	p->setValidatedValue( value );
 }
 
-Object *CompoundParameter::getParameterValue( const std::string &name )
+ObjectPtr CompoundParameter::getParameterValue( const std::string &name )
 {
-	Parameter *p = parameter<Parameter>( name );
+	ParameterPtr p = parameter<Parameter>( name );
 	if( !p )
 	{
 		throw Exception( string("Parameter ") + name + " doesn't exist" );
@@ -351,9 +352,9 @@ Object *CompoundParameter::getParameterValue( const std::string &name )
 	return p->getValue();
 }
 
-Object *CompoundParameter::getValidatedParameterValue( const std::string &name )
+ObjectPtr CompoundParameter::getValidatedParameterValue( const std::string &name )
 {
-	Parameter *p = parameter<Parameter>( name );
+	ParameterPtr p = parameter<Parameter>( name );
 	if( !p )
 	{
 		throw Exception( string("Parameter ") + name + " doesn't exist" );
@@ -361,7 +362,7 @@ Object *CompoundParameter::getValidatedParameterValue( const std::string &name )
 	return p->getValidatedValue();
 }
 
-bool CompoundParameter::parameterPath( const Parameter *child, std::vector<std::string> &path ) const
+bool CompoundParameter::parameterPath( ConstParameterPtr child, std::vector<std::string> &path ) const
 {
 	for( ParameterVector::const_iterator it=m_parameters.begin(); it!=m_parameters.end(); it++ )
 	{
@@ -372,7 +373,7 @@ bool CompoundParameter::parameterPath( const Parameter *child, std::vector<std::
 		}
 		else
 		{
-			const CompoundParameter *c = runTimeCast<const CompoundParameter>( it->get() );
+			ConstCompoundParameterPtr c = runTimeCast<const CompoundParameter>( *it );
 			if( c )
 			{
 				if( c->parameterPath( child, path ) )
@@ -384,4 +385,95 @@ bool CompoundParameter::parameterPath( const Parameter *child, std::vector<std::
 		}
 	}
 	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Object implementation
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void CompoundParameter::copyFrom( ConstObjectPtr other, CopyContext *context )
+{
+	Parameter::copyFrom( other, context );
+	const CompoundParameter *tOther = static_cast<const CompoundParameter *>( other.get() );
+
+	m_namesToParameters.clear();
+	m_parameters.clear();
+	for( ParameterVector::const_iterator it=tOther->m_parameters.begin(); it!=tOther->m_parameters.end(); it++ )
+	{
+		addParameter( (*it)->copy() );
+	}
+}
+
+void CompoundParameter::save( SaveContext *context ) const
+{
+	Parameter::save( context );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), g_ioVersion );
+
+	container->mkdir( "parameters" );
+	container->chdir( "parameters" );
+		unsigned i = 0;
+		for( ParameterVector::const_iterator it=m_parameters.begin(); it!=m_parameters.end(); it++, i++ )
+		{
+			string name = str( boost::format( "%d" ) % i );
+			context->save( *it, container, name );
+		}
+	container->chdir( ".." );
+}
+
+void CompoundParameter::load( LoadContextPtr context )
+{
+	Parameter::load( context );
+	unsigned int v = g_ioVersion;
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
+
+	m_namesToParameters.clear();
+	m_parameters.clear();
+	container->chdir( "parameters" );
+		IndexedIO::EntryList l = container->ls();
+		m_parameters.resize( l.size() );
+		for( IndexedIO::EntryList::const_iterator it=l.begin(); it!=l.end(); it++ )
+		{
+			ParameterPtr parameter = context->load<Parameter>( container, it->id() );
+			size_t i = boost::lexical_cast<size_t>( it->id() );
+			m_namesToParameters.insert( ParameterMap::value_type( parameter->internedName(), parameter ) );
+			m_parameters[i] = parameter;
+		}
+	container->chdir( ".." );
+}
+
+bool CompoundParameter::isEqualTo( ConstObjectPtr other ) const
+{
+	if( !Parameter::isEqualTo( other ) )
+	{
+		return false;
+	}
+
+
+	const CompoundParameter *tOther = static_cast<const CompoundParameter *>( other.get() );
+	if( tOther->m_parameters.size()!=m_parameters.size() )
+	{
+		return false;
+	}
+
+	for( unsigned i=0; i<m_parameters.size(); i++ )
+	{
+		if( !m_parameters[i]->isEqualTo( tOther->m_parameters[i] ) )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void CompoundParameter::memoryUsage( Object::MemoryAccumulator &a ) const
+{
+	Parameter::memoryUsage( a );
+	a.accumulate( m_parameters.capacity() * sizeof( ParameterVector::value_type ) );
+	for( ParameterVector::const_iterator it=m_parameters.begin(); it!=m_parameters.end(); it++ )
+	{
+		a.accumulate( *it );
+	}
+	
+	a.accumulate( m_namesToParameters.size() * sizeof( ParameterMap::value_type ) );
 }

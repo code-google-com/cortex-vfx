@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -50,7 +50,7 @@ using namespace Imath;
 
 IE_CORE_DEFINERUNTIMETYPED( MeshPrimitiveShrinkWrapOp );
 
-MeshPrimitiveShrinkWrapOp::MeshPrimitiveShrinkWrapOp() : MeshPrimitiveOp( "A MeshPrimitiveOp to shrink-wrap one mesh onto another" )
+MeshPrimitiveShrinkWrapOp::MeshPrimitiveShrinkWrapOp() : MeshPrimitiveOp( staticTypeName(), "A MeshPrimitiveOp to shrink-wrap one mesh onto another" )
 {
 	m_targetMeshParameter = new MeshPrimitiveParameter(
 	        "target",
@@ -114,52 +114,52 @@ MeshPrimitiveShrinkWrapOp::~MeshPrimitiveShrinkWrapOp()
 {
 }
 
-MeshPrimitiveParameter * MeshPrimitiveShrinkWrapOp::targetMeshParameter()
+MeshPrimitiveParameterPtr MeshPrimitiveShrinkWrapOp::targetMeshParameter()
 {
 	return m_targetMeshParameter;
 }
 
-const MeshPrimitiveParameter * MeshPrimitiveShrinkWrapOp::targetMeshParameter() const
+ConstMeshPrimitiveParameterPtr MeshPrimitiveShrinkWrapOp::targetMeshParameter() const
 {
 	return m_targetMeshParameter;
 }
 
-IntParameter * MeshPrimitiveShrinkWrapOp::methodParameter()
+IntParameterPtr MeshPrimitiveShrinkWrapOp::methodParameter()
 {
 	return m_methodParameter;
 }
 
-const IntParameter * MeshPrimitiveShrinkWrapOp::methodParameter() const
+ConstIntParameterPtr MeshPrimitiveShrinkWrapOp::methodParameter() const
 {
 	return m_methodParameter;
 }
 
-IntParameter * MeshPrimitiveShrinkWrapOp::directionParameter()
+IntParameterPtr MeshPrimitiveShrinkWrapOp::directionParameter()
 {
 	return m_directionParameter;
 }
 
-const IntParameter * MeshPrimitiveShrinkWrapOp::directionParameter() const
+ConstIntParameterPtr MeshPrimitiveShrinkWrapOp::directionParameter() const
 {
 	return m_directionParameter;
 }
 
-MeshPrimitiveParameter * MeshPrimitiveShrinkWrapOp::directionMeshParameter()
+MeshPrimitiveParameterPtr MeshPrimitiveShrinkWrapOp::directionMeshParameter()
 {
 	return m_directionMeshParameter;
 }
 
-const MeshPrimitiveParameter * MeshPrimitiveShrinkWrapOp::directionMeshParameter() const
+ConstMeshPrimitiveParameterPtr MeshPrimitiveShrinkWrapOp::directionMeshParameter() const
 {
 	return m_directionMeshParameter;
 }
 
-FloatParameter * MeshPrimitiveShrinkWrapOp::triangulationToleranceParameter()
+FloatParameterPtr MeshPrimitiveShrinkWrapOp::triangulationToleranceParameter()
 {
 	return m_triangulationToleranceParameter;
 }
 
-const FloatParameter * MeshPrimitiveShrinkWrapOp::triangulationToleranceParameter() const
+ConstFloatParameterPtr MeshPrimitiveShrinkWrapOp::triangulationToleranceParameter() const
 {
 	return m_triangulationToleranceParameter;
 }
@@ -169,19 +169,19 @@ struct MeshPrimitiveShrinkWrapOp::ShrinkWrapFn
 	typedef void ReturnType;
 
 	PrimitivePtr m_sourceMesh;
-	const Primitive * m_targetMesh;
-	const Data * m_directionData;
+	ConstPrimitivePtr m_targetMesh;
+	ConstDataPtr m_directionData;
 	Direction m_direction;
 	Method m_method;
 	float m_tolerance;
 
-	ShrinkWrapFn( Primitive * sourceMesh, const Primitive * targetMesh, const Data * directionData, Direction direction, Method method, float tolerance )
+	ShrinkWrapFn( PrimitivePtr sourceMesh, ConstPrimitivePtr targetMesh, ConstDataPtr directionData, Direction direction, Method method, float tolerance )
 	: m_sourceMesh( sourceMesh ), m_targetMesh( targetMesh ), m_directionData( directionData ), m_direction( direction ), m_method( method ), m_tolerance( tolerance )
 	{
 	}
 
 	template<typename T>
-	void operator()( T * vertexData ) const
+	void operator()( typename T::Ptr vertexData ) const
 	{
 		assert( vertexData );
 
@@ -196,7 +196,7 @@ struct MeshPrimitiveShrinkWrapOp::ShrinkWrapFn
 
 		typename T::ValueType &vertices = vertexData->writable();
 
-		const T *directionVerticesData = runTimeCast<const T , const Data >( m_directionData );
+		typename T::ConstPtr directionVerticesData = runTimeCast<const T>( m_directionData );
 
 		if ( m_method == DirectionMesh  )
 		{
@@ -331,7 +331,7 @@ struct MeshPrimitiveShrinkWrapOp::ShrinkWrapFn
 	struct ErrorHandler
 	{
 		template<typename T, typename F>
-		void operator()( const T *data, const F& functor )
+		void operator()( typename T::ConstPtr data, const F& functor )
 		{
 			assert( data );
 
@@ -340,7 +340,7 @@ struct MeshPrimitiveShrinkWrapOp::ShrinkWrapFn
 	};
 };
 
-void MeshPrimitiveShrinkWrapOp::modifyTypedPrimitive( MeshPrimitive * mesh, const CompoundObject * operands )
+void MeshPrimitiveShrinkWrapOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands )
 {
 	assert( mesh );
 	assert( operands );
@@ -350,14 +350,14 @@ void MeshPrimitiveShrinkWrapOp::modifyTypedPrimitive( MeshPrimitive * mesh, cons
 	{
 		throw InvalidArgumentException("MeshPrimitive has no primitive variable \"P\" in MeshPrimitiveShrinkWrapOp" );
 	}
-	const DataPtr verticesData = it->second.data;
+	const DataPtr &verticesData = it->second.data;
 
 	if (! mesh->arePrimitiveVariablesValid() )
 	{
 		throw InvalidArgumentException( "Mesh with invalid primitive variables given to MeshPrimitiveShrinkWrapOp" );
 	}
 
-	MeshPrimitive *target = targetMeshParameter()->getTypedValue< MeshPrimitive >( );
+	MeshPrimitivePtr target = targetMeshParameter()->getTypedValue< MeshPrimitive >( );
 	if ( !target )
 	{
 		return;

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -61,10 +61,10 @@ const ObjectVector::MemberContainer &ObjectVector::members() const
 	return m_members;
 }
 
-void ObjectVector::copyFrom( const Object *other, CopyContext *context )
+void ObjectVector::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	Object::copyFrom( other, context );
-	const ObjectVector *tOther = static_cast<const ObjectVector *>( other );
+	const ObjectVector *tOther = static_cast<const ObjectVector *>( other.get() );
 	m_members.resize( tOther->m_members.size() );
 	for( unsigned i=0; i<m_members.size(); i++ )
 	{
@@ -129,13 +129,13 @@ void ObjectVector::load( LoadContextPtr context )
 
 }
 
-bool ObjectVector::isEqualTo( const Object *other ) const
+bool ObjectVector::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !Object::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const ObjectVector *tOther = static_cast<const ObjectVector *>( other );
+	ObjectVector::ConstPtr tOther = boost::static_pointer_cast<const ObjectVector>( other );
 	if( m_members.size()!=tOther->m_members.size() )
 	{
 		return false;

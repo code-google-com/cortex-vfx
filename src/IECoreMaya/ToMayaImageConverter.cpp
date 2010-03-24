@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -58,9 +58,9 @@ using std::vector;
 IE_CORE_DEFINERUNTIMETYPED( ToMayaImageConverter );
 
 ToMayaImageConverter::ToMayaImageConverter( ConstObjectPtr object )
-	:	ToMayaConverter( "Converts image types.", IECore::ImagePrimitiveTypeId )
+	:	ToMayaConverter( "ToMayaImageConverter", "Converts image types.", IECore::ImagePrimitiveTypeId )
 {
-	srcParameter()->setValue( constPointerCast<Object>( object ) );
+	srcParameter()->setValue( boost::const_pointer_cast<Object>( object ) );
 
 	IntParameter::PresetsContainer typePresets;
 	typePresets.push_back( IntParameter::Preset( "Float", Float ) );
@@ -107,7 +107,7 @@ struct ToMayaImageConverter::ChannelConverter
 
 		return DataConvert < T, TypedData< std::vector<C> >, ScaledDataConversion< typename T::ValueType::value_type, C> >()
 		(
-			staticPointerCast<const T>( data )
+			boost::static_pointer_cast<const T>( data )
 		);
 	};
 

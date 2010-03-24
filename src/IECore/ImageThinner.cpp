@@ -85,7 +85,7 @@ static unsigned char g_delete[512] = {
 };
 
 ImageThinner::ImageThinner()
-	:	ChannelOp( "Performs thinning of binary images." )
+	:	ChannelOp( staticTypeName(), "Performs thinning of binary images." )
 {
 	FloatParameterPtr thresholdParameter = new FloatParameter(
 		"threshold",
@@ -100,12 +100,12 @@ ImageThinner::~ImageThinner()
 {
 }
 
-FloatParameter * ImageThinner::thresholdParameter()
+FloatParameterPtr ImageThinner::thresholdParameter()
 {
 	return parameters()->parameter<FloatParameter>( "threshold" );
 }
 
-const FloatParameter * ImageThinner::thresholdParameter() const
+ConstFloatParameterPtr ImageThinner::thresholdParameter() const
 {
 	return parameters()->parameter<FloatParameter>( "threshold" );
 }

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,7 +42,7 @@ using namespace Imath;
 IE_CORE_DEFINERUNTIMETYPED( Grade );
 
 Grade::Grade()
-	:	ColorTransformOp(
+	:	ColorTransformOp( "Grade",
 				"The grade implements the same operation as Nuke's grade node over the colors of a Primitive object.\n"
 				"The computation performed is:\n"
 				"A = multiply * (gain - lift) / (whitePoint - blackPoint)\n"
@@ -121,97 +121,97 @@ Grade::~Grade()
 {
 }
 
-Color3fParameter * Grade::blackPointParameter()
+Color3fParameterPtr Grade::blackPointParameter()
 {
 	return m_blackPointParameter;
 }
 
-const Color3fParameter * Grade::blackPointParameter() const
+ConstColor3fParameterPtr Grade::blackPointParameter() const
 {
 	return m_blackPointParameter;
 }
 
-Color3fParameter * Grade::whitePointParameter()
+Color3fParameterPtr Grade::whitePointParameter()
 {
 	return m_whitePointParameter;
 }
 
-const Color3fParameter * Grade::whitePointParameter() const
+ConstColor3fParameterPtr Grade::whitePointParameter() const
 {
 	return m_whitePointParameter;
 }
 
-Color3fParameter * Grade::liftParameter()
+Color3fParameterPtr Grade::liftParameter()
 {
 	return m_liftParameter;
 }
 
-const Color3fParameter * Grade::liftParameter() const
+ConstColor3fParameterPtr Grade::liftParameter() const
 {
 	return m_liftParameter;
 }
 
-Color3fParameter * Grade::gainParameter()
+Color3fParameterPtr Grade::gainParameter()
 {
 	return m_gainParameter;
 }
 
-const Color3fParameter * Grade::gainParameter() const
+ConstColor3fParameterPtr Grade::gainParameter() const
 {
 	return m_gainParameter;
 }
 
-Color3fParameter * Grade::multiplyParameter()
+Color3fParameterPtr Grade::multiplyParameter()
 {
 	return m_multiplyParameter;
 }
 
-const Color3fParameter * Grade::multiplyParameter() const
+ConstColor3fParameterPtr Grade::multiplyParameter() const
 {
 	return m_gainParameter;
 }
 
-Color3fParameter * Grade::offsetParameter()
+Color3fParameterPtr Grade::offsetParameter()
 {
 	return m_offsetParameter;
 }
 
-const Color3fParameter * Grade::offsetParameter() const
+ConstColor3fParameterPtr Grade::offsetParameter() const
 {
 	return m_offsetParameter;
 }
 
-Color3fParameter * Grade::gammaParameter()
+Color3fParameterPtr Grade::gammaParameter()
 {
 	return m_gammaParameter;
 }
 
-const Color3fParameter * Grade::gammaParameter() const
+ConstColor3fParameterPtr Grade::gammaParameter() const
 {
 	return m_gammaParameter;
 }
 
-BoolParameter * Grade::blackClampParameter()
+BoolParameterPtr Grade::blackClampParameter()
 {
 	return m_blackClampParameter;
 }
 
-const BoolParameter * Grade::blackClampParameter() const
+ConstBoolParameterPtr Grade::blackClampParameter() const
 {
 	return m_blackClampParameter;
 }
 
-BoolParameter * Grade::whiteClampParameter()
+BoolParameterPtr Grade::whiteClampParameter()
 {
 	return m_whiteClampParameter;
 }
 
-const BoolParameter * Grade::whiteClampParameter() const
+ConstBoolParameterPtr Grade::whiteClampParameter() const
 {
 	return m_whiteClampParameter;
 }
 
-void Grade::begin( const CompoundObject * operands )
+void Grade::begin( ConstCompoundObjectPtr operands )
 {
 	m_invGamma = m_gammaParameter->getTypedValue();
 	if ( m_invGamma.x == 0.0 || m_invGamma.y == 0.0 || m_invGamma.z == 0 )

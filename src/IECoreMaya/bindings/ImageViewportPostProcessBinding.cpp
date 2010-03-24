@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,9 +36,8 @@
 
 #include "maya/MGlobal.h"
 
-#include "IECorePython/RefCountedBinding.h"
-#include "IECorePython/Wrapper.h"
-#include "IECorePython/ScopedGILLock.h"
+#include "IECore/bindings/RefCountedBinding.h"
+#include "IECore/bindings/Wrapper.h"
 
 #include "IECore/Exception.h"
 
@@ -48,7 +47,6 @@
 #include "IECoreMaya/ImageViewportPostProcess.h"
 
 using namespace IECore;
-using namespace IECorePython;
 using namespace boost::python;
 
 namespace IECoreMaya
@@ -58,8 +56,8 @@ struct ImageViewportPostProcessWrapper : public ImageViewportPostProcess, Wrappe
 {
 
 	ImageViewportPostProcessWrapper(PyObject *self ) : ImageViewportPostProcess(), Wrapper<ImageViewportPostProcess>( self, this )
-	{
-	}
+        {
+        }
 
 	virtual ~ImageViewportPostProcessWrapper()
 	{
@@ -67,41 +65,39 @@ struct ImageViewportPostProcessWrapper : public ImageViewportPostProcess, Wrappe
 
 	virtual bool needsDepth () const
 	{
-		ScopedGILLock gilLock;
 		override o = this->get_override( "needsDepth" );
-		if( o )
-		{
+                if( o )
+                {
 			try
 			{
-    			return o();
+                        	return o();
 			}
 			catch ( error_already_set )
 			{
 				PyErr_Print();
 				return false;
 			}
-		}
-		else
-		{
-			return ImageViewportPostProcess::needsDepth();
-		}
+                }
+                else
+                {
+                        return ImageViewportPostProcess::needsDepth();
+                }
 	}
 
 	virtual void preRender( const std::string &panelName )
 	{
-		ScopedGILLock gilLock;
 		override o = this->get_override( "preRender" );
-		if( o )
-		{
+                if( o )
+                {
 			try
 			{
-				o( panelName );
+                        	o( panelName );
 			}
 			catch ( error_already_set )
 			{
 				PyErr_Print();
 			}
-		}
+                }
 		else
 		{
 			ImageViewportPostProcess::preRender( panelName );
@@ -110,24 +106,24 @@ struct ImageViewportPostProcessWrapper : public ImageViewportPostProcess, Wrappe
 
 	virtual void postRender( const std::string &panelName, IECore::ImagePrimitivePtr image )
 	{
-		ScopedGILLock gilLock;
 		override o = this->get_override( "postRender" );
-		if( o )
-		{
-			try
+                if( o )
+                {
+                        try
 			{
-				o( panelName, image );
+                        	o( panelName, image );
 			}
 			catch ( error_already_set )
 			{
 				PyErr_Print();
 			}
-		}
-		else
-		{
+                }
+                else
+                {
 			/// Maya would crash if we were to throw an exception here
 			MGlobal::displayError( "ImageViewportPostProcess: postRender() python method not defined" );
-		}
+                }
+
 	}
 };
 IE_CORE_DECLAREPTR( ImageViewportPostProcessWrapper );

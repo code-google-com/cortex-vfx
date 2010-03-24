@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -60,7 +60,7 @@ using namespace Imath;
 
 IE_CORE_DEFINERUNTIMETYPED( ImageCompositeOp );
 
-ImageCompositeOp::ImageCompositeOp() : ImagePrimitiveOp( "ImageCompositeOp" )
+ImageCompositeOp::ImageCompositeOp() : ImagePrimitiveOp( "ImageCompositeOp", "ImageCompositeOp" )
 {
 	IntParameter::PresetsContainer operationPresets;
 	operationPresets.push_back( IntParameter::Preset( "Over", Over ) );
@@ -121,52 +121,52 @@ ImageCompositeOp::~ImageCompositeOp()
 {
 }
 
-StringVectorParameter * ImageCompositeOp::channelNamesParameter()
+StringVectorParameterPtr ImageCompositeOp::channelNamesParameter()
 {
 	return m_channelNamesParameter;
 }
 
-const StringVectorParameter * ImageCompositeOp::channelNamesParameter() const
+ConstStringVectorParameterPtr ImageCompositeOp::channelNamesParameter() const
 {
 	return m_channelNamesParameter;
 }
 
-StringParameter * ImageCompositeOp::alphaChannelNameParameter()
+StringParameterPtr ImageCompositeOp::alphaChannelNameParameter()
 {
 	return m_alphaChannelNameParameter;
 }
 
-const StringParameter * ImageCompositeOp::alphaChannelNameParameter() const
+ConstStringParameterPtr ImageCompositeOp::alphaChannelNameParameter() const
 {
 	return m_alphaChannelNameParameter;
 }
 
-ImagePrimitiveParameter * ImageCompositeOp::imageAParameter()
+ImagePrimitiveParameterPtr ImageCompositeOp::imageAParameter()
 {
 	return m_imageAParameter;
 }
 
-const ImagePrimitiveParameter * ImageCompositeOp::imageAParameter() const
+ConstImagePrimitiveParameterPtr ImageCompositeOp::imageAParameter() const
 {
 	return m_imageAParameter;
 }
 
-IntParameter * ImageCompositeOp::operationParameter()
+IntParameterPtr ImageCompositeOp::operationParameter()
 {
 	return m_operationParameter;
 }
 
-const IntParameter * ImageCompositeOp::operationParameter() const
+ConstIntParameterPtr ImageCompositeOp::operationParameter() const
 {
 	return m_operationParameter;
 }
 
-IntParameter * ImageCompositeOp::inputModeParameter()
+IntParameterPtr ImageCompositeOp::inputModeParameter()
 {
 	return m_inputModeParameter;
 }
 
-const IntParameter * ImageCompositeOp::inputModeParameter() const
+ConstIntParameterPtr ImageCompositeOp::inputModeParameter() const
 {
 	return m_inputModeParameter;
 }
@@ -188,7 +188,7 @@ struct ImageCompositeOp::ChannelConverter
 
 		return DataConvert < T, FloatVectorData, ScaledDataConversion< typename T::ValueType::value_type, float> >()
 		(
-			staticPointerCast<const T>( data )
+			boost::static_pointer_cast<const T>( data )
 		);
 	};
 
@@ -204,7 +204,7 @@ struct ImageCompositeOp::ChannelConverter
 	};
 };
 
-FloatVectorDataPtr ImageCompositeOp::getChannelData( ImagePrimitive * image, const std::string &channelName, bool mustExist )
+FloatVectorDataPtr ImageCompositeOp::getChannelData( ImagePrimitivePtr image, const std::string &channelName, bool mustExist )
 {
 	assert( image );
 
@@ -242,7 +242,7 @@ FloatVectorDataPtr ImageCompositeOp::getChannelData( ImagePrimitive * image, con
 		>( it->second.data, converter );
 }
 
-float ImageCompositeOp::readChannelData( const ImagePrimitive * image, const FloatVectorData * data, const V2i &pixel )
+float ImageCompositeOp::readChannelData( ConstImagePrimitivePtr image, ConstFloatVectorDataPtr data, const V2i &pixel )
 {
 	assert( image );
 	assert( data );
@@ -268,7 +268,7 @@ float ImageCompositeOp::readChannelData( const ImagePrimitive * image, const Flo
 	return data->readable()[ idx ];
 }
 
-void ImageCompositeOp::composite( CompositeFn fn, DataWindowResult dwr, ImagePrimitive * imageB, const CompoundObject * operands )
+void ImageCompositeOp::composite( CompositeFn fn, DataWindowResult dwr, ImagePrimitivePtr imageB, ConstCompoundObjectPtr operands )
 {
 	assert( fn );
 	assert( imageB );
@@ -416,7 +416,7 @@ void ImageCompositeOp::composite( CompositeFn fn, DataWindowResult dwr, ImagePri
 	}
 }
 
-void ImageCompositeOp::modifyTypedPrimitive( ImagePrimitive * imageB, const CompoundObject * operands )
+void ImageCompositeOp::modifyTypedPrimitive( ImagePrimitivePtr imageB, ConstCompoundObjectPtr operands )
 {
 	if ( !imageB->arePrimitiveVariablesValid() )
 	{

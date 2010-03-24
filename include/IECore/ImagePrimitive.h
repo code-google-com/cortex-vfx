@@ -48,8 +48,8 @@ namespace IECore
 {
 
 /// ImagePrimitive represents a 2D bitmap in the form of individual channels, which are stored as primitive variables.
-/// A channel may contain any data vector type, but the Ops that manipulate images implemented in Cortex are specific for
-/// float ( 32-bit ) type. The interpretation of these channels broadly matches the EXR
+/// A channel may contain data of half (16-bit float), unsigned int (32-bit integer),
+/// or float (32-bit float) type. The interpretation of these channels broadly matches the EXR
 /// specification - the following channel names have the specified special meanings, but arbitrary channel names
 /// are permitted and their interpretation is left to the application :
 ///
@@ -119,7 +119,7 @@ class ImagePrimitive : public Primitive
 		/// Returns 2-d image size for Vertex, Varying, and FaceVarying Interpolation, otherwise 1.
 		virtual size_t variableSize( PrimitiveVariable::Interpolation interpolation ) const;
 
-		virtual void render( Renderer *renderer ) const;
+		virtual void render( RendererPtr renderer ) const;
 
 		//! @name Spaces
 		/// Functions to help with conversions between pixel, uv, and object spaces.
@@ -175,13 +175,13 @@ class ImagePrimitive : public Primitive
 		/// Returns the data for the named channel, or 0 if it
 		/// doesn't exist or is invalid.
 		template<typename T>
-		TypedData<std::vector<T> > *getChannel( const std::string &name );
+		typename TypedData<std::vector<T> >::Ptr getChannel( const std::string &name );
 		template<typename T>
-		const TypedData<std::vector<T> > *getChannel( const std::string &name ) const;
+		typename TypedData<std::vector<T> >::ConstPtr getChannel( const std::string &name ) const;
 		/// Convenience function to create a channel - this simply creates and adds a PrimitiveVariable of the appropriate
 		/// size and returns a pointer to the data within it. The data is not initialized.
 		template<typename T>
-		TypedData<std::vector<T> > *createChannel( const std::string &name );
+		typename TypedData<std::vector<T> >::Ptr createChannel( const std::string &name );
 		//@}
 		
 		//! @name Creation

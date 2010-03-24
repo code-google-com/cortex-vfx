@@ -55,15 +55,15 @@ class SplineToImage : public Op
 		SplineToImage();
 		virtual ~SplineToImage();
 
-		ObjectParameter * splineParameter();
-		const ObjectParameter * splineParameter() const;
+		ObjectParameterPtr splineParameter();
+		ConstObjectParameterPtr splineParameter() const;
 
-		V2iParameter * resolutionParameter();
-		const V2iParameter * resolutionParameter() const;
+		V2iParameterPtr resolutionParameter();
+		ConstV2iParameterPtr resolutionParameter() const;
 
 	protected :
 
-		virtual ObjectPtr doOperation( const CompoundObject * operands );
+		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
 
 	private :
 

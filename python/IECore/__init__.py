@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -38,9 +38,11 @@
 
 # We register our own IntrusivePtrToPython converter in the bindings based on RefCountedClass. This allows
 # us to deal with object identity issues when pushing wrapped objects back into python. Boost python issues a warning
-# about this as it has already registered a converter, so we ignore the warnings here.
+# about this as it has already registered a converter, so we ignore the warnings here. The alternative would be to use
+# some other type for the default held type in RefCountedClass, but that means making a new pointer type which tries to
+# act like intrusive_ptr, and that seems to be unecessary bloat compared to just ignoring the warning.
 import warnings
-warnings.filterwarnings( "ignore", "to-Python converter for IECore::IntrusivePtr.*already registered.", RuntimeWarning )
+warnings.filterwarnings( "ignore", "to-Python converter for boost::intrusive_ptr.*already registered.", RuntimeWarning )
 
 from _IECore import *
 
@@ -48,6 +50,7 @@ from _IECore import *
 Msg = MessageHandler
 from registerRunTimeTyped import registerRunTimeTyped
 from registerObject import registerObject
+from RunTimeTypedUtil import *
 from Log import *
 from Formatter import Formatter
 from WrappedTextFormatter import WrappedTextFormatter
@@ -97,8 +100,6 @@ from DateTimeParameterParser import *
 from MotionBlock import MotionBlock
 from SubstitutedDict import SubstitutedDict
 from VisualiserProcedural import VisualiserProcedural
-from PresetManager import PresetManager
-from IDXReader import IDXReader
 
 # importing internal utility modules and class overwrites
 from ObjectOverwriting import *

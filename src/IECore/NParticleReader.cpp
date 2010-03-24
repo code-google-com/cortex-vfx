@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -56,15 +56,15 @@ IE_CORE_DEFINERUNTIMETYPED( NParticleReader );
 
 const Reader::ReaderDescription<NParticleReader> NParticleReader::m_readerDescription( "mc" );
 
-NParticleReader::NParticleReader()
-	:	ParticleReader( "Reads Maya .mc format nCaches" ), m_iffFile( 0 ), m_frames( new IntVectorData )
+NParticleReader::NParticleReader( )
+	:	ParticleReader( "NParticleReader", "Reads Maya .mc format nCaches" ), m_iffFile( 0 ), m_frames( new IntVectorData )
 {
 	m_frameParameter = new IntParameter( "frameIndex", "Index of the desired frame to be loaded", 0 );
 	parameters()->addParameter( m_frameParameter );
 }
 
 NParticleReader::NParticleReader( const std::string &fileName )
-	:	ParticleReader( "Reads Maya .mc format nCaches" ), m_iffFile( 0 ), m_frames( new IntVectorData )
+	:	ParticleReader( "NParticleReader", "Reads Maya .mc format nCaches" ), m_iffFile( 0 ), m_frames( new IntVectorData )
 {
 	m_fileNameParameter->setTypedValue( fileName );
 	
@@ -226,7 +226,7 @@ void NParticleReader::attributeNames( std::vector<std::string> &names )
 	}
 }
 
-const IntVectorData * NParticleReader::frameTimes()
+ConstIntVectorDataPtr NParticleReader::frameTimes()
 {
 	if ( !open() )
 	{
@@ -238,7 +238,7 @@ const IntVectorData * NParticleReader::frameTimes()
 }
 
 template<typename T, typename F>
-typename T::Ptr NParticleReader::filterAttr( const F *attr, float percentage )
+typename T::Ptr NParticleReader::filterAttr( typename F::ConstPtr attr, float percentage )
 {
 	if( percentage < 100.0f )
 	{
@@ -272,7 +272,7 @@ typename T::Ptr NParticleReader::filterAttr( const F *attr, float percentage )
 	}
 
 	// no filtering of any sort needed
-	return typename T::Ptr( (T *)attr );
+	return typename T::Ptr( (T *)attr.get() );
 }
 
 DataPtr NParticleReader::readAttribute( const std::string &name )

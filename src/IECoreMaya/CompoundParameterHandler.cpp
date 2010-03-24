@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,6 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include "IECoreMaya/Parameter.h"
 #include "IECoreMaya/CompoundParameterHandler.h"
 
 #include "IECore/CompoundParameter.h"
@@ -42,7 +43,7 @@ using namespace IECoreMaya;
 
 static ParameterHandler::Description<CompoundParameterHandler> registrar( IECore::CompoundParameter::staticTypeId() );
 
-MStatus CompoundParameterHandler::doUpdate( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus CompoundParameterHandler::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
 {
 	IECore::ConstCompoundParameterPtr p = IECore::runTimeCast<const IECore::CompoundParameter>( parameter );
 	if( !p )
@@ -59,7 +60,7 @@ MStatus CompoundParameterHandler::doUpdate( IECore::ConstParameterPtr parameter,
 	return MS::kSuccess;
 }
 
-MObject CompoundParameterHandler::doCreate( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MObject CompoundParameterHandler::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
 {
 	IECore::ConstCompoundParameterPtr p = IECore::runTimeCast<const IECore::CompoundParameter>( parameter );
 	if( !p )
@@ -72,12 +73,12 @@ MObject CompoundParameterHandler::doCreate( IECore::ConstParameterPtr parameter,
 	return result;
 }
 
-MStatus CompoundParameterHandler::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus CompoundParameterHandler::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	return MS::kSuccess;
 }
 
-MStatus CompoundParameterHandler::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus CompoundParameterHandler::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	return MS::kSuccess;
 }

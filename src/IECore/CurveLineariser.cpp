@@ -46,7 +46,7 @@ using namespace Imath;
 IE_CORE_DEFINERUNTIMETYPED( CurveLineariser );
 
 CurveLineariser::CurveLineariser()
-	:	CurvesPrimitiveOp( "Converts cubic curves to linear curves." )
+	:	CurvesPrimitiveOp( staticTypeName(), "Converts cubic curves to linear curves." )
 {
 	FloatParameterPtr verticesPerSegmentParameter = new FloatParameter(
 		"verticesPerSegment",
@@ -63,17 +63,17 @@ CurveLineariser::~CurveLineariser()
 {
 }
 
-FloatParameter * CurveLineariser::verticesPerSegmentParameter()
+FloatParameterPtr CurveLineariser::verticesPerSegmentParameter()
 {
 	return parameters()->parameter<FloatParameter>( "verticesPerSegment" );
 }
 
-const FloatParameter * CurveLineariser::verticesPerSegmentParameter() const
+ConstFloatParameterPtr CurveLineariser::verticesPerSegmentParameter() const
 {
 	return parameters()->parameter<FloatParameter>( "verticesPerSegment" );
 }
 		
-void CurveLineariser::modifyTypedPrimitive( CurvesPrimitive * curves, const CompoundObject * operands )
+void CurveLineariser::modifyTypedPrimitive( CurvesPrimitivePtr curves, ConstCompoundObjectPtr operands )
 {
 	if( curves->basis()==CubicBasisf::linear() )
 	{

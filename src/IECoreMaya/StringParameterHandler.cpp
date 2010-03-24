@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,6 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include "IECoreMaya/Parameter.h"
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaObjectConverter.h"
 #include "IECoreMaya/StringParameterHandler.h"
@@ -69,7 +70,7 @@ static ParameterHandler::Description< StringParameterHandler > validatedStringRe
 static ParameterHandler::Description< StringParameterHandler > fileSequenceRegistrar( IECore::FileSequenceParameter::staticTypeId() );
 static ParameterHandler::Description< StringParameterHandler > frameListRegistrar( IECore::FrameListParameter::staticTypeId() );
 
-MStatus StringParameterHandler::doUpdate( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus StringParameterHandler::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
 {
 	IECore::ConstStringParameterPtr p = IECore::runTimeCast<const IECore::StringParameter>( parameter );
 	if( !p )
@@ -101,7 +102,7 @@ MStatus StringParameterHandler::doUpdate( IECore::ConstParameterPtr parameter, M
 	return MS::kSuccess;
 }
 
-MObject StringParameterHandler::doCreate( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MObject StringParameterHandler::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
 {
 	IECore::ConstStringParameterPtr p = IECore::runTimeCast<const IECore::StringParameter>( parameter );
 	if( !p )
@@ -132,7 +133,7 @@ MObject StringParameterHandler::doCreate( IECore::ConstParameterPtr parameter, c
 	return result;
 }
 
-MStatus StringParameterHandler::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus StringParameterHandler::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	IECore::ConstStringParameterPtr p = IECore::runTimeCast<const IECore::StringParameter>( parameter );
 	if( !p )
@@ -156,7 +157,7 @@ MStatus StringParameterHandler::doSetValue( IECore::ConstParameterPtr parameter,
 	return plug.setValue( p->getTypedValue().c_str() );
 }
 
-MStatus StringParameterHandler::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus StringParameterHandler::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	IECore::StringParameterPtr p = IECore::runTimeCast<IECore::StringParameter>( parameter );
 	if( !p )

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -58,12 +58,12 @@ IE_CORE_DEFINERUNTIMETYPED( EXRImageWriter )
 const Writer::WriterDescription<EXRImageWriter> EXRImageWriter::m_writerDescription("exr");
 
 EXRImageWriter::EXRImageWriter()
-		: ImageWriter( "Serializes images to the OpenEXR HDR image format")
+		: ImageWriter("EXRImageWriter", "Serializes images to the OpenEXR HDR image format")
 {
 }
 
 EXRImageWriter::EXRImageWriter(ObjectPtr image, const string &fileName)
-		: ImageWriter( "Serializes images to the OpenEXR HDR image format" )
+		: ImageWriter("EXRImageWriter", "Serializes images to the OpenEXR HDR image format" )
 {
 	assert( m_objectParameter );
 	assert( m_fileNameParameter );
@@ -101,17 +101,17 @@ std::string EXRImageWriter::destinationColorSpace() const
 	return "linear";
 }
 
-IntParameter * EXRImageWriter::compressionParameter()
+IntParameterPtr EXRImageWriter::compressionParameter()
 {
 	return parameters()->parameter< IntParameter >( "compression" );
 }
 
-const IntParameter * EXRImageWriter::compressionParameter() const
+ConstIntParameterPtr EXRImageWriter::compressionParameter() const
 {
 	return parameters()->parameter< IntParameter >( "compression" );
 }
 
-void EXRImageWriter::writeImage( const vector<string> &names, const ImagePrimitive * image, const Box2i &dataWindow) const
+void EXRImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow) const
 {
 	assert( image );
 
@@ -141,7 +141,7 @@ void EXRImageWriter::writeImage( const vector<string> &names, const ImagePrimiti
 				throw IOException( ( boost::format("EXRImageWriter: Could not find image channel \"%s\"") % name ).str() );
 			}
 
-			const Data *channelData = pit->second.data;
+			ConstDataPtr channelData = pit->second.data;
 			if (!channelData)
 			{
 				throw IOException( ( boost::format("EXRImageWriter: Channel \"%s\" has no data") % name ).str() );
@@ -151,19 +151,19 @@ void EXRImageWriter::writeImage( const vector<string> &names, const ImagePrimiti
 			{
 			case FloatVectorDataTypeId:
 				writeTypedChannel<float>(name, dataWindow,
-				                         static_cast<const FloatVectorData *>(channelData)->readable(),
+				                         boost::static_pointer_cast<const FloatVectorData>(channelData)->readable(),
 				                         FLOAT, header, fb);
 				break;
 
 			case UIntVectorDataTypeId:
 				writeTypedChannel<unsigned int>(name, dataWindow,
-				                                static_cast<const UIntVectorData *>(channelData)->readable(),
+				                                boost::static_pointer_cast<const UIntVectorData>(channelData)->readable(),
 				                                UINT, header, fb);
 				break;
 
 			case HalfVectorDataTypeId:
 				writeTypedChannel<half>(name, dataWindow,
-				                        static_cast<const HalfVectorData *>(channelData)->readable(),
+				                        boost::static_pointer_cast<const HalfVectorData>(channelData)->readable(),
 				                        HALF, header, fb);
 				break;
 

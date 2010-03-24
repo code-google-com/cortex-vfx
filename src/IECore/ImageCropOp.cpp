@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -56,6 +56,7 @@ IE_CORE_DEFINERUNTIMETYPED( ImageCropOp );
 
 ImageCropOp::ImageCropOp()
 	:	ImagePrimitiveOp(
+			staticTypeName(),
 			"Performs cropping over ImagePrimitive objects.\n"
 			"The operation results on an ImagePrimitive with displayWindow equal to the intersection of the given crop box and the original image displayWindow.\n"
 			"If matchDataWindow if On then the dataWindow will match the new displayWindow (new pixels will be filled with zero). Otherwise it will only be intersected against the given crop box."
@@ -106,42 +107,42 @@ ImageCropOp::~ImageCropOp()
 {
 }
 
-Box2iParameter * ImageCropOp::cropBoxParameter()
+Box2iParameterPtr ImageCropOp::cropBoxParameter()
 {
 	return m_cropBoxParameter;
 }
 
-const Box2iParameter * ImageCropOp::cropBoxParameter() const
+ConstBox2iParameterPtr ImageCropOp::cropBoxParameter() const
 {
 	return m_cropBoxParameter;
 }
 
-BoolParameter * ImageCropOp::matchDataWindowParameter()
+BoolParameterPtr ImageCropOp::matchDataWindowParameter()
 {
 	return m_matchDataWindowParameter;
 }
 
-const BoolParameter * ImageCropOp::matchDataWindowParameter() const
+ConstBoolParameterPtr ImageCropOp::matchDataWindowParameter() const
 {
 	return m_matchDataWindowParameter;
 }
 
-BoolParameter * ImageCropOp::resetOriginParameter()
+BoolParameterPtr ImageCropOp::resetOriginParameter()
 {
 	return m_resetOriginParameter;
 }
 
-const BoolParameter * ImageCropOp::resetOriginParameter() const
+ConstBoolParameterPtr ImageCropOp::resetOriginParameter() const
 {
 	return m_resetOriginParameter;
 }
 
-BoolParameter * ImageCropOp::intersectParameter()
+BoolParameterPtr ImageCropOp::intersectParameter()
 {
 	return m_intersectParameter;
 }
 
-const BoolParameter * ImageCropOp::intersectParameter() const
+ConstBoolParameterPtr ImageCropOp::intersectParameter() const
 {
 	return m_intersectParameter;
 }
@@ -160,7 +161,7 @@ struct ImageCropOp::ImageCropFn
 	}
 
 	template< typename T>
-	ReturnType operator()( const T *sourceData ) const
+	ReturnType operator()( typename T::ConstPtr sourceData ) const
 	{
 		assert( sourceData );
 
@@ -219,7 +220,7 @@ struct ImageCropOp::ImageCropFn
 
 };
 
-void ImageCropOp::modifyTypedPrimitive( ImagePrimitive * image, const CompoundObject * operands )
+void ImageCropOp::modifyTypedPrimitive( ImagePrimitivePtr image, ConstCompoundObjectPtr operands )
 {
 	// Validate the input image
 	if ( !image->arePrimitiveVariablesValid() )

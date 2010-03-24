@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -38,7 +38,7 @@ class SequenceMvOp( Op ) :
 
 	def __init__( self ) :
 
-		Op.__init__( self, "Moves file sequences.",
+		Op.__init__( self, "SequenceMvOp", "Moves file sequences.",
 			FileSequenceParameter(
 				name = "result",
 				description = "The new file sequence.",
@@ -70,13 +70,11 @@ class SequenceMvOp( Op ) :
 	def doOperation( self, operands ) :
 
 		src = self.parameters()["src"].getFileSequenceValue()
-		dst = self.parameters()["dst"].getFileSequenceValue()
-		# if no frame list is specified on the dst parameter, then we use the same as src parameter.
-		if isinstance( dst.frameList, EmptyFrameList ):
-			dst.frameList = src.frameList
+		dst = src.copy() # to get the frameList
+		dst.fileName = operands.dst.value
 
 		mv( src, dst )
 
-		return StringData( str(dst) )
+		return StringData( dst.fileName )
 
-registerRunTimeTyped( SequenceMvOp )
+registerRunTimeTyped( SequenceMvOp, 100005, Op )

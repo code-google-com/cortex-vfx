@@ -65,7 +65,7 @@ class ObjectReader : public Reader
 
 	protected:
 
-		virtual ObjectPtr doOperation( const CompoundObject * operands );
+		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
 
 		static IndexedIOInterfacePtr open( const std::string &fileName );
 

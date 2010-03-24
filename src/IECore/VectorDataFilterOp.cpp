@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,7 +47,7 @@ using namespace std;
 IE_CORE_DEFINERUNTIMETYPED( VectorDataFilterOp );
 
 VectorDataFilterOp::VectorDataFilterOp()
-	:	ModifyOp( "Filters VectorData.", new ObjectParameter( "result", "The filtered result", new IntVectorData, DataTypeId ), new ObjectParameter( "input", "The data to filter.", new IntVectorData, DataTypeId ) )
+	:	ModifyOp( "VectorDataFilterOp", "Filters VectorData.", new ObjectParameter( "result", "The filtered result", new IntVectorData, DataTypeId ), new ObjectParameter( "input", "The data to filter.", new IntVectorData, DataTypeId ) )
 {
 	m_filterParameter = new ObjectParameter(
 		"filter",
@@ -93,7 +93,7 @@ struct Filter
 	const vector<bool> *filter;
 
 	template<typename T>
-	void operator() ( T * data )
+	void operator() ( typename T::Ptr data )
 	{
 		assert( data );
 		assert( filter );
@@ -120,11 +120,11 @@ struct Filter
 	}
 };
 
-void VectorDataFilterOp::modify( Object * object, const CompoundObject * operands )
+void VectorDataFilterOp::modify( ObjectPtr object, ConstCompoundObjectPtr operands )
 {
 	Filter f;
 	f.invert = operands->member<BoolData>( "invert" )->readable();
 	f.clip = operands->member<BoolData>( "clip" )->readable();
 	f.filter = &( operands->member<BoolVectorData>( "filter" )->readable() );
-	despatchTypedData<Filter, TypeTraits::IsVectorTypedData>( static_cast<Data *>( object ), f );
+	despatchTypedData<Filter, TypeTraits::IsVectorTypedData>( static_pointer_cast<Data>( object ), f );
 }

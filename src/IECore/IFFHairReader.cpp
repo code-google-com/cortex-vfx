@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -60,7 +60,7 @@ IE_CORE_DEFINERUNTIMETYPED( IFFHairReader );
 const Reader::ReaderDescription<IFFHairReader> IFFHairReader::g_readerDescription( "mchp" );
 
 IFFHairReader::IFFHairReader( )
-	:	Reader( "Reads Maya .mc format nCaches", new ObjectParameter( "result", "The loaded object.", new NullObject, CurvesPrimitive::staticTypeId() ) ),
+	:	Reader( "IFFHairReader", "Reads Maya .mc format nCaches", new ObjectParameter( "result", "The loaded object.", new NullObject, CurvesPrimitive::staticTypeId() ) ),
 		m_iffFile( 0 ), m_frames( new IntVectorData )
 {
 	m_frameParameter = new IntParameter( "frameIndex", "Index of the desired frame to be loaded", 0 );
@@ -83,7 +83,7 @@ IFFHairReader::IFFHairReader( )
 }
 
 IFFHairReader::IFFHairReader( const std::string &fileName )
-	:	Reader( "Reads Maya .mc format nCaches", new ObjectParameter( "result", "The loaded object.", new NullObject, CurvesPrimitive::staticTypeId() ) ),
+	:	Reader( "IFFHairReader", "Reads Maya .mc format nCaches", new ObjectParameter( "result", "The loaded object.", new NullObject, CurvesPrimitive::staticTypeId() ) ),
 		m_iffFile( 0 ), m_frames( new IntVectorData )
 {
 	m_fileNameParameter->setTypedValue( fileName );
@@ -192,7 +192,7 @@ bool IFFHairReader::open()
 	return m_header.valid && m_iffFileName == fileName();
 }
 
-ObjectPtr IFFHairReader::doOperation( const CompoundObject * operands )
+ObjectPtr IFFHairReader::doOperation( ConstCompoundObjectPtr operands )
 {
 	if( !open() )
 	{
@@ -296,7 +296,7 @@ ObjectPtr IFFHairReader::doOperation( const CompoundObject * operands )
 	return curves;
 }
 
-void IFFHairReader::loadData( IFFFile::Chunk::ChunkIterator channel, V3dVectorData * channelData, int numCVs, bool fromFile )
+void IFFHairReader::loadData( IFFFile::Chunk::ChunkIterator channel, V3dVectorDataPtr channelData, int numCVs, bool fromFile )
 {
 	V3dVectorDataPtr data( new V3dVectorData );
 	data->writable().resize( numCVs, V3d( 0 ) );
@@ -356,11 +356,11 @@ ConstIntVectorDataPtr IFFHairReader::frameTimes()
 }
 
 template<typename T, typename F>
-IntrusivePtr<T> IFFHairReader::convertAttr( IntrusivePtr<F> attr )
+boost::intrusive_ptr<T> IFFHairReader::convertAttr( boost::intrusive_ptr<F> attr )
 {
 	if( T::staticTypeId() != F::staticTypeId() )
 	{
-		IntrusivePtr<T> result( new T );
+		boost::intrusive_ptr<T> result( new T );
 		const typename F::ValueType &in = attr->readable();
 		typename T::ValueType &out = result->writable();
 		out.resize( in.size() );
@@ -369,7 +369,7 @@ IntrusivePtr<T> IFFHairReader::convertAttr( IntrusivePtr<F> attr )
 	}
 	
 	// no type conversion necessary
-	return IntrusivePtr<T>( (T *)attr.get() );
+	return boost::intrusive_ptr<T>( (T *)attr.get() );
 }
 
 IFFHairReader::RealType IFFHairReader::realType() const

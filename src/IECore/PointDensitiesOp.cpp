@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -53,6 +53,7 @@ static TypeId resultTypes[] = { FloatVectorDataTypeId, DoubleVectorDataTypeId, I
 
 PointDensitiesOp::PointDensitiesOp()
 	:	Op(
+		staticTypeName(),
 		"Calculates densities for a volume of points.",
 		new ObjectParameter(
 			"result",
@@ -88,32 +89,32 @@ PointDensitiesOp::~PointDensitiesOp()
 {
 }
 
-ObjectParameter * PointDensitiesOp::pointParameter()
+ObjectParameterPtr PointDensitiesOp::pointParameter()
 {
 	return m_pointParameter;
 }
 
-const ObjectParameter * PointDensitiesOp::pointParameter() const
+ConstObjectParameterPtr PointDensitiesOp::pointParameter() const
 {
 	return m_pointParameter;
 }
 
-IntParameter * PointDensitiesOp::numNeighboursParameter()
+IntParameterPtr PointDensitiesOp::numNeighboursParameter()
 {
 	return m_numNeighboursParameter;
 }
 
-const IntParameter * PointDensitiesOp::numNeighboursParameter() const
+ConstIntParameterPtr PointDensitiesOp::numNeighboursParameter() const
 {
 	return m_numNeighboursParameter;
 }
 
-DoubleParameter * PointDensitiesOp::multiplierParameter()
+DoubleParameterPtr PointDensitiesOp::multiplierParameter()
 {
 	return m_multiplierParameter;
 }
 
-const DoubleParameter * PointDensitiesOp::multiplierParameter() const
+ConstDoubleParameterPtr PointDensitiesOp::multiplierParameter() const
 {
 	return m_multiplierParameter;
 }
@@ -128,39 +129,39 @@ static void densities( const vector<Vec3<T> > &points, int numNeighbours, T mult
 	multiplier *= (T)numNeighbours / ((4.0/3.0) * M_PI);
 
 	Tree tree( points.begin(), points.end() );
-	vector<typename Tree::Neighbour> neighbours;
+	vector<typename Tree::Iterator> neighbours;
 
 	result.resize( points.size() );
 	for( unsigned int i=0; i<points.size(); i++ )
 	{
 		tree.nearestNNeighbours( points[i], numNeighbours, neighbours );
-		T r = ((*(neighbours.rbegin()->point)) - points[i]).length();
+		T r = ((**neighbours.begin()) - points[i]).length();
 		result[i] = multiplier / (r*r*r);
 	}
 }
 
 /// \todo Support 2d point types?
 /// \todo Threading?
-ObjectPtr PointDensitiesOp::doOperation( const CompoundObject * operands )
+ObjectPtr PointDensitiesOp::doOperation( ConstCompoundObjectPtr operands )
 {
 	const int numNeighbours = m_numNeighboursParameter->getNumericValue();
 	const double multiplier = m_multiplierParameter->getNumericValue();
 
-	const Object * points = pointParameter()->getValue();
+	ConstObjectPtr points = pointParameter()->getValue();
 	ObjectPtr result = 0;
 	switch( points->typeId() )
 	{
 		case V3fVectorDataTypeId :
 			{
 				FloatVectorDataPtr resultT = new FloatVectorData;
-				densities<float>( static_cast<const V3fVectorData *>( points )->readable(), numNeighbours, multiplier, resultT->writable() );
+				densities<float>( boost::static_pointer_cast<const V3fVectorData>( points )->readable(), numNeighbours, multiplier, resultT->writable() );
 				result = resultT;
 			}
 			break;
 		case V3dVectorDataTypeId :
 			{
 				DoubleVectorDataPtr resultT = new DoubleVectorData;
-				densities<double>( static_cast<const V3dVectorData *>( points )->readable(), numNeighbours, multiplier, resultT->writable() );
+				densities<double>( boost::static_pointer_cast<const V3dVectorData>( points )->readable(), numNeighbours, multiplier, resultT->writable() );
 				result = resultT;
 			}
 			break;

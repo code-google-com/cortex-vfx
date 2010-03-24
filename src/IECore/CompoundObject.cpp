@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -59,10 +59,10 @@ CompoundObject::ObjectMap &CompoundObject::members()
 	return m_members;
 }
 
-void CompoundObject::copyFrom( const Object *other, CopyContext *context )
+void CompoundObject::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	Object::copyFrom( other, context );
-	const CompoundObject *tOther = static_cast<const CompoundObject *>( other );
+	const CompoundObject *tOther = static_cast<const CompoundObject *>( other.get() );
 	m_members.clear();
 	for( ObjectMap::const_iterator it=tOther->m_members.begin(); it!=tOther->m_members.end(); it++ )
 	{
@@ -100,13 +100,13 @@ void CompoundObject::load( LoadContextPtr context )
 	container->chdir( ".." );
 }
 
-bool CompoundObject::isEqualTo( const Object *other ) const
+bool CompoundObject::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !Object::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const CompoundObject *tOther = static_cast<const CompoundObject *>( other );
+	CompoundObject::ConstPtr tOther = boost::static_pointer_cast<const CompoundObject>( other );
 	if( m_members.size()!=tOther->m_members.size() )
 	{
 		return false;

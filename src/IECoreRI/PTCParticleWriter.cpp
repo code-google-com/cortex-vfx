@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -56,19 +56,19 @@ IE_CORE_DEFINERUNTIMETYPED( PTCParticleWriter );
 const Writer::WriterDescription<PTCParticleWriter> PTCParticleWriter::m_writerDescription( "3Dbake 3DWbake ptc" );
 
 PTCParticleWriter::PTCParticleWriter( )
-	:	ParticleWriter( "Creates files in renderman point cloud format" )
+	:	ParticleWriter( "PTCParticleWriter", "Creates files in renderman point cloud format" )
 {
 }
 
 PTCParticleWriter::PTCParticleWriter( ObjectPtr object, const std::string &fileName )
-	:	ParticleWriter( "Creates files in renderman point cloud format" )
+	:	ParticleWriter( "PTCParticleWriter", "Creates files in renderman point cloud format" )
 {
 	m_objectParameter->setValue( object );
 	m_fileNameParameter->setTypedValue( fileName );
 }
 
 template<class T>
-static void write16DAttr( float *target, IntrusivePtr<T> attr, int index )
+static void write16DAttr( float *target, intrusive_ptr<T> attr, int index )
 {
 	const typename T::ValueType &v = attr->readable();
 	const typename T::ValueType::value_type &item = v[index];
@@ -79,7 +79,7 @@ static void write16DAttr( float *target, IntrusivePtr<T> attr, int index )
 }
 
 template<class T>
-static void write3DAttr( float *target, IntrusivePtr<T> attr, int index )
+static void write3DAttr( float *target, intrusive_ptr<T> attr, int index )
 {
 	const typename T::ValueType &v = attr->readable();
 	const typename T::ValueType::value_type &item = v[index];
@@ -89,7 +89,7 @@ static void write3DAttr( float *target, IntrusivePtr<T> attr, int index )
 }
 
 template<class T>
-static void write1DAttr( float *target, IntrusivePtr<T> attr, int index )
+static void write1DAttr( float *target, intrusive_ptr<T> attr, int index )
 {
 	const typename T::ValueType &v = attr->readable();
 	*target = v[index];
@@ -101,39 +101,39 @@ static void writeAttribute( float *target, DataPtr attr, int index )
 	{
 		case DoubleVectorDataTypeId :
 			{
-				DoubleVectorDataPtr d = staticPointerCast<DoubleVectorData>( attr );
+				DoubleVectorDataPtr d = static_pointer_cast<DoubleVectorData>( attr );
 				write1DAttr<DoubleVectorData>( target, d, index );
 			}
 			break;
 		case FloatVectorDataTypeId :
 			{
-				FloatVectorDataPtr f = staticPointerCast<FloatVectorData>( attr );
+				FloatVectorDataPtr f = static_pointer_cast<FloatVectorData>( attr );
 				write1DAttr<FloatVectorData>( target, f, index );
 			}
 			break;
 
 		case V3dVectorDataTypeId :
 			{
-				V3dVectorDataPtr d = staticPointerCast<V3dVectorData>( attr );
+				V3dVectorDataPtr d = static_pointer_cast<V3dVectorData>( attr );
 				write3DAttr<V3dVectorData>( target, d, index );
 			}
 			break;
 		case V3fVectorDataTypeId :
 			{
-				V3fVectorDataPtr f = staticPointerCast<V3fVectorData>( attr );
+				V3fVectorDataPtr f = static_pointer_cast<V3fVectorData>( attr );
 				write3DAttr<V3fVectorData>( target, f, index );
 			}
 			break;
 
 		case M44fVectorDataTypeId :
 			{
-				M44fVectorDataPtr f = staticPointerCast<M44fVectorData>( attr );
+				M44fVectorDataPtr f = static_pointer_cast<M44fVectorData>( attr );
 				write16DAttr<M44fVectorData>( target, f, index );
 			}
 			break;
 		case M44dVectorDataTypeId :
 			{
-				M44dVectorDataPtr d = staticPointerCast<M44dVectorData>( attr );
+				M44dVectorDataPtr d = static_pointer_cast<M44dVectorData>( attr );
 				write16DAttr<M44dVectorData>( target, d, index );
 			}
 			break;
@@ -142,7 +142,7 @@ static void writeAttribute( float *target, DataPtr attr, int index )
 	}
 }
 
-void PTCParticleWriter::doWrite( const IECore::CompoundObject *operands )
+void PTCParticleWriter::doWrite()
 {
 
 	checkPTCParticleIO();
@@ -157,13 +157,13 @@ void PTCParticleWriter::doWrite( const IECore::CompoundObject *operands )
 	} else {
 		if ( itBlind->second->typeId() == CompoundDataTypeId )
 		{
-			blindData = staticPointerCast< CompoundData >(itBlind->second);
+			blindData = static_pointer_cast< CompoundData >(itBlind->second);
 			itBlind = blindData->readable().find( "variableTypes" );
 			if ( itBlind != blindData->readable().end() )
 			{
 				if ( itBlind->second->typeId() == CompoundDataTypeId )
 				{
-					variableTypes = staticPointerCast< CompoundData >(itBlind->second);
+					variableTypes = static_pointer_cast< CompoundData >(itBlind->second);
 				}
 			}
 		}
@@ -207,27 +207,27 @@ void PTCParticleWriter::doWrite( const IECore::CompoundObject *operands )
 		switch( t )
 		{
 		case DoubleVectorDataTypeId:
-			nPoints = staticPointerCast< DoubleVectorData >( attr )->readable().size();
+			nPoints = boost::static_pointer_cast< DoubleVectorData >( attr )->readable().size();
 			typeStr = "float";
 			break;
 		case FloatVectorDataTypeId:
-			nPoints = staticPointerCast< FloatVectorData >( attr )->readable().size();
+			nPoints = boost::static_pointer_cast< FloatVectorData >( attr )->readable().size();
 			typeStr = "float";
 			break;
 		case V3dVectorDataTypeId:
-			nPoints = staticPointerCast< V3dVectorData >( attr )->readable().size();
+			nPoints = boost::static_pointer_cast< V3dVectorData >( attr )->readable().size();
 			typeStr = "vector";
 			break;
 		case V3fVectorDataTypeId:
-			nPoints = staticPointerCast< V3fVectorData >( attr )->readable().size();
+			nPoints = boost::static_pointer_cast< V3fVectorData >( attr )->readable().size();
 			typeStr = "vector";
 			break;
 		case M44fVectorDataTypeId:
-			nPoints = staticPointerCast< M44fVectorData >( attr )->readable().size();
+			nPoints = boost::static_pointer_cast< M44fVectorData >( attr )->readable().size();
 			typeStr = "matrix";
 			break;
 		case M44dVectorDataTypeId:
-			nPoints = staticPointerCast< M44dVectorData >( attr )->readable().size();
+			nPoints = boost::static_pointer_cast< M44dVectorData >( attr )->readable().size();
 			typeStr = "matrix";
 			break;
 		default:
@@ -249,7 +249,7 @@ void PTCParticleWriter::doWrite( const IECore::CompoundObject *operands )
 		{
 			if ( variableTypes && (itBlind = variableTypes->readable().find( *it )) != variableTypes->readable().end() && itBlind->second->typeId() == StringDataTypeId )
 			{
-				string blindTypeStr = staticPointerCast<StringData>(itBlind->second)->readable();
+				string blindTypeStr = static_pointer_cast<StringData>(itBlind->second)->readable();
 				if ( blindTypeStr != typeStr )
 				{
 					if ( typeStr == "vector" && ( blindTypeStr == "color" || blindTypeStr == "point" || blindTypeStr == "normal" ) )
@@ -296,7 +296,7 @@ void PTCParticleWriter::doWrite( const IECore::CompoundObject *operands )
 	if ( blindData && (itBlind = blindData->readable().find( "worldToEye" )) != blindData->readable().end() &&
 			itBlind->second->typeId() == M44fDataTypeId )
 	{
-		m = staticPointerCast< M44fData >( itBlind->second )->readable();
+		m = static_pointer_cast< M44fData >( itBlind->second )->readable();
 	}
 	int k = 0;
 	for ( int i = 0; i < 4; i++ )
@@ -309,7 +309,7 @@ void PTCParticleWriter::doWrite( const IECore::CompoundObject *operands )
 			itBlind->second->typeId() == M44fDataTypeId )
 	{
 
-		m = staticPointerCast< M44fData >( itBlind->second )->readable();
+		m = static_pointer_cast< M44fData >( itBlind->second )->readable();
 	}
 	k = 0;
 	for ( int i = 0; i < 4; i++ )
@@ -328,9 +328,9 @@ void PTCParticleWriter::doWrite( const IECore::CompoundObject *operands )
 			 xResolutionIt->second->typeId() == FloatDataTypeId && yResolutionIt->second->typeId() == FloatDataTypeId &&
 			aspectRatioIt->second->typeId() == FloatDataTypeId)
 		{
-			m_header.format[0] = staticPointerCast< FloatData >( xResolutionIt->second )->readable();
-			m_header.format[1] = staticPointerCast< FloatData >( yResolutionIt->second )->readable();
-			m_header.format[2] = staticPointerCast< FloatData >( aspectRatioIt->second )->readable();
+			m_header.format[0] = static_pointer_cast< FloatData >( xResolutionIt->second )->readable();
+			m_header.format[1] = static_pointer_cast< FloatData >( yResolutionIt->second )->readable();
+			m_header.format[2] = static_pointer_cast< FloatData >( aspectRatioIt->second )->readable();
 		}
 	}
 

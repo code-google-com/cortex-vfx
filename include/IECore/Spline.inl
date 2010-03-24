@@ -56,50 +56,15 @@ Spline<X,Y>::Spline( const Basis &b, const PointContainer &p )
 }
 
 template<typename X, typename Y>
-typename Spline<X,Y>::PointContainer::const_iterator Spline<X,Y>::lastValidSegment() const
-{
-	int validBasis = ( points.size() - ( 4 - basis.step ) ) / basis.step;
-	int lastBasisOffset = ( validBasis - 1 ) * basis.step;
-
-	typename PointContainer::const_iterator itEnd = points.end();
-	for ( unsigned i = lastBasisOffset; i < points.size(); i++ )
-		itEnd--;
-
-	return itEnd;
-}
-
-template<typename X, typename Y>
 typename Spline<X,Y>::XInterval Spline<X,Y>::interval() const
 {
-	if( points.size() < 4 )
+	if( !points.size() )
 	{
 		return XInterval::empty();
 	}
 	else
 	{
-		typedef typename PointContainer::const_iterator It;
-		X cc[4];
-		X xp[4];
-
-		// collect first 4 control points
-		It xIt = points.begin();
-		for( unsigned i=0; i<4; i++, xIt++ )
-		{
-			xp[i] = xIt->first;
-		}
-		basis.coefficients( X( 0 ), cc );
-		X xStart = cc[0]*xp[0]+cc[1]*xp[1]+cc[2]*xp[2]+cc[3]*xp[3];
-
-		// collect last 4 control points (ignoring malformed basis)
-		xIt = lastValidSegment();
-		for( unsigned i=0; i<4; i++, xIt++ )
-		{
-			xp[i] = xIt->first;
-		}
-		basis.coefficients( X( 1 ), cc );
-		X xEnd = cc[0]*xp[0]+cc[1]*xp[1]+cc[2]*xp[2]+cc[3]*xp[3];
-
-		return XInterval( xStart, xEnd );
+		return XInterval( points.begin()->first, points.rbegin()->first );
 	}
 }
 
@@ -316,7 +281,12 @@ inline Y Spline<X,Y>::integral() const
 	if ( points.size() < 4 )
 		return Y(0);
 
-	return integral( X(0), points.begin(), X(1), lastValidSegment() );
+	typename PointContainer::const_iterator itEnd = points.end();
+	itEnd--;
+	itEnd--;
+	itEnd--;
+	itEnd--;
+	return integral( X(0), points.begin(), X(1), itEnd );
 }
 
 template<typename X, typename Y>

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -65,18 +65,18 @@ void CoordinateSystem::setName( const std::string &name )
 	m_name = name;
 }
 
-void CoordinateSystem::render( Renderer *renderer ) const
+void CoordinateSystem::render( RendererPtr renderer ) const
 {
 	renderer->coordinateSystem( m_name );
 }
 
-bool CoordinateSystem::isEqualTo( const Object *other ) const
+bool CoordinateSystem::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !StateRenderable::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const CoordinateSystem *c = static_cast<const CoordinateSystem *>( other );
+	ConstCoordinateSystemPtr c = static_pointer_cast<const CoordinateSystem>( other );
 	return m_name == c->m_name;
 }
 
@@ -86,10 +86,10 @@ void CoordinateSystem::memoryUsage( Object::MemoryAccumulator &a ) const
 	a.accumulate( m_name.capacity() + sizeof( m_name ) );
 }
 
-void CoordinateSystem::copyFrom( const Object *other, CopyContext *context )
+void CoordinateSystem::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	StateRenderable::copyFrom( other, context );
-	const CoordinateSystem *c = static_cast<const CoordinateSystem *>( other );
+	ConstCoordinateSystemPtr c = static_pointer_cast<const CoordinateSystem>( other );
 	m_name = c->m_name;
 }
 

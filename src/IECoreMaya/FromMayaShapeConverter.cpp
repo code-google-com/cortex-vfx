@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,14 +47,14 @@ using namespace IECoreMaya;
 
 IE_CORE_DEFINERUNTIMETYPED( FromMayaShapeConverter );
 
-FromMayaShapeConverter::FromMayaShapeConverter( const std::string &description, const MObject &object )
-	:	FromMayaObjectConverter( description, object )
+FromMayaShapeConverter::FromMayaShapeConverter( const std::string &name, const std::string &description, const MObject &object )
+	:	FromMayaObjectConverter( name, description, object )
 {
 	constructCommon();
 }
 
-FromMayaShapeConverter::FromMayaShapeConverter( const std::string &description, const MDagPath &dagPath )
-	:	FromMayaObjectConverter( description, dagPath.node() ), m_dagPath( dagPath )
+FromMayaShapeConverter::FromMayaShapeConverter( const std::string &name, const std::string &description, const MDagPath &dagPath )
+	:	FromMayaObjectConverter( name, description, dagPath.node() ), m_dagPath( dagPath )
 {
 	constructCommon();
 }
@@ -235,7 +235,7 @@ void FromMayaShapeConverter::addPrimVars( const MObject &object, IECore::Primiti
 			// guess interpolation if not specified
 			if( interpolation==IECore::PrimitiveVariable::Invalid )
 			{
-				interpolation = primitive->inferInterpolation( data.get() );
+				interpolation = primitive->inferInterpolation( data );
 			}
 
 			if( interpolation==IECore::PrimitiveVariable::Invalid )

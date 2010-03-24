@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -51,32 +51,32 @@ class ColorTransformOp : public PrimitiveOp
 
 		IE_CORE_DECLARERUNTIMETYPED( ColorTransformOp, PrimitiveOp );
 
-		ColorTransformOp( const std::string &description );
+		ColorTransformOp( const std::string &name, const std::string &description );
 		virtual ~ColorTransformOp();
 
-		StringParameter * colorPrimVarParameter();
-		const StringParameter * colorPrimVarParameter() const;
+		StringParameterPtr colorPrimVarParameter();
+		ConstStringParameterPtr colorPrimVarParameter() const;
 
-		StringParameter * redPrimVarParameter();
-		const StringParameter * redPrimVarParameter() const;
+		StringParameterPtr redPrimVarParameter();
+		ConstStringParameterPtr redPrimVarParameter() const;
 
-		StringParameter * greenPrimVarParameter();
-		const StringParameter * greenPrimVarParameter() const;
+		StringParameterPtr greenPrimVarParameter();
+		ConstStringParameterPtr greenPrimVarParameter() const;
 
-		StringParameter * bluePrimVarParameter();
-		const StringParameter * bluePrimVarParameter() const;
+		StringParameterPtr bluePrimVarParameter();
+		ConstStringParameterPtr bluePrimVarParameter() const;
 
-		StringParameter * alphaPrimVarParameter();
-		const StringParameter * alphaPrimVarParameter() const;
+		StringParameterPtr alphaPrimVarParameter();
+		ConstStringParameterPtr alphaPrimVarParameter() const;
 
-		BoolParameter * premultipliedParameter();
-		const BoolParameter * premultipliedParameter() const;
+		BoolParameterPtr premultipliedParameter();
+		ConstBoolParameterPtr premultipliedParameter() const;
 
 	protected :
 
 		/// Called once per operation. This is an opportunity to perform any preprocessing
 		/// necessary before many calls to transform() are made.
-		virtual void begin( const CompoundObject * operands );
+		virtual void begin( ConstCompoundObjectPtr operands );
 		/// Called once per color element (pixel for ImagePrimitives).
 		/// Must be implemented by subclasses to transform color in place.
 		virtual void transform( Imath::Color3f &color ) const = 0;
@@ -88,14 +88,14 @@ class ColorTransformOp : public PrimitiveOp
 
 		/// Implemented in terms of begin(), transform() and end(), which should be implemented
 		/// appropriately by subclasses.
-		virtual void modifyPrimitive( Primitive * primitive, const CompoundObject * operands );
+		virtual void modifyPrimitive( PrimitivePtr primitive, ConstCompoundObjectPtr operands );
 
 		template<typename T>
-		const typename T::BaseType *alphaData( Primitive * primitive, size_t requiredElements );
+		const typename T::BaseType *alphaData( PrimitivePtr primitive, size_t requiredElements );
 		template <typename T>
-		void transformSeparate( Primitive * primitive, const CompoundObject * operands, T * r, T * g, T * b );
+		void transformSeparate( PrimitivePtr primitive, ConstCompoundObjectPtr operands, typename T::Ptr r, typename T::Ptr g, typename T::Ptr b );
 		template <typename T>
-		void transformInterleaved( Primitive * primitive, const CompoundObject * operands, T * colors );
+		void transformInterleaved( PrimitivePtr primitive, ConstCompoundObjectPtr operands, typename T::Ptr colors );
 
 		StringParameterPtr m_colorPrimVarParameter;
 		StringParameterPtr m_redPrimVarParameter;

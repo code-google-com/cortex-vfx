@@ -35,8 +35,6 @@
 #ifndef IECORE_CURVESPRIMITIVEEVALUATOR_H
 #define IECORE_CURVESPRIMITIVEEVALUATOR_H
 
-#include "tbb/mutex.h"
-
 #include "IECore/PrimitiveEvaluator.h"
 #include "IECore/BoundedKDTree.h"
 
@@ -111,6 +109,8 @@ class CurvesPrimitiveEvaluator : public PrimitiveEvaluator
 
 		virtual ConstPrimitivePtr primitive() const;
 		
+		/// \threading This is not threadsafe! (because it constructs an intrusive_ptr in Result::m_p).
+		/// \todo Make this threadsafe.
 		virtual PrimitiveEvaluator::ResultPtr createResult() const;
 		virtual void validateResult( const PrimitiveEvaluator::ResultPtr &result ) const;
 
@@ -123,6 +123,10 @@ class CurvesPrimitiveEvaluator : public PrimitiveEvaluator
 		virtual float volume() const;
 		/// Not yet implemented.
 		virtual Imath::V3f centerOfGravity() const;
+		/// \threading The first call to this method creates an acceleration structure which will be reused
+		/// by all subsequent queries. Following the first call this method can be called from multiple
+		/// concurrent threads but the first call itself must have completed before this can happen.
+		/// \todo Sort out this mess.
 		virtual bool closestPoint( const Imath::V3f &p, const PrimitiveEvaluator::ResultPtr &result ) const;
 		/// Returns pointAtV( 0, uv[1], result ).
 		virtual bool pointAtUV( const Imath::V2f &uv, const PrimitiveEvaluator::ResultPtr &result ) const;
@@ -149,7 +153,9 @@ class CurvesPrimitiveEvaluator : public PrimitiveEvaluator
 		////////////////////////////////////////////////////////////////////////////////////////
 		//@{
 		/// Equivalent to CurvesPrimitive::verticesPerCurve() but returns a reference to
-		/// the vector within the IntVectorData.
+		/// the vector within the IntVectorData. This is threadsafe whereas the other is not
+		/// (due to constructing a smart pointer for the return value).
+		/// \todo Make CurvesPrimitive::verticesPerCurve() threadsafe.
 		const std::vector<int> &verticesPerCurve() const;
 		/// One value per curve, storing the offset to the first vertex value for
 		/// that curve.
@@ -170,8 +176,6 @@ class CurvesPrimitiveEvaluator : public PrimitiveEvaluator
 		
 		void buildTree();
 		bool m_haveTree;
-		typedef tbb::mutex TreeMutex;
-		TreeMutex m_treeMutex;
 		Box3fTree m_tree;
 		std::vector<Imath::Box3f> m_treeBounds;
 		struct Line;

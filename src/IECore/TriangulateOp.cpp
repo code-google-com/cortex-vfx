@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,7 +44,7 @@ using namespace IECore;
 
 IE_CORE_DEFINERUNTIMETYPED( TriangulateOp );
 
-TriangulateOp::TriangulateOp() : MeshPrimitiveOp( "A MeshPrimitiveOp to triangulate a mesh" )
+TriangulateOp::TriangulateOp() : MeshPrimitiveOp( staticTypeName(), "A MeshPrimitiveOp to triangulate a mesh" )
 {
 	m_toleranceParameter = new FloatParameter(
 		"tolerance",
@@ -68,22 +68,22 @@ TriangulateOp::~TriangulateOp()
 {
 }
 
-FloatParameter * TriangulateOp::toleranceParameter()
+FloatParameterPtr TriangulateOp::toleranceParameter()
 {
 	return m_toleranceParameter;
 }
 
-const FloatParameter * TriangulateOp::toleranceParameter() const
+ConstFloatParameterPtr TriangulateOp::toleranceParameter() const
 {
 	return m_toleranceParameter;
 }
 
-BoolParameter * TriangulateOp::throwExceptionsParameter()
+BoolParameterPtr TriangulateOp::throwExceptionsParameter()
 {
 	return m_throwExceptionsParameter;
 }
 
-const BoolParameter * TriangulateOp::throwExceptionsParameter() const
+ConstBoolParameterPtr TriangulateOp::throwExceptionsParameter() const
 {
 	return m_throwExceptionsParameter;
 }
@@ -93,18 +93,18 @@ struct TriangleDataRemap
 {
 	typedef size_t ReturnType;
 
-	TriangleDataRemap( const std::vector<int> &indices ) : m_other(0), m_indices( indices )
+	TriangleDataRemap( const std::vector<int> &indices ) : m_indices( indices )
 	{
 	}
 
-	const Data * m_other;
+	ConstDataPtr m_other;
 	const std::vector<int> &m_indices;
 
 	template<typename T>
-	size_t operator() ( T * data )
+	size_t operator() ( typename T::Ptr data )
 	{
 		assert( data );
-		const T * otherData = runTimeCast<const T, const Data>( m_other );
+		typename T::ConstPtr otherData = runTimeCast<const T>( m_other );
 		assert( otherData );
 
 		data->writable().clear();
@@ -127,17 +127,17 @@ struct TriangulateOp::TriangulateFn
 {
 	typedef void ReturnType;
 
-	MeshPrimitive * m_mesh;
+	MeshPrimitivePtr m_mesh;
 	float m_tolerance;
 	bool m_throwExceptions;
 
-	TriangulateFn( MeshPrimitive * mesh, float tolerance, bool throwExceptions )
+	TriangulateFn( MeshPrimitivePtr mesh, float tolerance, bool throwExceptions )
 	: m_mesh( mesh ), m_tolerance( tolerance ), m_throwExceptions( throwExceptions )
 	{
 	}
 
 	template<typename T>
-	ReturnType operator()( T * p )
+	ReturnType operator()( typename T::Ptr p )
 	{
 		typedef typename T::ValueType::value_type Vec;
 
@@ -325,7 +325,7 @@ struct TriangulateOp::TriangulateFn
 	struct ErrorHandler
 	{
 		template<typename T, typename F>
-		void operator()( const T * data, const F& functor )
+		void operator()( typename T::ConstPtr data, const F& functor )
 		{
 			assert( data );
 
@@ -334,7 +334,7 @@ struct TriangulateOp::TriangulateFn
         };
 };
 
-void TriangulateOp::modifyTypedPrimitive( MeshPrimitive * mesh, const CompoundObject * operands )
+void TriangulateOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands )
 {
 
 	if (! mesh->arePrimitiveVariablesValid() )
@@ -359,7 +359,7 @@ void TriangulateOp::modifyTypedPrimitive( MeshPrimitive * mesh, const CompoundOb
 	}
 
 	const float tolerance = toleranceParameter()->getNumericValue();
-	bool throwExceptions = static_cast<const BoolData *>(throwExceptionsParameter()->getValue())->readable();
+	bool throwExceptions = boost::static_pointer_cast<const BoolData>(throwExceptionsParameter()->getValue())->readable();
 
 	PrimitiveVariableMap::const_iterator pvIt = mesh->variables.find("P");
 	if (pvIt != mesh->variables.end())

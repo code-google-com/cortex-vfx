@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -54,7 +54,7 @@ class ParticleReader : public Reader
 
 		IE_CORE_DECLARERUNTIMETYPED( ParticleReader, Reader );
 
-		ParticleReader( const std::string &description );
+		ParticleReader( const std::string &name, const std::string &description );
 
 		/// An enum for the values accepted by realTypeParameter().
 		enum RealType
@@ -69,14 +69,14 @@ class ParticleReader : public Reader
 		/// by searching the parameters() structure by hand.
 		/////////////////////////////////////////////////////////
 		//@{
-		FloatParameter * percentageParameter();
-		const FloatParameter * percentageParameter() const;
-		IntParameter * percentageSeedParameter();
-		const IntParameter * percentageSeedParameter() const;
-		StringVectorParameter * attributesParameter();
-		const StringVectorParameter * attributesParameter() const;
-		IntParameter * realTypeParameter();
-		const IntParameter * realTypeParameter() const;
+		FloatParameterPtr percentageParameter();
+		ConstFloatParameterPtr percentageParameter() const;
+		IntParameterPtr percentageSeedParameter();
+		ConstIntParameterPtr percentageSeedParameter() const;
+		StringVectorParameterPtr attributesParameter();
+		ConstStringVectorParameterPtr attributesParameter() const;
+		IntParameterPtr realTypeParameter();
+		ConstIntParameterPtr realTypeParameter() const;
 		//@}
 
 		//! @name Particle specific reading functions.
@@ -107,7 +107,7 @@ class ParticleReader : public Reader
 		/// requested. This is implemented using the virtual methods
 		/// defined above - there is no need to reimplement it
 		/// in derived classes.
-		virtual ObjectPtr doOperation( const CompoundObject * operands );
+		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
 
 		/// Convenience functions to access the values held in parameters().
 		/// If called from within doOperation they will never throw, but if

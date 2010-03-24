@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -96,12 +96,12 @@ struct SGIImageReader::Header
 const Reader::ReaderDescription<SGIImageReader> SGIImageReader::m_readerDescription( "sgi rgb rgba bw" );
 
 SGIImageReader::SGIImageReader() :
-		ImageReader( "Reads SGI RGB files." )
+		ImageReader( "SGIImageReader", "Reads SGI RGB files." )
 {
 }
 
 SGIImageReader::SGIImageReader( const string &fileName ) :
-		ImageReader( "Reads SGI RGB  files." )
+		ImageReader( "SGIImageReader", "Reads SGI RGB  files." )
 {
 	m_fileNameParameter->setTypedValue(fileName);
 }
@@ -193,7 +193,7 @@ std::string SGIImageReader::sourceColorSpace() const
 	return "srgb";
 }
 
-DataPtr SGIImageReader::readChannel( const string &name, const Imath::Box2i &dataWindow, bool raw )
+DataPtr SGIImageReader::readChannel( const string &name, const Imath::Box2i &dataWindow )
 {
 	if ( !open() )
 	{
@@ -204,26 +204,18 @@ DataPtr SGIImageReader::readChannel( const string &name, const Imath::Box2i &dat
 
 	if ( m_header->m_fileHeader.m_bytesPerChannel == 1 )
 	{
-		if ( raw )
-			return readTypedChannel< unsigned char, unsigned char >( name, dataWindow );
-		else
-			return readTypedChannel< unsigned char, float >( name, dataWindow );
+		return readTypedChannel< unsigned char >( name, dataWindow );
 	}
 	else
 	{
 		assert ( m_header->m_fileHeader.m_bytesPerChannel == 2 );
-		if ( raw )
-			return readTypedChannel< unsigned short, unsigned short >( name, dataWindow );
-		else
-			return readTypedChannel< unsigned short, float >( name, dataWindow );
+		return readTypedChannel< unsigned short >( name, dataWindow );
 	}
 }
 
-template<typename T, typename V>
+template<typename T>
 DataPtr SGIImageReader::readTypedChannel( const std::string &name, const Box2i &dataWindow )
 {
-	typedef TypedData< std::vector< V > > TargetVector;
-
 	assert( open() );
 
 	assert( m_header );
@@ -236,9 +228,9 @@ DataPtr SGIImageReader::readTypedChannel( const std::string &name, const Box2i &
 	assert( m_header->m_channelOffsets.find( name ) != m_header->m_channelOffsets.end() );
 	int channelOffset = m_header->m_channelOffsets[name];
 
-	typename TargetVector::Ptr dataContainer = new TargetVector();
+	FloatVectorDataPtr dataContainer = new FloatVectorData();
 
-	typename TargetVector::ValueType &data = dataContainer->writable();
+	FloatVectorData::ValueType &data = dataContainer->writable();
 	int area = ( dataWindow.size().x + 1 ) * ( dataWindow.size().y + 1 );
 	assert( area >= 0 );
 	data.resize( area );
@@ -256,7 +248,7 @@ DataPtr SGIImageReader::readTypedChannel( const std::string &name, const Box2i &
 	const int xMin = dataWindow.min.x - wholeDataWindow.min.x;
 	const int xMax = dataWindow.max.x - wholeDataWindow.min.x;
 
-	ScaledDataConversion<T, V> converter;
+	ScaledDataConversion<T, float> converter;
 
 	if ( m_header->m_fileHeader.m_storageFormat >= 1 ) /// RLE
 	{
@@ -343,7 +335,7 @@ DataPtr SGIImageReader::readTypedChannel( const std::string &name, const Box2i &
 
 		for ( int y = dataWindow.min.y; y <= dataWindow.max.y; ++y, ++dataY )
 		{
-			typename TargetVector::ValueType::size_type dataOffset = dataY * dataWidth;
+			HalfVectorData::ValueType::size_type dataOffset = dataY * dataWidth;
 
 			for ( int x = dataWindow.min.x; x <= dataWindow.max.x; ++x, ++dataOffset )
 			{

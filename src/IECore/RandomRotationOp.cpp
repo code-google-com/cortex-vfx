@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,6 +52,7 @@ static TypeId seedTypes[] = { FloatVectorDataTypeId, DoubleVectorDataTypeId, Int
 
 RandomRotationOp::RandomRotationOp()
 	:	Op(
+		staticTypeName(),
 		"Calculates a set of random vectors which rotate coherently over time.",
 		new ObjectParameter(
 			"result",
@@ -93,48 +94,48 @@ RandomRotationOp::~RandomRotationOp()
 {
 }
 
-ObjectParameter * RandomRotationOp::seedParameter()
+ObjectParameterPtr RandomRotationOp::seedParameter()
 {
 	return m_seedParameter;
 }
 
-const ObjectParameter * RandomRotationOp::seedParameter() const
+ConstObjectParameterPtr RandomRotationOp::seedParameter() const
 {
 	return m_seedParameter;
 }
 
-FloatParameter * RandomRotationOp::timeParameter()
+FloatParameterPtr RandomRotationOp::timeParameter()
 {
 	return m_timeParameter;
 }
 
-const FloatParameter * RandomRotationOp::timeParameter() const
+ConstFloatParameterPtr RandomRotationOp::timeParameter() const
 {
 	return m_timeParameter;
 }
 
-FloatParameter * RandomRotationOp::speedMinParameter()
+FloatParameterPtr RandomRotationOp::speedMinParameter()
 {
 	return m_speedMinParameter;
 }
 
-const FloatParameter * RandomRotationOp::speedMinParameter() const
+ConstFloatParameterPtr RandomRotationOp::speedMinParameter() const
 {
 	return m_speedMinParameter;
 }
 
-FloatParameter * RandomRotationOp::speedMaxParameter()
+FloatParameterPtr RandomRotationOp::speedMaxParameter()
 {
 	return m_speedMaxParameter;
 }
 
-const FloatParameter * RandomRotationOp::speedMaxParameter() const
+ConstFloatParameterPtr RandomRotationOp::speedMaxParameter() const
 {
 	return m_speedMaxParameter;
 }
 
 template<typename T>
-V3fVectorDataPtr doOp( const T * seed, float time, float minSpeed, float maxSpeed )
+V3fVectorDataPtr doOp( typename T::ConstPtr seed, float time, float minSpeed, float maxSpeed )
 {
 	V3fVectorDataPtr result = new V3fVectorData;
 	vector<V3f> &v = result->writable();
@@ -144,23 +145,23 @@ V3fVectorDataPtr doOp( const T * seed, float time, float minSpeed, float maxSpee
 	return result;
 }
 
-ObjectPtr RandomRotationOp::doOperation( const CompoundObject * operands )
+ObjectPtr RandomRotationOp::doOperation( ConstCompoundObjectPtr operands )
 {
 	float time = m_timeParameter->getNumericValue();
 	float minSpeed = m_speedMinParameter->getNumericValue();
 	float maxSpeed = m_speedMaxParameter->getNumericValue();
 
-	const Object * seed = m_seedParameter->getValue();
+	ConstObjectPtr seed = m_seedParameter->getValue();
 	switch( seed->typeId() )
 	{
 		case FloatVectorDataTypeId :
-			return doOp<FloatVectorData>( static_cast<const FloatVectorData *>( seed ), time, minSpeed, maxSpeed );
+			return doOp<FloatVectorData>( static_pointer_cast<const FloatVectorData>( seed ), time, minSpeed, maxSpeed );
 		case DoubleVectorDataTypeId :
-			return doOp<DoubleVectorData>( static_cast<const DoubleVectorData *>( seed ), time, minSpeed, maxSpeed );
+			return doOp<DoubleVectorData>( static_pointer_cast<const DoubleVectorData>( seed ), time, minSpeed, maxSpeed );
 		case IntVectorDataTypeId :
-			return doOp<IntVectorData>( static_cast<const IntVectorData *>( seed ), time, minSpeed, maxSpeed );
+			return doOp<IntVectorData>( static_pointer_cast<const IntVectorData>( seed ), time, minSpeed, maxSpeed );
 		case UIntVectorDataTypeId :
-			return doOp<UIntVectorData>( static_cast<const UIntVectorData *>( seed ), time, minSpeed, maxSpeed );
+			return doOp<UIntVectorData>( static_pointer_cast<const UIntVectorData>( seed ), time, minSpeed, maxSpeed );
 		default :
 			return 0; // shouldn't get here
 	}

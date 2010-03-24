@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,13 +35,10 @@
 #ifndef IECOREGL_STATE_H
 #define IECOREGL_STATE_H
 
-#include "IECore/CompoundDataBase.h"
-
 #include "IECoreGL/Bindable.h"
 
 #include "IECoreGL/TypeIds.h"
 
-#include <vector>
 #include <map>
 
 namespace IECoreGL
@@ -54,26 +51,6 @@ class State : public Bindable
 {
 	public :
 
-		typedef IECore::CompoundDataMap UserAttributesMap;
-
-		// class that binds a state on the constructor and revert the changes on the destructor.
-		struct ScopedBinding : private boost::noncopyable
-		{
-			public :
-				// binds the given state s and saving the modified values from current state.
-				ScopedBinding( State &s, const State &currentState );
-
-				ConstStatePtr boundState() const;
-	
-				// reverts the state changes.
-				~ScopedBinding();
-
-			private :
-
-				std::vector< ConstStateComponentPtr > m_savedComponents;
-				StatePtr m_boundState;
-		};
-
 		State( bool complete );
 		State( const State &other );
 
@@ -81,8 +58,8 @@ class State : public Bindable
 
 		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::State, StateTypeId, Bindable );
 
-		// binds this state
 		virtual void bind() const;
+		virtual GLbitfield mask() const;
 
 		void add( StatePtr s );
 		void add( StateComponentPtr s );
@@ -94,10 +71,6 @@ class State : public Bindable
 		ConstStateComponentPtr get( IECore::TypeId componentType ) const;
 		template<typename T> void remove();
 		void remove( IECore::TypeId componentType );
-
-		// custom state attributes
-		UserAttributesMap &userAttributes();
-		const UserAttributesMap &userAttributes() const;
 
 		bool isComplete() const;
 
@@ -129,11 +102,9 @@ class State : public Bindable
 		typedef std::map<IECore::TypeId, CreatorFn> CreatorMap;
 		static CreatorMap *creators();
 
-	protected :
-
 		typedef std::map<IECore::TypeId, StateComponentPtr> ComponentMap;
 		ComponentMap m_components;
-		UserAttributesMap m_userAttributes;
+
 };
 
 } // namespace IECoreGL

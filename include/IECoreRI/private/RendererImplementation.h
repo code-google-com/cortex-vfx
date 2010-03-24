@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,17 +35,15 @@
 #ifndef IECORERI_RENDERERIMPLEMENTATION_H
 #define IECORERI_RENDERERIMPLEMENTATION_H
 
-#include <stack>
-
-#include "tbb/queuing_rw_mutex.h"
-
-#include "ri.h"
-
 #include "IECore/CachedReader.h"
 #include "IECore/Camera.h"
 #include "IECore/Font.h"
 
 #include "IECoreRI/Renderer.h"
+
+#include "ri.h"
+
+#include <stack>
 
 namespace IECoreRI
 {
@@ -57,8 +55,8 @@ class RendererImplementation : public IECore::Renderer
 
 	public :
 
-		RendererImplementation();
-		RendererImplementation( const std::string &name );
+		RendererImplementation( IECoreRI::Renderer *parent );
+		RendererImplementation( IECoreRI::Renderer *parent, const std::string &name );
 
 		virtual ~RendererImplementation();
 
@@ -85,8 +83,7 @@ class RendererImplementation : public IECore::Renderer
 		virtual void setAttribute( const std::string &name, IECore::ConstDataPtr value );
 		virtual IECore::ConstDataPtr getAttribute( const std::string &name ) const;
 		virtual void shader( const std::string &type, const std::string &name, const IECore::CompoundDataMap &parameters );
-		virtual void light( const std::string &name, const std::string &handle, const IECore::CompoundDataMap &parameters );
-		virtual void illuminate( const std::string &lightHandle, bool on );
+		virtual void light( const std::string &name, const IECore::CompoundDataMap &parameters );
 
 		virtual void motionBegin( const std::set<float> &times );
 		virtual void motionEnd();
@@ -121,6 +118,7 @@ class RendererImplementation : public IECore::Renderer
 		// Does things common to both constructors
 		void constructCommon();
 
+		IECoreRI::Renderer *m_parent;
 		RtContextHandle m_context;
 
 		typedef void (RendererImplementation::*SetOptionHandler)( const std::string &name, IECore::ConstDataPtr d );
@@ -176,6 +174,11 @@ class RendererImplementation : public IECore::Renderer
 		IECore::ConstDataPtr getRightHandedOrientationAttribute( const std::string &name ) const;
 		IECore::ConstDataPtr getNameAttribute( const std::string &name ) const;
 
+		struct ProcData
+		{
+			IECore::Renderer::ConstProceduralPtr proc;
+			IECoreRI::RendererPtr renderer;
+		};
 		static void procSubdivide( void *data, float detail );
 		static void procFree( void *data );
 
@@ -199,7 +202,6 @@ class RendererImplementation : public IECore::Renderer
 		FontMap m_fonts;
 #endif
 
-		static tbb::queuing_rw_mutex g_nLoopsMutex;
 		static std::vector<int> g_nLoops;
 
 		/// Renderman treats curve basis as an attribute, whereas we want to treat it as

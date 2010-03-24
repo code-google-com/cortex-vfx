@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,7 +47,9 @@ IE_CORE_DEFINERUNTIMETYPED( LinearToRec709Op );
 ColorSpaceTransformOp::ColorSpaceDescription<LinearToRec709Op> LinearToRec709Op::g_colorSpaceDescription( "linear", "rec709" );
 
 LinearToRec709Op::LinearToRec709Op()
-	:	ChannelOp( "Applies linear to Rec709 conversion on ImagePrimitive channels." )
+	:	ChannelOp( "LinearToRec709",
+				   "Applies linear to Rec709 conversion on ImagePrimitive channels."
+		)
 {
 }
 
@@ -60,7 +62,7 @@ struct LinearToRec709Op::Converter
 	typedef void ReturnType;
 
 	template<typename T>
-	ReturnType operator()( T * data )
+	ReturnType operator()( typename T::Ptr data )
 	{
 		typedef typename T::ValueType Container;
 		typedef typename Container::value_type V;

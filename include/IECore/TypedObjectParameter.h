@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -70,16 +70,25 @@ class TypedObjectParameter : public ObjectParameter
 
 		IECORE_RUNTIMETYPED_DECLARETEMPLATE( TypedObjectParameter<T>, ObjectParameter );
 
+		//! @name Object functions
+		////////////////////////////////////
+		//@{
+		typename TypedObjectParameter<T>::Ptr copy() const;
+		//@}
+
 		/// Implemented to return true only if value is of type T.
-		virtual bool valueValid( const Object *value, std::string *reason = 0 ) const;
+		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
 
 	protected:
+
+		TypedObjectParameter();
 
 		static PresetsContainer makePresets( const ObjectPresetsContainer &presets );
 
 	private :
 
 		static TypeDescription<TypedObjectParameter<T> > g_typeDescription;
+		friend class TypeDescription<TypedObjectParameter<T> >;
 
 };
 

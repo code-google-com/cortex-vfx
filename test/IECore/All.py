@@ -32,6 +32,12 @@
 #
 ##########################################################################
 
+import warnings
+warnings.filterwarnings( "error", "Access to Parameters as attributes is deprecated - please use item style access instead.", DeprecationWarning )
+warnings.filterwarnings( "error", "Access to CompoundObject children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
+warnings.filterwarnings( "error", "Access to CompoundParameter children as attributes is deprecated - please use item style access instead.", DeprecationWarning )
+warnings.filterwarnings( "error", "Specifying presets as a dictionary is deprecated - pass a tuple of tuples instead.", DeprecationWarning )
+
 import unittest
 import IECore
 import sys
@@ -207,11 +213,6 @@ from HitMissTransformTest import HitMissTransformTest
 from CurveTracerTest import CurveTracerTest
 from ImageThinnerTest import ImageThinnerTest
 from CurveLineariserTest import CurveLineariserTest
-from PresetManagerTest import PresetManagerTest
-from IDXReaderTest import IDXReaderTest
-from ThreadingTest import ThreadingTest
-from ImageConvolveOpTest import *
-from StringUtilTest import *
 
 if IECore.withASIO() :
 	from DisplayDriverTest import *

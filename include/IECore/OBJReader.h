@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -54,13 +54,13 @@ class OBJReader : public Reader
 
 		IE_CORE_DECLARERUNTIMETYPED(OBJReader, Reader);
 
-		OBJReader( const std::string &fileName );
+		OBJReader( const std::string &name );
 
 		static bool canRead( const std::string &filename );
 
 	protected:
 
-		ObjectPtr doOperation( const CompoundObject * operands);
+		ObjectPtr doOperation(ConstCompoundObjectPtr operands);
 
 	private:
 

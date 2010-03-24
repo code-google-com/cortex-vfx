@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -722,28 +722,6 @@ class TestCompoundParameter( unittest.TestCase ) :
 		else:
 			raise Exception, "Should have generated an exception."
 
-	def testDelParameters( self ) :
-	
-		a = CompoundParameter( "a", "a desc",
-				members = [
-					StringParameter( "b", "b desc", "test 1 ok!"),
-					StringParameter( "d", "d desc", "test 2 failed!"),
-				]
-			)
-		
-		c = a.getValue()
-		r = a.defaultValue
-		
-		del a["d"]
-		self.assert_( not "d" in a )
-
-		r = a.defaultValue
-		self.assert_( not "d" in r )
-
-		r = a.getValue()
-		self.assert_( not "d" in r )
-
-
 	def testAddParametersPresets( self ) :
 
 		p = CompoundParameter(
@@ -826,12 +804,7 @@ class TestCompoundParameter( unittest.TestCase ) :
 		p["i"] = IntData(30)
 		self.assert_( p["i"].getTypedValue() == 30 )
 
-	def testAttributeAccessRemoval( self ) :
-
-		# we used to allow access to child parameters
-		# using the parent.child attribute notation, but
-		# after deprecating it in version 4 we removed it
-		# in version 5. check that it's removed.
+	def testAttributeAccessDeprecation( self ) :
 
 		p = CompoundParameter(
 			name = "c",
@@ -841,7 +814,7 @@ class TestCompoundParameter( unittest.TestCase ) :
 			],
 		)
 
-		self.assertRaises( AttributeError, getattr, p, "i" )
+		self.assertRaises( DeprecationWarning, getattr, p, "i" )
 
 	def testParameterPath( self ) :
 
@@ -901,7 +874,7 @@ class TestCompoundParameter( unittest.TestCase ) :
 				
 		self.assertRaises( Exception, a.__getitem__, "b" )
 		self.assertRaises( Exception, a.__getitem__, "d" )
-
+	
 	def testSetValueWithMissingData( self ) :
 
 		c = CompoundParameter()
@@ -918,6 +891,7 @@ class TestCompoundParameter( unittest.TestCase ) :
 		c.setValue( preset )
 			
 		self.assertEqual( c2value, c["child2"].getValue() )
+		
 			
 class TestValidatedStringParameter( unittest.TestCase ) :
 
@@ -1372,6 +1346,28 @@ class TestFileSequenceVectorParameter( unittest.TestCase ) :
 		self.assertEqual( p.userData(), CompoundObject() )
 		self.assertEqual( p.valueValid()[0], True )
 		p.validate()
+
+class TestObjectMethods( unittest.TestCase ) :
+
+	def test( self ) :
+
+		o = ClassLoader( SearchPath( "test/IECore/ops", ":" ) ).load( "parameterTypes" )()
+
+		p = o.parameters()
+		pp = p.copy()
+
+		self.assertEqual( p, pp )
+
+		ObjectWriter( p, "test/parameters.cob" ).write()
+		ppp = ObjectReader( "test/parameters.cob" ).read()
+
+		self.assertEqual( ppp, p )
+		self.assertEqual( ppp, pp )
+
+	def tearDown( self ) :
+
+		if os.path.exists( "test/parameters.cob" ) :
+			os.remove( "test/parameters.cob" )
 
 if __name__ == "__main__":
         unittest.main()

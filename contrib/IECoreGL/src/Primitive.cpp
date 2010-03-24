@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -70,21 +70,10 @@ void Primitive::render( ConstStatePtr state ) const
 		throw Exception( "Primitive::render called with incomplete state object." );
 	}
 
-	const ShaderStateComponent *shaderState = state->get<ShaderStateComponent>();
-
+	Shader *shader = const_cast<Shader *>( state->get<ShaderStateComponent>()->shader().get() );
 	// get ready in case the derived class wants to call setVertexAttributesAsUniforms
-	setupVertexAttributesAsUniform( shaderState->shader() );
+	setupVertexAttributesAsUniform( shader );
 
-	// add primitive parameters on the new ShaderStateComponent
-	ShaderStateComponentPtr newShaderState = new ShaderStateComponent( *shaderState );
-	for ( AttributeMap::const_iterator it = m_uniformAttributes.begin(); it != m_uniformAttributes.end(); it++ )
-	{
-		newShaderState->addShaderParameterValue( it->first, it->second );
-	}
-	// bind the temporary shader state
-	newShaderState->bind();
-
-	// \todo: consider binding at the end the whole original state. Check if that is enough to eliminate these push/pop calls.
 	glPushAttrib( GL_CURRENT_BIT | GL_DEPTH_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_LIGHTING_BIT );
 	glPushClientAttrib( GL_CLIENT_VERTEX_ARRAY_BIT );
 
@@ -104,9 +93,14 @@ void Primitive::render( ConstStatePtr state ) const
 		glDisable( GL_LIGHTING );
 		glActiveTexture( textureUnits()[0] );
 		glDisable( GL_TEXTURE_2D );
-
-		// turn off shader for other render modes.
+		GLint program = 0;
+		// annoyingly i can't find a way of pushing and popping the
+		// current program so we have to do that ourselves
 		if( GLEW_VERSION_2_0 )
+		{
+			glGetIntegerv( GL_CURRENT_PROGRAM, &program );
+		}
+		if( program )
 		{
 			glUseProgram( 0 );
 		}
@@ -177,21 +171,18 @@ void Primitive::render( ConstStatePtr state ) const
 				glEnd();
 			}
 
+		if( program )
+		{
+			glUseProgram( program );
+		}
+
 	glPopClientAttrib();
 	glPopAttrib();
-
-	// revert to the original shader state.
-	shaderState->bind();
 }
 
 size_t Primitive::vertexAttributeSize() const
 {
 	return 0;
-}
-
-void Primitive::addUniformAttribute( const std::string &name, IECore::ConstDataPtr data )
-{
-	m_uniformAttributes[name] = data->copy();
 }
 
 void Primitive::addVertexAttribute( const std::string &name, IECore::ConstDataPtr data )
@@ -201,7 +192,7 @@ void Primitive::addVertexAttribute( const std::string &name, IECore::ConstDataPt
 		throw Exception( std::string( typeName() ) + " does not support vertex attributes." );
 	}
 
-	size_t s = IECore::despatchTypedData< IECore::TypedDataSize, IECore::TypeTraits::IsTypedData >( IECore::constPointerCast<IECore::Data>( data ) );
+	size_t s = IECore::despatchTypedData< IECore::TypedDataSize, IECore::TypeTraits::IsTypedData >( boost::const_pointer_cast<IECore::Data>( data ) );
 
 	size_t rightSize = vertexAttributeSize();
 	if( s!=rightSize )
@@ -274,12 +265,12 @@ void Primitive::setVertexAttributes( ConstStatePtr state ) const
 		glGetActiveAttrib( shader->m_program, i, maxAttributeNameLength, 0, &size, &type, &name[0] );
 		if( size==1 )
 		{
-			AttributeMap::const_iterator it = m_vertexAttributes.find( &name[0] );
+			VertexAttributeMap::const_iterator it = m_vertexAttributes.find( &name[0] );
 			if( it!=m_vertexAttributes.end() )
 			{
 				SetVertexAttribute a( glGetAttribLocation( shader->m_program, &name[0] ) ) ;
 
-				IECore::despatchTypedData< SetVertexAttribute, IECore::TypeTraits::IsVectorTypedData >( IECore::constPointerCast<IECore::Data>( it->second ), a );
+				IECore::despatchTypedData< SetVertexAttribute, IECore::TypeTraits::IsVectorTypedData >( boost::const_pointer_cast<IECore::Data>( it->second ), a );
 			}
 		}
 	}
@@ -304,7 +295,7 @@ void Primitive::setVertexAttributesAsUniforms( unsigned int vertexIndex ) const
 	}
 }
 
-void Primitive::setupVertexAttributesAsUniform( const Shader *s ) const
+void Primitive::setupVertexAttributesAsUniform( Shader *s ) const
 {
 	if( !s )
 	{
@@ -319,7 +310,7 @@ void Primitive::setupVertexAttributesAsUniform( const Shader *s ) const
 
 	m_vertexToUniform.intDataMap.clear();
 
-	for( AttributeMap::const_iterator it=m_vertexAttributes.begin(); it!=m_vertexAttributes.end(); it++ )
+	for( VertexAttributeMap::const_iterator it=m_vertexAttributes.begin(); it!=m_vertexAttributes.end(); it++ )
 	{
 		try
 		{
@@ -327,25 +318,25 @@ void Primitive::setupVertexAttributesAsUniform( const Shader *s ) const
 			switch( it->second->typeId() )
 			{
 				case IECore::IntVectorDataTypeId :
-					m_vertexToUniform.intDataMap[parameterIndex] = IntData( IECore::staticPointerCast<const IECore::IntVectorData>( it->second )->baseReadable(), 1 );
+					m_vertexToUniform.intDataMap[parameterIndex] = IntData( static_pointer_cast<const IECore::IntVectorData>( it->second )->baseReadable(), 1 );
 					break;
 				case IECore::V2iVectorDataTypeId :
-					m_vertexToUniform.intDataMap[parameterIndex] = IntData( IECore::staticPointerCast<const IECore::V2iVectorData>( it->second )->baseReadable(), 2 );
+					m_vertexToUniform.intDataMap[parameterIndex] = IntData( static_pointer_cast<const IECore::V2iVectorData>( it->second )->baseReadable(), 2 );
 					break;
 				case IECore::V3iVectorDataTypeId :
-					m_vertexToUniform.intDataMap[parameterIndex] = IntData( IECore::staticPointerCast<const IECore::V3iVectorData>( it->second )->baseReadable(), 3 );
+					m_vertexToUniform.intDataMap[parameterIndex] = IntData( static_pointer_cast<const IECore::V3iVectorData>( it->second )->baseReadable(), 3 );
 					break;
 				case IECore::FloatVectorDataTypeId :
-					m_vertexToUniform.floatDataMap[parameterIndex] = FloatData( IECore::staticPointerCast<const IECore::FloatVectorData>( it->second )->baseReadable(), 1 );
+					m_vertexToUniform.floatDataMap[parameterIndex] = FloatData( static_pointer_cast<const IECore::FloatVectorData>( it->second )->baseReadable(), 1 );
 					break;
 				case IECore::V2fVectorDataTypeId :
-					m_vertexToUniform.floatDataMap[parameterIndex] = FloatData( IECore::staticPointerCast<const IECore::V2fVectorData>( it->second )->baseReadable(), 2 );
+					m_vertexToUniform.floatDataMap[parameterIndex] = FloatData( static_pointer_cast<const IECore::V2fVectorData>( it->second )->baseReadable(), 2 );
 					break;
 				case IECore::V3fVectorDataTypeId :
-					m_vertexToUniform.floatDataMap[parameterIndex] = FloatData( IECore::staticPointerCast<const IECore::V3fVectorData>( it->second )->baseReadable(), 3 );
+					m_vertexToUniform.floatDataMap[parameterIndex] = FloatData( static_pointer_cast<const IECore::V3fVectorData>( it->second )->baseReadable(), 3 );
 					break;
 				case IECore::Color3fVectorDataTypeId :
-					m_vertexToUniform.floatDataMap[parameterIndex] = FloatData( IECore::staticPointerCast<const IECore::Color3fVectorData>( it->second )->baseReadable(), 3 );
+					m_vertexToUniform.floatDataMap[parameterIndex] = FloatData( static_pointer_cast<const IECore::Color3fVectorData>( it->second )->baseReadable(), 3 );
 					break;
 				default :
 					break;

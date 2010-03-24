@@ -44,12 +44,12 @@ Data::~Data()
 {
 }
 
-void Data::copyFrom( const Object *other, CopyContext *context )
+void Data::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	Object::copyFrom( other, context );
 }
 
-bool Data::isEqualTo( const Object *other ) const
+bool Data::isEqualTo( ConstObjectPtr other ) const
 {
 	return Object::isEqualTo( other );
 }

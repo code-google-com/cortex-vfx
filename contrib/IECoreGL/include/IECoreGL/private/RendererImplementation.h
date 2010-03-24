@@ -4,9 +4,6 @@
 #include "IECoreGL/TypeIds.h"
 
 #include "IECore/RunTimeTyped.h"
-#include "IECore/Interned.h"
-#include "IECore/Data.h"
-#include "IECore/Renderer.h"
 
 #include "OpenEXR/ImathMatrix.h"
 
@@ -52,17 +49,7 @@ class RendererImplementation : public IECore::RunTimeTyped
 		template <class T>
 		typename T::Ptr getState();
 
-		// Set a custom state
-		virtual void addUserAttribute( const IECore::InternedString &name, IECore::DataPtr value ) = 0;
-		// Get a custom state or 0 if not defined.
-		virtual IECore::DataPtr getUserAttribute( const IECore::InternedString &name ) = 0;
-		// Get a casted custom state or 0 if not present or incompatible type.
-		template <class T>
-		typename T::Ptr getUserAttribute( const IECore::InternedString &name );
-
 		virtual void addPrimitive( PrimitivePtr primitive ) = 0;
-
-		virtual void procedural( IECore::Renderer::ProceduralPtr proc, IECore::RendererPtr renderer ) = 0;
 
 };
 

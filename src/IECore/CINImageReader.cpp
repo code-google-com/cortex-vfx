@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,7 +40,8 @@
 #include "IECore/ImagePrimitive.h"
 #include "IECore/FileNameParameter.h"
 #include "IECore/BoxOps.h"
-#include "IECore/ScaledDataConversion.h"
+
+#include "IECore/CineonToLinearDataConversion.h"
 
 #include "IECore/private/cineon.h"
 
@@ -73,13 +74,13 @@ IE_CORE_DEFINERUNTIMETYPED( CINImageReader );
 const Reader::ReaderDescription<CINImageReader> CINImageReader::m_readerDescription( "cin" );
 
 CINImageReader::CINImageReader() :
-		ImageReader( "Reads Kodak Cineon (CIN) files." ),
+		ImageReader( "CINImageReader", "Reads Kodak Cineon (CIN) files." ),
 		m_header( 0 )
 {
 }
 
 CINImageReader::CINImageReader( const string &fileName ) :
-		ImageReader( "Reads Kodak Cineon (CIN) files." ),
+		ImageReader( "CINImageReader", "Reads Kodak Cineon (CIN) files." ),
 		m_header( 0 )
 {
 	m_fileNameParameter->setTypedValue(fileName);
@@ -153,20 +154,24 @@ Box2i CINImageReader::displayWindow()
 
 std::string CINImageReader::sourceColorSpace() const
 {
-	return "cineon";
+	/// This isn't strictly true, but as the reader currently stands it performs the Cineon-Linear
+	/// conversion for us. Eventually, this will start returning "cineon", and the ImageReader base
+	/// class will handle the appropriate color conversions.
+	return "linear";
 }
-
 
 /// \todo
 /// we assume here CIN coding in the 'typical' configuration (output by film dumps, nuke, etc).
-/// this is RGB 10bit log for film, pixel-interlaced data. We convert this to unsigned short 
-/// (using the whole range of 16 bits available ) and then it's converted to the given 
-/// typename V applying domain scale as necessary. Note that there's no cineon to linear conversion as
-/// it's now up to the base class to do it.
-template<typename V>
-DataPtr CINImageReader::readTypedChannel( const std::string &name, const Imath::Box2i &dataWindow )
+/// this is RGB 10bit log for film, pixel-interlaced data.  we convert this to a linear 16-bit (half)
+/// format in the ImagePrimitive.
+DataPtr CINImageReader::readChannel( const string &name, const Imath::Box2i &dataWindow )
 {
-	typedef TypedData< std::vector< V > > TargetVector;
+	if ( !open() )
+	{
+		return 0;
+	}
+
+	assert( m_header );
 
 	// figure out the offset into the bitstream for the given channel
 	assert( m_header->m_channelOffsets.find( name ) != m_header->m_channelOffsets.end() );
@@ -174,8 +179,6 @@ DataPtr CINImageReader::readTypedChannel( const std::string &name, const Imath::
 
 	assert( (int)m_header->m_imageInformation.channel_information[channelOffset].bpp == 10 );
 	int bpp = m_header->m_imageInformation.channel_information[channelOffset].bpp;
-	// todo: make sure ushort is enough for the current bpp
-	int ushortShift = sizeof(unsigned short)*8 - bpp;
 
 	// form the mask for this channel
 	unsigned int mask = 0;
@@ -185,10 +188,10 @@ DataPtr CINImageReader::readTypedChannel( const std::string &name, const Imath::
 	}
 	mask <<= ((32 - bpp) - channelOffset * bpp);
 
-	ScaledDataConversion< unsigned short, V> converter;
+	CineonToLinearDataConversion< unsigned short, half > converter;
 
-	typename TargetVector::Ptr dataContainer = new TargetVector();
-	typename TargetVector::ValueType &data = dataContainer->writable();
+	HalfVectorDataPtr dataContainer = new HalfVectorData();
+	HalfVectorData::ValueType &data = dataContainer->writable();
 	int area = ( dataWindow.size().x + 1 ) * ( dataWindow.size().y + 1 );
 	assert( area >= 0 );
 	data.resize( area );
@@ -206,7 +209,7 @@ DataPtr CINImageReader::readTypedChannel( const std::string &name, const Imath::
 	int dataY = 0;
 	for ( int y = yMin ; y <= yMax ; ++y, ++dataY )
 	{
-		typename TargetVector::ValueType::size_type dataOffset = dataY * dataWidth;
+		HalfVectorData::ValueType::size_type dataOffset = dataY * dataWidth;
 		std::vector<unsigned int>::size_type bufferOffset = y * m_bufferWidth + xMin;
 
 		for ( int x = xMin;  x <= xMax ; ++x, ++dataOffset, ++bufferOffset  )
@@ -222,27 +225,9 @@ DataPtr CINImageReader::readTypedChannel( const std::string &name, const Imath::
 			// assume we have 10bit log, two wasted bits aligning to 32 longword
 			unsigned short cv = (unsigned short) ( ( mask & cell ) >> ( 2 + ( 2 - channelOffset ) * bpp ) );
 			assert( cv < 1024 );
-			data[dataOffset] = converter( (cv << ushortShift) + ((1 << ushortShift) - 1) );
+			data[dataOffset] = converter( cv );
 		}
 	}
-	return dataContainer;
-}
-
-
-DataPtr CINImageReader::readChannel( const string &name, const Imath::Box2i &dataWindow, bool raw )
-{
-	if ( !open() )
-	{
-		return 0;
-	}
-
-	assert( m_header );
-	DataPtr dataContainer = NULL;
-
-	if ( raw )
-		dataContainer = readTypedChannel< unsigned short >( name, dataWindow );
-	else
-		dataContainer = readTypedChannel< float >( name, dataWindow );
 
 	return dataContainer;
 }

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,7 +46,7 @@ using namespace std;
 IE_CORE_DEFINERUNTIMETYPED( CurvesMergeOp );
 
 CurvesMergeOp::CurvesMergeOp()
-	:	CurvesPrimitiveOp( "Merges one set of curves with another." )
+	:	CurvesPrimitiveOp( staticTypeName(), "Merges one set of curves with another." )
 {
 	m_curvesParameter = new CurvesPrimitiveParameter(
 		"curves",
@@ -61,12 +61,12 @@ CurvesMergeOp::~CurvesMergeOp()
 {
 }
 
-CurvesPrimitiveParameter * CurvesMergeOp::curvesParameter()
+CurvesPrimitiveParameterPtr CurvesMergeOp::curvesParameter()
 {
 	return m_curvesParameter;
 }
 
-const CurvesPrimitiveParameter * CurvesMergeOp::curvesParameter() const
+ConstCurvesPrimitiveParameterPtr CurvesMergeOp::curvesParameter() const
 {
 	return m_curvesParameter;
 }
@@ -75,19 +75,19 @@ struct CurvesMergeOp::AppendPrimVars
 {
 	typedef void ReturnType;
 
-	AppendPrimVars( const CurvesPrimitive * curves2, const std::string &name )
+	AppendPrimVars( ConstCurvesPrimitivePtr curves2, const std::string &name )
 		:	m_curves2( curves2 ), m_name( name )
 	{
 	}
 
 	template<typename T>
-	ReturnType operator()( T * data )
+	ReturnType operator()( typename T::Ptr data )
 	{
 
 		PrimitiveVariableMap::const_iterator it = m_curves2->variables.find( m_name );
 		if( it!=m_curves2->variables.end() )
 		{
-			const T *data2 = runTimeCast<const T>( it->second.data );
+			typename T::ConstPtr data2 = runTimeCast<const T>( it->second.data );
 			if( data2 )
 			{
 				data->writable().insert( data->writable().end(), data2->readable().begin(), data2->readable().end() );
@@ -97,14 +97,14 @@ struct CurvesMergeOp::AppendPrimVars
 
 	private :
 
-		const CurvesPrimitive * m_curves2;
+		ConstCurvesPrimitivePtr m_curves2;
 		std::string m_name;
 
 };
 
-void CurvesMergeOp::modifyTypedPrimitive( CurvesPrimitive * curves, const CompoundObject * operands )
+void CurvesMergeOp::modifyTypedPrimitive( CurvesPrimitivePtr curves, ConstCompoundObjectPtr operands )
 {
-	const CurvesPrimitive *curves2 = static_cast<const CurvesPrimitive *>( m_curvesParameter->getValue() );
+	ConstCurvesPrimitivePtr curves2 = boost::static_pointer_cast<const CurvesPrimitive>( m_curvesParameter->getValue() );
 
 	const vector<int> &verticesPerCurve1 = curves->verticesPerCurve()->readable();
 	const vector<int> &verticesPerCurve2 = curves2->verticesPerCurve()->readable();

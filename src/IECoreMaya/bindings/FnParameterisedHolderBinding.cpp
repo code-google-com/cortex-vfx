@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,7 +40,7 @@
 
 #include "IECore/Object.h"
 #include "IECore/Parameterised.h"
-#include "IECorePython/PointerFromSWIG.h"
+#include "IECore/bindings/PointerFromSWIG.h"
 
 #include "IECoreMaya/bindings/FnParameterisedHolderBinding.h"
 #include "IECoreMaya/StatusException.h"
@@ -48,7 +48,6 @@
 
 using namespace IECore;
 using namespace IECoreMaya;
-using namespace IECorePython;
 using namespace boost::python;
 
 static ParameterisedHolderInterface *interface( MFnDependencyNode *fnDN )
@@ -80,6 +79,13 @@ static void setParameterised2( MFnDependencyNode *fnDN, const std::string &class
 	assert( fnDN );
 
 	StatusException::throwIfError( interface(fnDN)->setParameterised( className, classVersion, envVarName ) );
+}
+
+static void updateParameterised( MFnDependencyNode *fnDN )
+{
+	assert( fnDN );
+
+	StatusException::throwIfError( interface(fnDN)->updateParameterised() );
 }
 
 static boost::python::tuple getParameterised( MFnDependencyNode *fnDN )
@@ -142,6 +148,7 @@ void IECoreMaya::bindFnParameterisedHolder()
 
 	def( "_parameterisedHolderSetParameterised", &setParameterised );
 	def( "_parameterisedHolderSetParameterised", &setParameterised2 );
+	def( "_parameterisedHolderUpdateParameterised", &updateParameterised );
 	def( "_parameterisedHolderGetParameterised", &getParameterised );
 	def( "_parameterisedHolderSetNodeValues", &setNodeValues );
 	def( "_parameterisedHolderSetNodeValue", &setNodeValue );

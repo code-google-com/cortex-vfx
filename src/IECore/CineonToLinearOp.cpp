@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,7 +47,9 @@ IE_CORE_DEFINERUNTIMETYPED( CineonToLinearOp );
 ColorSpaceTransformOp::ColorSpaceDescription<CineonToLinearOp> CineonToLinearOp::g_colorSpaceDescription( "cineon", "linear" );
 
 CineonToLinearOp::CineonToLinearOp()
-	:	ChannelOp( "Applies Cineon to linear conversion on ImagePrimitive channels." )
+	:	ChannelOp( "CineonToLinearOp",
+				   "Applies Cineon to linear conversion on ImagePrimitive channels."
+		)
 {
 	CompoundParameterPtr cineonParameters = createCineonSettings();
 	m_filmGamma = cineonParameters->parameter< FloatParameter >( "filmGamma" );
@@ -109,33 +111,33 @@ CompoundParameterPtr CineonToLinearOp::createCineonSettings()
 	return cineonParameters;
 }
 
-FloatParameter *CineonToLinearOp::filmGammaParameter()
+FloatParameterPtr CineonToLinearOp::filmGammaParameter()
 {
 	return m_filmGamma;
 }
 
-const FloatParameter *CineonToLinearOp::filmGammaParameter() const
+ConstFloatParameterPtr CineonToLinearOp::filmGammaParameter() const
 {
 	return m_filmGamma;
 }
 
 
-IntParameter *CineonToLinearOp::refWhiteValParameter()
+IntParameterPtr CineonToLinearOp::refWhiteValParameter()
 {
 	return m_refWhiteVal;
 }
 
-const IntParameter *CineonToLinearOp::refWhiteValParameter() const
+ConstIntParameterPtr CineonToLinearOp::refWhiteValParameter() const
 {
 	return m_refWhiteVal;
 }
 
-IntParameter *CineonToLinearOp::refBlackValParameter()
+IntParameterPtr CineonToLinearOp::refBlackValParameter()
 {
 	return m_refBlackVal;
 }
 
-const IntParameter *CineonToLinearOp::refBlackValParameter() const
+ConstIntParameterPtr CineonToLinearOp::refBlackValParameter() const
 {
 	return m_refBlackVal;
 }

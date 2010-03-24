@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,7 @@
 #include "IECoreGL/bindings/TypedStateComponentBinding.h"
 
 #include "IECore/MessageHandler.h"
-#include "IECorePython/RunTimeTypedBinding.h"
+#include "IECore/bindings/RunTimeTypedBinding.h"
 
 using namespace boost::python;
 
@@ -77,7 +77,7 @@ void bindTypedStateComponents()
 template< typename T >
 void bindTypedStateComponent( const char *className )
 {
-	IECorePython::RunTimeTypedClass<T>()
+	IECore::RunTimeTypedClass<T>()
 		.def( init< const typename T::ValueType & >() )
 		.add_property( "value", make_function( &T::value, return_value_policy<copy_const_reference>() ) )
 	;

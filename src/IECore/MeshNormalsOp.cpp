@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,7 +43,7 @@ using namespace std;
 
 IE_CORE_DEFINERUNTIMETYPED( MeshNormalsOp );
 
-MeshNormalsOp::MeshNormalsOp() : MeshPrimitiveOp( "Calculates vertex normals for a mesh." )
+MeshNormalsOp::MeshNormalsOp() : MeshPrimitiveOp( staticTypeName(), "Calculates vertex normals for a mesh." )
 {
 	/// \todo Add this parameter to a member variable and update pPrimVarNameParameter() functions.
 	StringParameterPtr pPrimVarNameParameter = new StringParameter(
@@ -67,22 +67,22 @@ MeshNormalsOp::~MeshNormalsOp()
 {
 }
 
-StringParameter * MeshNormalsOp::pPrimVarNameParameter()
+StringParameterPtr MeshNormalsOp::pPrimVarNameParameter()
 {
 	return parameters()->parameter<StringParameter>( "pPrimVarName" );
 }
 
-const StringParameter * MeshNormalsOp::pPrimVarNameParameter() const
+ConstStringParameterPtr MeshNormalsOp::pPrimVarNameParameter() const
 {
 	return parameters()->parameter<StringParameter>( "pPrimVarName" );
 }
 
-StringParameter * MeshNormalsOp::nPrimVarNameParameter()
+StringParameterPtr MeshNormalsOp::nPrimVarNameParameter()
 {
 	return parameters()->parameter<StringParameter>( "nPrimVarName" );
 }
 
-const StringParameter * MeshNormalsOp::nPrimVarNameParameter() const
+ConstStringParameterPtr MeshNormalsOp::nPrimVarNameParameter() const
 {
 	return parameters()->parameter<StringParameter>( "nPrimVarName" );
 }
@@ -91,13 +91,13 @@ struct MeshNormalsOp::CalculateNormals
 {
 	typedef DataPtr ReturnType;
 
-	CalculateNormals( const IntVectorData * vertsPerFace, const IntVectorData * vertIds )
+	CalculateNormals( ConstIntVectorDataPtr vertsPerFace, ConstIntVectorDataPtr vertIds )
 		:	m_vertsPerFace( vertsPerFace ), m_vertIds( vertIds )
 	{
 	}
 
 	template<typename T>
-	ReturnType operator()( T * data )
+	ReturnType operator()( typename T::Ptr data )
 	{
 		typedef typename T::ValueType VecContainer;
 		typedef typename VecContainer::value_type Vec;
@@ -147,14 +147,14 @@ struct MeshNormalsOp::CalculateNormals
 struct MeshNormalsOp::HandleErrors
 {
 	template<typename T, typename F>
-	void operator()( const T *d, const F &f )
+	void operator()( typename T::ConstPtr d, const F &f )
 	{
 		string e = boost::str( boost::format( "MeshNormalsOp : pPrimVarName parameter has unsupported data type \"%s\"." ) % d->typeName() );
 		throw InvalidArgumentException( e );
 	}
 };
 
-void MeshNormalsOp::modifyTypedPrimitive( MeshPrimitive * mesh, const CompoundObject * operands )
+void MeshNormalsOp::modifyTypedPrimitive( MeshPrimitivePtr mesh, ConstCompoundObjectPtr operands )
 {
 	const std::string &pPrimVarName = pPrimVarNameParameter()->getTypedValue();
 	PrimitiveVariableMap::const_iterator pvIt = mesh->variables.find( pPrimVarName );

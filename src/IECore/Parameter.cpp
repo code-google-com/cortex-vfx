@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,11 +43,18 @@ using namespace IECore;
 using namespace boost;
 using namespace std;
 
-IE_CORE_DEFINERUNTIMETYPED( Parameter );
+const unsigned int Parameter::g_ioVersion = 1;
+
+IE_CORE_DEFINEOBJECTTYPEDESCRIPTION( Parameter );
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // structors
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Parameter::Parameter()
+	:	m_name( "" ), m_description( "" )
+{
+}
 
 Parameter::Parameter( const std::string &name, const std::string &description, ObjectPtr defaultValue,
 	const PresetsContainer &presets, bool presetsOnly, ConstCompoundObjectPtr userData )
@@ -70,6 +77,170 @@ Parameter::~Parameter()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Object implementation
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Parameter::copyFrom( ConstObjectPtr other, CopyContext *context )
+{
+	Object::copyFrom( other, context );
+	const Parameter *tOther = static_cast<const Parameter *>( other.get() );
+
+	m_name = tOther->m_name;
+	m_description = tOther->m_description;
+
+	m_value = tOther->m_value ? context->copy<Object>( tOther->m_value ) : 0;
+	m_defaultValue = tOther->m_defaultValue ? context->copy<Object>( tOther->m_defaultValue ) : 0;
+
+	m_presets.clear();
+	m_presets.reserve( tOther->m_presets.size() );
+	for( PresetsContainer::const_iterator it=tOther->m_presets.begin(); it!=tOther->m_presets.end(); it++ )
+	{
+		m_presets.push_back( Preset( it->first, context->copy<Object>( it->second ) ) );
+	}
+
+	m_presetsOnly = tOther->m_presetsOnly;
+	m_userData = tOther->m_userData ? context->copy<CompoundObject>( tOther->m_userData ) : 0;
+}
+
+void Parameter::save( SaveContext *context ) const
+{
+	Object::save( context );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), g_ioVersion );
+
+	container->write( "name", m_name.value() );
+	container->write( "description", m_description.value() );
+
+	context->save( m_value, container, "value" );
+	context->save( m_defaultValue, container, "defaultValue" );
+
+	container->mkdir( "presets" );
+	container->chdir( "presets" );
+
+		for( PresetsContainer::const_iterator it=m_presets.begin(); it!=m_presets.end(); it++ )
+		{
+			context->save( it->second, container, it->first );
+		}
+
+	container->chdir( ".." );
+
+	unsigned char tmp = m_presetsOnly;
+	container->write( "presetsOnly", tmp );
+
+}
+
+void Parameter::load( LoadContextPtr context )
+{
+	Object::load( context );
+	unsigned int v = g_ioVersion;
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
+
+	string tmp;
+	container->read( "name", tmp ); m_name = tmp;
+	container->read( "description", tmp ); m_description = tmp;
+
+	m_value = context->load<Object>( container, "value" );
+	m_defaultValue = context->load<Object>( container, "defaultValue" );
+
+	container->chdir( "presets" );
+
+		IndexedIO::EntryList l = container->ls();
+		m_presets.clear(); m_presets.resize( l.size() ); unsigned i = 0;
+		for( IndexedIO::EntryList::const_iterator it=l.begin(); it!=l.end(); it++ )
+		{
+			m_presets[i++] = Preset( it->id(), context->load<Object>( container, it->id() ) );
+		}
+
+	container->chdir( ".." );
+
+	unsigned char tmpC;
+	container->read( "presetsOnly", tmpC );
+	m_presetsOnly = tmpC;
+
+}
+
+bool Parameter::isEqualTo( ConstObjectPtr other ) const
+{
+	if( !Object::isEqualTo( other ) )
+	{
+		return false;
+	}
+
+	const Parameter *tOther = static_cast<const Parameter *>( other.get() );
+	if( m_name!=tOther->m_name )
+	{
+		return false;
+	}
+	if( m_description!=tOther->m_description )
+	{
+		return false;
+	}
+
+	if( m_value && tOther->m_value )
+	{
+		if( *m_value!=*tOther->m_value )
+		{
+			return false;
+		}
+	}
+	else
+	{
+		if( m_value || tOther->m_value )
+		{
+			return false;
+		}
+	}
+
+	if( m_defaultValue && tOther->m_value )
+	{
+		if( *m_defaultValue!=*tOther->m_defaultValue )
+		{
+			return false;
+		}
+	}
+	else
+	{
+		if( m_defaultValue || tOther->m_defaultValue )
+		{
+			return false;
+		}
+	}
+
+	if( m_presets.size()!=tOther->m_presets.size() )
+	{
+		return false;
+	}
+	for( unsigned i=0; i<m_presets.size(); i++ )
+	{
+		if( m_presets[i].first != tOther->m_presets[i].first )
+		{
+			return false;
+		}
+		if( *(m_presets[i].second) != *(tOther->m_presets[i].second) )
+		{
+			return false;
+		}
+	}
+
+	return m_presetsOnly == tOther->m_presetsOnly;
+}
+
+void Parameter::memoryUsage( Object::MemoryAccumulator &a ) const
+{
+	Object::memoryUsage( a );
+
+	a.accumulate( &m_name.value(), m_name.value().capacity() );
+	a.accumulate( &m_description.value(), m_description.value().capacity() );
+	a.accumulate( m_value );
+	a.accumulate( m_defaultValue );
+	for( unsigned i=0; i<m_presets.size(); i++ )
+	{
+		a.accumulate( m_presets[i].first.capacity() );
+		a.accumulate( m_presets[i].second );
+	}
+	a.accumulate( sizeof( m_presets ) );
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Basic Parameter information
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -83,9 +254,9 @@ const std::string &Parameter::description() const
 	return m_description;
 }
 
-const Object *Parameter::defaultValue() const
+ConstObjectPtr Parameter::defaultValue() const
 {
-	return m_defaultValue.get();
+	return m_defaultValue;
 }
 
 const Parameter::PresetsContainer &Parameter::presets() const
@@ -98,29 +269,29 @@ bool Parameter::presetsOnly() const
 	return m_presetsOnly;
 }
 
-CompoundObject *Parameter::userData()
+CompoundObjectPtr Parameter::userData()
 {
 	if( !m_userData )
 	{
 		m_userData = new CompoundObject();
 	}
-	return m_userData.get();
+	return m_userData;
 }
 
-const CompoundObject *Parameter::userData() const
+ConstCompoundObjectPtr Parameter::userData() const
 {
 	if( !m_userData )
 	{
 		m_userData = new CompoundObject();
 	}
-	return m_userData.get();
+	return m_userData;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Validation
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool Parameter::valueValid( const Object *value, std::string *reason ) const
+bool Parameter::valueValid( ConstObjectPtr value, std::string *reason ) const
 {
 	if( value->typeId()==NullObject::staticTypeId() )
 	{
@@ -163,7 +334,7 @@ void Parameter::validate() const
 	}
 }
 
-void Parameter::validate( const Object *value ) const
+void Parameter::validate( ConstObjectPtr value ) const
 {
 	string reason;
 	if( !valueValid( value, &reason ) )
@@ -184,7 +355,7 @@ void Parameter::setValue( ObjectPtr value )
 
 void Parameter::setValidatedValue( ObjectPtr value )
 {
-	validate( value.get() );
+	validate( value );
 	setValue( value );
 }
 
@@ -212,23 +383,23 @@ void Parameter::setValue( const std::string &presetName )
 // Value getting
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Object *Parameter::getValue()
+ObjectPtr Parameter::getValue()
 {
-	return m_value.get();
+	return m_value;
 }
 
-const Object *Parameter::getValue() const
+ConstObjectPtr Parameter::getValue() const
 {
-	return m_value.get();
+	return m_value;
 }
 
-Object *Parameter::getValidatedValue()
+ObjectPtr Parameter::getValidatedValue()
 {
 	validate();
 	return getValue();
 }
 
-const Object *Parameter::getValidatedValue() const
+ConstObjectPtr Parameter::getValidatedValue() const
 {
 	validate();
 	return getValue();
@@ -239,7 +410,7 @@ std::string Parameter::getCurrentPresetName() const
 	// ideally we'd just use m_value for currentValue, which would mean we
 	// didn't have to do a copy of the value. but that breaks with CompoundParameter
 	// as it builds the value dynamically in getValue().
-	const Object *currentValue = getValue();
+	ConstObjectPtr currentValue = getValue();
 	const PresetsContainer &pr = presets();
 	PresetsContainer::const_iterator it;
 	for( it=pr.begin(); it!=pr.end(); it++ )
@@ -249,6 +420,8 @@ std::string Parameter::getCurrentPresetName() const
 			return it->first;
 		}
 	}
+
+	/// \todo Surely we should never get here if m_presetsOnly is true? Assert that, if safe to do so.
 
 	return "";
 }

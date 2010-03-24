@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -56,6 +56,7 @@ IE_CORE_DEFINERUNTIMETYPED( MappedRandomPointDistributionOp );
 
 MappedRandomPointDistributionOp::MappedRandomPointDistributionOp()
 		:	UniformRandomPointDistributionOp(
+		        staticTypeName(),
 		        "The MappedRandomPointDistributionOp distributes points over a mesh using a random distribution and a density map."
 		)
 {
@@ -88,27 +89,27 @@ MappedRandomPointDistributionOp::~MappedRandomPointDistributionOp()
 {
 }
 
-ImagePrimitiveParameter * MappedRandomPointDistributionOp::imageParameter()
+ImagePrimitiveParameterPtr MappedRandomPointDistributionOp::imageParameter()
 {
 	return m_imageParameter;
 }
 
-const ImagePrimitiveParameter * MappedRandomPointDistributionOp::imageParameter() const
+ConstImagePrimitiveParameterPtr MappedRandomPointDistributionOp::imageParameter() const
 {
 	return m_imageParameter;
 }
 
-StringParameter * MappedRandomPointDistributionOp::channelNameParameter()
+StringParameterPtr MappedRandomPointDistributionOp::channelNameParameter()
 {
 	return m_channelNameParameter;
 }
 
-const StringParameter * MappedRandomPointDistributionOp::channelNameParameter() const
+ConstStringParameterPtr MappedRandomPointDistributionOp::channelNameParameter() const
 {
 	return m_channelNameParameter;
 }
 
-float MappedRandomPointDistributionOp::density( const MeshPrimitive * mesh, const Imath::V3f &point, const Imath::V2f &uv ) const
+float MappedRandomPointDistributionOp::density( ConstMeshPrimitivePtr mesh, const Imath::V3f &point, const Imath::V2f &uv ) const
 {
 	assert( m_imageEvaluator );
 	assert( m_imageEvaluator->primitive() );
@@ -150,7 +151,7 @@ float MappedRandomPointDistributionOp::density( const MeshPrimitive * mesh, cons
 	}
 }
 
-ObjectPtr MappedRandomPointDistributionOp::doOperation( const CompoundObject * operands )
+ObjectPtr MappedRandomPointDistributionOp::doOperation( ConstCompoundObjectPtr operands )
 {
 	ImagePrimitivePtr image = m_imageParameter->getTypedValue<ImagePrimitive>();
 	assert( image );

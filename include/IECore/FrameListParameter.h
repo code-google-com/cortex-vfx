@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,7 +45,7 @@ class FrameListParameter : public StringParameter
 {
 	public:
 
-		IE_CORE_DECLARERUNTIMETYPED( FrameListParameter, StringParameter );
+		IE_CORE_DECLAREOBJECT( FrameListParameter, StringParameter );
 
 		FrameListParameter( const std::string &name, const std::string &description, const std::string &defaultValue = std::string(), bool allowEmptyList = true,
 			const PresetsContainer &presets = PresetsContainer(), bool presetsOnly = false, ConstCompoundObjectPtr userData = 0 );
@@ -55,14 +55,22 @@ class FrameListParameter : public StringParameter
 
 		virtual ~FrameListParameter();
 
-		virtual bool valueValid( const Object *value, std::string *reason = 0 ) const;
+		virtual bool valueValid( ConstObjectPtr value, std::string *reason = 0 ) const;
 
 		void setFrameListValue( ConstFrameListPtr frameList );
 		FrameListPtr getFrameListValue() const;
 
-	private :
+	protected :
+
+		// for io and copying
+		FrameListParameter();
+		friend class TypeDescription<FrameListParameter>;
 
 		bool m_allowEmptyList;
+
+	private :
+
+		static const unsigned int g_ioVersion;
 
 };
 

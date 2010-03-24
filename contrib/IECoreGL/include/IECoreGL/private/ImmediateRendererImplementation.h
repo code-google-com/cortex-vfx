@@ -40,12 +40,7 @@ class ImmediateRendererImplementation : public RendererImplementation
 		virtual void addState( StateComponentPtr state );
 		virtual StateComponentPtr getState( IECore::TypeId type );
 
-		virtual void addUserAttribute( const IECore::InternedString &name, IECore::DataPtr value );
-		virtual IECore::DataPtr getUserAttribute( const IECore::InternedString &name );
-
 		virtual void addPrimitive( PrimitivePtr primitive );
-
-		virtual void procedural( IECore::Renderer::ProceduralPtr proc, IECore::RendererPtr renderer );
 
 	private :
 

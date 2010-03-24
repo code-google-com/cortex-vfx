@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,6 +40,8 @@
 #include "IECore/FileNameParameter.h"
 #include "IECore/DataConvert.h"
 #include "IECore/ScaledDataConversion.h"
+#include "IECore/CompoundDataConversion.h"
+#include "IECore/LinearToCineonDataConversion.h"
 #include "IECore/DespatchTypedData.h"
 #include "IECore/BoxOps.h"
 
@@ -61,12 +63,12 @@ IE_CORE_DEFINERUNTIMETYPED( DPXImageWriter )
 const Writer::WriterDescription<DPXImageWriter> DPXImageWriter::m_writerDescription("dpx");
 
 DPXImageWriter::DPXImageWriter() :
-		ImageWriter( "Serializes images to Digital Picture eXchange 10-bit log image format")
+		ImageWriter("DPXImageWriter", "Serializes images to Digital Picture eXchange 10-bit log image format")
 {
 }
 
 DPXImageWriter::DPXImageWriter( ObjectPtr image, const string &fileName ) :
-		ImageWriter( "Serializes images to Digital Picture eXchange 10-bit log image format")
+		ImageWriter("DPXImageWriter", "Serializes images to Digital Picture eXchange 10-bit log image format")
 {
 	m_objectParameter->setValue( image );
 	m_fileNameParameter->setTypedValue( fileName );
@@ -78,7 +80,10 @@ DPXImageWriter::~DPXImageWriter()
 
 std::string DPXImageWriter::destinationColorSpace() const
 {
-	return "cineon";
+	/// This isn't strictly true, but as the writer currently stands it performs the Linear-Cineon
+	/// conversion for us. Eventually, this will start returning "cineon", and the ImageWriter base
+	/// class will handle the appropriate color conversions.
+	return "linear";
 }
 
 struct DPXImageWriter::ChannelConverter
@@ -86,24 +91,27 @@ struct DPXImageWriter::ChannelConverter
 	typedef void ReturnType;
 
 	std::string m_channelName;
-	const ImagePrimitive *m_image;
+	ConstImagePrimitivePtr m_image;
 	Box2i m_dataWindow;
 	unsigned int m_bitShift;
 	std::vector<unsigned int> &m_imageBuffer;
 
-	ChannelConverter( const std::string &channelName, const ImagePrimitive *image, const Box2i &dataWindow, unsigned int bitShift, std::vector<unsigned int> &imageBuffer  )
+	ChannelConverter( const std::string &channelName, ConstImagePrimitivePtr image, const Box2i &dataWindow, unsigned int bitShift, std::vector<unsigned int> &imageBuffer  )
 	: m_channelName( channelName ), m_image( image ), m_dataWindow( dataWindow ), m_bitShift( bitShift ), m_imageBuffer( imageBuffer )
 	{
 	}
 
 	template<typename T>
-	ReturnType operator()( T *dataContainer )
+	ReturnType operator()( typename T::Ptr dataContainer )
 	{
 		assert( dataContainer );
 
 		const typename T::ValueType &data = dataContainer->readable();
 
-		ScaledDataConversion<typename T::ValueType::value_type, float> converter;
+		CompoundDataConversion<
+			ScaledDataConversion<typename T::ValueType::value_type, float>,
+			LinearToCineonDataConversion<float, unsigned int>
+		> converter;
 
 		typedef boost::multi_array_ref< const typename T::ValueType::value_type, 2 > SourceArray2D;
 		typedef boost::multi_array_ref< unsigned int, 2 > TargetArray2D;
@@ -118,7 +126,7 @@ struct DPXImageWriter::ChannelConverter
 			for ( int x = copyRegion.min.x; x <= copyRegion.max.x ; x++ )
 			{
 				targetData[ y - m_image->getDisplayWindow().min.y + copyRegion.min.y ][ x - m_image->getDisplayWindow().min.x + copyRegion.min.x ]
-					|= ((unsigned int)(converter( sourceData[ y - m_image->getDataWindow().min.y ][ x - m_image->getDataWindow().min.x ] ) * 1023 )) << m_bitShift;
+					|= converter( sourceData[ y - m_image->getDataWindow().min.y ][ x - m_image->getDataWindow().min.x ] ) << m_bitShift;
 			}
 		}
 	};
@@ -126,7 +134,7 @@ struct DPXImageWriter::ChannelConverter
 	struct ErrorHandler
 	{
 		template<typename T, typename F>
-		void operator()( const T *data, const F& functor )
+		void operator()( typename T::ConstPtr data, const F& functor )
 		{
 			assert( data );
 
@@ -135,7 +143,7 @@ struct DPXImageWriter::ChannelConverter
 	};
 };
 
-void DPXImageWriter::writeImage( const vector<string> &names, const ImagePrimitive *image, const Box2i &dataWindow ) const
+void DPXImageWriter::writeImage( const vector<string> &names, ConstImagePrimitivePtr image, const Box2i &dataWindow ) const
 {
 	// write the dpx in the standard 10bit log format
 	ofstream out;

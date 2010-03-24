@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -129,18 +129,13 @@ class TestRunTimeTyped( unittest.TestCase ) :
 
 	def testRegisterRunTimeTyped( self ) :
 
-		# should raise because given type ID is different than the FileSequenceParameter type id
-		self.assertRaises( Exception, IECore.registerRunTimeTyped, IECore.FileSequenceParameter, 100009 )
-		# should raise because SequenceLsOp is registered with dynamic type id.
-		self.assertRaises( Exception, IECore.registerRunTimeTyped, IECore.SequenceLsOp, 100009 )
-		# should raise because FileSequenceParameter is registered with a non-dynamic type id
-		self.assertRaises( Exception, IECore.registerRunTimeTyped, IECore.FileSequenceParameter )
-
-		# should not raise because SequenceLsOp was already registered with a dynamic type id
-		IECore.registerRunTimeTyped( IECore.SequenceLsOp )
+		# should raise because 100009 is already been registered as OptionalCompoundParameter
+		self.assertRaises( RuntimeError, IECore.registerRunTimeTyped, IECore.FileSequenceParameter, 100009, IECore.PathParameter )
 
 		self.assertEqual( IECore.TypeId.OptionalCompoundParameter, IECore.OptionalCompoundParameter.staticTypeId() )
 		self.assertEqual( IECore.TypeId.OptionalCompoundParameter, IECore.OptionalCompoundParameter( "", "" ).typeId() )
+		self.assertEqual( "OptionalCompoundParameter", IECore.OptionalCompoundParameter( "", "" ).typeName() )
+		self.assertEqual( "OptionalCompoundParameter", IECore.OptionalCompoundParameter.staticTypeName() )
 
 		self.assert_( IECore.OptionalCompoundParameter.inheritsFrom( "CompoundParameter" ) )
 		self.assert_( IECore.OptionalCompoundParameter.inheritsFrom( IECore.TypeId.CompoundParameter ) )

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,6 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include "IECoreMaya/Parameter.h"
 #include "IECoreMaya/NumericTraits.h"
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaObjectConverter.h"
@@ -51,7 +52,7 @@ using namespace boost;
 
 static ParameterHandler::Description< ObjectParameterHandler > registrar( IECore::ObjectParameter::staticTypeId() );
 
-MStatus ObjectParameterHandler::doUpdate( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus ObjectParameterHandler::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -69,7 +70,7 @@ MStatus ObjectParameterHandler::doUpdate( IECore::ConstParameterPtr parameter, M
 
 	for (IECore::ObjectParameter::TypeIdSet::const_iterator it = p->validTypes().begin(); it != p->validTypes().end(); ++it)
 	{
-		ConstParameterHandlerPtr h = ParameterHandler::create( *it );
+		ConstParameterHandlerPtr h = ParameterHandler::get( *it );
 		if (h)
 		{
 			if ( !h->update( parameter, attribute) )
@@ -82,7 +83,7 @@ MStatus ObjectParameterHandler::doUpdate( IECore::ConstParameterPtr parameter, M
 	return MS::kSuccess;
 }
 
-MObject ObjectParameterHandler::doCreate( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MObject ObjectParameterHandler::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -98,7 +99,7 @@ MObject ObjectParameterHandler::doCreate( IECore::ConstParameterPtr parameter, c
 	return result;
 }
 
-MStatus ObjectParameterHandler::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus ObjectParameterHandler::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -110,7 +111,7 @@ MStatus ObjectParameterHandler::doSetValue( IECore::ConstParameterPtr parameter,
 	/// \todo Investigate whether we can do a parameter->getValue() here and just get the handler which represents it
 	for (IECore::ObjectParameter::TypeIdSet::const_iterator it = p->validTypes().begin(); it != p->validTypes().end(); ++it)
 	{
-		ConstParameterHandlerPtr h = ParameterHandler::create( *it );
+		ConstParameterHandlerPtr h = ParameterHandler::get( *it );
 		if (h)
 		{
 			if ( h->setValue( parameter, plug) )
@@ -137,7 +138,7 @@ MStatus ObjectParameterHandler::doSetValue( IECore::ConstParameterPtr parameter,
 	return plug.setValue( plugData );
 }
 
-MStatus ObjectParameterHandler::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus ObjectParameterHandler::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	IECore::ObjectParameterPtr p = IECore::runTimeCast<IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -148,7 +149,7 @@ MStatus ObjectParameterHandler::doSetValue( const MPlug &plug, IECore::Parameter
 	/// Keep trying all the available handlers until we find one that works
 	for (IECore::ObjectParameter::TypeIdSet::const_iterator it = p->validTypes().begin(); it != p->validTypes().end(); ++it)
 	{
-		ConstParameterHandlerPtr h = ParameterHandler::create( *it );
+		ConstParameterHandlerPtr h = ParameterHandler::get( *it );
 		if (h)
 		{
 			if ( h->setValue( plug, parameter ) )

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -59,11 +59,11 @@ class ParticleWriter : public Writer
 
 	protected :
 
-		ParticleWriter( const std::string &description );
+		ParticleWriter( const std::string &name, const std::string &description );
 
 		/// ParticleWriters only write objects of the PointsPrimitive type,
 		/// so this function returns object() already cast and ready.
-		const PointsPrimitive * particleObject();
+		ConstPointsPrimitivePtr particleObject();
 
 		/// Convenience functions to access the values held in parameters().
 		/// Fills names with the unions of the attributes requested to be

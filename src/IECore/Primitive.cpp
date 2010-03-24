@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -78,10 +78,10 @@ Imath::Box3f Primitive::bound() const
 	return result;
 }
 
-void Primitive::copyFrom( const Object *other, IECore::Object::CopyContext *context )
+void Primitive::copyFrom( IECore::ConstObjectPtr other, IECore::Object::CopyContext *context )
 {
 	VisibleRenderable::copyFrom( other, context );
-	const Primitive *tOther = static_cast<const Primitive *>( other );
+	const Primitive *tOther = static_cast<const Primitive *>( other.get() );
 	variables.clear();
 	for( PrimitiveVariableMap::const_iterator it=tOther->variables.begin(); it!=tOther->variables.end(); it++ )
 	{
@@ -136,13 +136,13 @@ void Primitive::load( IECore::Object::LoadContextPtr context )
 	container->chdir( ".." );
 }
 
-bool Primitive::isEqualTo( const Object *other ) const
+bool Primitive::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !VisibleRenderable::isEqualTo( other ) )
 	{
 		return false;
 	}
-	const Primitive *tOther = static_cast<const Primitive *>( other );
+	const Primitive *tOther = static_cast<const Primitive *>( other.get() );
 	if( tOther->variables!=variables )
 	{
 		return false;
@@ -253,8 +253,8 @@ PrimitiveVariable::Interpolation Primitive::inferInterpolation( size_t numElemen
 	return PrimitiveVariable::Invalid;
 }
 
-PrimitiveVariable::Interpolation Primitive::inferInterpolation( const Data *data ) const
+PrimitiveVariable::Interpolation Primitive::inferInterpolation( ConstDataPtr data ) const
 {
-	size_t s = IECore::despatchTypedData<IECore::TypedDataSize>( const_cast<Data *>( data ) );
+	size_t s = IECore::despatchTypedData<IECore::TypedDataSize>( boost::const_pointer_cast<Data>( data ) );
 	return inferInterpolation( s );
 }

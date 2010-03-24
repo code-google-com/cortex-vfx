@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,7 +48,7 @@ Renderable::~Renderable()
 {
 }
 
-void Renderable::copyFrom( const Object *other, CopyContext *context )
+void Renderable::copyFrom( ConstObjectPtr other, CopyContext *context )
 {
 	BlindDataHolder::copyFrom( other, context );
 }
@@ -63,7 +63,7 @@ void Renderable::load( LoadContextPtr context )
 	BlindDataHolder::load( context );
 }
 
-bool Renderable::isEqualTo( const Object *other ) const
+bool Renderable::isEqualTo( ConstObjectPtr other ) const
 {
 	if( !BlindDataHolder::isEqualTo( other ) )
 	{
@@ -78,7 +78,7 @@ void Renderable::memoryUsage( Object::MemoryAccumulator &a ) const
 }
 
 
-void Renderable::render( Renderer *renderer ) const
+void Renderable::render( RendererPtr renderer ) const
 {
 #ifndef NDEBUG
 	bool unimplemented = false;

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,8 +44,8 @@ using namespace Imath;
 
 IE_CORE_DEFINERUNTIMETYPED( ColorTransformOp );
 
-ColorTransformOp::ColorTransformOp( const std::string &description )
-	:	PrimitiveOp( description )
+ColorTransformOp::ColorTransformOp( const std::string &name, const std::string &description )
+	:	PrimitiveOp( name, description )
 {
 
 	m_colorPrimVarParameter = new StringParameter(
@@ -106,69 +106,69 @@ ColorTransformOp::~ColorTransformOp()
 {
 }
 
-StringParameter * ColorTransformOp::colorPrimVarParameter()
+StringParameterPtr ColorTransformOp::colorPrimVarParameter()
 {
 	return m_colorPrimVarParameter;
 }
 
-const StringParameter * ColorTransformOp::colorPrimVarParameter() const
+ConstStringParameterPtr ColorTransformOp::colorPrimVarParameter() const
 {
 	return m_colorPrimVarParameter;
 }
 
-StringParameter * ColorTransformOp::redPrimVarParameter()
+StringParameterPtr ColorTransformOp::redPrimVarParameter()
 {
 	return m_redPrimVarParameter;
 }
 
-const StringParameter * ColorTransformOp::redPrimVarParameter() const
+ConstStringParameterPtr ColorTransformOp::redPrimVarParameter() const
 {
 	return m_redPrimVarParameter;
 }
 
-StringParameter * ColorTransformOp::greenPrimVarParameter()
+StringParameterPtr ColorTransformOp::greenPrimVarParameter()
 {
 	return m_greenPrimVarParameter;
 }
 
-const StringParameter * ColorTransformOp::greenPrimVarParameter() const
+ConstStringParameterPtr ColorTransformOp::greenPrimVarParameter() const
 {
 	return m_greenPrimVarParameter;
 }
 
-StringParameter * ColorTransformOp::bluePrimVarParameter()
+StringParameterPtr ColorTransformOp::bluePrimVarParameter()
 {
 	return m_bluePrimVarParameter;
 }
 
-const StringParameter * ColorTransformOp::bluePrimVarParameter() const
+ConstStringParameterPtr ColorTransformOp::bluePrimVarParameter() const
 {
 	return m_bluePrimVarParameter;
 }
 
-StringParameter * ColorTransformOp::alphaPrimVarParameter()
+StringParameterPtr ColorTransformOp::alphaPrimVarParameter()
 {
 	return m_alphaPrimVarParameter;
 }
 
-const StringParameter * ColorTransformOp::alphaPrimVarParameter() const
+ConstStringParameterPtr ColorTransformOp::alphaPrimVarParameter() const
 {
 	return m_alphaPrimVarParameter;
 }
 
 
-BoolParameter * ColorTransformOp::premultipliedParameter()
+BoolParameterPtr ColorTransformOp::premultipliedParameter()
 {
 	return m_premultipliedParameter;
 }
 
-const BoolParameter * ColorTransformOp::premultipliedParameter() const
+ConstBoolParameterPtr ColorTransformOp::premultipliedParameter() const
 {
 	return m_premultipliedParameter;
 }
 
 template<typename T>
-const typename T::BaseType *ColorTransformOp::alphaData( Primitive * primitive, size_t requiredElements )
+const typename T::BaseType *ColorTransformOp::alphaData( PrimitivePtr primitive, size_t requiredElements )
 {
 	if( m_premultipliedParameter->getTypedValue()==false )
 	{
@@ -189,7 +189,7 @@ const typename T::BaseType *ColorTransformOp::alphaData( Primitive * primitive, 
 		throw Exception( "Alpha data type does not match color data type." );
 	}
 
-	T *d = static_cast<T *>( it->second.data.get() );
+	typename T::Ptr d = boost::static_pointer_cast<T>( it->second.data );
 	if( d->baseSize()!=requiredElements )
 	{
 		throw Exception( "Alpha data has incorrect number of elements." );
@@ -199,7 +199,7 @@ const typename T::BaseType *ColorTransformOp::alphaData( Primitive * primitive, 
 }
 
 template <typename T>
-void ColorTransformOp::transformSeparate( Primitive * primitive, const CompoundObject * operands, T * r, T * g, T * b )
+void ColorTransformOp::transformSeparate( PrimitivePtr primitive, ConstCompoundObjectPtr operands, typename T::Ptr r, typename T::Ptr g, typename T::Ptr b )
 {
 	size_t n = r->baseSize();
 	const typename T::BaseType *alpha = alphaData<T>( primitive, n );
@@ -239,7 +239,7 @@ void ColorTransformOp::transformSeparate( Primitive * primitive, const CompoundO
 }
 
 template<typename T>
-void ColorTransformOp::transformInterleaved( Primitive * primitive, const CompoundObject * operands, T * colors )
+void ColorTransformOp::transformInterleaved( PrimitivePtr primitive, ConstCompoundObjectPtr operands, typename T::Ptr colors )
 {
 	assert( colors->baseSize() %3 == 0 );
 	size_t numElements = colors->baseSize() / 3;
@@ -278,7 +278,7 @@ void ColorTransformOp::transformInterleaved( Primitive * primitive, const Compou
 	end();
 }
 
-void ColorTransformOp::modifyPrimitive( Primitive * primitive, const CompoundObject * operands )
+void ColorTransformOp::modifyPrimitive( PrimitivePtr primitive, ConstCompoundObjectPtr operands )
 {
 	PrimitiveVariableMap::iterator colorIt = primitive->variables.find( m_colorPrimVarParameter->getTypedValue() );
 	if( colorIt!=primitive->variables.end() && colorIt->second.data )
@@ -287,16 +287,16 @@ void ColorTransformOp::modifyPrimitive( Primitive * primitive, const CompoundObj
 		switch( colorIt->second.data->typeId() )
 		{
 			case Color3fDataTypeId :
-				transformInterleaved<Color3fData>( primitive, operands, staticPointerCast<Color3fData>( colorIt->second.data ) );
+				transformInterleaved<Color3fData>( primitive, operands, boost::static_pointer_cast<Color3fData>( colorIt->second.data ) );
 				break;
 			case Color3fVectorDataTypeId :
-				transformInterleaved<Color3fVectorData>( primitive, operands, staticPointerCast<Color3fVectorData>( colorIt->second.data ) );
+				transformInterleaved<Color3fVectorData>( primitive, operands, boost::static_pointer_cast<Color3fVectorData>( colorIt->second.data ) );
 				break;
 			case Color3dDataTypeId :
-				transformInterleaved<Color3dData>( primitive, operands, staticPointerCast<Color3dData>( colorIt->second.data ) );
+				transformInterleaved<Color3dData>( primitive, operands, boost::static_pointer_cast<Color3dData>( colorIt->second.data ) );
 				break;
 			case Color3dVectorDataTypeId :
-				transformInterleaved<Color3dVectorData>( primitive, operands, staticPointerCast<Color3dVectorData>( colorIt->second.data ) );
+				transformInterleaved<Color3dVectorData>( primitive, operands, boost::static_pointer_cast<Color3dVectorData>( colorIt->second.data ) );
 				break;
 			default :
 				throw Exception( "PrimitiveVariable has unsupported type." );
@@ -324,36 +324,36 @@ void ColorTransformOp::modifyPrimitive( Primitive * primitive, const CompoundObj
 				transformSeparate<HalfData>(
 					primitive,
 					operands,
-					staticPointerCast<HalfData>( rIt->second.data ),
-					staticPointerCast<HalfData>( gIt->second.data ),
-					staticPointerCast<HalfData>( bIt->second.data )
+					boost::static_pointer_cast<HalfData>( rIt->second.data ),
+					boost::static_pointer_cast<HalfData>( gIt->second.data ),
+					boost::static_pointer_cast<HalfData>( bIt->second.data )
 				);
 				break;
 			case HalfVectorDataTypeId :
 				transformSeparate<HalfVectorData>(
 					primitive,
 					operands,
-					staticPointerCast<HalfVectorData>( rIt->second.data ),
-					staticPointerCast<HalfVectorData>( gIt->second.data ),
-					staticPointerCast<HalfVectorData>( bIt->second.data )
+					boost::static_pointer_cast<HalfVectorData>( rIt->second.data ),
+					boost::static_pointer_cast<HalfVectorData>( gIt->second.data ),
+					boost::static_pointer_cast<HalfVectorData>( bIt->second.data )
 				);
 				break;
 			case FloatDataTypeId :
 				transformSeparate<FloatData>(
 					primitive,
 					operands,
-					staticPointerCast<FloatData>( rIt->second.data ),
-					staticPointerCast<FloatData>( gIt->second.data ),
-					staticPointerCast<FloatData>( bIt->second.data )
+					boost::static_pointer_cast<FloatData>( rIt->second.data ),
+					boost::static_pointer_cast<FloatData>( gIt->second.data ),
+					boost::static_pointer_cast<FloatData>( bIt->second.data )
 				);
 				break;
 			case FloatVectorDataTypeId :
 				transformSeparate<FloatVectorData>(
 					primitive,
 					operands,
-					staticPointerCast<FloatVectorData>( rIt->second.data ),
-					staticPointerCast<FloatVectorData>( gIt->second.data ),
-					staticPointerCast<FloatVectorData>( bIt->second.data )
+					boost::static_pointer_cast<FloatVectorData>( rIt->second.data ),
+					boost::static_pointer_cast<FloatVectorData>( gIt->second.data ),
+					boost::static_pointer_cast<FloatVectorData>( bIt->second.data )
 				);
 				break;
 			default :
@@ -364,7 +364,7 @@ void ColorTransformOp::modifyPrimitive( Primitive * primitive, const CompoundObj
 }
 
 
-void ColorTransformOp::begin( const CompoundObject * operands )
+void ColorTransformOp::begin( ConstCompoundObjectPtr operands )
 {
 }
 

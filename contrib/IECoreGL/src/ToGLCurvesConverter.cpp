@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,6 @@
 #include "IECore/CurvesPrimitive.h"
 #include "IECore/Exception.h"
 #include "IECore/SimpleTypedData.h"
-#include "IECore/MessageHandler.h"
 
 #include "IECoreGL/ToGLCurvesConverter.h"
 #include "IECoreGL/CurvesPrimitive.h"
@@ -43,9 +42,9 @@
 using namespace IECoreGL;
 
 ToGLCurvesConverter::ToGLCurvesConverter( IECore::ConstCurvesPrimitivePtr toConvert )
-	:	ToGLConverter( "Converts IECore::CurvesPrimitive objects to IECoreGL::CurvesPrimitiveObjects.", IECore::CurvesPrimitiveTypeId )
+	:	ToGLConverter( staticTypeName(), "Converts IECore::CurvesPrimitive objects to IECoreGL::CurvesPrimitiveObjects.", IECore::CurvesPrimitiveTypeId )
 {
-	srcParameter()->setValue( IECore::constPointerCast<IECore::CurvesPrimitive>( toConvert ) );
+	srcParameter()->setValue( boost::const_pointer_cast<IECore::CurvesPrimitive>( toConvert ) );
 }
 
 ToGLCurvesConverter::~ToGLCurvesConverter()
@@ -54,7 +53,7 @@ ToGLCurvesConverter::~ToGLCurvesConverter()
 
 IECore::RunTimeTypedPtr ToGLCurvesConverter::doConversion( IECore::ConstObjectPtr src, IECore::ConstCompoundObjectPtr operands ) const
 {
-	IECore::CurvesPrimitive::ConstPtr curves = IECore::staticPointerCast<const IECore::CurvesPrimitive>( src ); // safe because the parameter validated it for us
+	IECore::CurvesPrimitive::ConstPtr curves = boost::static_pointer_cast<const IECore::CurvesPrimitive>( src ); // safe because the parameter validated it for us
 
 	IECore::V3fVectorData::ConstPtr points = curves->variableData<IECore::V3fVectorData>( "P", IECore::PrimitiveVariable::Vertex );
 	if( !points )
@@ -77,21 +76,5 @@ IECore::RunTimeTypedPtr ToGLCurvesConverter::doConversion( IECore::ConstObjectPt
 	IECore::Color3fVectorData::ConstPtr colorData = curves->variableData<IECore::Color3fVectorData>( "Cs", IECore::PrimitiveVariable::Uniform );
 
 	CurvesPrimitive::Ptr result = new CurvesPrimitive( curves->basis(), curves->periodic(), curves->verticesPerCurve(), points, width, colorData );
-
-	for ( IECore::PrimitiveVariableMap::const_iterator pIt = curves->variables.begin(); pIt != curves->variables.end(); ++pIt )
-	{
-		if ( pIt->second.data )
-		{
-			if ( pIt->second.interpolation==IECore::PrimitiveVariable::Constant )
-			{
-				result->addUniformAttribute( pIt->first, pIt->second.data );
-			}
-		}
-		else
-		{
-			IECore::msg( IECore::Msg::Warning, "ToGLCurvesConverter", boost::format( "No data given for primvar \"%s\"" ) % pIt->first );
-		}
-	}
-
 	return result;
 }

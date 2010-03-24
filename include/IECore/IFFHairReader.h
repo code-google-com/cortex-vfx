@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -120,16 +120,16 @@ class IFFHairReader : public Reader
 		std::map<int, IFFFile::Chunk::ChunkIterator> frameToRootChildren;
 		
 		/// Returns a CurvesPrimitive object containing all the hairs at the given frame
-		virtual ObjectPtr doOperation( const CompoundObject * operands );
+		virtual ObjectPtr doOperation( ConstCompoundObjectPtr operands );
 		
 		// loads the current channel into the data vector
-		void loadData( IFFFile::Chunk::ChunkIterator channel, V3dVectorData * channelData, int numCVs, bool fromFile=true );
+		void loadData( IFFFile::Chunk::ChunkIterator channel, V3dVectorDataPtr channelData, int numCVs, bool fromFile=true );
 		
 		// convenience function to get the realType
 		RealType realType() const;
 		
 		template<typename T, typename F>
-		IntrusivePtr<T> convertAttr( IntrusivePtr<F> attr );
+		boost::intrusive_ptr<T> convertAttr( boost::intrusive_ptr<F> attr );
 };
 
 IE_CORE_DECLAREPTR( IFFHairReader );
