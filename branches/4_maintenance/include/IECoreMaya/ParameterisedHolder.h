@@ -121,6 +121,8 @@ class ParameterisedHolder : public BaseType, public ParameterisedHolderInterface
 		/// plug value has changed since the last time the value was set.
 		MStatus setParameterisedValues( bool lazy );
 
+		void nonNetworkedConnections( const MPlug &plug, MPlugArray &connectionsFromPlug, MPlugArray &connectionsToPlug ) const;
+
 	private:
 
 		IECore::RunTimeTypedPtr loadClass( const MString &className, int classVersion, const MString &searchPathEnvVar );

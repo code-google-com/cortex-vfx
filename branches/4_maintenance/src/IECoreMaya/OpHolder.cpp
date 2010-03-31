@@ -193,8 +193,7 @@ IECore::RunTimeTypedPtr OpHolder<B>::getParameterised( std::string *classNameOut
 					// code
 
 					MPlug plug( B::thisMObject(), attribute );
-					plug.connectedTo( connectionsFromMe, false, true );
-					plug.connectedTo( connectionsToMe, true, false );
+					ParameterisedHolder<B>::nonNetworkedConnections( plug, connectionsFromMe, connectionsToMe );
 
 					/// Make sure we keep the parameter's value as held in the attribute before we remove it!
 					ParameterisedHolder<B>::setParameterisedValues();
