@@ -1,4 +1,4 @@
-*_How to create an irradiance environment map_*
+#summary How to create an irradiance environment map
 
 = Introduction =
 
