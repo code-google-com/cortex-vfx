@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,11 +43,24 @@ using namespace IECoreGL;
 IE_CORE_DEFINERUNTIMETYPED( NameStateComponent );
 
 NameStateComponent::NameMap NameStateComponent::g_nameMap;
+tbb::spin_rw_mutex NameStateComponent::g_nameMapMutex;
 StateComponent::Description<NameStateComponent> NameStateComponent::g_description;
 
 NameStateComponent::NameStateComponent( const std::string &name )
 {
-	m_it = g_nameMap.insert( NamePair( name, g_nameMap.size() ) ).first;
+	Mutex::scoped_lock lock( g_nameMapMutex, false ); // read-only lock
+	const NameMap::nth_index<0>::type &index = g_nameMap.get<0>();
+	NameMap::nth_index<0>::type::const_iterator it = index.find( name );
+	if( it!=g_nameMap.end() )
+	{
+		m_it = it;
+	}
+	else
+	{
+		lock.upgrade_to_writer();
+		m_it = g_nameMap.insert( NamePair( name, g_nameMap.size() ) ).first;
+	}
+
 }
 
 NameStateComponent::~NameStateComponent()
@@ -71,6 +84,7 @@ void NameStateComponent::bind() const
 
 const std::string &NameStateComponent::nameFromGLName( GLuint glName )
 {
+	Mutex::scoped_lock lock( g_nameMapMutex, false ); // read-only lock
 	const NameMap::nth_index<1>::type &index = g_nameMap.get<1>();
 	NameMap::nth_index<1>::type::const_iterator it = index.find( glName );
 	if( it==index.end() )

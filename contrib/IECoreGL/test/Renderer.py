@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -37,6 +37,8 @@ from __future__ import with_statement
 import unittest
 import os
 import os.path
+import threading
+import math
 
 from IECore import *
 
@@ -416,10 +418,15 @@ class TestRenderer( unittest.TestCase ) :
 		r.setOption( "gl:searchPath:shaderInclude", StringData( os.path.dirname( __file__ ) + "/shaders/include" ) )
 
 		r.worldBegin()
-		r.shader( "surface", "failWithoutPreprocessing", {} )
+		r.shader( "surface", "color", { "colorValue" : Color3fData( Color3f( 1, 0, 0 ) ) } )
 		r.concatTransform( M44f.createTranslated( V3f( 0, 0, -5 ) ) )
+		r.geometry( "sphere", {}, {} )
 		r.worldEnd()
 
+		s = r.scene()
+
+		s.render( State( True ) )
+		
 	def testRemoveObject( self ) :
 	
 		r = Renderer()
@@ -441,6 +448,305 @@ class TestRenderer( unittest.TestCase ) :
 		self.assertEqual( commandResult, BoolData( True ) )
 		self.assertEqual( len( s.root().children() ), 1 )
 
+	def testParallelRenders( self ):
+
+		allScenes = []
+		
+		def threadedRendering():
+			r = Renderer()
+			r.setOption( "gl:mode", StringData( "deferred" ) )
+			r.setOption( "gl:searchPath:shader", StringData( os.path.dirname( __file__ ) + "/shaders" ) )
+			r.setOption( "gl:searchPath:shaderInclude", StringData( os.path.dirname( __file__ ) + "/shaders/include" ) )
+
+			r.worldBegin()
+			r.shader( "surface", "failWithoutPreprocessing", {} )
+			r.concatTransform( M44f.createTranslated( V3f( 0, 0, -5 ) ) )
+			r.worldEnd()
+			allScenes.append( r.scene() )
+
+		for i in xrange( 0, 100 ):
+			newThread = threading.Thread(target=threadedRendering)
+			newThread.start()
+
+		while len(allScenes) < 100 :
+			pass
+
+		for s in allScenes :
+			s.render( State( True ) )
+
+	class RecursiveProcedural( Renderer.Procedural ):
+		"""Creates a pyramid of spheres"""
+
+		maxLevel = 5
+		threadsUsed = set()
+
+		def __init__( self, level = 0 ):
+			Renderer.Procedural.__init__( self )
+			self.__level = level
+			if level == 0 :
+				self.threadsUsed.clear()
+
+		def bound( self ) :
+			return Box3f( V3f( -1 ), V3f( 1 ) )
+
+		def render( self, renderer ):
+			# registers this thread id
+			self.threadsUsed.add( threading.current_thread().ident )
+			renderer.attributeBegin()
+			renderer.setAttribute( "color", Color3fData( Color3f( float(self.__level)/self.maxLevel, 0, 1 - float(self.__level)/self.maxLevel ) ) )
+			renderer.transformBegin()
+			renderer.concatTransform( M44f.createTranslated(V3f( 0, 0.5, 0 )) )
+			renderer.concatTransform( M44f.createScaled( V3f(0.5) ) )
+			renderer.geometry( "sphere", {}, {} )
+			renderer.transformEnd()
+			# end of recursion
+			if self.__level < self.maxLevel :
+				renderer.transformBegin()
+				renderer.concatTransform( M44f.createTranslated(V3f( 0, -0.5, 0 )) )
+				for i in xrange( 0, 2 ) :
+					renderer.transformBegin()
+					renderer.concatTransform( M44f.createTranslated(V3f( (i - 0.5) , 0, 0)) )
+					renderer.concatTransform( M44f.createScaled( V3f(0.5) ) )
+					proc = TestRenderer.RecursiveProcedural( self.__level + 1 )
+					renderer.procedural( proc )
+					renderer.transformEnd()
+				renderer.transformEnd()
+			renderer.attributeEnd()
+
+	class RecursiveParameterisedProcedural( ParameterisedProcedural ):
+
+		maxLevel = 5
+		threadsUsed = set()
+
+		def __init__( self, level = 0 ):
+			ParameterisedProcedural.__init__( self )
+			self.__level = level
+			if level == 0 :
+				self.threadsUsed.clear()
+
+		def doRenderState( self, renderer, args ):
+			pass
+
+		def doBound( self, args ) :
+			return Box3f( V3f( -1 ), V3f( 1 ) )
+
+		def doRender( self, renderer, args ):
+			# registers this thread id
+			self.threadsUsed.add( threading.current_thread().ident )
+			# end of recursion
+			if self.__level < self.maxLevel :
+				for i in xrange( 0, 2 ) :
+					proc = TestRenderer.RecursiveParameterisedProcedural( self.__level + 1 )
+					proc.render( renderer )
+
+	def __testMultithreadedProcedural( self, procType ):
+
+		r = Renderer()
+		r.setOption( "gl:mode", StringData( "deferred" ) )
+		r.setOption( "gl:searchPath:shader", StringData( os.path.dirname( __file__ ) + "/shaders" ) )
+		r.setOption( "gl:searchPath:shaderInclude", StringData( os.path.dirname( __file__ ) + "/shaders/include" ) )
+		r.worldBegin()
+		p = procType()
+		if isinstance( p, Renderer.Procedural ):
+			r.procedural( p )
+		else:
+			p.render( r )
+		r.worldEnd()
+
+		self.assert_( len(procType.threadsUsed) > 1 )
+
+	def __testParallelMultithreadedProcedurals( self, procType ):
+
+		renders = []
+
+		def newRender():
+			r = Renderer()
+			r.setOption( "gl:mode", StringData( "deferred" ) )
+			r.setOption( "gl:searchPath:shader", StringData( os.path.dirname( __file__ ) + "/shaders" ) )
+			r.setOption( "gl:searchPath:shaderInclude", StringData( os.path.dirname( __file__ ) + "/shaders/include" ) )
+			r.worldBegin()
+			p = procType()
+			if isinstance( p, Renderer.Procedural ):
+				r.procedural( p )
+			else:
+				p.render( r )
+			r.worldEnd()
+			renders.append( 0 )
+
+		threads = []
+		for i in xrange( 0,10 ):
+			newThread = threading.Thread(target=newRender)
+			newThread.start()
+			threads.append( newThread )
+		
+		for t in threads :
+			t.join()
+
+	def testMultithreadedProcedural( self ):
+		self.__testMultithreadedProcedural( self.RecursiveProcedural )
+
+	def testMultithreadedParameterisedProcedural( self ):
+		self.__testMultithreadedProcedural( self.RecursiveParameterisedProcedural )
+
+	def testParallelMultithreadedProcedurals( self ):
+		self.__testParallelMultithreadedProcedurals( self.RecursiveProcedural )
+
+	def testParallelMultithreadedProcedurals( self ):
+		self.__testParallelMultithreadedProcedurals( self.RecursiveParameterisedProcedural )
+
+	def __countChildrenRecursive( self, g ) :
+		if not isinstance( g, Group ):
+			return 1
+		count = 0
+		for c in g.children():
+			count += self.__countChildrenRecursive( c )
+		return count
+
+	def testObjectSpaceCulling( self ):
+
+		p = self.RecursiveProcedural()
+
+		def renderWithCulling( box ):
+			r = Renderer()
+			r.setOption( "gl:mode", StringData( "deferred" ) )
+			r.worldBegin()
+			r.sphere( 1.5, 0, 1, 360, {} )
+			r.procedural( p )
+			r.attributeBegin()
+			if True:
+				r.setAttribute( "gl:cullingSpace", StringData( "object" ) )
+				r.setAttribute( "gl:cullingBox", Box3fData( box ) )
+				# everything in this block is culled
+				r.sphere( 1.5, 0, 1, 360, {} )
+				r.procedural( p )
+			r.attributeEnd()
+			r.worldEnd()
+			return self.__countChildrenRecursive( r.scene().root() )
+
+		noCullingCounter = renderWithCulling( Box3f() )
+
+		# verify that only half of the things are renderer when the giving culling box is defined.
+		self.assertEqual( renderWithCulling( Box3f( V3f(2,-1,-1), V3f(3,1,1)  ) ) * 2, noCullingCounter )
+
+	def testWorldSpaceCulling( self ):
+
+		p = self.RecursiveProcedural()
+		box = Box3f( V3f(0.001,-1,-1), V3f(1,1,1) )
+
+		r = Renderer()
+		r.setOption( "gl:mode", StringData( "deferred" ) )
+		r.worldBegin()
+		r.setAttribute( "gl:cullingSpace", StringData( "world" ) )
+		r.setAttribute( "gl:cullingBox", Box3fData( box ) )
+		r.sphere( 1, 0, 1, 360, {} )	# half-inside : 1 element
+		r.procedural( p )	# half-inside: 32 elements (full procedural renders 63 elements)
+		r.transformBegin()
+		if True:
+			r.concatTransform( M44f.createTranslated( V3f(-2, 0, 0) ) )
+			# everything in this block is culled
+			r.sphere( 1, 0, 1, 360, {} )
+			r.procedural( p )
+		r.transformEnd()
+		r.worldEnd()
+		self.assertEqual( self.__countChildrenRecursive( r.scene().root() ), 33 )
+
+	def testTransformsInImmediateRenderer( self ):
+		r = Renderer()
+		r.setOption( "gl:mode", StringData( "immediate" ) )
+		r.transformBegin()
+		r.concatTransform( M44f.createRotated( V3f( 1, 1, 1 ) ) )
+		r.camera( "main", { "resolution" : V2iData( V2i( 512 ) ), "projection" : StringData( "perspective" ) } )
+		r.transformEnd()
+		r.worldBegin()
+		# confirm that the camera transformation is not affecting the world space matrix
+		r.concatTransform( M44f.createTranslated( V3f( 1, 0, 0 ) ) )
+		self.assert_( r.getTransform().equalWithAbsError( M44f.createTranslated( V3f( 1, 0, 0 ) ), 1e-4 ) )
+		# confirm that setting the world space transform does not affect the camera matrix (that was already set in openGL )
+		r.setTransform( M44f.createTranslated( V3f( 0, 1, 0 ) ) )
+		self.assert_( r.getTransform().equalWithAbsError( M44f.createTranslated( V3f( 0, 1, 0 ) ), 1e-4 ) )
+		r.worldEnd()
+
+	def testTransformsInDeferredRenderer( self ):
+		r = Renderer()
+		r.setOption( "gl:mode", StringData( "deferred" ) )
+		r.transformBegin()
+		r.concatTransform( M44f.createRotated( V3f( 1, 1, 1 ) ) )
+		r.camera( "main", { "resolution" : V2iData( V2i( 512 ) ), "projection" : StringData( "perspective" ) } )
+		r.transformEnd()
+		r.worldBegin()
+		# confirm that the camera transformation is not affecting the world space matrix
+		self.assert_( r.getTransform().equalWithAbsError( M44f(), 1e-4 ) )
+		r.concatTransform( M44f.createTranslated( V3f( 1, 0, 0 ) ) )
+		r.concatTransform( M44f.createRotated( V3f( 1, 1, 1 ) ) )
+		m = r.getTransform()
+		r.transformBegin()
+		if True:
+			# confirm that the transformBegin did not change the current transform
+			self.assert_( r.getTransform().equalWithAbsError( m, 1e-4 ) )
+			# confirm that concatenate transform works
+			r.concatTransform( M44f.createTranslated( V3f( 1, 0, 0 ) ) )
+			self.assert_( r.getTransform().equalWithAbsError( M44f.createTranslated( V3f( 1, 0, 0 ) ) * m, 1e-4 ) )
+			r.concatTransform( M44f.createScaled( V3f(0.5) ) )
+			self.assert_( r.getTransform().equalWithAbsError( M44f.createScaled( V3f(0.5) ) * M44f.createTranslated( V3f( 1, 0, 0 ) ) * m, 1e-4 ) )
+
+			# confirm that setting the world space transform works too
+			m2 = M44f.createTranslated( V3f( 0, 1, 0 ) )
+			r.setTransform( m2 )
+			self.assert_( r.getTransform().equalWithAbsError( m2, 1e-4 ) )
+
+			r.attributeBegin()
+			if True:
+				# confirm that the attributeBegin did not change the current transform
+				self.assert_( r.getTransform().equalWithAbsError( m2, 1e-4 ) )
+				# confirm that setting the world space transform works too
+				r.setTransform( M44f.createRotated( V3f( 3, 1, 0 ) ) )
+				self.assert_( r.getTransform().equalWithAbsError( M44f.createRotated( V3f( 3, 1, 0 ) ), 1e-4 ) )
+			r.attributeEnd()
+			# confirms that attributeEnd recovers the matrix.
+			self.assert_( r.getTransform().equalWithAbsError( m2, 1e-4 ) )
+
+		r.transformEnd()
+		# confirms that transformEnd recovers the matrix.
+		self.assert_( r.getTransform().equalWithAbsError( m, 1e-4 ) )
+		
+		r.worldEnd()
+
+	def testInstances(self):
+		
+		r = Renderer()
+		r.instanceBegin( "instanceA", {} )
+		r.concatTransform( M44f.createTranslated( V3f( 1, 0, 0 ) ) )
+		r.transformBegin()
+		r.concatTransform( M44f.createTranslated( V3f( 1, 0, 0 ) ) )
+		r.geometry( "sphere", {}, {} )
+		r.concatTransform( M44f.createTranslated( V3f( 1, 0, 0 ) ) )
+		r.geometry( "sphere", {}, {} )
+		r.transformEnd()
+		r.concatTransform( M44f.createTranslated( V3f( -1, 0, 0 ) ) )
+		r.geometry( "sphere", {}, {} )
+		r.instanceEnd()
+
+		r.instanceBegin( "instanceB", {} )
+		r.concatTransform( M44f.createTranslated( V3f( 0, 0, 10 ) ) )
+		r.instance( "instanceA" )
+		r.concatTransform( M44f.createTranslated( V3f( 0, 0, 20 ) ) )
+		r.instance( "instanceA" )
+		r.instanceEnd()
+
+		r.setOption( "gl:mode", StringData( "deferred" ) )
+		r.worldBegin()
+		r.concatTransform( M44f.createTranslated( V3f( 0, 5, 0 ) ) )
+		r.instance( "instanceB" )
+		r.setTransform( M44f.createTranslated( V3f( 0, 10, 0 ) ) )
+		r.instance( "instanceB" )
+		r.worldEnd()
+
+		g = r.scene().root()
+
+		self.assertEqual( self.__countChildrenRecursive( g ), 12 )
+		self.assert_( g.bound().min.equalWithAbsError( V3f( -1, 4, 9 ), 0.001 ) )
+		self.assert_( g.bound().max.equalWithAbsError( V3f( 4, 11, 31 ), 0.001 ) )
+	
 	def tearDown( self ) :
 
 		files = [

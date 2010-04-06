@@ -32,7 +32,6 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "IECoreMaya/Parameter.h"
 #include "IECoreMaya/NumericTraits.h"
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaObjectConverter.h"
@@ -63,7 +62,7 @@ static ParameterHandler::Description< CompoundNumericParameterHandler<V3d> > v3d
 static ParameterHandler::Description< CompoundNumericParameterHandler<Color3f> > color3fRegistrar( IECore::Color3fParameter::staticTypeId() );
 
 template<typename T>
-MStatus CompoundNumericParameterHandler<T>::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus CompoundNumericParameterHandler<T>::doUpdate( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	typename IECore::TypedParameter<T>::ConstPtr p = IECore::runTimeCast<const IECore::TypedParameter<T> >( parameter );
 	if( !p )
@@ -71,6 +70,7 @@ MStatus CompoundNumericParameterHandler<T>::update( IECore::ConstParameterPtr pa
 		return MS::kFailure;
 	}
 
+	MObject attribute = plug.attribute();
 	MFnNumericAttribute fnNAttr( attribute );
 	if( !fnNAttr.hasObj( attribute ) )
 	{
@@ -169,50 +169,52 @@ MStatus CompoundNumericParameterHandler<T>::update( IECore::ConstParameterPtr pa
 }
 
 template<typename T>
-MObject CompoundNumericParameterHandler<T>::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MPlug CompoundNumericParameterHandler<T>::doCreate( IECore::ConstParameterPtr parameter, const MString &plugName, MObject &node ) const
 {
 	typename IECore::TypedParameter<T>::ConstPtr p = IECore::runTimeCast<const IECore::TypedParameter<T> >( parameter );
 	if( !p )
 	{
-		return MObject::kNullObj;
+		return MPlug();
 	}
 
 	MFnNumericAttribute fnNAttr;
-	MObject result;
+	MObject attribute;
 	switch( T::dimensions() )
 	{
 		case 2 :
 			{
 				assert( !NumericTraits<T>::isColor() );
-				MObject e0 = fnNAttr.create( attributeName + "X", attributeName + "X", NumericTraits<T>::baseDataType() );
-				MObject e1 = fnNAttr.create( attributeName + "Y", attributeName + "Y", NumericTraits<T>::baseDataType() );
-				result = fnNAttr.create( attributeName, attributeName, e0, e1 );
+				MObject e0 = fnNAttr.create( plugName + "X", plugName + "X", NumericTraits<T>::baseDataType() );
+				MObject e1 = fnNAttr.create( plugName + "Y", plugName + "Y", NumericTraits<T>::baseDataType() );
+				attribute = fnNAttr.create( plugName, plugName, e0, e1 );
 			}
 			break;
 		case 3 :
 			if( NumericTraits<T>::isColor() )
 			{
-				result = fnNAttr.createColor( attributeName, attributeName );
+				attribute = fnNAttr.createColor( plugName, plugName );
 			}
 			else
 			{
-				MObject e0 = fnNAttr.create( attributeName + "X", attributeName + "X", NumericTraits<T>::baseDataType() );
-				MObject e1 = fnNAttr.create( attributeName + "Y", attributeName + "Y", NumericTraits<T>::baseDataType() );
-				MObject e2 = fnNAttr.create( attributeName + "Z", attributeName + "Z", NumericTraits<T>::baseDataType() );
-				result = fnNAttr.create( attributeName, attributeName, e0, e1, e2 );
+				MObject e0 = fnNAttr.create( plugName + "X", plugName + "X", NumericTraits<T>::baseDataType() );
+				MObject e1 = fnNAttr.create( plugName + "Y", plugName + "Y", NumericTraits<T>::baseDataType() );
+				MObject e2 = fnNAttr.create( plugName + "Z", plugName + "Z", NumericTraits<T>::baseDataType() );
+				attribute = fnNAttr.create( plugName, plugName, e0, e1, e2 );
 			}
 			break;
 		default :
 			assert( false );
-			result = MObject::kNullObj;
+			return MPlug();
 	}
 
-	update( parameter, result );
+	MPlug result = finishCreating( parameter, attribute, node );
+	doUpdate( parameter, result );
+	
 	return result;
 }
 
 template<typename T>
-MStatus CompoundNumericParameterHandler<T>::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus CompoundNumericParameterHandler<T>::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	typename IECore::TypedParameter<T>::ConstPtr p = IECore::runTimeCast<const IECore::TypedParameter<T> >( parameter );
 	if( !p )
@@ -239,7 +241,7 @@ MStatus CompoundNumericParameterHandler<T>::setValue( IECore::ConstParameterPtr 
 }
 
 template<typename T>
-MStatus CompoundNumericParameterHandler<T>::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus CompoundNumericParameterHandler<T>::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	typename IECore::TypedParameter<T>::Ptr p = IECore::runTimeCast<IECore::TypedParameter<T> >( parameter );
 	if( !p )

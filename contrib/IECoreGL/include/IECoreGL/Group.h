@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,9 @@
 
 #include "OpenEXR/ImathMatrix.h"
 
+#include "tbb/recursive_mutex.h"
 #include <list>
+
 
 namespace IECoreGL
 {
@@ -51,6 +53,7 @@ class Group : public Renderable
 
 	public :
 
+		typedef tbb::recursive_mutex Mutex;
 		typedef std::list<RenderablePtr> ChildContainer;
 
 		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::Group, GroupTypeId, Renderable );
@@ -70,19 +73,25 @@ class Group : public Renderable
 		ConstStatePtr getState() const;
 		void setState( StatePtr state );
 
+		// render method ( assumes there's no threads modifying the group ).
 		virtual void render( ConstStatePtr state ) const;
 		virtual Imath::Box3f bound() const;
 
 		void addChild( RenderablePtr child );
-		void removeChild( RenderablePtr child );
+		void removeChild( Renderable *child );
 		void clearChildren();
 		const ChildContainer &children() const;
+
+		// Returns a mutex for this group object.
+		// It should be used if the group is manipulated from different threads. 
+		Mutex &mutex() const;
 
 	private :
 
 		StatePtr m_state;
 		Imath::M44f m_transform;
 		ChildContainer m_children;
+		mutable Mutex m_mutex;
 
 };
 

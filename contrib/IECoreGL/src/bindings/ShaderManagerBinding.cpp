@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,18 +32,38 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECOREGL_SPECULAR_H
-#define IECOREGL_SPECULAR_H
+#include <boost/python.hpp>
 
-vec3 specular( vec3 P, vec3 N, vec3 V, float roughness, vec3 Cl[gl_MaxLights], vec3 L[gl_MaxLights], int nLights )
+#include "IECoreGL/ShaderManager.h"
+#include "IECoreGL/Shader.h"
+#include "IECoreGL/bindings/ShaderManagerBinding.h"
+#include "IECorePython/RefCountedBinding.h"
+
+using namespace boost::python;
+
+namespace IECoreGL
 {
-	vec3 result;
-	for( int i=0 ; i<nLights; i++ )
-	{
-		vec3 H = normalize( normalize( L[i] ) + V );
-		result += Cl[i] * pow( max( 0.0, dot( N, H ) ), 1.0/roughness );
-	}
-	return result;
+
+static tuple loadShaderCode( const ShaderManager &s, const std::string &name )
+{
+	boost::python::list p;
+	std::string vertShader, fragShader;
+	s.loadShaderCode( name, vertShader, fragShader );
+	p.append( vertShader );
+	p.append( fragShader );
+	return tuple( p );
 }
 
-#endif // IECOREGL_SPECULAR_H
+void bindShaderManager()
+{
+	IECorePython::RefCountedClass<ShaderManager, IECore::RefCounted>( "ShaderManager" )
+		.def( init<const IECore::SearchPath &>() )
+		.def( init<const IECore::SearchPath &, const IECore::SearchPath *>() )
+		.def( "loadShaderCode", &loadShaderCode )
+		.def( "create", &ShaderManager::create )
+		.def( "load", &ShaderManager::load )
+		.def( "defaultShaderManager", &ShaderManager::defaultShaderManager ).staticmethod( "defaultShaderManager" )
+	;
+}
+
+}

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,27 +32,42 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <boost/python.hpp>
+#ifndef IECOREGL_SPLINETOGLTEXTURECONVERTER_H
+#define IECOREGL_SPLINETOGLTEXTURECONVERTER_H
 
-#include "IECoreGL/ShaderLoader.h"
-#include "IECoreGL/Shader.h"
-#include "IECoreGL/bindings/ShaderLoaderBinding.h"
-#include "IECorePython/RefCountedBinding.h"
+#include "IECoreGL/ToGLConverter.h"
+#include "IECore/SimpleTypedParameter.h"
 
-using namespace boost::python;
+namespace IECore
+{
+	IE_CORE_FORWARDDECLARE( ImagePrimitive );
+}
 
 namespace IECoreGL
 {
 
-void bindShaderLoader()
+/// Converts IECore::SplineData objects into IECoreGL::Texture objects.
+/// The default conversion gives an image of 8x512 and it can return a ColorTexture or a LuminanceTexture.
+class SplineToGLTextureConverter : public ToGLConverter
 {
-	IECorePython::RefCountedClass<ShaderLoader, IECore::RefCounted>( "ShaderLoader" )
-		.def( init<const IECore::SearchPath &>() )
-		.def( init<const IECore::SearchPath &, const IECore::SearchPath *>() )
-		.def( "load", &ShaderLoader::load )
-		.def( "clear", &ShaderLoader::clear )
-		.def( "defaultShaderLoader", &ShaderLoader::defaultShaderLoader ).staticmethod( "defaultShaderLoader" )
-	;
-}
 
-}
+	public :
+
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::SplineToGLTextureConverter, SplineToGLTextureConverterTypeId, ToGLConverter );
+
+		SplineToGLTextureConverter( IECore::ConstObjectPtr toConvert = 0 );
+		virtual ~SplineToGLTextureConverter();
+
+	protected :
+
+		IECore::V2iParameterPtr m_resolutionParameter;
+		virtual IECore::RunTimeTypedPtr doConversion( IECore::ConstObjectPtr src, IECore::ConstCompoundObjectPtr operands ) const;
+	
+	
+};
+
+IE_CORE_DECLAREPTR( SplineToGLTextureConverter );
+
+} // namespace IECoreGL
+
+#endif // IECOREGL_SPLINETOGLTEXTURECONVERTER_H

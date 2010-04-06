@@ -32,71 +32,49 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <cassert>
+#ifndef IECOREGL_LIGHT_H
+#define IECOREGL_LIGHT_H
 
-#include "maya/MPlug.h"
-
-#include "IECore/Object.h"
-#include "IECore/Parameter.h"
-#include "IECoreMaya/Parameter.h"
-#include "IECoreMaya/ParameterHandler.h"
-
-using namespace IECoreMaya;
-
-MObject Parameter::create( IECore::ConstParameterPtr parameter, const MString &attributeName )
+vec3 ieLight( vec3 p, int lightIndex, out vec3 L )
 {
-	assert( parameter );
-	assert( attributeName.length() );
+	vec3 Cl = gl_LightSource[lightIndex].diffuse.rgb;
 
-	ConstParameterHandlerPtr h = ParameterHandler::create( parameter );
-	if( !h )
+	if( gl_LightSource[lightIndex].position.w==0.0 )
 	{
-		return MObject::kNullObj;
-	}
-	return h->create( parameter, attributeName );
-}
-
-MStatus Parameter::update( IECore::ConstParameterPtr parameter, MObject &attribute )
-{
-	assert( parameter );
-
-	ConstParameterHandlerPtr h = ParameterHandler::create( parameter );
-	if( !h )
-	{
-		return MS::kFailure;
-	}
-	return h->update( parameter, attribute );
-}
-
-MStatus Parameter::setValue( IECore::ConstParameterPtr parameter, MPlug &plug )
-{
-	assert( parameter );
-	assert( ! plug.isNull() );
-
-	if ( plug.isFreeToChange( false, true ) == MPlug::kFreeToChange )
-	{
-		ConstParameterHandlerPtr h = ParameterHandler::create( parameter );
-		if( !h )
-		{
-			return MS::kFailure;
-		}
-		return h->setValue( parameter, plug );
+		// directional light
+		L = normalize( gl_LightSource[lightIndex].position.xyz );
 	}
 	else
 	{
-		return MS::kSuccess;
+		// pointlight or spotlight
+
+		L = gl_LightSource[lightIndex].position.xyz - p;
+		float d = length( L );
+		vec3 Ln = L/d;
+
+		float falloff = 1.0 /
+			(	gl_LightSource[lightIndex].constantAttenuation +
+				gl_LightSource[lightIndex].linearAttenuation * d +
+				gl_LightSource[lightIndex].quadraticAttenuation * d * d );
+
+		if( gl_LightSource[lightIndex].spotCutoff!=180.0 )
+		{
+			// spotlight
+			float cosA = dot( -Ln, normalize( gl_LightSource[lightIndex].spotDirection.xyz ) );
+			if( cosA < gl_LightSource[lightIndex].spotCosCutoff )
+			{
+				falloff = 0.0;
+			}
+			else
+			{
+				falloff *= pow( cosA, gl_LightSource[lightIndex].spotExponent );
+			}
+		}
+
+		Cl *= falloff;
 	}
+	return Cl;
 }
 
-MStatus Parameter::setValue( const MPlug &plug, IECore::ParameterPtr parameter )
-{
-	assert( parameter );
-	assert( ! plug.isNull() );
 
-	ConstParameterHandlerPtr h = ParameterHandler::create( IECore::staticPointerCast< const IECore::Parameter > (parameter) );
-	if( !h )
-	{
-		return MS::kFailure;
-	}
-	return h->setValue( plug, parameter );
-}
+#endif // IECOREGL_LIGHT_H

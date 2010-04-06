@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,6 +43,7 @@
 #include "IECoreGL/Exception.h"
 #include "IECoreGL/State.h"
 #include "IECoreGL/PerspectiveCamera.h"
+#include "IECoreGL/Group.h"
 
 #include "IECore/MessageHandler.h"
 #include "IECore/Writer.h"
@@ -129,6 +130,18 @@ void ImmediateRendererImplementation::transformEnd()
 	glPopMatrix();
 }
 
+void ImmediateRendererImplementation::setTransform( const Imath::M44f &m )
+{
+	// assumes world coordinate system is the identity matrix.
+	glLoadMatrixf( ( m * m_camera->getTransform().inverse() ).getValue() );
+}
+
+Imath::M44f ImmediateRendererImplementation::getTransform() const
+{
+	// get the current open GL model-view matrix and take the camera out of it to return the world space matrix.
+	return Camera::matrix() * m_camera->getTransform();
+}
+
 void ImmediateRendererImplementation::concatTransform( const Imath::M44f &matrix )
 {
 	glMultMatrixf( matrix.getValue() );
@@ -142,6 +155,11 @@ void ImmediateRendererImplementation::attributeBegin()
 
 void ImmediateRendererImplementation::attributeEnd()
 {
+	if( m_stateStack.size()<=1 )
+	{
+		IECore::msg( IECore::Msg::Warning, "ImmediateRendererImplementation::attributeEnd", "Bad nesting." );
+		return;
+	}
 	m_stateStack.pop();
 	m_stateStack.top()->bind();
 	transformEnd();
@@ -153,12 +171,38 @@ void ImmediateRendererImplementation::addState( StateComponentPtr state )
 	state->bind();
 }
 
-StateComponentPtr ImmediateRendererImplementation::getState( IECore::TypeId type )
+StateComponent *ImmediateRendererImplementation::getState( IECore::TypeId type )
 {
 	return m_stateStack.top()->get( type );
+}
+
+void ImmediateRendererImplementation::addUserAttribute( const IECore::InternedString &name, IECore::DataPtr value )
+{
+	m_stateStack.top()->userAttributes()[ name ] = value;
+}
+
+IECore::Data *ImmediateRendererImplementation::getUserAttribute( const IECore::InternedString &name )
+{
+	State *curState = m_stateStack.top();
+	State::UserAttributesMap::iterator attrIt = curState->userAttributes().find( name );
+	if( attrIt != curState->userAttributes().end() )
+	{
+		return attrIt->second;
+	}
+	return 0;
 }
 
 void ImmediateRendererImplementation::addPrimitive( PrimitivePtr primitive )
 {
 	primitive->render( m_stateStack.top() );
+}
+
+void ImmediateRendererImplementation::addProcedural( IECore::Renderer::ProceduralPtr proc, IECore::RendererPtr renderer )
+{
+	proc->render( renderer );
+}
+
+void ImmediateRendererImplementation::addInstance( GroupPtr grp )
+{
+	grp->render( m_stateStack.top() );
 }

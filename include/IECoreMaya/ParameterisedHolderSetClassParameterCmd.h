@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,50 +32,51 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECOREGL_LIGHT_H
-#define IECOREGL_LIGHT_H
+#ifndef IECOREMAYA_PARAMETERISEDHOLDERSETCLASSPARAMETERCMD_H
+#define IECOREMAYA_PARAMETERISEDHOLDERSETCLASSPARAMETERCMD_H
 
-/// \todo All the functions in the glsl source need the ie prefix on them.
-vec3 light( vec3 p, int lightIndex, out vec3 L )
+#include "maya/MPxCommand.h"
+#include "maya/MSyntax.h"
+
+#include "IECoreMaya/ParameterisedHolderInterface.h"
+
+namespace IECoreMaya
 {
-	vec3 Cl = gl_LightSource[lightIndex].diffuse.rgb;
 
-	if( gl_LightSource[lightIndex].position.w==0.0 )
-	{
-		// directional light
-		L = normalize( gl_LightSource[lightIndex].position.xyz );
-	}
-	else
-	{
-		// pointlight or spotlight
+class ParameterisedHolderSetClassParameterCmd : public MPxCommand
+{
 
-		L = gl_LightSource[lightIndex].position.xyz - p;
-		float d = length( L );
-		vec3 Ln = L/d;
+	public :
 
-		float falloff = 1.0 /
-			(	gl_LightSource[lightIndex].constantAttenuation +
-				gl_LightSource[lightIndex].linearAttenuation * d +
-				gl_LightSource[lightIndex].quadraticAttenuation * d * d );
+		ParameterisedHolderSetClassParameterCmd();
+		virtual ~ParameterisedHolderSetClassParameterCmd();
 
-		if( gl_LightSource[lightIndex].spotCutoff!=180.0 )
-		{
-			// spotlight
-			float cosA = dot( -Ln, normalize( gl_LightSource[lightIndex].spotDirection.xyz ) );
-			if( cosA < gl_LightSource[lightIndex].spotCosCutoff )
-			{
-				falloff = 0.0;
-			}
-			else
-			{
-				falloff *= pow( cosA, gl_LightSource[lightIndex].spotExponent );
-			}
-		}
+		static void *creator();
+		static MSyntax newSyntax();
 
-		Cl *= falloff;
-	}
-	return Cl;
+		virtual bool isUndoable() const;
+
+		virtual MStatus doIt( const MArgList &argList );
+		virtual MStatus undoIt();
+		virtual MStatus redoIt();
+
+	private :
+
+		ParameterisedHolderInterface *m_parameterisedHolder;
+		IECore::ParameterPtr m_parameter;
+		
+		IECore::ObjectPtr m_originalValues;
+		
+		MString m_originalClassName;
+		int m_originalClassVersion;
+		MString m_originalSearchPathEnvVar;
+		
+		MString m_newClassName;
+		int m_newClassVersion;
+		MString m_newSearchPathEnvVar;
+		
+};
+
 }
 
-
-#endif // IECOREGL_LIGHT_H
+#endif // IECOREMAYA_PARAMETERISEDHOLDERSETCLASSPARAMETERCMD_H

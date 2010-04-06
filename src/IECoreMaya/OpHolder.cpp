@@ -46,7 +46,7 @@
 #include "maya/MGlobal.h"
 
 #include "IECoreMaya/OpHolder.h"
-#include "IECoreMaya/Parameter.h"
+#include "IECoreMaya/ParameterHandler.h"
 #include "IECoreMaya/MayaTypeIds.h"
 
 #include "IECore/MessageHandler.h"
@@ -87,7 +87,7 @@ MStatus OpHolder<B>::setDependentsDirty( const MPlug &plug, MPlugArray &plugArra
 	/// This isn't the best way of doing it, but at this point we can't even be sure that the Op has been loaded,
 	/// so calling plugParameter() may not work. We can't call getOp() or getParameterised() here, as it seems
 	/// we can't do things such as adding/removing attributes within this function
-	if( std::string( plug.partialName().substring( 0, 4 ).asChar() ) == "parm_" )
+	if( std::string( plug.partialName().substring( 0, 4 ).asChar() ) == ParameterisedHolder<B>::g_attributeNamePrefix )
 	{
 		MFnDependencyNode fnDN( B::thisMObject() );
 		MStatus s;
@@ -143,7 +143,7 @@ MStatus OpHolder<B>::compute( const MPlug &plug, MDataBlock &block )
 		}
 
 		assert( result );
-		MStatus s = Parameter::setValue( op->resultParameter(), resultPlug );
+		MStatus s = ParameterHandler::setValue( op->resultParameter(), resultPlug );
 
 		block.setClean( resultPlug );
 
@@ -195,75 +195,23 @@ MStatus OpHolder<B>::createResultAttribute()
 		msg( Msg::Error, "OpHolder::createResultAttribute", boost::format( "No Op found on node \"%s\"." ) % nodeName.asChar() );
 		return MStatus::kFailure;
 	}
+	
+	MStatus s = ParameterisedHolder<B>::createOrUpdateAttribute( const_cast<IECore::Parameter *>( op->resultParameter() ), "result" );
+	if( !s )
+	{
+		MString nodeName = ParameterisedHolder<B>::name();
+		msg( Msg::Error, "OpHolder::createResultAttribute", boost::format( "Unable to update result attribute to represent class \"%s\" on node \"%s\"." ) % op->typeName() % nodeName.asChar() );
+		return s;
+	}
 			
 	MFnDependencyNode fnDN( B::thisMObject() );
-
 	MObject attribute = fnDN.attribute( "result" );
-
-	MPlugArray connectionsFromMe, connectionsToMe;
-
-	if( !attribute.isNull() )
-	{
-		MFnAttribute fnAttr( attribute );
-		fnAttr.setWritable( false );
-		fnAttr.setStorable( false );
-
-		MStatus s = IECoreMaya::Parameter::update( op->resultParameter(), attribute );
-
-		if( s )
-		{
-			return s;
-		}
-		
-		// failed to update (parameter type probably changed).
-		// remove the current attribute and fall through to the create
-		// code
-
-		MPlug plug( B::thisMObject(), attribute );
-		plug.connectedTo( connectionsFromMe, false, true );
-		plug.connectedTo( connectionsToMe, true, false );
-
-		/// Make sure we keep the parameter's value as held in the attribute before we remove it!
-		ParameterisedHolder<B>::setParameterisedValues();
-
-		fnDN.removeAttribute( attribute );
-	}
-
-	attribute = IECoreMaya::Parameter::create( op->resultParameter(), "result" );
-	MStatus s = fnDN.addAttribute( attribute );
 
 	MFnAttribute fnAttr( attribute );
 	fnAttr.setWritable( false );
 	fnAttr.setStorable( false );
-
-	if( s )
-	{
-		if( connectionsFromMe.length() || connectionsToMe.length() )
-		{
-			MDGModifier dgMod;
-			MPlug plug( B::thisMObject(), attribute );
-			for (unsigned i = 0; i < connectionsFromMe.length(); i++)
-			{
-				dgMod.connect( plug, connectionsFromMe[i] );
-			}
-			for (unsigned i = 0; i < connectionsToMe.length(); i++)
-			{
-				dgMod.connect( connectionsToMe[i], plug );
-			}
-
-			dgMod.doIt();
-		}
-
-		ParameterisedHolder<B>::setNodeValues();
-
-		return s;
-	}
-
-	MString nodeName = ParameterisedHolder<B>::name();
-	msg( Msg::Error, "OpHolder::createResultAttribute", boost::format( "Unable to update result attribute to represent class \"%s\" on node \"%s\"." ) % op->typeName() % nodeName.asChar() );
-
-	return MStatus::kFailure;
-
+	
+	return MStatus::kSuccess;
 }
 
 template<typename B>

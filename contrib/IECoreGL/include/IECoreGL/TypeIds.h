@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -106,6 +106,9 @@ enum TypeId
 	TextPrimitiveTypeTypeId = 105063,
 	ToGLCurvesConverterTypeId = 105064,
 	ToGLTextureConverterTypeId = 105065,
+	SplineToGLTextureConverterTypeId = 105066,
+	CullingSpaceStateComponentTypeId = 105067,
+	CullingBoxStateComponentTypeId = 105068,
 	LastCoreGLTypeId = 105999,
 };
 

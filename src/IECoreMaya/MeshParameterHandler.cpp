@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009 Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010 Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,8 +32,6 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "IECoreMaya/Parameter.h"
-
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaMeshConverter.h"
@@ -51,7 +49,7 @@ using namespace boost;
 
 static ParameterHandler::Description< MeshParameterHandler > registrar( IECore::MeshPrimitiveParameter::staticTypeId(), IECore::MeshPrimitive::staticTypeId() );
 
-MStatus MeshParameterHandler::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus MeshParameterHandler::doUpdate( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -59,6 +57,7 @@ MStatus MeshParameterHandler::update( IECore::ConstParameterPtr parameter, MObje
 		return MS::kFailure;
 	}
 
+	MObject attribute = plug.attribute();
 	MFnGenericAttribute fnGAttr( attribute );
 	if( !fnGAttr.hasObj( attribute ) )
 	{
@@ -70,27 +69,25 @@ MStatus MeshParameterHandler::update( IECore::ConstParameterPtr parameter, MObje
 	return MS::kSuccess;
 }
 
-MObject MeshParameterHandler::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MPlug MeshParameterHandler::doCreate( IECore::ConstParameterPtr parameter, const MString &plugName, MObject &node ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
 	{
-		return MObject::kNullObj;
+		return MPlug();
 	}
 
 	/// Use a generic attribute, so we could eventually accept other ObjectParamter types, too.
 	MFnGenericAttribute fnGAttr;
-	MObject result = fnGAttr.create( attributeName, attributeName );
+	MObject attribute = fnGAttr.create( plugName, plugName );
 
-	if ( !update( parameter, result ) )
-	{
-		return MObject::kNullObj;
-	}
-
+	MPlug result = finishCreating( parameter, attribute, node );
+	doUpdate( parameter, result );
+	
 	return result;
 }
 
-MStatus MeshParameterHandler::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus MeshParameterHandler::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -117,7 +114,7 @@ MStatus MeshParameterHandler::setValue( IECore::ConstParameterPtr parameter, MPl
 	return MS::kSuccess;
 }
 
-MStatus MeshParameterHandler::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus MeshParameterHandler::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	IECore::ObjectParameterPtr p = IECore::runTimeCast<IECore::ObjectParameter>( parameter );
 	if( !p )

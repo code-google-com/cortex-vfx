@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,46 +32,61 @@
 #
 ##########################################################################
 
-import unittest
-import os.path
+import IECore
 
-from IECore import *
+class mayaUserData( IECore.Op ) :
 
-from IECoreGL import *
-init( False )
+	def __init__( self ) :
 
-class TestShaderLoader( unittest.TestCase ) :
+		IECore.Op.__init__( self,
+			"An Op to test the IECoreMaya::ParameterHandler support for userData.",
+			IECore.IntParameter(
+				name = "result",
+				description = "d",
+				defaultValue = 2,
+			)
+		)
 
-	def test( self ) :
+		self.parameters().addParameters(
 
-		sp = SearchPath( os.path.dirname( __file__ ) + "/shaders", ":" )
+			[
+				IECore.IntParameter(
+					"t",
+					"",
+					100,
+					userData = {
+						"maya" : {
+							"defaultConnection" : IECore.StringData( "time1.outTime" ),
+						}
+					}
+				),
+				
+				IECore.IntParameter(
+					"e",
+					"",
+					100,
+					userData = {
+						"maya" : {
+							"defaultExpression" : IECore.StringData( " = time1.outTime * 10" ),
+						}
+					}
+				),
+				
+				IECore.StringParameter(
+					"s",
+					"",
+					"",
+					userData = {
+						"maya" : {
+							"valueProvider" : IECore.StringData( "connectedNodeName" ),
+						}
+					}
+				),
+			]
+		)
 
-		l = ShaderLoader( sp )
+	def doOperation( self, args ) :
 
-		s = l.load( "3dLabs/Toon" )
-		self.assert_( s.typeName()=="IECoreGL::Shader" )
+		return IECore.IntData( 2 )
 
-		ss = l.load( "3dLabs/Toon" )
-		self.assert_( s.isSame( ss ) )
-
-		# shader is too complicated for my graphics card
-		s = l.load( "3dLabs/Mandel" )
-		self.assert_( s.typeName()=="IECoreGL::Shader" )
-
-		self.assert_( ShaderLoader.defaultShaderLoader().isSame( ShaderLoader.defaultShaderLoader() ) )
-
-	def testPreprocessing( self ) :
-
-		sp = SearchPath( os.path.dirname( __file__ ) + "/shaders", ":" )
-		psp = SearchPath( os.path.dirname( __file__ ) + "/shaders/include", ":" )
-
-		# this should work
-		l = ShaderLoader( sp, psp )
-		s = l.load( "failWithoutPreprocessing" )
-
-		# but turning off preprocessing should cause a throw
-		l = ShaderLoader( sp )
-		self.assertRaises( RuntimeError, l.load, "failWithoutPreprocessing" )
-
-if __name__ == "__main__":
-    unittest.main()
+IECore.registerRunTimeTyped( mayaUserData )

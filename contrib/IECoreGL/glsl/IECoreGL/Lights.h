@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,19 +32,17 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECOREGL_INTENSITY_H
-#define IECOREGL_INTENSITY_H
+#ifndef IECOREGL_LIGHTS_H
+#define IECOREGL_LIGHTS_H
 
-/// \todo These should be called ieLuminance to match the method
-/// in IECoreRI/ColorAlgo.h.
-float intensity( vec3 color, vec3 weights )
+#include "IECoreGL/Light.h"
+
+void lights( vec3 p, out vec3 Cl[gl_MaxLights], out vec3 L[gl_MaxLights], int n )
 {
-	return dot( color, weights );
+	for( int i=0; i<n; i++ )
+	{
+		Cl[i] = ieLight( p, i, L[i] );
+	}
 }
 
-float intensity( vec3 color )
-{
-	return intensity( color, vec3( 0.212671, 0.715160, 0.072169 ) );
-}
-
-#endif // IECOREGL_INTENSITY_H
+#endif // IECOREGL_LIGHTS_H

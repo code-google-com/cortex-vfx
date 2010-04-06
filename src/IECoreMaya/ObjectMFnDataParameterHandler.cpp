@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,7 +32,6 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "IECoreMaya/Parameter.h"
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaObjectConverter.h"
 #include "IECoreMaya/ObjectMFnDataParameterHandler.h"
@@ -52,10 +51,6 @@ using namespace IECoreMaya;
 using namespace Imath;
 using namespace boost;
 
-/// \todo This doesn't work as we want it to, as none of the userData (which for example StringVectorParameter and StringVectorParameterHandler implement)
-/// is going to be honored!
-//ParameterHandler::Description< ObjectMFnDataParameterHandler< IECore::StringVectorParameter, MFnData::kStringArray > > stringVectorRegistrar( IECore::StringVectorParameter::staticTypeId(), IECore::StringVectorData::staticTypeId() );
-//ParameterHandler::Description< ObjectMFnDataParameterHandler< IECore::StringParameter,       MFnData::kString > >      stringRegistrar( IECore::StringParameter::staticTypeId(), IECore::StringData::staticTypeId() );
 ParameterHandler::Description< ObjectMFnDataParameterHandler< IECore::V3fVectorParameter,    MFnData::kVectorArray > > v3fVectorRegistrar( IECore::V3fVectorParameter::staticTypeId(), IECore::V3fVectorData::staticTypeId() );
 ParameterHandler::Description< ObjectMFnDataParameterHandler< IECore::V3dVectorParameter,    MFnData::kVectorArray > > v3dVectorRegistrar( IECore::V3dVectorParameter::staticTypeId(), IECore::V3dVectorData::staticTypeId() );
 ParameterHandler::Description< ObjectMFnDataParameterHandler< IECore::M44fParameter,         MFnData::kMatrix > >      m44fRegistrar( IECore::M44fParameter::staticTypeId(), IECore::M44fData::staticTypeId() );
@@ -65,13 +60,14 @@ ParameterHandler::Description< ObjectMFnDataParameterHandler< IECore::DoubleVect
 ParameterHandler::Description< ObjectMFnDataParameterHandler< IECore::IntVectorParameter,    MFnData::kIntArray > >    intVectorRegistrar( IECore::IntVectorParameter::staticTypeId(), IECore::IntVectorData::staticTypeId() );
 
 template<typename T, MFnData::Type D>
-MStatus ObjectMFnDataParameterHandler<T, D>::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus ObjectMFnDataParameterHandler<T, D>::doUpdate( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	if (!IECore::runTimeCast<const IECore::ObjectParameter>( parameter ) && !IECore::runTimeCast<const T>( parameter ))
 	{
 		return MS::kFailure;
 	}
 
+	MObject attribute = plug.attribute();
 	MFnGenericAttribute fnGAttr( attribute );
 	if( !fnGAttr.hasObj( attribute ) )
 	{
@@ -84,28 +80,26 @@ MStatus ObjectMFnDataParameterHandler<T, D>::update( IECore::ConstParameterPtr p
 }
 
 template<typename T, MFnData::Type D>
-MObject ObjectMFnDataParameterHandler<T, D>::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MPlug ObjectMFnDataParameterHandler<T, D>::doCreate( IECore::ConstParameterPtr parameter, const MString &plugName, MObject &node ) const
 {
 	if (!IECore::runTimeCast<const IECore::ObjectParameter>( parameter ) && !IECore::runTimeCast<const T>( parameter ))
 	{
-		return MObject::kNullObj;
+		return MPlug();
 	}
 
 	/// Use a generic attribute, so we could eventually accept other ObjectParamter types, too.
 	MStatus s;
 	MFnGenericAttribute fnGAttr;
-	MObject result = fnGAttr.create( attributeName, attributeName, &s );
+	MObject attribute = fnGAttr.create( plugName, plugName, &s );
 
-	if ( !ObjectMFnDataParameterHandler<T, D>::update( parameter, result ) )
-	{
-		return MObject::kNullObj;
-	}
+	MPlug result = finishCreating( parameter, attribute, node );
+	doUpdate( parameter, result );
 
 	return result;
 }
 
 template<typename T, MFnData::Type D>
-MStatus ObjectMFnDataParameterHandler<T, D>::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus ObjectMFnDataParameterHandler<T, D>::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	if (!IECore::runTimeCast<const IECore::ObjectParameter>( parameter ) && !IECore::runTimeCast<const T>( parameter ))
 	{
@@ -143,7 +137,7 @@ MStatus ObjectMFnDataParameterHandler<T, D>::setValue( IECore::ConstParameterPtr
 }
 
 template<typename T, MFnData::Type D>
-MStatus ObjectMFnDataParameterHandler<T, D>::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus ObjectMFnDataParameterHandler<T, D>::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	if (!IECore::runTimeCast<IECore::ObjectParameter>( parameter ) && !IECore::runTimeCast<T>( parameter ))
 	{

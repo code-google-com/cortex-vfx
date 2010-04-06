@@ -32,12 +32,12 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "IECoreMaya/Parameter.h"
 #include "IECoreMaya/NumericTraits.h"
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaObjectConverter.h"
 #include "IECoreMaya/ObjectParameterHandler.h"
 #include "IECoreMaya/ObjectData.h"
+#include "IECoreMaya/MayaTypeIds.h"
 
 #include "IECore/ObjectParameter.h"
 #include "IECore/MeshPrimitive.h"
@@ -52,7 +52,7 @@ using namespace boost;
 
 static ParameterHandler::Description< ObjectParameterHandler > registrar( IECore::ObjectParameter::staticTypeId() );
 
-MStatus ObjectParameterHandler::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus ObjectParameterHandler::doUpdate( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -60,6 +60,7 @@ MStatus ObjectParameterHandler::update( IECore::ConstParameterPtr parameter, MOb
 		return MS::kFailure;
 	}
 
+	MObject attribute = plug.attribute();
 	MFnGenericAttribute fnGAttr( attribute );
 	if( !fnGAttr.hasObj( attribute ) )
 	{
@@ -67,13 +68,18 @@ MStatus ObjectParameterHandler::update( IECore::ConstParameterPtr parameter, MOb
 	}
 
 	fnGAttr.addAccept( ObjectData::id );
+	// maya has an odd behaviour whereby a generic attribute with only one accepted datatype will
+	// transform itself into a typed attribute after file save and load. here we add an accept
+	// for a second dummy datatype to ensure that the attribute will still be a generic attribute
+	// when saved and loaded.
+	fnGAttr.addAccept( DummyDataId );
 
 	for (IECore::ObjectParameter::TypeIdSet::const_iterator it = p->validTypes().begin(); it != p->validTypes().end(); ++it)
 	{
 		ConstParameterHandlerPtr h = ParameterHandler::create( *it );
 		if (h)
 		{
-			if ( !h->update( parameter, attribute) )
+			if ( !h->doUpdate( parameter, plug ) )
 			{
 				return MS::kFailure;
 			}
@@ -83,23 +89,24 @@ MStatus ObjectParameterHandler::update( IECore::ConstParameterPtr parameter, MOb
 	return MS::kSuccess;
 }
 
-MObject ObjectParameterHandler::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MPlug ObjectParameterHandler::doCreate( IECore::ConstParameterPtr parameter, const MString &plugName, MObject &node ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
 	{
-		return MObject::kNullObj;
+		return MPlug();
 	}
 
 	MFnGenericAttribute fnGAttr;
+	MObject attribute = fnGAttr.create( plugName, plugName );
 
-	MObject result = fnGAttr.create( attributeName, attributeName );
-
-	update( parameter, result );
+	MPlug result = finishCreating( parameter, attribute, node );
+	doUpdate( parameter, result );
+	
 	return result;
 }
 
-MStatus ObjectParameterHandler::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus ObjectParameterHandler::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	IECore::ConstObjectParameterPtr p = IECore::runTimeCast<const IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -114,7 +121,7 @@ MStatus ObjectParameterHandler::setValue( IECore::ConstParameterPtr parameter, M
 		ConstParameterHandlerPtr h = ParameterHandler::create( *it );
 		if (h)
 		{
-			if ( h->setValue( parameter, plug) )
+			if ( h->doSetValue( parameter, plug) )
 			{
 				return MS::kSuccess;
 			}
@@ -138,7 +145,7 @@ MStatus ObjectParameterHandler::setValue( IECore::ConstParameterPtr parameter, M
 	return plug.setValue( plugData );
 }
 
-MStatus ObjectParameterHandler::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus ObjectParameterHandler::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	IECore::ObjectParameterPtr p = IECore::runTimeCast<IECore::ObjectParameter>( parameter );
 	if( !p )
@@ -152,7 +159,7 @@ MStatus ObjectParameterHandler::setValue( const MPlug &plug, IECore::ParameterPt
 		ConstParameterHandlerPtr h = ParameterHandler::create( *it );
 		if (h)
 		{
-			if ( h->setValue( plug, parameter ) )
+			if ( h->doSetValue( plug, parameter ) )
 			{
 				return MS::kSuccess;
 			}
