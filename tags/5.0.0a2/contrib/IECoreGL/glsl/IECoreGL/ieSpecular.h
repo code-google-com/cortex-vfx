@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,40 +32,18 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IE_COREMAYA_PARAMETER_H
-#define IE_COREMAYA_PARAMETER_H
+#ifndef IECOREGL_SPECULAR_H
+#define IECOREGL_SPECULAR_H
 
-#include "IECore/Parameter.h"
-
-#include "maya/MObject.h"
-#include "maya/MString.h"
-#include "maya/MPlug.h"
-
-namespace IECoreMaya
+vec3 ieSpecular( vec3 P, vec3 N, vec3 V, float roughness, vec3 Cl[gl_MaxLights], vec3 L[gl_MaxLights], int nLights )
 {
+	vec3 result;
+	for( int i=0 ; i<nLights; i++ )
+	{
+		vec3 H = normalize( normalize( L[i] ) + V );
+		result += Cl[i] * pow( max( 0.0, dot( N, H ) ), 1.0/roughness );
+	}
+	return result;
+}
 
-/// The Parameter class defines static methods to allow the
-/// representation of IECore::Parameter instances as Maya
-/// dynamic attributes on a node.
-/// \todo Documentation!
-/// \todo I think this functionality should just be moved to the ParameterHandler class.
-class Parameter
-{
-
-	public :
-
-		static MObject create( IECore::ConstParameterPtr parameter, const MString &attributeName );
-		/// \bug Maya doesn't seem to correctly store default values for dynamic string attributes
-		/// when saving the scene - so this method doesn't set the default value appropriately for
-		/// StringParameter and its derived classes (tested in maya 7.0.1).
-		static MStatus update( IECore::ConstParameterPtr parameter, MObject &attribute );
-
-		static MStatus setValue( IECore::ConstParameterPtr parameter, MPlug &plug );
-		static MStatus setValue( const MPlug &plug, IECore::ParameterPtr parameter );
-
-};
-
-
-} // namespace IECoreMaya
-
-#endif // IE_COREMAYA_PARAMETER_H
+#endif // IECOREGL_SPECULAR_H

@@ -76,11 +76,6 @@ class GenericParameterUI( IECoreMaya.ParameterUI ) :
 		
 		
 		maya.cmds.setParent( currentParent )
-
-
-	def __openConnectionEditor( self ) :
-		return
-		
 		
 	def __drawConnection( self, plugName ) :
 	
@@ -115,15 +110,7 @@ class GenericParameterUI( IECoreMaya.ParameterUI ) :
 		)
 		
 		maya.cmds.setParent( ".." )
-
-	def __showAE( self, plugName ) :
-	
-		import maya.mel
-		maya.mel.eval( "showEditor \"" + plugName.split(".")[0] + "\"" ) 
-
-		
-		
-		
+				
 import IECore					   
 IECoreMaya.ParameterUI.registerUI( IECore.TypeId.Parameter, GenericParameterUI )
 IECoreMaya.ParameterUI.registerUI( IECore.TypeId.Parameter, GenericParameterUI, 'generic' )

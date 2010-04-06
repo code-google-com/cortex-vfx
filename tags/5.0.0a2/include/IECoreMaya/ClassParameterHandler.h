@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,17 +32,41 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECOREGL_LIGHTS_H
-#define IECOREGL_LIGHTS_H
+#ifndef IECOREMAYA_CLASSPARAMETERHANDLER_H
+#define IECOREMAYA_CLASSPARAMETERHANDLER_H
 
-#include "IECoreGL/light.h"
+#include "IECoreMaya/ParameterHandler.h"
 
-void lights( vec3 p, out vec3 Cl[gl_MaxLights], out vec3 L[gl_MaxLights], int n )
+namespace IECoreMaya
 {
-	for( int i=0; i<n; i++ )
-	{
-		Cl[i] = light( p, i, L[i] );
-	}
-}
 
-#endif // IECOREGL_LIGHTS_H
+/// A ParameterHandler which deals with ClassParameters. Note that no attempt is made to represent the child
+/// parameters - separate calls to other parameter handlers should be used to do that.
+class ClassParameterHandler : public ParameterHandler
+{
+
+	public :
+	
+		/// This is the only way to set the class held by a ClassParameter and have the maya state
+		/// updated correctly. Typically this shouldn't be called directly, instead the
+		/// ieParameterisedHolderSetClassParameter command should be used, as this allows the operation
+		/// to be undone as well.
+		static MStatus setClass( IECore::ParameterPtr parameter, MPlug &plug,
+			const MString &className, int classVersion, const MString &searchPathEnvVar );
+	
+	protected:
+
+		virtual MPlug doCreate( IECore::ConstParameterPtr parameter, const MString &plugName, MObject &node ) const;
+		virtual MStatus doUpdate( IECore::ConstParameterPtr parameter, MPlug &plug ) const;
+		virtual MStatus doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const;
+		virtual MStatus doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const;
+		
+	private :
+	
+		static MStatus setClass( IECore::ParameterPtr parameter, const MString &className, int classVersion, const MString &searchPathEnvVar );
+		
+};
+
+} // namespace IECoreMaya
+
+#endif // IECOREMAYA_CLASSPARAMETERHANDLER_H

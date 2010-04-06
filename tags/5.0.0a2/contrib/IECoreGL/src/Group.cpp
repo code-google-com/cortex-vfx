@@ -115,7 +115,7 @@ void Group::addChild( RenderablePtr child )
 	m_children.push_back( child );
 }
 
-void Group::removeChild( RenderablePtr child )
+void Group::removeChild( Renderable *child )
 {
 	m_children.remove( child );
 }
@@ -129,3 +129,9 @@ const Group::ChildContainer &Group::children() const
 {
 	return m_children;
 }
+
+Group::Mutex &Group::mutex() const
+{
+	return m_mutex;
+}
+

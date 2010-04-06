@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -46,6 +46,9 @@ import IECoreMaya
 # held on an IECoreMaya.ParameterisedHolder node.
 # \todo Make member functions protected or private as necessary - do this for the derived classes too.
 # \todo Split derived classes out into their own files.
+# \todo Separate control drawing from labelling and layout, so these classes just create the right
+# hand side of what they're doing at the moment. Then we can use them in different layouts like spreadsheets
+# and wotnot.
 class ParameterUI :
 
 	textColumnWidthIndex = 145
@@ -59,7 +62,9 @@ class ParameterUI :
 	# and leave the parent layout unchanged on exit.
 	# \todo Document the expected behaviour of derived classes with respect to setting up self._layout,
 	# or provide a more explicit mechanism for the same thing.
-	# \todo Document the meaning of the various keyword arguments.
+	# \todo Document the meaning of the various keyword arguments - perhaps the names of these should be
+	# prefixed with the name of the class which implements each argument so as to make it easier to find
+	# the documentation too.
 	def __init__( self, parameterisedHolderNode, parameter, **kw ) :
 
 		self.__node = parameterisedHolderNode
@@ -201,12 +206,6 @@ class ParameterUI :
 			dragCallback = IECore.curry( ParameterUI._defaultDragCallback, nodeName = self.nodeName(), layoutName = self.layout(), **kw )
 		)
 
-	## \deprecated Use _addPopupMenu instead.
-	def addPopupMenu( self, parentUI=None, **kw ):
-
-		IECore.msg( IECore.Msg.Level.Warning, self.__class__.__name__ + ".addPopupMenu", "Deprecated method called." )
-		self._addPopupMenu( parentUI = maya.cmds.setParent( query=True ), **kw )
-
 	## Can be called by derived classes to add a useful popup menu to the specified ui element. This
 	# will replace any existing popup menus that are already there.
 	## \todo Understand and document the available keyword arguments. I think the only one is "attributeName",
@@ -220,10 +219,10 @@ class ParameterUI :
 			for m in existingMenus :
 				maya.cmds.deleteUI( m, menu=True )
 
-		cmds.popupMenu( parent = parentUI, postMenuCommand = IECore.curry( self.buildPopupMenu, **kw ) )
+		cmds.popupMenu( parent = parentUI, postMenuCommand = IECore.curry( self.__buildPopupMenu, **kw ) )
 
 		if "button1" in kw and kw["button1"] :
-			cmds.popupMenu( parent = parentUI, button=1, postMenuCommand = IECore.curry( self.buildPopupMenu, **kw ) )
+			cmds.popupMenu( parent = parentUI, button=1, postMenuCommand = IECore.curry( self.__buildPopupMenu, **kw ) )
 
 
 	def __buildConnectionsPopupMenu( self, popupMenu, ownerControl, **kw ):
@@ -289,7 +288,7 @@ class ParameterUI :
 
 			return False
 
-	def buildPopupMenu( self, popupMenu, ownerControl, **kw ):
+	def __buildPopupMenu( self, popupMenu, ownerControl, **kw ):
 
 		cmds.popupMenu(
 			popupMenu,
@@ -308,7 +307,7 @@ class ParameterUI :
 					cmds.menuItem(
 						parent = popupMenu,
 						label = k,
-						command = IECore.curry( self.selectValue, selection = k )
+						command = IECore.curry( self.__selectValue, selection = k )
 					)
 
 				if len( self.parameter.presetNames() ) > 0:
@@ -320,7 +319,7 @@ class ParameterUI :
 				cmds.menuItem(
 						parent = popupMenu,
 						label = "Default",
-						command = IECore.curry( self.selectValue, selection = self.parameter.defaultValue )
+						command = IECore.curry( self.__selectValue, selection = self.parameter.defaultValue )
 				)
 
 				cmds.menuItem(
@@ -335,7 +334,7 @@ class ParameterUI :
 					cmds.menuItem(
 						parent = popupMenu,
 						label = "Set Key",
-						command = IECore.curry(self.setKey, **kw)
+						command = IECore.curry( self.__setKey, **kw )
 					)
 
 				expressions = cmds.listConnections(
@@ -371,7 +370,7 @@ class ParameterUI :
 						parent = popupMenu,
 						label = "Delete Expression",
 
-						command = IECore.curry( self.deleteNode, nodeName = expressions[0] )
+						command = IECore.curry( self.__deleteNode, nodeName = expressions[0] )
 					)
 
 			else:
@@ -381,7 +380,7 @@ class ParameterUI :
 			cmds.menuItem(
 					parent = popupMenu,
 					label = "Lock attribute",
-					command = IECore.curry(self.lock, **kw)
+					command = IECore.curry( self.__lock, **kw )
 			)
 
 		else:
@@ -389,7 +388,7 @@ class ParameterUI :
 			cmds.menuItem(
 					parent = popupMenu,
 					label = "Unlock attribute",
-					command = IECore.curry(self.unlock, **kw)
+					command = IECore.curry( self.__unlock, **kw )
 			)
 
 	def showEditor( self, args, attributeName = None ):
@@ -401,7 +400,7 @@ class ParameterUI :
 
 		IECoreMaya.mel( melCmd.encode('ascii') )
 
-	def deleteNode( self, args, nodeName = None ):
+	def __deleteNode( self, args, nodeName = None ):
 
 		cmds.delete( nodeName )
 
@@ -438,27 +437,27 @@ class ParameterUI :
 			maya.mel.eval( 'evalDeferred( "updateAE %s;")' % refreshAE )
 
 
-	def setKey( self, args, **kw ):
+	def __setKey( self, args, **kw ):
 
 		cmds.setKeyframe(
 			kw['attributeName']
 		)
 
-	def lock( self, args, **kw ):
+	def __lock( self, args, **kw ):
 
 		cmds.setAttr(
 			kw['attributeName'],
 			lock = True
 		)
 
-	def unlock( self, args, **kw  ):
+	def __unlock( self, args, **kw  ):
 
 		cmds.setAttr(
 			kw['attributeName'],
 			lock = False
 		)
 
-	def selectValue( self, args, selection = None):
+	def __selectValue( self, args, selection = None):
 
 		self.parameter.setValue( selection )
 		IECoreMaya.FnParameterisedHolder( self.__node ).setNodeValue( self.parameter )
@@ -469,7 +468,6 @@ class ParameterUI :
 				edit = True,
 				label = self.parameter.getCurrentPresetName()
 			)
-
 
 	@staticmethod
 	def registerUI( parameterTypeId, handlerType, uiTypeHint = None ):
@@ -520,200 +518,6 @@ class ParameterUI :
 		parameterUI = handlerType( parameterisedHolderNode, parameter, **kw )
 
 		return parameterUI
-
-
-
-
-class CompoundParameterUI( ParameterUI ) :
-
-	def __init__( self, node, parameter, **kw  ) :
-
-		ParameterUI.__init__( self, node, parameter, **kw )
-
-		visible = True
-		try:
-			visible = parameter.userData()['UI']['visible'].value
-		except:
-			pass
-
-		if 'visibleOnly' in kw :
-
-			visible = False
-
-			for i in kw['visibleOnly'] :
-
-				if kw['longParameterName'] == "" or i.startswith( kw['longParameterName'] + "." ) :
-
-					visible = True
-
- 
-		if not visible :
-
-			return
-			
-		if 'hierarchyDepth' in kw :
-			kw['hierarchyDepth'] += 1 
-		else :
-			kw['hierarchyDepth'] = 0	
-		
-		self.__childUIsLayout = None
-		self.__childUIs = {}
-
-		self._layout = None
-
-		fnPH = IECoreMaya.FnParameterisedHolder( node )
-
-		withCompoundFrame = False
-		if 'withCompoundFrame' in kw :
-			withCompoundFrame = kw['withCompoundFrame']
-
-		if not withCompoundFrame and parameter.isSame( fnPH.getParameterised()[0].parameters() ) :
-			self._layout = cmds.columnLayout()
-			self.__createChildUIs( **kw )
-			cmds.setParent("..")
-		else:
-			# \todo Retrieve the "collapsed" state
-			collapsed = True
-			
-			font = "boldLabelFont"			
-			labelIndent = 5 + ( 8 * max( 0, kw['hierarchyDepth']-1 ) )
-										
-			if kw['hierarchyDepth'] == 2 :
-			
-				font = "smallBoldLabelFont"
-				
-			elif kw['hierarchyDepth'] >= 3 :
-			
-				font = "tinyBoldLabelFont"
-				
-			self._layout = cmds.frameLayout(
-				label = self.label(),
-				font = font,
-				labelIndent = labelIndent,
-				borderVisible = False,
-				preExpandCommand = IECore.curry( self.__createChildUIs, **kw),
-				collapseCommand = self.__collapse,
-				collapsable = True,
-				collapse = collapsed,
-			)
-			
-			if not collapsed:
-				self.__createChildUIs( **kw )
-
-			cmds.setParent("..")
-
-
-
-	def replace( self, node, parameter ) :
-
-		ParameterUI.replace( self, node, parameter )
-
-		for pName in self.__childUIs.keys():
-			ui = self.__childUIs[pName]
-			p = self.parameter[pName]
-
-			ui.replace( node, p )
-
-	def __collapse(self):
-		# \todo Store collapsed state of self._layout
-		pass
-
-	def __createChildUIs(self, **kw):
-
-		# this is the most common entry point into the ui
-		# creation code, and unfortunately it's called from
-		# a maya ui callback. maya appears to suppress all
-		# exceptions which occur in such callbacks, so we
-		# have to wrap with our own exception handling to
-		# make sure any errors become visible.
-		try :
-
-			if self.__childUIsLayout:
-				return
-
-			kw['labelWithNodeName'] = False
-
-			# \todo Store collapsed state of self._layout
-
-			cmds.setUITemplate(
-				"attributeEditorTemplate",
-				pushTemplate = True
-			)
-
-			self.__childUIsLayout = cmds.columnLayout(
-				parent = self._layout,
-				width = 381
-			)
-
-			draggable = False
-			try:
-				draggable = self.parameter.userData()['UI']['draggable'].value
-			except :
-				pass
-
-			if draggable :
-
-				cmds.rowLayout(
-					numberOfColumns = 2,
-					columnWidth2 = ( 361, 20 )
-
-				)
-
-				cmds.text( label = "" )
-
-				dragIcon = cmds.iconTextStaticLabel(
-					image = "pick.xpm",
-					height = 20
-				)
-				self.addDragCallback( dragIcon, **kw )
-
-			for pName in self.parameter.keys():
-
-				p = self.parameter[pName]
-
-				visible = True
-				try:
-					visible = p.userData()['UI']['visible'].value
-				except:
-					pass
-
-				if 'visibleOnly' in kw :
-
-					fullChildName = kw['longParameterName']
-
-					if len( fullChildName ) :
-						fullChildName += "."
-
-					fullChildName += pName
-
-					visible = fullChildName in kw['visibleOnly']
-
-					if not visible and p.isInstanceOf( IECore.TypeId.CompoundParameter ) :
-
-						for i in kw['visibleOnly'] :
-
-							if i.startswith( fullChildName + "." ) :
-
-								visible = True
-
-				if visible:
-					cmds.setParent( self.__childUIsLayout )
-
-					ui = ParameterUI.create( self.node(), p, **kw )
-
-					if ui:
-						self.__childUIs[pName] = ui
-
-			cmds.setParent("..")
-
-			cmds.setUITemplate(
-				"attributeEditorTemplate",
-				popTemplate = True
-			)
-
-		except :
-
-			IECore.msg( IECore.Msg.Level.Error, "ParameterUI", traceback.format_exc() )
 
 
 class BoolParameterUI( ParameterUI ) :
@@ -1219,7 +1023,6 @@ ParameterUI.registerUI( IECore.TypeId.FloatParameter, NumericParameterUI )
 ParameterUI.registerUI( IECore.TypeId.DoubleParameter, NumericParameterUI )
 ParameterUI.registerUI( IECore.TypeId.IntParameter, NumericParameterUI )
 ParameterUI.registerUI( IECore.TypeId.BoolParameter, BoolParameterUI )
-ParameterUI.registerUI( IECore.TypeId.CompoundParameter, CompoundParameterUI )
 
 ParameterUI.registerUI( IECore.TypeId.StringParameter, StringParameterUI )
 ParameterUI.registerUI( IECore.TypeId.ValidatedStringParameter, StringParameterUI )
@@ -1247,5 +1050,3 @@ ParameterUI.registerUI( IECore.TypeId.DirNameParameter, DirNameParameterUI )
 ParameterUI.registerUI( IECore.TypeId.FileNameParameter, FileNameParameterUI )
 
 ParameterUI.registerUI( IECore.TypeId.StringParameter, CachePathPrefixParameterUI, 'cachePathPrefix' )
-
-#\todo Store "collapsed" state of frameLayouts

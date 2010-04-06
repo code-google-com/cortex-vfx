@@ -35,6 +35,8 @@
 #ifndef IECOREGL_STATE_H
 #define IECOREGL_STATE_H
 
+#include "IECore/CompoundDataBase.h"
+
 #include "IECoreGL/Bindable.h"
 
 #include "IECoreGL/TypeIds.h"
@@ -51,6 +53,8 @@ IE_CORE_FORWARDDECLARE( StateComponent );
 class State : public Bindable
 {
 	public :
+
+		typedef IECore::CompoundDataMap UserAttributesMap;
 
 		// class that binds a state on the constructor and revert the changes on the destructor.
 		struct ScopedBinding : private boost::noncopyable
@@ -91,6 +95,10 @@ class State : public Bindable
 		template<typename T> void remove();
 		void remove( IECore::TypeId componentType );
 
+		// custom state attributes
+		UserAttributesMap &userAttributes();
+		const UserAttributesMap &userAttributes() const;
+
 		bool isComplete() const;
 
 		typedef StateComponentPtr (*CreatorFn)();
@@ -125,7 +133,7 @@ class State : public Bindable
 
 		typedef std::map<IECore::TypeId, StateComponentPtr> ComponentMap;
 		ComponentMap m_components;
-
+		UserAttributesMap m_userAttributes;
 };
 
 } // namespace IECoreGL

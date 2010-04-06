@@ -47,7 +47,7 @@
 #include "IECoreGL/private/ImmediateRendererImplementation.h"
 #include "IECoreGL/private/Display.h"
 #include "IECoreGL/TypedStateComponent.h"
-#include "IECoreGL/ShaderLoader.h"
+#include "IECoreGL/ShaderManager.h"
 #include "IECoreGL/Shader.h"
 #include "IECoreGL/ShaderStateComponent.h"
 #include "IECoreGL/TextureLoader.h"
@@ -74,6 +74,8 @@
 #include "IECore/SplineData.h"
 #include "IECore/SplineToImage.h"
 #include "IECore/CurvesPrimitive.h"
+
+#include "OpenEXR/ImathBoxAlgo.h"
 
 #include <stack>
 
@@ -191,16 +193,14 @@ struct IECoreGL::Renderer::MemberData
 	/// After worldBegin the transform stack is taken care of by the backend implementations.
 	std::stack<Imath::M44f> transformStack;
 
-	struct Attributes
-	{
-		IECore::CompoundDataMap userAttributes;
-	};
-	std::stack<Attributes> attributeStack;
-
 	bool inWorld;
 	RendererImplementationPtr implementation;
-	ShaderLoaderPtr shaderLoader;
+	ShaderManagerPtr shaderManager;
 	TextureLoaderPtr textureLoader;
+
+	typedef std::map<std::string, GroupPtr> InstanceMap;
+	InstanceMap instances;
+	Group *currentInstance;
 
 #ifdef IECORE_WITH_FREETYPE
 	typedef std::map<std::string, FontPtr> FontMap;
@@ -230,11 +230,11 @@ IECoreGL::Renderer::Renderer()
 	m_data->options.textureSearchPath = m_data->options.textureSearchPathDefault = texturePath ? texturePath : "";
 
 	m_data->transformStack.push( M44f() );
-	m_data->attributeStack.push( MemberData::Attributes() );
 
 	m_data->inWorld = false;
+	m_data->currentInstance = 0;
 	m_data->implementation = 0;
-	m_data->shaderLoader = 0;
+	m_data->shaderManager = 0;
 }
 
 IECoreGL::Renderer::~Renderer()
@@ -446,6 +446,11 @@ void IECoreGL::Renderer::camera( const std::string &name, const IECore::Compound
 		msg( Msg::Warning, "IECoreGL::Renderer::camera", "Cameras can not be specified after worldBegin." );
 		return;
 	}
+	if ( m_data->currentInstance )
+	{
+		msg( Msg::Warning, "IECoreGL::Renderer::camera", "Cameras can not be specified during instance definition." );
+		return;
+	}
 
 	try
 	{
@@ -470,6 +475,16 @@ void IECoreGL::Renderer::display( const std::string &name, const std::string &ty
 {
 	// we store displays till worldbegin, as until that point we don't have a renderer implementation to pass
 	// them to
+	if( m_data->inWorld )
+	{
+		msg( Msg::Warning, "IECoreGL::Renderer::display", "Displays can not be specified after worldBegin." );
+		return;
+	}
+	if ( m_data->currentInstance )
+	{
+		msg( Msg::Warning, "IECoreGL::Renderer::display", "Displays can not be specified during instance definition." );
+		return;
+	}
 	m_data->options.displays.push_back( new Display( name, type, data, parameters ) );
 }
 
@@ -482,6 +497,11 @@ void IECoreGL::Renderer::worldBegin()
 	if( m_data->inWorld )
 	{
 		msg( Msg::Warning, "Renderer::worldBegin", "Cannot call worldBegin() again before worldEnd()." );
+		return;
+	}
+	if ( m_data->currentInstance )
+	{
+		msg( Msg::Warning, "IECoreGL::Renderer::worldBegin", "worldBegin can not be called during instance definition." );
 		return;
 	}
 
@@ -499,12 +519,12 @@ void IECoreGL::Renderer::worldBegin()
 	if( m_data->options.shaderSearchPath==m_data->options.shaderSearchPathDefault && m_data->options.shaderIncludePath==m_data->options.shaderIncludePathDefault )
 	{
 		// use the shared default cache if we can
-		m_data->shaderLoader = ShaderLoader::defaultShaderLoader();
+		m_data->shaderManager = ShaderManager::defaultShaderManager();
 	}
 	else
 	{
 		IECore::SearchPath includePaths( m_data->options.shaderIncludePath, ":" );
-		m_data->shaderLoader = new ShaderLoader( IECore::SearchPath( m_data->options.shaderSearchPath, ":" ), &includePaths );
+		m_data->shaderManager = new ShaderManager( IECore::SearchPath( m_data->options.shaderSearchPath, ":" ), &includePaths );
 	}
 
 	if( m_data->options.textureSearchPath==m_data->options.textureSearchPathDefault )
@@ -547,6 +567,11 @@ void IECoreGL::Renderer::worldEnd()
 		msg( Msg::Warning, "Renderer::worldEnd", "Cannot call worldEnd() before worldBegin()." );
 		return;
 	}
+	if ( m_data->currentInstance )
+	{
+		msg( Msg::Warning, "IECoreGL::Renderer::worldEnd", "worldEnd can not be called during instance definition." );
+		return;
+	}
 	m_data->implementation->worldEnd();
 	m_data->inWorld = false;
 }
@@ -581,10 +606,15 @@ void IECoreGL::Renderer::transformEnd()
 {
 	if( m_data->inWorld )
 	{
-		/// \todo We need to reverse the rightHandedOrientation oojamaflip here if the
-		/// old transform is flipped relative to the new one. to do that we have to implement
-		/// getTransform() properly.
+		bool wasRight = ( determinant( m_data->implementation->getTransform() ) >= 0 );
 		m_data->implementation->transformEnd();
+		bool isRight = ( determinant( m_data->implementation->getTransform() ) >= 0 );
+
+		if ( wasRight != isRight )
+		{
+			bool l = m_data->implementation->getState<RightHandedOrientationStateComponent>()->value();
+			m_data->implementation->addState( new RightHandedOrientationStateComponent( !l ) );
+		}
 	}
 	else
 	{
@@ -601,7 +631,20 @@ void IECoreGL::Renderer::transformEnd()
 
 void IECoreGL::Renderer::setTransform( const Imath::M44f &m )
 {
-	msg( Msg::Warning, "Renderer::setTransform", "Not implemented" );
+	if( m_data->inWorld )
+	{
+		m_data->implementation->setTransform( m );
+
+		if( determinant( m ) < 0.0f )
+		{
+			bool l = m_data->implementation->getState<RightHandedOrientationStateComponent>()->value();
+			m_data->implementation->addState( new RightHandedOrientationStateComponent( !l ) );
+		}
+	}
+	else
+	{
+		m_data->transformStack.top() = m;
+	}
 }
 
 void IECoreGL::Renderer::setTransform( const std::string &coordinateSystem )
@@ -611,8 +654,14 @@ void IECoreGL::Renderer::setTransform( const std::string &coordinateSystem )
 
 Imath::M44f IECoreGL::Renderer::getTransform() const
 {
-	msg( Msg::Warning, "Renderer::getTransform", "Not implemented" );
-	return M44f();
+	if( m_data->inWorld )
+	{
+		return m_data->implementation->getTransform();
+	}
+	else
+	{
+		return m_data->transformStack.top();
+	}
 }
 
 Imath::M44f IECoreGL::Renderer::getTransform( const std::string &coordinateSystem ) const
@@ -635,7 +684,6 @@ void IECoreGL::Renderer::concatTransform( const Imath::M44f &m )
 	else
 	{
 		m_data->transformStack.top() = m * m_data->transformStack.top();
-
 	}
 }
 
@@ -670,7 +718,7 @@ template<class T>
 static IECore::ConstDataPtr typedAttributeGetter( const std::string &name, const IECoreGL::Renderer::MemberData *memberData )
 {
 	typedef IECore::TypedData<typename T::ValueType> DataType;
-	typename T::ConstPtr a = memberData->implementation->template getState<T>();
+	const T *a = memberData->implementation->template getState<T>();
 	return new DataType( a->value() );
 }
 
@@ -690,14 +738,14 @@ static void colorAttributeSetter( const std::string &name, IECore::ConstDataPtr 
 
 static IECore::ConstDataPtr colorAttributeGetter( const std::string &name, const IECoreGL::Renderer::MemberData *memberData )
 {
-	IECoreGL::ConstColorPtr a = memberData->implementation->getState<Color>();
+	const IECoreGL::Color *a = memberData->implementation->getState<Color>();
 	Color4f c = a->value();
 	return new Color3fData( Color3f( c[0], c[1], c[2] ) );
 }
 
 static IECore::ConstDataPtr opacityAttributeGetter( const std::string &name, const IECoreGL::Renderer::MemberData *memberData )
 {
-	IECoreGL::ConstColorPtr a = memberData->implementation->getState<Color>();
+	const IECoreGL::Color *a = memberData->implementation->getState<Color>();
 	Color4f c = a->value();
 	return new Color3fData( Color3f( c[3] ) );
 }
@@ -707,7 +755,7 @@ static void opacityAttributeSetter( const std::string &name, IECore::ConstDataPt
 	ConstColor3fDataPtr d = castWithWarning<const Color3fData>( value, name, "Renderer::setAttribute" );
 	if( d )
 	{
-		Color::ConstPtr c = memberData->implementation->getState<Color>();
+		const Color *c = memberData->implementation->getState<Color>();
 		Color4f cc = c->value();
 		cc[3] = (d->readable()[0] + d->readable()[1] + d->readable()[2]) / 3.0f;
 		memberData->implementation->addState( new Color( cc ) );
@@ -716,7 +764,7 @@ static void opacityAttributeSetter( const std::string &name, IECore::ConstDataPt
 
 static IECore::ConstDataPtr blendFactorGetter( const std::string &name, const IECoreGL::Renderer::MemberData *memberData )
 {
-	ConstBlendFuncStateComponentPtr b = memberData->implementation->getState<BlendFuncStateComponent>();
+	const BlendFuncStateComponent *b = memberData->implementation->getState<BlendFuncStateComponent>();
 	GLenum f = name=="gl:blend:srcFactor" ? b->value().src : b->value().dst;
 	switch( f )
 	{
@@ -825,7 +873,7 @@ static void blendFactorSetter( const std::string &name, IECore::ConstDataPtr val
 		msg( Msg::Error, "Renderer::setAttribute", boost::format( "Unsupported value \"%s\" for attribute \"%s\"." ) % v % name );
 		return;
 	}
-	ConstBlendFuncStateComponentPtr b = memberData->implementation->getState<BlendFuncStateComponent>();
+	const BlendFuncStateComponent *b = memberData->implementation->getState<BlendFuncStateComponent>();
 	BlendFactors bf = b->value();
 	if( name=="gl:blend:srcFactor" )
 	{
@@ -840,7 +888,7 @@ static void blendFactorSetter( const std::string &name, IECore::ConstDataPtr val
 
 static IECore::ConstDataPtr blendEquationGetter( const std::string &name, const IECoreGL::Renderer::MemberData *memberData )
 {
-	ConstBlendEquationStateComponentPtr b = memberData->implementation->getState<BlendEquationStateComponent>();
+	const BlendEquationStateComponent *b = memberData->implementation->getState<BlendEquationStateComponent>();
 	switch( b->value() )
 	{
 		case GL_FUNC_ADD :
@@ -900,7 +948,7 @@ static void blendEquationSetter( const std::string &name, IECore::ConstDataPtr v
 
 static IECore::ConstDataPtr pointsPrimitiveUseGLPointsGetter( const std::string &name, const IECoreGL::Renderer::MemberData *memberData )
 {
-	ConstPointsPrimitiveUseGLPointsPtr b = memberData->implementation->getState<PointsPrimitiveUseGLPoints>();
+	const IECoreGL::PointsPrimitive::UseGLPoints *b = memberData->implementation->getState<IECoreGL::PointsPrimitive::UseGLPoints>();
 	switch( b->value() )
 	{
 		case ForPointsOnly :
@@ -923,7 +971,7 @@ static void pointsPrimitiveUseGLPointsSetter( const std::string &name, IECore::C
 	{
 		return;
 	}
-	UseGLPoints u;
+	GLPointsUsage u;
 	const std::string &v = d->readable();
 	if( v=="forGLPoints" )
 	{
@@ -942,12 +990,12 @@ static void pointsPrimitiveUseGLPointsSetter( const std::string &name, IECore::C
 		msg( Msg::Error, "Renderer::setAttribute", boost::format( "Unsupported value \"%s\" for attribute \"%s\"." ) % v % name );
 		return;
 	}
-	memberData->implementation->addState( new PointsPrimitiveUseGLPoints( u ) );
+	memberData->implementation->addState( new IECoreGL::PointsPrimitive::UseGLPoints( u ) );
 }
 
 static IECore::ConstDataPtr nameGetter( const std::string &name, const IECoreGL::Renderer::MemberData *memberData )
 {
-	ConstNameStateComponentPtr n = memberData->implementation->getState<NameStateComponent>();
+	const NameStateComponent *n = memberData->implementation->getState<NameStateComponent>();
 	return new StringData( n->name() );
 }
 
@@ -966,7 +1014,7 @@ static IECore::ConstDataPtr textPrimitiveTypeGetter( const std::string &name, co
 
 #ifdef IECORE_WITH_FREETYPE
 
-	TextPrimitive::ConstTypePtr b = memberData->implementation->getState<TextPrimitive::Type>();
+	const TextPrimitive::Type *b = memberData->implementation->getState<TextPrimitive::Type>();
 	switch( b->value() )
 	{
 		case TextPrimitive::Mesh :
@@ -1022,20 +1070,62 @@ static void textPrimitiveTypeSetter( const std::string &name, IECore::ConstDataP
 
 }
 
+template<class T>
+static IECore::ConstDataPtr rendererSpaceGetter( const std::string &name, const IECoreGL::Renderer::MemberData *memberData )
+{
+	typename T::ConstPtr b = memberData->implementation->getState< T >();
+	switch( b->value() )
+	{
+		case ObjectSpace :
+			return new StringData( "object" );
+		case WorldSpace :
+			return new StringData( "world" );
+		default :
+			msg( Msg::Warning, "Renderer::getAttribute", boost::format( "Invalid state for \"%s\"." ) % name );
+			return new StringData( "invalid" );
+	}
+}
+
+template<class T>
+static void rendererSpaceSetter( const std::string &name, IECore::ConstDataPtr value, IECoreGL::Renderer::MemberData *memberData )
+{
+	ConstStringDataPtr d = castWithWarning<const StringData>( value, name, "Renderer::setAttribute" );
+	if( !d )
+	{
+		return;
+	}
+	RendererSpace s;
+	const std::string &v = d->readable();
+	if( v=="object" )
+	{
+		s = ObjectSpace;
+	}
+	else if ( v == "world" )
+	{
+		s = WorldSpace;
+	}
+	else
+	{
+		msg( Msg::Error, "Renderer::setAttribute", boost::format( "Unsupported value \"%s\" for attribute \"%s\"." ) % v % name );
+		return;
+	}
+	memberData->implementation->addState( new T( s ) );
+}
+
 static const AttributeSetterMap *attributeSetters()
 {
 	static AttributeSetterMap *a = new AttributeSetterMap;
 	if( !a->size() )
 	{
-		(*a)["gl:primitive:wireframe"] = typedAttributeSetter<PrimitiveWireframe>;
-		(*a)["gl:primitive:wireframeWidth"] = typedAttributeSetter<PrimitiveWireframeWidth>;
-		(*a)["gl:primitive:bound"] = typedAttributeSetter<PrimitiveBound>;
-		(*a)["gl:primitive:solid"] = typedAttributeSetter<PrimitiveSolid>;
-		(*a)["gl:primitive:outline"] = typedAttributeSetter<PrimitiveOutline>;
-		(*a)["gl:primitive:outlineWidth"] = typedAttributeSetter<PrimitiveOutlineWidth>;
-		(*a)["gl:primitive:points"] = typedAttributeSetter<PrimitivePoints>;
-		(*a)["gl:primitive:pointWidth"] = typedAttributeSetter<PrimitivePointWidth>;
-		(*a)["gl:primitive:sortForTransparency"] = typedAttributeSetter<PrimitiveTransparencySortStateComponent>;
+		(*a)["gl:primitive:wireframe"] = typedAttributeSetter<IECoreGL::Primitive::DrawWireframe>;
+		(*a)["gl:primitive:wireframeWidth"] = typedAttributeSetter<IECoreGL::Primitive::WireframeWidth>;
+		(*a)["gl:primitive:bound"] = typedAttributeSetter<IECoreGL::Primitive::DrawBound>;
+		(*a)["gl:primitive:solid"] = typedAttributeSetter<IECoreGL::Primitive::DrawSolid>;
+		(*a)["gl:primitive:outline"] = typedAttributeSetter<IECoreGL::Primitive::DrawOutline>;
+		(*a)["gl:primitive:outlineWidth"] = typedAttributeSetter<IECoreGL::Primitive::OutlineWidth>;
+		(*a)["gl:primitive:points"] = typedAttributeSetter<IECoreGL::Primitive::DrawPoints>;
+		(*a)["gl:primitive:pointWidth"] = typedAttributeSetter<IECoreGL::Primitive::PointWidth>;
+		(*a)["gl:primitive:sortForTransparency"] = typedAttributeSetter<IECoreGL::Primitive::TransparencySort>;
 		(*a)["gl:primitive:wireframeColor"] = typedAttributeSetter<WireframeColorStateComponent>;
 		(*a)["gl:primitive:boundColor"] = typedAttributeSetter<BoundColorStateComponent>;
 		(*a)["gl:primitive:outlineColor"] = typedAttributeSetter<OutlineColorStateComponent>;
@@ -1049,7 +1139,7 @@ static const AttributeSetterMap *attributeSetters()
 		(*a)["gl:blend:equation"] = blendEquationSetter;
 		(*a)["gl:shade:transparent"] = typedAttributeSetter<TransparentShadingStateComponent>;
 		(*a)["gl:pointsPrimitive:useGLPoints"] = pointsPrimitiveUseGLPointsSetter;
-		(*a)["gl:pointsPrimitive:glPointWidth"] = typedAttributeSetter<PointsPrimitiveGLPointWidth>;
+		(*a)["gl:pointsPrimitive:glPointWidth"] = typedAttributeSetter<PointsPrimitive::GLPointWidth>;
 		(*a)["name"] = nameSetter;
 		(*a)["doubleSided"] = typedAttributeSetter<DoubleSidedStateComponent>;
 		(*a)["rightHandedOrientation"] = typedAttributeSetter<RightHandedOrientationStateComponent>;
@@ -1060,6 +1150,8 @@ static const AttributeSetterMap *attributeSetters()
 		(*a)["gl:smoothing:lines"] = typedAttributeSetter<LineSmoothingStateComponent>;
 		(*a)["gl:smoothing:polygons"] = typedAttributeSetter<PolygonSmoothingStateComponent>;
 		(*a)["gl:textPrimitive:type"] = textPrimitiveTypeSetter;
+		(*a)["gl:cullingSpace"] = rendererSpaceSetter<CullingSpaceStateComponent>;
+		(*a)["gl:cullingBox"] = typedAttributeSetter<CullingBoxStateComponent>;
 	}
 	return a;
 }
@@ -1069,15 +1161,15 @@ static const AttributeGetterMap *attributeGetters()
 	static AttributeGetterMap *a = new AttributeGetterMap;
 	if( !a->size() )
 	{
-		(*a)["gl:primitive:wireframe"] = typedAttributeGetter<PrimitiveWireframe>;
-		(*a)["gl:primitive:wireframeWidth"] = typedAttributeGetter<PrimitiveWireframeWidth>;
-		(*a)["gl:primitive:bound"] = typedAttributeGetter<PrimitiveBound>;
-		(*a)["gl:primitive:solid"] = typedAttributeGetter<PrimitiveSolid>;
-		(*a)["gl:primitive:outline"] = typedAttributeGetter<PrimitiveOutline>;
-		(*a)["gl:primitive:outlineWidth"] = typedAttributeGetter<PrimitiveOutlineWidth>;
-		(*a)["gl:primitive:points"] = typedAttributeGetter<PrimitivePoints>;
-		(*a)["gl:primitive:pointWidth"] = typedAttributeGetter<PrimitivePointWidth>;
-		(*a)["gl:primitive:sortForTransparency"] = typedAttributeGetter<PrimitiveTransparencySortStateComponent>;
+		(*a)["gl:primitive:wireframe"] = typedAttributeGetter<IECoreGL::Primitive::DrawWireframe>;
+		(*a)["gl:primitive:wireframeWidth"] = typedAttributeGetter<IECoreGL::Primitive::WireframeWidth>;
+		(*a)["gl:primitive:bound"] = typedAttributeGetter<IECoreGL::Primitive::DrawBound>;
+		(*a)["gl:primitive:solid"] = typedAttributeGetter<IECoreGL::Primitive::DrawSolid>;
+		(*a)["gl:primitive:outline"] = typedAttributeGetter<IECoreGL::Primitive::DrawOutline>;
+		(*a)["gl:primitive:outlineWidth"] = typedAttributeGetter<IECoreGL::Primitive::OutlineWidth>;
+		(*a)["gl:primitive:points"] = typedAttributeGetter<IECoreGL::Primitive::DrawPoints>;
+		(*a)["gl:primitive:pointWidth"] = typedAttributeGetter<IECoreGL::Primitive::PointWidth>;
+		(*a)["gl:primitive:sortForTransparency"] = typedAttributeGetter<IECoreGL::Primitive::TransparencySort>;
 		(*a)["gl:primitive:wireframeColor"] = typedAttributeGetter<WireframeColorStateComponent>;
 		(*a)["gl:primitive:boundColor"] = typedAttributeGetter<BoundColorStateComponent>;
 		(*a)["gl:primitive:outlineColor"] = typedAttributeGetter<OutlineColorStateComponent>;
@@ -1091,7 +1183,7 @@ static const AttributeGetterMap *attributeGetters()
 		(*a)["gl:blend:equation"] = blendEquationGetter;
 		(*a)["gl:shade:transparent"] = typedAttributeGetter<TransparentShadingStateComponent>;
 		(*a)["gl:pointsPrimitive:useGLPoints"] = pointsPrimitiveUseGLPointsGetter;
-		(*a)["gl:pointsPrimitive:glPointWidth"] = typedAttributeGetter<PointsPrimitiveGLPointWidth>;
+		(*a)["gl:pointsPrimitive:glPointWidth"] = typedAttributeGetter<IECoreGL::PointsPrimitive::GLPointWidth>;
 		(*a)["name"] = nameGetter;
 		(*a)["doubleSided"] = typedAttributeGetter<DoubleSidedStateComponent>;
 		(*a)["rightHandedOrientation"] = typedAttributeGetter<RightHandedOrientationStateComponent>;
@@ -1102,29 +1194,39 @@ static const AttributeGetterMap *attributeGetters()
 		(*a)["gl:smoothing:lines"] = typedAttributeGetter<LineSmoothingStateComponent>;
 		(*a)["gl:smoothing:polygons"] = typedAttributeGetter<PolygonSmoothingStateComponent>;
 		(*a)["gl:textPrimitive:type"] = textPrimitiveTypeGetter;
+		(*a)["gl:cullingSpace"] = rendererSpaceGetter<CullingSpaceStateComponent>;
+		(*a)["gl:cullingBox"] = typedAttributeGetter<CullingBoxStateComponent>;
 	}
 	return a;
 }
 
 void IECoreGL::Renderer::attributeBegin()
 {
+	if ( !m_data->inWorld )
+	{
+		msg( Msg::Warning, "Renderer::attributeBegin", "Unsupported attributeBegin outside world begin/end blocks." );
+		return;	
+	}
 	m_data->implementation->attributeBegin();
-	m_data->attributeStack.push( m_data->attributeStack.top() );
 }
 
 void IECoreGL::Renderer::attributeEnd()
 {
-	if( !m_data->attributeStack.size() )
+	if ( !m_data->inWorld )
 	{
-		IECore::msg( IECore::Msg::Error, "IECoreGL::Renderer::attributeEnd", "No matching attributeBegin." );
-		return;
+		msg( Msg::Warning, "Renderer::attributeBegin", "Unsupported attributeBegin outside world begin/end blocks." );
+		return;	
 	}
-	m_data->attributeStack.pop();
 	m_data->implementation->attributeEnd();
 }
 
 void IECoreGL::Renderer::setAttribute( const std::string &name, IECore::ConstDataPtr value )
 {
+	if ( !m_data->inWorld )
+	{
+		msg( Msg::Warning, "Renderer::setAttribute", "Unsupported setAttribute outside world begin/end blocks." );
+		return;	
+	}
 	const AttributeSetterMap *s = attributeSetters();
 	AttributeSetterMap::const_iterator it = s->find( name );
 	if( it!=s->end() )
@@ -1133,7 +1235,7 @@ void IECoreGL::Renderer::setAttribute( const std::string &name, IECore::ConstDat
 	}
 	else if( name.compare( 0, 5, "user:" )==0 )
 	{
-		m_data->attributeStack.top().userAttributes[name] = value->copy();
+		m_data->implementation->addUserAttribute( name, value->copy() );
 	}
 	else if( name.find_first_of( ":" )!=string::npos )
 	{
@@ -1147,6 +1249,12 @@ void IECoreGL::Renderer::setAttribute( const std::string &name, IECore::ConstDat
 
 IECore::ConstDataPtr IECoreGL::Renderer::getAttribute( const std::string &name ) const
 {
+	if ( !m_data->inWorld )
+	{
+		msg( Msg::Warning, "Renderer::getAttribute", "Unsupported getAttribute outside world begin/end blocks." );
+		return 0;	
+	}
+
 	const AttributeGetterMap *g = attributeGetters();
 	AttributeGetterMap::const_iterator it = g->find( name );
 	if( it!=g->end() )
@@ -1155,13 +1263,7 @@ IECore::ConstDataPtr IECoreGL::Renderer::getAttribute( const std::string &name )
 	}
 	else if( name.compare( 0, 5, "user:" )==0 )
 	{
-		MemberData::Attributes &attributes = m_data->attributeStack.top();
-		IECore::CompoundDataMap::const_iterator it = attributes.userAttributes.find( name );
-		if( it != attributes.userAttributes.end() )
-		{
-			return it->second;
-		}
-		return 0;
+		return m_data->implementation->getUserAttribute( name );
 	}
 	else if( name.find_first_of( ":" )!=string::npos )
 	{
@@ -1175,176 +1277,39 @@ IECore::ConstDataPtr IECoreGL::Renderer::getAttribute( const std::string &name )
 	return 0;
 }
 
-/// Returns true if the value was added successfully
-static bool checkAndAddShaderParameter( ShaderStateComponentPtr shaderState, const std::string &name, const IECore::DataPtr value,
-	IECoreGL::Renderer::MemberData *memberData, const std::string &context, bool ignoreMissingParameters )
-{
-	try
-	{
-		if( !shaderState->shader()->hasParameter( name ) )
-		{
-			if( ignoreMissingParameters )
-			{
-				return false;
-			}
-			else
-			{
-				msg( Msg::Error, context, boost::format( "Shader parameter \"%s\" doesn't exist." ) % name );
-				return false;
-			}
-		}
-
-		if( value->isInstanceOf( StringData::staticTypeId() ) )
-		{
-			// should be a texture parameter
-			if( shaderState->shader()->parameterType( name )==Texture::staticTypeId() )
-			{
-				StringDataPtr s = IECore::staticPointerCast<StringData>( value );
-				if( s->readable()!="" )
-				{
-					TexturePtr t = memberData->textureLoader->load( s->readable() );
-					if( t )
-					{
-						shaderState->textureValues()[name] = t;
-						return true;
-					}
-				}
-			}
-			else
-			{
-				msg( Msg::Error, context, boost::format( "Shader parameter \"%s\" is not a texture parameter." ) % name );
-				return false;
-			}
-		}
-		else if( value->isInstanceOf( CompoundData::staticTypeId() ) )
-		{			
-			
-			CompoundDataPtr data = IECore::staticPointerCast<CompoundData>( value );
-				
-			// should be a texture parameter
-			if( shaderState->shader()->parameterType( name )==Texture::staticTypeId() )
-			{
-				try
-				{	
-					TexturePtr texture = IECore::staticPointerCast<Texture>( ToGLTextureConverter( data ).convert() );
-					shaderState->textureValues()[name] = texture;
-				} 
-				catch( const std::exception &e )
-				{
-					msg( Msg::Error, "Renderer::shader", boost::format( "Error recreating ImagePrimitive from CompoundData object. (%s)." ) % e.what() );
-				}
-		
-			}
-			else
-			{
-				msg( Msg::Error, context, boost::format( "Shader parameter \"%s\" is not a texture parameter." ) % name );
-				return false;
-			}
-		}
-		else if( value->isInstanceOf( SplinefColor3fDataTypeId ) || value->isInstanceOf( SplineffDataTypeId ) )
-		{
-			// turn splines into textures
-			if( shaderState->shader()->parameterType( name )==Texture::staticTypeId() )
-			{
-				SplineToImagePtr op = new SplineToImage();
-				op->splineParameter()->setValue( value );
-				op->resolutionParameter()->setTypedValue( V2i( 8, 512 ) );
-				ImagePrimitivePtr image = IECore::staticPointerCast<ImagePrimitive>( op->operate() );
-
-				TexturePtr texture = 0;
-				if( image->variables.find( "R" )!=image->variables.end() )
-				{
-					texture = new ColorTexture( image );
-				}
-				else
-				{
-					texture = new LuminanceTexture( image );
-				}
-				shaderState->textureValues()[name] = texture;
-			}
-			else
-			{
-				msg( Msg::Error, context, boost::format( "Shader parameter \"%s\" is not a texture parameter." ) % name );
-				return false;
-			}
-		}
-		else
-		{
-			// a standard parameter
-			if( shaderState->shader()->valueValid( name, value ) )
-			{
-				shaderState->parameterValues()->writable()[name] = value;
-				return true;
-			}
-			else
-			{
-				msg( Msg::Error, context, boost::format( "Invalid value for shader parameter \"%s\"." ) % name );
-			}
-		}
-	}
-	catch( const std::exception &e )
-	{
-		msg( Msg::Error, context, boost::format( "Invalid or unsupported name or value for shader parameter \"%s\" (%s)." ) % name % e.what() );
-	}
-	catch( ... )
-	{
-		msg( Msg::Error, context, boost::format( "Invalid or unsupported name or value for shader parameter \"%s\"." ) % name );
-	}
-	return false;
-}
-
 void IECoreGL::Renderer::shader( const std::string &type, const std::string &name, const IECore::CompoundDataMap &parameters )
 {
+	if ( !m_data->inWorld )
+	{
+		msg( Msg::Warning, "Renderer::shader", "Unsupported shader call outside world begin/end blocks." );
+		return;	
+	}
+
 	if( type=="surface" || type=="gl:surface" )
 	{
-		ShaderPtr s = 0;
-
-		string fragSrc = parameterValue<string>( "gl:fragmentSource", parameters, "" );
-		string vertSrc = parameterValue<string>( "gl:vertexSource", parameters, "" );
-		if( fragSrc!="" || vertSrc!="" )
+		if ( !m_data->shaderManager )
 		{
-			// compile from src parameters
-			try
-			{
-				s = new Shader( vertSrc, fragSrc );
-			}
-			catch( const std::exception &e )
-			{
-				msg( Msg::Error, "Renderer::shader", boost::format( "Failed to compile shader \"%s\" (%s)." ) % name % e.what() );
-			}
+			msg( Msg::Warning, "Renderer::shader", "Shader specification before world begin ignored. No ShaderManager defined yet." );
+			return;
 		}
-		else
+		string vertexSource = parameterValue<string>( "gl:vertexSource", parameters, "" );
+		string fragmentSource = parameterValue<string>( "gl:fragmentSource", parameters, "" );
+
+		if ( vertexSource == "" && fragmentSource == "" )
 		{
-			// load from disk
-			try
-			{
-				s = m_data->shaderLoader->load( name );
-			}
-			catch( const std::exception &e )
-			{
-				msg( Msg::Error, "Renderer::shader", boost::format( "Failed to load shader \"%s\" (%s)." ) % name % e.what() );
-			}
-			catch( ... )
-			{
-				msg( Msg::Error, "Renderer::shader", boost::format( "Failed to load shader \"%s\"." ) % name );
-			}
+			m_data->shaderManager->loadShaderCode( name, vertexSource, fragmentSource );
 		}
 
-		if( s )
+		// validate the parameter types and load any texture parameters.
+		ShaderStateComponentPtr shaderState = new ShaderStateComponent( m_data->shaderManager, m_data->textureLoader, vertexSource, fragmentSource );
+		for( CompoundDataMap::const_iterator it=parameters.begin(); it!=parameters.end(); it++ )
 		{
-			// validate the parameter types and load any texture parameters.
-			ShaderStateComponentPtr shaderState = new ShaderStateComponent( s, new CompoundData );
-			for( CompoundDataMap::const_iterator it=parameters.begin(); it!=parameters.end(); it++ )
+			if( it->first!="gl:fragmentSource" && it->first!="gl:vertexSource" )
 			{
-				if( it->first!="gl:fragmentSource" && it->first!="gl:vertexSource" )
-				{
-					checkAndAddShaderParameter( shaderState, it->first, it->second, m_data, "Renderer::shader", false );
-				}
+				shaderState->addShaderParameterValue( it->first.value(), it->second );
 			}
-
-			m_data->implementation->addState( shaderState );
 		}
-
+		m_data->implementation->addState( shaderState );
 	}
 	else
 	{
@@ -1380,20 +1345,52 @@ void IECoreGL::Renderer::motionEnd()
 // primitives
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// adds a primitive into the renderer implementation, first extracting any primitive variables that represent
-// shader parameters and applying them in the renderer state.
-// \todo I broke a lot of const correctness stuff to make this work - in particular I'm not sure it's good for
-// ShaderStateComponent to expose it's shader and parameters in non-const form, and i'm not sure RendererImplementation::getState()
-// should return non-const data either. When we do varying primvars look into storing the uniform ones on the primitive too,
-// and see if that might solve our problem somewhat.
-/// \todo the addVertexAttributes is bit of a hack - MeshPrimitives have their own mechanisms for adding vertex attributes to take into
-/// account changes of detail from varying->facevarying.
-/// \todo Ditch this entire function. Vertex attributes should be added by the relevant converter classes (like MeshPrimitive does), and the
-/// uniform primvar shader overrides should be stored on the primitive and dealt with at draw time.
-static void addPrimitive( IECoreGL::PrimitivePtr primitive, const IECore::PrimitiveVariableMap &primVars, IECoreGL::Renderer::MemberData *memberData, bool addVertexAttributes = true )
+template< typename T >
+static bool checkCulling( RendererImplementation *r, const T *p )
 {
+	Imath::Box3f b = p->bound();
+	const Imath::Box3f &cullBox = r->getState<CullingBoxStateComponent>()->value();
+	if ( cullBox.isEmpty() )
+	{
+		// culling is disabled... p should be rendered.
+		return true;
+	}
+	switch( r->getState<CullingSpaceStateComponent>()->value() )
+	{
+		case ObjectSpace :
+			// if in local space we don't have to transform bounding box of p.
+			break;
+		case WorldSpace :
+			// transform procedural bounding box to world space to match culling box space.
+			b = Imath::transform( b, r->getTransform() );
+			break;
+		default :
+			msg( Msg::Warning, "Renderer::checkCulling", "Unnexpected culling space!" );
+			return true;
+	}
+	return cullBox.intersects( b );
+}
+
+static void addPrimVarsToPrimitive( IECoreGL::PrimitivePtr primitive, const IECore::PrimitiveVariableMap &primVars )
+{
+	// add constant primVars as uniform attributes on the gl primitive
+	for( IECore::PrimitiveVariableMap::const_iterator it=primVars.begin(); it!=primVars.end(); it++ )
+	{
+		if( it->second.interpolation==IECore::PrimitiveVariable::Constant )
+		{
+			try
+			{
+				primitive->addUniformAttribute( it->first, it->second.data );
+			}
+			catch( const std::exception &e )
+			{
+				IECore::msg( IECore::Msg::Error, "Renderer::addPrimitive", boost::format( "Failed to add primitive constant variable %s (%s)." ) % it->first % e.what() );
+			}
+		}
+	}
+
 	// add vertex attributes to the primitive if it supports them
-	if( addVertexAttributes && primitive->vertexAttributeSize() )
+	if( primitive->vertexAttributeSize() )
 	{
 		for( IECore::PrimitiveVariableMap::const_iterator it=primVars.begin(); it!=primVars.end(); it++ )
 		{
@@ -1405,41 +1402,19 @@ static void addPrimitive( IECoreGL::PrimitivePtr primitive, const IECore::Primit
 				}
 				catch( const std::exception &e )
 				{
-					IECore::msg( IECore::Msg::Error, "Renderer::addPrimitive", boost::format( "Failed to add primitive variable (%s)." ) % e.what() );
+					IECore::msg( IECore::Msg::Error, "Renderer::addPrimitive", boost::format( "Failed to add primitive variable %s (%s)." ) % it->first % e.what() );
 				}
 			}
 		}
 	}
+}
 
-	ShaderStateComponentPtr ss = memberData->implementation->getState<ShaderStateComponent>();
-	if( ss && ss->shader() )
-	{
-		ShaderStateComponentPtr shaderState = new ShaderStateComponent( ss->shader(), ss->parameterValues(), &ss->textureValues() );
-
-		unsigned int parmsAdded = 0;
-		for( PrimitiveVariableMap::const_iterator it = primVars.begin(); it!=primVars.end(); it++ )
-		{
-			if( it->second.interpolation==PrimitiveVariable::Constant )
-			{
-				parmsAdded += checkAndAddShaderParameter( shaderState, it->first, it->second.data, memberData, "Renderer::addPrimitive", true );
-			}
-		}
-		if( parmsAdded )
-		{
-			memberData->implementation->attributeBegin();
-			memberData->implementation->addState( shaderState );
-		}
-			memberData->implementation->addPrimitive( primitive );
-		if( parmsAdded )
-		{
-			memberData->implementation->attributeEnd();
-		}
-	}
-	else
-	{
-		// no shader so no need to worry
-		memberData->implementation->addPrimitive( primitive );
-	}
+static void addCurrentInstanceChild( IECoreGL::Renderer::MemberData *data, IECoreGL::Renderable *child )
+{
+	IECoreGL::GroupPtr childGroup = new IECoreGL::Group();
+	childGroup->setTransform( data->transformStack.top() );
+	childGroup->addChild( child );
+	data->currentInstance->addChild( childGroup );
 }
 
 void IECoreGL::Renderer::points( size_t numPoints, const IECore::PrimitiveVariableMap &primVars )
@@ -1558,13 +1533,30 @@ void IECoreGL::Renderer::points( size_t numPoints, const IECore::PrimitiveVariab
 
 	// make the primitive
 	PointsPrimitivePtr prim = new PointsPrimitive( type, points, colors, 0, widths, heights, rotations );
-	addPrimitive( prim, primVars, m_data );
+	addPrimVarsToPrimitive( prim, primVars );
+
+	if ( m_data->currentInstance )
+	{
+		addCurrentInstanceChild( m_data, prim );
+	}
+	else if ( checkCulling< IECoreGL::Primitive >( m_data->implementation, prim ) )
+	{
+		m_data->implementation->addPrimitive( prim );
+	}
 }
 
 void IECoreGL::Renderer::disk( float radius, float z, float thetaMax, const IECore::PrimitiveVariableMap &primVars )
 {
 	DiskPrimitivePtr prim = new DiskPrimitive( radius, z, thetaMax );
-	addPrimitive( prim, primVars, m_data );
+	addPrimVarsToPrimitive( prim, primVars );
+	if ( m_data->currentInstance )
+	{
+		addCurrentInstanceChild( m_data, prim );
+	}
+	else if ( checkCulling< IECoreGL::Primitive >( m_data->implementation, prim ) )
+	{
+		m_data->implementation->addPrimitive( prim );
+	}
 }
 
 void IECoreGL::Renderer::curves( const IECore::CubicBasisf &basis, bool periodic, IECore::ConstIntVectorDataPtr numVertices, const IECore::PrimitiveVariableMap &primVars )
@@ -1574,7 +1566,14 @@ void IECoreGL::Renderer::curves( const IECore::CubicBasisf &basis, bool periodic
 		IECore::CurvesPrimitivePtr c = new IECore::CurvesPrimitive( numVertices, basis, periodic );
 		c->variables = primVars;
 		CurvesPrimitivePtr prim = IECore::staticPointerCast<CurvesPrimitive>( ToGLCurvesConverter( c ).convert() );
-		addPrimitive( prim, primVars, m_data, false );
+		if ( m_data->currentInstance )
+		{
+			addCurrentInstanceChild( m_data, prim );
+		}
+		else if ( checkCulling< IECoreGL::Primitive >( m_data->implementation, prim ) )
+		{
+			m_data->implementation->addPrimitive( prim );
+		}
 	}
 	catch( const std::exception &e )
 	{
@@ -1622,7 +1621,15 @@ void IECoreGL::Renderer::text( const std::string &font, const std::string &text,
 	f->coreFont()->setKerning( kerning );
 
 	TextPrimitivePtr prim = new TextPrimitive( text, f );
-	addPrimitive( prim, primVars, m_data );
+	addPrimVarsToPrimitive( prim, primVars );
+	if ( m_data->currentInstance )
+	{
+		addCurrentInstanceChild( m_data, prim );
+	}
+	else if ( checkCulling< IECoreGL::Primitive >( m_data->implementation, prim ) )
+	{
+		m_data->implementation->addPrimitive( prim );
+	}
 #else
 	IECore::msg( IECore::Msg::Warning, "Renderer::text", "IECore was not built with FreeType support." );
 #endif // IECORE_WITH_FREETYPE
@@ -1631,33 +1638,28 @@ void IECoreGL::Renderer::text( const std::string &font, const std::string &text,
 void IECoreGL::Renderer::sphere( float radius, float zMin, float zMax, float thetaMax, const IECore::PrimitiveVariableMap &primVars )
 {
 	SpherePrimitivePtr prim = new SpherePrimitive( radius, zMin, zMax, thetaMax );
-	addPrimitive( prim, primVars, m_data );
+	addPrimVarsToPrimitive( prim, primVars );
+	if ( m_data->currentInstance )
+	{
+		addCurrentInstanceChild( m_data, prim );
+	}
+	else if ( checkCulling< IECoreGL::Primitive >( m_data->implementation, prim ) )
+	{
+		m_data->implementation->addPrimitive( prim );
+	}
 }
 
-static IECoreGL::ShaderPtr imageShader()
+static const std::string &imageFragmentShader()
 {
-	static const char *fragSrc =
+	// fragment shader
+	static const std::string shaderCode = 
 		"uniform sampler2D texture;"
 		""
 		"void main()"
 		"{"
 		"	gl_FragColor = texture2D( texture, gl_TexCoord[0].xy );"
 		"}";
-	static bool t = false;
-	static ShaderPtr s = 0;
-	if( !t )
-	{
-		try
-		{
-			s = new Shader( "", fragSrc );
-		}
-		catch( const std::exception &e )
-		{
-			msg( Msg::Error, "Renderer::image", boost::format( "Unable to create image shader (%s)." ) % e.what() );
-		}
-		t = true;
-	}
-	return s;
+	return shaderCode;
 }
 
 /// \todo This positions images incorrectly when dataWindow!=displayWindow. This is because the texture
@@ -1665,40 +1667,25 @@ static IECoreGL::ShaderPtr imageShader()
 /// displayWindow.
 void IECoreGL::Renderer::image( const Imath::Box2i &dataWindow, const Imath::Box2i &displayWindow, const IECore::PrimitiveVariableMap &primVars )
 {
+	if ( m_data->currentInstance )
+	{
+		IECore::msg( IECore::Msg::Warning, "Renderer::image", "Images currently not supported inside instances." );
+		return;
+	}
+
 	ImagePrimitivePtr image = new ImagePrimitive( dataWindow, displayWindow );
+
+	if ( !checkCulling<IECore::Primitive>( m_data->implementation, image ) )
+	{
+		return;
+	}
+
 	image->variables = primVars;
 
-	ShaderPtr shader = imageShader();
-	if( shader )
-	{
-		TexturePtr texture = 0;
-		try
-		{
-			texture = new ColorTexture( image );
-		}
-		catch( const std::exception &e )
-		{
-			msg( Msg::Warning, "Renderer::image", boost::format( "Texture conversion failed (%s)." ) % e.what() );
-		}
-		catch( ... )
-		{
-			msg( Msg::Warning, "Renderer::image", "Texture conversion failed." );
-		}
+	IECore::CompoundObjectPtr params = new IECore::CompoundObject();
+	params->members()[ "texture" ] = image;
 
-		if( texture )
-		{
-			ShaderStateComponent::TexturesMap textures;
-			textures["texture"] = texture;
-			ShaderStateComponentPtr state = new ShaderStateComponent( shader, 0, &textures );
-			m_data->implementation->addState( state );
-		}
-	}
-	else
-	{
-		/// \todo Support a fixed pipeline fallback when we have support for a fixed pipeline
-		/// in a StateComponent
-		msg( Msg::Warning, "Renderer::image", "Unable to create shader to display image." );
-	}
+	ShaderStateComponentPtr shaderState = new ShaderStateComponent( m_data->shaderManager, m_data->textureLoader, "", imageFragmentShader(), params );
 
 	m_data->implementation->transformBegin();
 
@@ -1715,8 +1702,11 @@ void IECoreGL::Renderer::image( const Imath::Box2i &dataWindow, const Imath::Box
 		xform[2][2] = 1.0;
 
 		m_data->implementation->concatTransform( xform );
+		m_data->implementation->attributeBegin();
+		m_data->implementation->addState( shaderState );
 		QuadPrimitivePtr quad = new QuadPrimitive( 1.0, 1.0 );
 		m_data->implementation->addPrimitive( quad );
+		m_data->implementation->attributeEnd();
 
 	m_data->implementation->transformEnd();
 }
@@ -1743,7 +1733,14 @@ void IECoreGL::Renderer::mesh( IECore::ConstIntVectorDataPtr vertsPerFace, IECor
 		}
 
 		MeshPrimitivePtr prim = IECore::staticPointerCast<MeshPrimitive>( ToGLMeshConverter( m ).convert() );
-		addPrimitive( prim, primVars, m_data, false );
+		if ( m_data->currentInstance )
+		{
+			addCurrentInstanceChild( m_data, prim );
+		}
+		else if ( checkCulling<IECoreGL::Primitive>( m_data->implementation, prim ) )
+		{
+			m_data->implementation->addPrimitive( prim );
+		}
 	}
 	catch( const std::exception &e )
 	{
@@ -1780,9 +1777,15 @@ void IECoreGL::Renderer::geometry( const std::string &type, const IECore::Compou
 
 void IECoreGL::Renderer::procedural( IECore::Renderer::ProceduralPtr proc )
 {
-	/// \todo Frustum culling, with an option to enable/disable it (we'd need to disable it when
-	/// building scenes for interactive display).
-	proc->render( this );
+	if ( m_data->currentInstance )
+	{
+		IECore::msg( IECore::Msg::Warning, "Renderer::procedural", "Procedurals currently not supported inside instances." );
+		return;
+	}
+	if ( checkCulling<IECore::Renderer::Procedural>( m_data->implementation, proc ) )
+	{
+		m_data->implementation->addProcedural( proc, this );
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1791,17 +1794,62 @@ void IECoreGL::Renderer::procedural( IECore::Renderer::ProceduralPtr proc )
 
 void IECoreGL::Renderer::instanceBegin( const std::string &name, const IECore::CompoundDataMap &parameters )
 {
-	msg( Msg::Warning, "Renderer::instanceBegin", "Not implemented" );
+	if ( m_data->inWorld )
+	{
+		msg( Msg::Warning, "Renderer::instanceBegin", "Unsupported instanceBegin call after worldBegin." );
+		return;	
+	}
+	if ( m_data->currentInstance )
+	{
+		IECore::msg( IECore::Msg::Warning, "Renderer::instanceBegin", "Instance already being defined!" );
+		return;
+	}
+	MemberData::InstanceMap::const_iterator it = m_data->instances.find( name );
+	if ( it != m_data->instances.end() )
+	{
+		msg( Msg::Warning, "Renderer::instance", boost::format( "Overwriting instance named \"%s\"." ) % name );
+		return;
+	}
+	m_data->currentInstance = new Group();
+	m_data->instances[ name ] = m_data->currentInstance;
 }
 
 void IECoreGL::Renderer::instanceEnd()
 {
-	msg( Msg::Warning, "Renderer::instanceEnd", "Not implemented" );
+	if ( m_data->inWorld )
+	{
+		msg( Msg::Warning, "Renderer::instanceEnd", "Unsupported instanceEnd call after worldBegin." );
+		return;	
+	}
+	if ( !m_data->currentInstance )
+	{
+		IECore::msg( IECore::Msg::Warning, "Renderer::instanceEnd", "instanceEnd called when no instances are being defined!" );
+		return;
+	}
+	m_data->currentInstance = 0;
 }
 
 void IECoreGL::Renderer::instance( const std::string &name )
 {
-	msg( Msg::Warning, "Renderer::instance", "Not implemented" );
+	MemberData::InstanceMap::iterator it = m_data->instances.find( name );
+	if ( it == m_data->instances.end() )
+	{
+		msg( Msg::Warning, "Renderer::instance", boost::format( "No instance named \"%s\" was found." ) % name );
+		return;
+	}
+	if ( m_data->currentInstance )
+	{
+		// instance called within another instance
+		addCurrentInstanceChild( m_data, it->second );
+	}
+	else if ( m_data->inWorld )
+	{
+		m_data->implementation->addInstance( it->second );
+	}
+	else
+	{
+		msg( Msg::Warning, "Renderer::instance", "Unsupported call to instance outside world and instance block!" );
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1818,17 +1866,20 @@ bool removeObjectWalk( IECoreGL::GroupPtr parent, IECoreGL::GroupPtr child, cons
 	{
 		if( parent )
 		{
+			IECoreGL::Group::Mutex::scoped_lock lock( parent->mutex() );
 			parent->removeChild( child );
 		}
 		else
 		{
 			// no parent, ie we're at the root of the Scene. just remove all the children.
+			IECoreGL::Group::Mutex::scoped_lock lock( child->mutex() );
 			child->clearChildren();
 		}
 		return true;
 	}
 	
 	bool result = false;
+	IECoreGL::Group::Mutex::scoped_lock lock( child->mutex() );
 	IECoreGL::Group::ChildContainer::const_iterator it = child->children().begin();
 	while( it!=child->children().end() )
 	{
@@ -1876,6 +1927,11 @@ static const CommandMap &commands()
 
 IECore::DataPtr IECoreGL::Renderer::command( const std::string &name, const IECore::CompoundDataMap &parameters )
 {
+	if ( m_data->currentInstance )
+	{
+		IECore::msg( IECore::Msg::Warning, "Renderer::command", "Commands not supported inside instances." );
+		return 0;
+	}
 	const CommandMap &c = commands();
 	CommandMap::const_iterator it = c.find( name );
 	if( it!=c.end() )
@@ -1892,3 +1948,12 @@ IECore::DataPtr IECoreGL::Renderer::command( const std::string &name, const IECo
 	return 0;
 }
 
+IECoreGL::ShaderManager *IECoreGL::Renderer::shaderManager()
+{
+	return m_data->shaderManager;
+}
+
+IECoreGL::TextureLoader *IECoreGL::Renderer::textureLoader()
+{
+	return m_data->textureLoader;
+}

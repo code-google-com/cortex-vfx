@@ -37,6 +37,7 @@
 
 #include "IECoreGL/Renderable.h"
 #include "IECoreGL/GL.h"
+#include "IECoreGL/TypedStateComponent.h"
 
 #include "IECore/Primitive.h"
 #include "IECore/VectorTypedData.h"
@@ -66,6 +67,8 @@ class Primitive : public Renderable
 		/// OpenGL context. The Primitive will draw itself
 		/// using the style represented by state, allowing
 		/// representations such as wireframe over shaded etc.
+		/// It temporarily changes the shader parameters that 
+		/// match the primitive's uniform variables.
 		/// An exception is thrown if state->isComplete() is not
 		/// true.
 		///
@@ -74,6 +77,8 @@ class Primitive : public Renderable
 		/// in different OpenGL states, once for each style
 		/// present in state.
 		virtual void render( ConstStatePtr state ) const;
+
+		virtual Imath::Box3f bound() const = 0;
 
 		/// Returns the number of expected data values for
 		/// vertex attributes. Returns 0 if vertex attributes
@@ -87,6 +92,35 @@ class Primitive : public Renderable
 		/// Takes a copy of data. Throws an Exception if this primitive doesn't support
 		/// vertex attributes, or if the data supplied is not suitable.
 		void addVertexAttribute( const std::string &name, IECore::ConstDataPtr data );
+
+		/// Takes a copy of data. Throws an Exception if the data supplied is not suitable.
+		void addUniformAttribute( const std::string &name, IECore::ConstDataPtr data );
+
+		//! @name StateComponents
+		/// The following StateComponent classes have an effect only on
+		/// Primitive objects.
+		//////////////////////////////////////////////////////////////////////////////
+		//@{
+		typedef TypedStateComponent<bool, PrimitiveBoundTypeId> DrawBound;
+		IE_CORE_DECLAREPTR( DrawBound );
+		typedef TypedStateComponent<bool, PrimitiveWireframeTypeId> DrawWireframe;
+		IE_CORE_DECLAREPTR( DrawWireframe );
+		typedef TypedStateComponent<float, PrimitiveWireframeWidthTypeId> WireframeWidth;
+		IE_CORE_DECLAREPTR( WireframeWidth );
+		typedef TypedStateComponent<bool, PrimitiveSolidTypeId> DrawSolid;
+		IE_CORE_DECLAREPTR( DrawSolid );
+		typedef TypedStateComponent<bool, PrimitiveOutlineTypeId> DrawOutline;
+		IE_CORE_DECLAREPTR( DrawOutline );
+		typedef TypedStateComponent<float, PrimitiveOutlineWidthTypeId> OutlineWidth;
+		IE_CORE_DECLAREPTR( OutlineWidth );
+		typedef TypedStateComponent<bool, PrimitivePointsTypeId> DrawPoints;
+		IE_CORE_DECLAREPTR( DrawPoints );
+		typedef TypedStateComponent<float, PrimitivePointWidthTypeId> PointWidth;
+		IE_CORE_DECLAREPTR( PointWidth );
+		/// Used to trigger sorting of the components of a primitive when the TransparentShadingStateComponent has a value of true.
+		typedef TypedStateComponent<bool, PrimitiveTransparencySortStateComponentTypeId> TransparencySort;
+		IE_CORE_DECLAREPTR( TransparencySort );
+		//@}
 
 	protected :
 
@@ -146,15 +180,17 @@ class Primitive : public Renderable
 			const float *data;
 			unsigned int dimensions;
 		};
-		void setupVertexAttributesAsUniform( Shader *s ) const;
+		void setupVertexAttributesAsUniform( const Shader *s ) const;
 		mutable struct {
-			Shader *shader;
+			const Shader *shader;
 			std::map<GLint, IntData> intDataMap;
 			std::map<GLint, FloatData> floatDataMap;
 		} m_vertexToUniform;
 
-		typedef std::map<std::string, IECore::ConstDataPtr> VertexAttributeMap;
-		VertexAttributeMap m_vertexAttributes;
+		typedef std::map<std::string, IECore::ConstDataPtr> AttributeMap;
+		AttributeMap m_vertexAttributes;
+		AttributeMap m_uniformAttributes;
+
 };
 
 IE_CORE_DECLAREPTR( Primitive );

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,17 +32,17 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECOREGL_ADJUSTSATURATION_H
-#define IECOREGL_ADJUSTSATURATION_H
+#ifndef IECOREGL_DIFFUSE_H
+#define IECOREGL_DIFFUSE_H
 
-#include "IECoreGL/intensity.h"
-
-/// Saturation value of 1 return c, 0 returns a fully desaturated
-/// color and > 1 returns a color with increased saturation.
-vec3 ieAdjustSaturation( vec3 c, float saturation )
+vec3 ieDiffuse( vec3 P, vec3 N, vec3 Cl[gl_MaxLights], vec3 L[gl_MaxLights], int nLights )
 {
-	float l = intensity( c );
-	return mix( vec3( l, l, l ), c, saturation );
+	vec3 result;
+	for( int i=0 ; i<nLights; i++ )
+	{
+		result += Cl[i] * max( 0.0, dot( N, normalize( L[i] ) ) );
+	}
+	return result;
 }
 
-#endif // IECOREGL_ADJUSTSATURATION_H
+#endif // IECOREGL_DIFFUSE_H

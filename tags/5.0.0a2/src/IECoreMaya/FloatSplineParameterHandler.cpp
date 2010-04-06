@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,6 @@
 #include <cassert>
 #include <algorithm>
 
-#include "IECoreMaya/Parameter.h"
 #include "IECoreMaya/ToMayaObjectConverter.h"
 #include "IECoreMaya/FromMayaObjectConverter.h"
 #include "IECoreMaya/FloatSplineParameterHandler.h"
@@ -61,7 +60,7 @@ template<> ParameterHandler::Description< FloatSplineParameterHandler<  IECore::
 	FloatSplineParameterHandler<  IECore::Splinedd >::g_registrar( IECore::SplineddParameter::staticTypeId() );
 
 template<typename S>
-MStatus FloatSplineParameterHandler<S>::update( IECore::ConstParameterPtr parameter, MObject &attribute ) const
+MStatus FloatSplineParameterHandler<S>::doUpdate( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	assert( parameter );
 
@@ -71,38 +70,41 @@ MStatus FloatSplineParameterHandler<S>::update( IECore::ConstParameterPtr parame
 		return MS::kFailure;
 	}
 
+	MObject attribute = plug.attribute();
 	MFnCompoundAttribute fnCAttr( attribute );
 	if( !fnCAttr.hasObj( attribute ) )
 	{
 		return MS::kFailure;
 	}
 
-	/// \todo See if the attribute is of type CurveRamp - can't do this yet as we can't construct
-	/// an MRampAttribute from just the MObject. We need either the node, too, or an MPlug
+	MRampAttribute fnRAttr( plug );
+	if( !fnRAttr.isCurveRamp() )
+	{
+		return MS::kFailure;
+	}
 
 	return MS::kSuccess;
 }
 
 template<typename S>
-MObject FloatSplineParameterHandler<S>::create( IECore::ConstParameterPtr parameter, const MString &attributeName ) const
+MPlug FloatSplineParameterHandler<S>::doCreate( IECore::ConstParameterPtr parameter, const MString &plugName, MObject &node ) const
 {
 	assert( parameter );
 
 	typename IECore::TypedParameter< S >::ConstPtr p = IECore::runTimeCast<const IECore::TypedParameter< S > >( parameter );
 	if( !p )
 	{
-		return MObject::kNullObj;
+		return MPlug();
 	}
 
 	MRampAttribute fnRAttr;
-	MObject result = fnRAttr.createCurveRamp( attributeName, attributeName );
+	MObject attribute = fnRAttr.createCurveRamp( plugName, plugName );
 
-	update( parameter, result );
-	return result;
+	return finishCreating( parameter, attribute, node );
 }
 
 template<typename S>
-MStatus FloatSplineParameterHandler<S>::setValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
+MStatus FloatSplineParameterHandler<S>::doSetValue( IECore::ConstParameterPtr parameter, MPlug &plug ) const
 {
 	assert( parameter );
 	typename IECore::TypedParameter< S >::ConstPtr p = IECore::runTimeCast<const IECore::TypedParameter< S > >( parameter );
@@ -245,7 +247,7 @@ MStatus FloatSplineParameterHandler<S>::setValue( IECore::ConstParameterPtr para
 }
 
 template<typename S>
-MStatus FloatSplineParameterHandler<S>::setValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
+MStatus FloatSplineParameterHandler<S>::doSetValue( const MPlug &plug, IECore::ParameterPtr parameter ) const
 {
 	assert( parameter );
 

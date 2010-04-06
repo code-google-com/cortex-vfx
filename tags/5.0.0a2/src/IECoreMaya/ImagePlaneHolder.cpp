@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,7 +42,6 @@
 #include "maya/MGlobal.h"
 
 #include "IECoreMaya/ImagePlaneHolder.h"
-#include "IECoreMaya/Parameter.h"
 #include "IECoreMaya/MayaTypeIds.h"
 #include "IECoreMaya/ToMayaImageConverter.h"
 
@@ -88,7 +87,7 @@ MStatus ImagePlaneHolder::setDependentsDirty( const MPlug &plug, MPlugArray &plu
 	/// This isn't the best way of doing it, but at this point we can't even be sure that the Op has been loaded,
 	/// so calling plugParameter() may not work. We can't call getOp() or getParameterised() here, as it seems
 	/// we can't do things such as adding/removing attributes within this function
-	if( std::string( plug.partialName().substring( 0, 4 ).asChar() ) == "parm_" )
+	if( std::string( plug.partialName().substring( 0, 4 ).asChar() ) == g_attributeNamePrefix )
 	{
 		setImageDirty();
 	}

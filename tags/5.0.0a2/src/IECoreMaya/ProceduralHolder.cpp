@@ -75,17 +75,14 @@ MObject ProceduralHolder::aGLPreview;
 MObject ProceduralHolder::aTransparent;
 MObject ProceduralHolder::aDrawBound;
 MObject ProceduralHolder::aProceduralComponents;
-ClassData<ProceduralHolder, IECoreGL::RendererPtr> ProceduralHolder::g_lastRenderer;
 
 ProceduralHolder::ProceduralHolder()
-	:	m_boundDirty( true ), m_sceneDirty( true )
+	:	m_boundDirty( true ), m_sceneDirty( true ), m_lastRenderer( 0 )
 {
-	g_lastRenderer.create( this, 0 );
 }
 
 ProceduralHolder::~ProceduralHolder()
 {
-	g_lastRenderer.erase( this );
 }
 
 void ProceduralHolder::postConstructor()
@@ -209,9 +206,7 @@ MBoundingBox ProceduralHolder::boundingBox() const
 
 MStatus ProceduralHolder::setDependentsDirty( const MPlug &plug, MPlugArray &plugArray )
 {
-	/// \todo We should put "parm_" somewhere as a static const char * so everything can
-	/// reference it rather than repeating it.
-	if( std::string( plug.partialName().substring( 0, 4 ).asChar() ) == "parm_" )
+	if( std::string( plug.partialName().substring( 0, 4 ).asChar() ) == g_attributeNamePrefix )
 	{
 		// it's an input to the procedural
 		m_boundDirty = m_sceneDirty = true;
@@ -245,7 +240,6 @@ IECoreGL::ConstScenePtr ProceduralHolder::scene()
 		setParameterisedValues( true /* lazy */ );
 		try
 		{
-			IECoreGL::RendererPtr &m_lastRenderer = lastRenderer();
 			IECoreGL::RendererPtr rendererToReuse = 0;
 			boost::python::object pythonProcedural( p );
 			if( m_lastRenderer && PyObject_HasAttrString( pythonProcedural.ptr(), "willRerender" ) )
@@ -253,7 +247,7 @@ IECoreGL::ConstScenePtr ProceduralHolder::scene()
 				/// \todo Consider how we might modify the ParameterisedProcedural (and possibly Renderer::Procedural?) interface
 				/// to properly support rerendering. Do this in conjunction with the todo in IECoreGL::Renderer::command() (about formalising a
 				/// proper interface for specifying scene edits to a Renderer).
-				bool rerender = boost::python::extract<bool>( pythonProcedural.attr( "willRerender" )( m_lastRenderer, p->parameters()->getValue() ) );
+				bool rerender = boost::python::extract<bool>( pythonProcedural.attr( "willRerender" )( m_lastRenderer, IECore::ObjectPtr( p->parameters()->getValue() ) ) );
 				if( rerender )
 				{
 					rendererToReuse = m_lastRenderer;
@@ -485,10 +479,4 @@ void ProceduralHolder::buildComponents()
 	}
 
 #endif
-}
-
-
-IECoreGL::RendererPtr &ProceduralHolder::lastRenderer()
-{
-	return g_lastRenderer[this];
 }
