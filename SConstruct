@@ -133,6 +133,17 @@ o.Add(
 	"",
 )
 
+o.Add(
+	"ILMBASE_INCLUDE_PATH",
+	"The path to the IlmBase include directory (if different to OPENEXR_INCLUDE_PATH).",
+	"/usr/local/include/OpenEXR",
+)
+
+o.Add(
+	"ILMBASE_LIB_PATH",
+	"The path to the IlmBase lib directory (if different to OPENEXR_LIB_PATH).",
+	"/usr/local/lib",
+)
 
 # JPEG options
 
@@ -259,6 +270,18 @@ o.Add(
 o.Add(
 	"GLEW_LIB_PATH",
 	"The path to the directory with libGLEW in it.",
+	"/usr/local/lib",
+)
+
+o.Add(
+	"GLUT_INCLUDE_PATH",
+	"The path to the directory with glut.h in it.",
+	"/usr/local/include/GL",
+)
+
+o.Add(
+	"GLUT_LIB_PATH",
+	"The path to the directory with libglut in it.",
 	"/usr/local/lib",
 )
 
@@ -553,6 +576,9 @@ env.Prepend(
 		"$OPENEXR_INCLUDE_PATH",
 		# we use "OpenEXR/x.h" and they use "x.h"
 		os.path.join( "$OPENEXR_INCLUDE_PATH","OpenEXR" ),
+		"$ILMBASE_INCLUDE_PATH",
+		# we use "OpenEXR/x.h" and they use "x.h"
+		os.path.join( "$ILMBASE_INCLUDE_PATH","OpenEXR" ),
 		"$BOOST_INCLUDE_PATH",
 		"$JPEG_INCLUDE_PATH",
 		"$TIFF_INCLUDE_PATH",
@@ -561,6 +587,7 @@ env.Prepend(
 	LIBPATH = [
 		"$BOOST_LIB_PATH",
 		"$OPENEXR_LIB_PATH",
+		"$ILMBASE_LIB_PATH",
 		"$JPEG_LIB_PATH",
 		"$TIFF_LIB_PATH",
 		"$FREETYPE_LIB_PATH",
@@ -1106,9 +1133,11 @@ if env["WITH_GL"] and doConfigure :
 		"CPPPATH" : [
 			"contrib/IECoreGL/include",
 			"$GLEW_INCLUDE_PATH",
+			"$GLUT_INCLUDE_PATH",
 		],
 		"LIBPATH" : [
 			"$GLEW_LIB_PATH",
+			"$GLUT_LIB_PATH",
 		],
 	}
 	
