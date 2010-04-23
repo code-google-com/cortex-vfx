@@ -354,3 +354,8 @@ p = maya.cmds.createNode( "ieProceduralHolder" )
 fp = IECoreMaya.FnProceduralHolder( p )
 fp.setParameterised( ShadedFurExample() )
 }}}
+
+Create a Maya Point light, and turn on lighting with the *7* key.
+
+You can also connect the *wordMesh* output of any mesh of your choosing to the 
+*parm_mesh* attribute on the procedural, to grow hair on things other than the very exciting plane.
