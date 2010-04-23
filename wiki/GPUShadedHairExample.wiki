@@ -1,4 +1,4 @@
-#summary One-sentence summary of this page.
+#summary An example procedural with a hair system and GPU Marschner shading.
 
 = Introduction =
 
