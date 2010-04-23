@@ -7,3 +7,4 @@
  * AnimatedProceduralExample _Rendering meshes with vertcaches applied_
  * ParticleSurfacingExample _Creating a mesh from a point cloud_
  * IrradianceMapGeneration _How to create an irradiance environment map_
+ * GPUShadedHairExample _A simple hair procedural with GPU Marschner shading._
