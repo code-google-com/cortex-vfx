@@ -1,7 +1,8 @@
 #summary An example procedural showing a simple hair system with GPU based Marschner shading.
 
-= Introduction =
+http://opensource.image-engine.com/images/examples/shadedHairExample.jpg
 
+= Introduction =
 
 An example of a simple hair system inside a procedural, complete with Marschner based hair shading. Sadly no shadows yet.
 
