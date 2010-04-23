@@ -1,13 +1,20 @@
-#summary One-sentence summary of this page.
+#summary An example procedural showing a simple hair system with GPU based Marschner shading.
 
 = Introduction =
 
-Add your content here.
+
+An example of a simple hair system inside a procedural, complete with Marschner based hair shading. Sadly no shadows yet.
+
+It demonstrates a couple of concepts:
+
+ * Parameter checksumming to improve interactive performance.
+ * Use of glsl shaders with textures.
+ * Use of IECore point distribution functions to seed hairs.
+
+You may need to download:
+
+ * http://johanneskopf.de/publications/blue_noise/tilesets/tileset_2048.dat
+
+and set *$CORTEX_POINTDISTRIBUTION_TILESET* accordingly, if you haven't already one so.
 
 
-= Details =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
