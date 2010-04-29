@@ -8,3 +8,4 @@
  * ParticleSurfacingExample _Creating a mesh from a point cloud_
  * IrradianceMapGeneration _How to create an irradiance environment map_
  * GpuShaderHairExample _A simple hair procedural with GPU Marschner shading._
+ * CompoundObjectExample _Using the `CompoundObject` class in Python_
