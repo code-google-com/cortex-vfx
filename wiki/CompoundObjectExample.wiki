@@ -1,4 +1,4 @@
-#Examples of working with the `CompoundObject` class in Python
+#summary Examples of working with the `CompoundObject` class in Python
 
 = Overview =
 
