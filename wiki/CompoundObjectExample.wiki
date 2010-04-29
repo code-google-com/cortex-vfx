@@ -1,13 +1,13 @@
-#Examples of working with the CompoundObject class in Python
+#Examples of working with the `CompoundObject` class in Python
 
 = Overview =
 
-The CompoundObject class provides string-keyed storage of Cortex objects with IO functionality. Think of it as a struct that you can assemble dynamically.
+The `CompoundObject` class provides string-keyed storage of Cortex objects with IO functionality. Think of it as a struct that you can assemble dynamically.
 
 = Examples =
 
-== Storing data on CompoundObjects  ==
-Here we store a single int and an array of floats in a CompoundObject.
+== Storing data on `CompoundObjects`  ==
+Here we store a single int and an array of floats in a `CompoundObject`.
 {{{
 from IECore import *
 
@@ -28,8 +28,8 @@ Writer.create( object, "test.cob" ).write()
 # read back into another object
 object2 = Reader.create( "test.cob" ).read()
 }}}
-== Hierarchies of CompoundObjects  ==
-We can also store CompoundObjects within CompoundObjects, allowing us to create hierarchical data.
+== Hierarchies of `CompoundObjects`  ==
+We can also store `CompoundObjects` within `CompoundObjects`, allowing us to create hierarchical data.
 {{{
 from IECore import *
 
@@ -47,8 +47,8 @@ Writer.create( parent, "test.cob" ).write()
 copied_object = Reader.create("test.cob").read()
 }}}
 
-== Storing an array of CompoundObjects ==
-We are using the ObjectVector class to work with arrays of CompoundObjects. Note that each entry in the array could have a different structure.
+== Storing an array of `CompoundObjects` ==
+We are using the `ObjectVector` class to work with arrays of `CompoundObjects`. Note that each entry in the array could have a different structure.
 {{{
 import IECore
  
