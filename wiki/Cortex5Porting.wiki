@@ -1,0 +1,32 @@
+#summary Porting code from Cortex 4 to 5
+
+= Introduction =
+
+Cortex 5 introduces a few changes which are not backwards compatible with Cortex 4. This page provides details on how to deal with them.
+
+= Parameterised Classes =
+
+The Parameterised constructor in Cortex 4 used to take a "name" parameter. This was removed in Cortex 5 as it provided no functionality above and beyond the typeName() method, and encouraged lazy habits where we ended up not registering Ops and Procedurals with the type system (and therefore name and typeName() wouldn't match).
+
+{{{
+# Cortex 4
+###########
+class MyProcedural( IECore.ParameterisedProcedural ) :
+
+    def __init__( self ) :
+
+        IECore.ParameterisedProcedural.__init__( self, "MyProcedural", "myDescription" )
+
+# Cortex 5
+##########
+
+class MyProcedural( IECore.ParameterisedProcedural ) :
+
+   def __init__( self ) :
+
+        IECore.ParameterisedProcedural.__init__( self, "myDescription" )
+
+# automatically implements typeName() and allocates a TypeId for the class.
+IECore.registerObject( MyProcedural )
+
+}}}
