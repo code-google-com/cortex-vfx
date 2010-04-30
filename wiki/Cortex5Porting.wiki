@@ -71,3 +71,15 @@ class MyOp( IECore.Op ) :
 IECore.registerRunTimeTyped( MyOp )
 
 }}}
+
+== ClassLoader ==
+
+The ClassLoader is used by the IECoreMaya nodes which hold Ops and Procedurals, so that they can reload the Op or Procedural they need when a scene is reloaded. The filesystem layout used by the ClassLoader changed from Cortex 4 to Cortex 5, as the previous layout was peculiarly slow to traverse.
+
+=== Cortex 4 layout ===
+
+className/classVersion/className.py
+
+=== Cortex 5 layout ===
+
+className/className-classVersion.py
