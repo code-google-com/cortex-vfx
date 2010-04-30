@@ -20,3 +20,16 @@
     * TestCase and TestProgram classes in IECoreMaya to make unit tests for other modules much simpler
 
   * PresetManager class to allow users to save and load arbitrary sets of presets for Parameterised classes
+
+== Improvements ==
+
+
+  * Support for specifying coshaders through IECoreRI::Renderer
+  * ParameterParser - parameter can now opt out of serialisation and parsing
+  * Friendlier member accessors for CompoundObject and CompoundData
+  * Many improvements to IECoreGL, which is now moved out of contrib and considered part of the main package
+  * Many thread safety (50% less finger crossing!)
+  * IECoreNuke now works with Nuke 5.2 and 6.0
+  * Improved handling of colorspaces for Image IO classes
+  * Python binding and optimisations for InverseDistanceWeightedInterpolation
+  * Optimisations for ClassLoader
