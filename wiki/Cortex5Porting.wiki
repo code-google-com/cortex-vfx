@@ -83,3 +83,7 @@ className/classVersion/className.py
 === Cortex 5 layout ===
 
 className/className-classVersion.py
+
+==Smart Pointers==
+
+Where Cortex 4 used boost::intrusive_ptr, Cortex 5 now uses IECore::IntrusivePtr, and we now use atomic operations to keep the reference counting threadsafe. Any references to boost_intrusive_ptr will therefore need replacing with IECore::IntrusivePtr. Note that by using the IE_CORE_DECLAREPTR macro and the ObjectTypePtr, ConstObjectTypePtr, ObjectType::Ptr and ObjectType::ConstPtr typedefs you can avoid any need to reference the specific underlying pointer type.
