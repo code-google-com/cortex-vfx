@@ -29,7 +29,7 @@ class MyProcedural( IECore.ParameterisedProcedural ) :
         IECore.ParameterisedProcedural.__init__( self, "my description" )
 
 # automatically implements typeName() etc and allocates a TypeId
-IECore.registerObject( MyProcedural )
+IECore.registerRunTimeTyped( MyProcedural )
 
 }}}
 
