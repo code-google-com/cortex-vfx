@@ -191,7 +191,7 @@ The *IECoreHoudini.FromHoudiniSopConverter()* class can convert native Houdini S
 
 This example takes a Torus SOP (_/obj/geo1/torus1_) and using the converter creates a Cortex IECore.MeshPrimitive object.
 
-IMG
+http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_converter.jpg
 
 {{{
 import IECoreHoudini
