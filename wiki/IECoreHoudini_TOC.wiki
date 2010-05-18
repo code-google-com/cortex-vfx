@@ -1,7 +1,7 @@
  * [IECoreHoudini#Introduction Introduction]
  * [IECoreHoudini#Building/Installation Building/Installation]
    * [IECoreHoudini#Overview Overview]
-   * [IECoreHoudini#Finding_the_HOUDINI_CXX_FLAGS" Finding the HOUDINI_CXX_FLAGS]
+   * [IECoreHoudini#Finding_the_HOUDINI_CXX_FLAGS Finding the HOUDINI_CXX_FLAGS]
    * [IECoreHoudini#Installation Installation]
    * [IECoreHoudini#CMake CMake]
    * [IECoreHoudini#Testing Testing]
