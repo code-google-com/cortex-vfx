@@ -60,7 +60,12 @@ Houdini passes a lot of flags to the compiler when building dsos. The easiest wa
 {{{
 % touch test.cpp
 % hconfig -t -e test.cpp
-% g++ -DVERSION=\"10.0.554\" -DDLLEXPORT= -D_GNU_SOURCE -DLINUX -DAMD64 -m64 -fPIC -DSIZEOF_VOID_P=8 -DSESI_LITTLE_ENDIAN -DENABLE_THREADS -DUSE_PTHREADS -D_REENTRANT -D_FILE_OFFSET_BITS=64 -c -DGCC4 -DGCC3 -Wno-deprecated -I/drd/software/ext/houdini/lin64/hfs10.0.554/toolkit/include -I/drd/software/ext/houdini/lin64/hfs10.0.554/toolkit/include/htools -Wall -W -Wno-parentheses -Wno-sign-compare -Wno-reorder -Wno-uninitialized -Wunused -Wno-unused-parameter -O2 -DMAKING_DSO -o test.o test.cpp
+g++ -DVERSION=\"10.0.554\" -DDLLEXPORT= -D_GNU_SOURCE -DLINUX -DAMD64 -m64 -fPIC 
+-DSIZEOF_VOID_P=8 -DSESI_LITTLE_ENDIAN -DENABLE_THREADS -DUSE_PTHREADS -D_REENTRANT 
+-D_FILE_OFFSET_BITS=64 -c -DGCC4 -DGCC3 -Wno-deprecated -I/drd/software/ext/houdini/lin64
+/hfs10.0.554/toolkit/include -I/drd/software/ext/houdini/lin64/hfs10.0.554/toolkit/include
+/htools -Wall -W -Wno-parentheses -Wno-sign-compare -Wno-reorder -Wno-uninitialized 
+-Wunused -Wno-unused-parameter -O2 -DMAKING_DSO -o test.o test.cpp
 }}}
 
 == Installation  ==
@@ -83,91 +88,57 @@ Run the unit tests from the *IECoreHoudini* root using Houdini's _hython_ comman
 }}}
 *Note:* some of the tests may print "Render failed." when executing. This is a known problem with executing the render callback outside the gui and not a test fail. 
 
-
-
-
-
-
-
 = Procedurals  =
 
-IECoreHoudini defines a SOP node for holding ParameterisedProcedurals. This is under the tab menu as '''Cortex&nbsp;Procedural&nbsp;'''(node type is '''ieProceduralHolder''').<br> 
+*IECoreHoudini* defines a SOP node for holding ParameterisedProcedurals. This is under the tab menu as *Cortex Procedural* (node type is *ieProceduralHolder*).
 
-When a parameterised procedural is associated with the SOP it will be rendered in the OpenGL&nbsp;viewport and it's parameters will appear on the '''Parameters''' pane allowing you to interface with the procedural. 
+When a parameterised procedural is associated with the SOP it will be rendered in the OpenGL viewport and it's parameters will appear on the *Parameters* pane allowing you to interface with the procedural. 
 
-<br> 
+IMG
 
-[[Image:CortexHoudini grab1.jpg|1000px]]<br> 
+^A parameterised procedural with parameters, previewed in the Houdini viewport.^
 
-<br> 
+By default, when a *Cortex Procedural* is dropped it has no parameterised procedural associated with it. 
 
-''A parameterised procedural with parameters, previewed in the Houdini viewport.'' <br> 
+IMG
 
-<br> <br> 
+^A procedural holder SOP in error because it doesn't have a parameterised procedural associated with it.^
 
-<br> 
+We can create a parameterised procedural and associate it with a *Cortex Procedural* using the *IECoreHoudini.FnProceduralHolder* function set, just like in *IECoreMaya*. The function set simply takes a [http://www.sidefx.com/docs/houdini10.0/hom/hou/Node hou.Node] instance at initialisation to specify which SOP to operate on. 
 
-By default, when a '''Cortex&nbsp;Procedural''' is dropped it has no parameterised procedural associated with it. 
+IMG
 
-<br> 
+^When a parametised procedural is associated with a procedural holder SOP it's type and version appear in the _Op Type_ and _Op Version_ parameters.^
 
-[[Image:CortexHoudini operror.jpg|480px]] 
+In this example we create an instance of the *sphereProcedural* procedural and assign it to an *ieProceduralHolder* SOP.
 
-<br> 
-
-''A procedural holder SOP in error because it doesn't have a parameterised procedural associated with it.'' 
-
-<br> 
-
-We can create a parameterised procedural and associate it with a '''Cortex&nbsp;Procedural''' using the '''IECoreHoudini.FnProceduralHolder''' function set, just like in IECoreMaya. The function set simply takes a [http://www.sidefx.com/docs/houdini10.0/hom/hou/Node hou.Node] instance at initialisation to specify which SOP to operate on. 
-
-<br> 
-
-[[Image:CortexHoudini procassigned.jpg|480px]]<br> 
-
-<br> 
-
-''When a parametised procedural is associated with a procedural holder SOP it's type and version appear in the '''''<i>Op&nbsp;Type</i>'''''and '''Op Version''' parameters.'' 
-
-<br> 
-
-In this example we create an instance of the '''sphereProcedural''' procedural and assign it to an '''ieProceduralHolder '''SOP. &lt;/span&gt; 
-
-&gt;&gt;&gt; import IECore, IECoreHoudini<br> &gt;&gt;&gt; geo = hou.node("/obj").createNode("geo", run_init_scripts=False) 
-
-&gt;&gt;&gt; cortex_proc = geo.createNode( "ieProceduralHolder" ) 
-
-&nbsp;&gt;&gt;&gt;&nbsp;some_procedural = IECore.ClassLoader.defaultProceduralLoader().load(&nbsp;"sphereProcedural", 0&nbsp;)() 
-
-&gt;&gt;&gt; fn = IECoreHoudini.FnProceduralHolder( cortex_proc ) 
-
-&gt;&gt;&gt;&nbsp;fn.setParameterised( some_procedural )<br> 
-
-<br> 
+{{{
+import IECore, IECoreHoudini
+geo = hou.node("/obj").createNode("geo", run_init_scripts=False)
+cortex_proc = geo.createNode( "ieProceduralHolder" )
+some_procedural = IECore.ClassLoader.defaultProceduralLoader().load( "sphereProcedural", 1 )()
+fn = IECoreHoudini.FnProceduralHolder( cortex_proc )
+fn.setParameterised( some_procedural )
+}}}
 
 There is a short-hand for this... 
+{{{
+import IECoreHoudini
+IECoreHoudini.FnProceduralHolder.create("cortex_sphere", "sphereProcedural", 1 )
+}}}
 
-&gt;&gt;&gt; import IECoreHoudini 
+You can interact with the procedural geometry in exactly the same way you would a normal Houdini object.
 
-&gt;&gt;&gt;&nbsp;IECoreHoudini.FnProceduralHolder.create(&nbsp;"sphereProcedural", 0&nbsp;) 
+IMG
 
-<br> 
+^These are not your everyday spheres - each of them is a separate geometry object containing a ieProceduralHolder node which is rendering the example sphereProcedural - but you can pick and transform them as usual.^
 
-You can interact with the procedural geometry in exactly the same way you would a normal Houdini object.<br> 
+OpenGL shading and lighting works as expected.
+*NOTE:* there is a known limitation currently, that the material is only applied to the first render primitive rendered by a procedural. 
 
-[[Image:CortexHoudini interactive.jpg]]<br> 
+IMG
 
-''These are not your everyday spheres - each of them is a separate geometry object containing a ieProceduralHolder node which is rendering the example sphereProcedural - but you can pick and transform them as usual.''<br> 
-
-OpenGL&nbsp;shading and lighting works as expected. '''Note: '''there is a known limitation currently, that the material is only applied to the first render primitive rendered by a procedural. 
-
-<br> 
-
-[[Image:CortexHoudini material.jpg]]<br> 
-
-''A Cortex procedural&nbsp;(half-dome)&nbsp;with a Decal material applied and a point light.'' 
-
-<br> 
+^A Cortex procedural (half-dome) with a Decal material applied and a point light.^
 
 == Parameters  ==
 
