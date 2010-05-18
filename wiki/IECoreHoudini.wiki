@@ -1,5 +1,5 @@
 #summary Houdini application support for Cortex.
-#sidebar TableOfContents
+#sidebar IECoreHoudini_TOC
 
 = Introduction  =
 
