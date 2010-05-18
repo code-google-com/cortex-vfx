@@ -54,7 +54,7 @@ build/
 
 *NOTE:* These tools have only been built and tested on Linux x86_64. 
 
-== Finding the HOUDINI_CXX_FLAGS  ==
+== Houdini CFlags ==
 
 Houdini passes a lot of flags to the compiler when building dsos. The easiest way to find these out is to do a dummy build with Houdini's _hcustom_ tool. 
 
