@@ -17,12 +17,12 @@
 
 == Overview  ==
 
-First, make sure you have a working installation of *Cortex v5* from the *trunk*. You will need at least *r3324*. It must be built against *python_2.5* and *boost_1.33.1* to work correctly with *Houdini 10.0*. 
+First, make sure you have a working installation of *Cortex v5* from the *trunk*. You will need at least *r3324*. It must be built against *Python 2.5* and *Boost 1.33.1* to work correctly with *Houdini 10.0*. 
 
 To build you should reuse the _options_ file you used to build Cortex in the first place and in addition set the following build options:
- * *CORTEX_ROOT*- This is the root of your Cortex installation.
- * *HFS* - This is your houdini installation path. Normally defined as the _$HFS_ envvar.
- * *HOUDINI_CXX_FLAGS* - The cflags used by Houdini to build dsos (see below).
+ * `CORTEX_ROOT`- This is the root of your Cortex installation.
+ * `HFS` - This is your houdini installation path. Normally defined as the `$HFS` envvar.
+ * `HOUDINI_CXX_FLAGS` - The cflags used by Houdini to build dsos (see below).
 
 You can add these to your original _options_ file (recommended) or specify them on the command line to _scons_. 
 
@@ -91,7 +91,7 @@ Run the unit tests from the *IECoreHoudini* root using Houdini's _hython_ comman
 
 = Procedurals  =
 
-*IECoreHoudini* defines a SOP node for holding ParameterisedProcedurals. This is under the tab menu as *Cortex Procedural* (node type is *ieProceduralHolder*).
+*IECoreHoudini* defines a SOP node for holding Procedurals. This is under the tab menu as *Cortex Procedural* (node type is *ieProceduralHolder*).
 
 When a parameterised procedural is associated with the SOP it will be rendered in the OpenGL viewport and it's parameters will appear on the *Parameters* pane allowing you to interface with the procedural. 
 
@@ -105,11 +105,11 @@ http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_operror-e1274
 
 ^A procedural holder SOP in error because it doesn't have a parameterised procedural associated with it.^
 
-We can create a parameterised procedural and associate it with a *Cortex Procedural* using the *IECoreHoudini.FnProceduralHolder* function set, just like in *IECoreMaya*. The function set simply takes a [http://www.sidefx.com/docs/houdini10.0/hom/hou/Node hou.Node] instance at initialisation to specify which SOP to operate on. 
+We can create a parameterised procedural and associate it with a *Cortex Procedural* using the `IECoreHoudini.FnProceduralHolder()` function set, just like in *IECoreMaya*. The function set simply takes a [http://www.sidefx.com/docs/houdini10.0/hom/hou/Node hou.Node()] instance at initialisation to specify which SOP to operate on. 
 
 http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_procassigned-e1274145088644.jpg
 
-^When a parametised procedural is associated with a procedural holder SOP it's type and version appear in the _Op Type_ and _Op Version_ parameters.^
+^When a parametised procedural is associated with a procedural holder SOP it's type and version appear in the `Op Type` and `Op Version` parameters.^
 
 In this example we create an instance of the *sphereProcedural* procedural and assign it to an *ieProceduralHolder* SOP.
 
@@ -135,6 +135,7 @@ http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_interactive-e
 ^These are not your everyday spheres - each of them is a separate geometry object containing a ieProceduralHolder node which is rendering the example sphereProcedural - but you can pick and transform them as usual.^
 
 OpenGL shading and lighting works as expected.
+
 *NOTE:* there is a known limitation currently, that the material is only applied to the first render primitive rendered by a procedural. 
 
 http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_material-e1274145409795.jpg
@@ -144,35 +145,34 @@ http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_material-e127
 == Parameters  ==
 
 The dynamic parameter interface is created when a procedural is set on the holder SOP and can represent these standard parameter types: 
- * Int 
- * Float 
- * Double 
- * Bool 
- * String 
- * Path, DirName, FileName, FileSequence 
- * V2i, V2f, V2d 
- * V3i, V3f, V3d 
- * Color3f, Color4f 
- * M44f, M44d
+ * `Int `
+ * `Float`
+ * `Double`
+ * `Bool`
+ * `String`
+ * `Path`, `DirName`, `FileName`, `FileSequence`
+ * `V2i`, `V2f`, `V2d` 
+ * `V3i`, `V3f`, `V3d` 
+ * `Color3f`, `Color4f`
+ * `M44f`, `M44d`
 
 http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_parmtypes-e1274145474859.jpg
 
 Currently unsupported parameter types are:
- * VectorParameter types
- * Compound 
- * FrameList 
- * Box2i, Box2f, Box2d
- * M44f, M44d 
- * Box3i, Box3f, Box3d
+ * `VectorParameter` types
+ * `Compound` 
+ * `FrameList` 
+ * `Box2i`, `Box2f`, `Box2d`
+ * `Box3i`, `Box3f`, `Box3d`
 
 *NOTE:* Presets are also not currently supported. 
 
 *IECoreHoudini* can modify behaviour/appearance based on some optional parameter _userData_ entries. 
 
- * *label* (StringData) - the parameter label in Houdini. Defaults to using a pretty-formatted version of the parameter's name. 
- * *gui_update* (BoolData) - whether this parameter will force a gui update. Defaults to True.
+ * *label* (`StringData`) - the parameter label in Houdini. Defaults to using a pretty-formatted version of the parameter's name. 
+ * *gui_update* (`BoolData`) - whether this parameter will force a gui update. Defaults to True.
 
-For example, here is a V3iParameter with a label which will not update the gui when it is modified:
+For example, here is a `V3iParameter` with a label which will not update the gui when it is modified:
 {{{
 V3iParameter(
      name = "v3iparm",
@@ -187,9 +187,9 @@ V3iParameter(
 
 = Conversions  =
 
-The *IECoreHoudini.FromHoudiniSopConverter()* class can convert native Houdini SOP geometry (meshes or points) into Cortex Primitives. Currently it only converts points, and consequently only detail and point attributes are converted into Cortex primitive variables. 
+The `IECoreHoudini.FromHoudiniSopConverter()` class can convert native Houdini SOP geometry (meshes or points) into Cortex Primitives. Currently it only converts points, and consequently only detail and point attributes are converted into Cortex primitive variables. 
 
-This example takes a Torus SOP (_/obj/geo1/torus1_) and using the converter creates a Cortex IECore.MeshPrimitive object.
+This example takes a Scatter SOP (_/obj/geo1/scatter_) and using the converter creates a Cortex `IECore.PointsPrimitive` object.
 
 http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_converter-e1274145524449.jpg
 
@@ -205,11 +205,11 @@ cortex_points = converter.convert()
 There are a couple of digital assets included with *IECoreHoudini* to make life a little bit easier. 
 
 == Cortex Rman Inject ==
-This is a geometry SHOP for injecting a Cortex Parameterised Procedural into a render via Soho's RIB generation. It wraps up the native Renderman Delayed Load geometry SHOP and adds some extra controls for specifying alternative bounds and adding extra procedural arguments.
+This is a geometry SHOP for injecting a Cortex Procedural into a render via Soho's RIB generation. It wraps up the native Renderman Delayed Load geometry SHOP and adds some extra controls for specifying alternative bounds and adding extra procedural arguments.
 
 http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_render-e1274145571327.jpg
 
 == Cortex Writer ==
-This is a SOP geometry writer ROP which converts SOP geometry and writes out FIO or COB files. Behind the scenes it just uses a regular geometryROP and an instance of IECoreHoudini.FromHoudiniSopConverter() that calls convert() per frame before writing the output. Feel free to dive in and have a look!
+This is a SOP geometry writer ROP which converts SOP geometry and writes out FIO or COB files. Behind the scenes it just uses a regular geometryROP and an instance of `IECoreHoudini.FromHoudiniSopConverter()` that calls `convert()` per frame before writing the output. Feel free to dive in and have a look!
 
 http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_writer-e1274145550854.jpg
