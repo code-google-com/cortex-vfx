@@ -1,0 +1,287 @@
+#summary Houdini application support for Cortex.
+
+= Introduction  =
+
+*IECoreHoudini* provides an interface for working with *Cortex* within SideFX's *Houdini*. 
+
+ * Parameterised Procedurals evaluation & preview in SOPs. 
+ * Interactive pick & transform. 
+ * OpenGL Material preview. 
+ * Converter for translating SOP geometry into Cortex primitives. 
+ * Utility HDAs for working with Cortex in Houdini.
+
+*NOTE:* this is an early release of code. You have been warned. 
+
+= Building/Installation  =
+
+== Overview  ==
+
+First, make sure you have a working installation of *Cortex v5* from the *trunk*. You will need at least *r3324*. It must be built against *python_2.5* and *boost_1.33.1* to work correctly with *Houdini 10.0*. 
+
+To build you should reuse the _options_ file you used to build Cortex in the first place and in addition set the following build options:
+ * *CORTEX_ROOT*- This is the root of your Cortex installation.
+ * *HFS* - This is your houdini installation path. Normally defined as the _$HFS_ envvar.
+ * *HOUDINI_CXX_FLAGS* - The cflags used by Houdini to build dsos (see below).
+
+You can add these to your original _options_ file (recommended) or specify them on the command line to _scons_. 
+
+With those added to your options file you can build using:
+{{{
+% scons OPTIONS=/path/to/my/options
+}}}
+
+The tools will all be built under the _build_ directory.
+
+{{{
+build/
+|-- houdini
+|   |-- dso
+|   |   `-- ieCoreHoudini.so
+|   `-- otls
+|       `-- ieCoreHoudini.otl
+`-- lib
+    |-- libIECoreHoudini.so
+    `-- python2.5
+        `-- site-packages
+            `-- IECoreHoudini
+                |-- FnProceduralHolder.py
+                |-- ParmTemplates.py
+                |-- Utils.py
+                |-- _IECoreHoudini.so
+                `-- __init__.py
+}}}
+
+*NOTE:* These tools have only been built and tested on Linux x86_64. 
+
+== Finding the HOUDINI_CXX_FLAGS  ==
+
+Houdini passes a lot of flags to the compiler when building dsos. The easiest way to find these out is to do a dummy build with Houdini's _hcustom_ tool. 
+
+{{{
+% touch test.cpp
+% hconfig -t -e test.cpp
+% g++ -DVERSION=\"10.0.554\" -DDLLEXPORT= -D_GNU_SOURCE -DLINUX -DAMD64 -m64 -fPIC -DSIZEOF_VOID_P=8 -DSESI_LITTLE_ENDIAN -DENABLE_THREADS -DUSE_PTHREADS -D_REENTRANT -D_FILE_OFFSET_BITS=64 -c -DGCC4 -DGCC3 -Wno-deprecated -I/drd/software/ext/houdini/lin64/hfs10.0.554/toolkit/include -I/drd/software/ext/houdini/lin64/hfs10.0.554/toolkit/include/htools -Wall -W -Wno-parentheses -Wno-sign-compare -Wno-reorder -Wno-uninitialized -Wunused -Wno-unused-parameter -O2 -DMAKING_DSO -o test.o test.cpp
+}}}
+
+== Installation  ==
+
+*IECoreHoudini* depends on four components which must be available to Houdini. 
+ * Python Module - _IECoreHoudini_ must be on your _PYTHONPATH_ (installed to _build/lib/python2.5/site-packages_)
+ * C++ Library - _libIECoreHoudini.so_ must be on you _LD_LIBRARY_PATH_ (installed to _build/lib_)
+ * Houdini DSO - _ieCoreHoudini.so_ must be on your _HOUDINI_DSO_PATH_ (installed to _build/houdini/dso_)
+ * Houdini OTL - _CortexHDAs.otl_ must be on your _HOUDINI_OTLSCAN_PATH_ (installed to _build/houdini/otls_)
+
+== CMake  ==
+
+There is a *CMake* script for building *IECoreHoudini* if you'd prefer. This has the advantage of not requiring an existing options configuration, and being able to find dependencies and build flags using the CMake modules installed in _config/cmake_. 
+
+== Testing  ==
+
+Run the unit tests from the *IECoreHoudini* root using Houdini's _hython_ command-line interpreter. 
+{{{
+ % hython test/All.py
+}}}
+*Note:* some of the tests may print "Render failed." when executing. This is a known problem with executing the render callback outside the gui and not a test fail. 
+
+
+
+
+
+
+
+= Procedurals  =
+
+IECoreHoudini defines a SOP node for holding ParameterisedProcedurals. This is under the tab menu as '''Cortex&nbsp;Procedural&nbsp;'''(node type is '''ieProceduralHolder''').<br> 
+
+When a parameterised procedural is associated with the SOP it will be rendered in the OpenGL&nbsp;viewport and it's parameters will appear on the '''Parameters''' pane allowing you to interface with the procedural. 
+
+<br> 
+
+[[Image:CortexHoudini grab1.jpg|1000px]]<br> 
+
+<br> 
+
+''A parameterised procedural with parameters, previewed in the Houdini viewport.'' <br> 
+
+<br> <br> 
+
+<br> 
+
+By default, when a '''Cortex&nbsp;Procedural''' is dropped it has no parameterised procedural associated with it. 
+
+<br> 
+
+[[Image:CortexHoudini operror.jpg|480px]] 
+
+<br> 
+
+''A procedural holder SOP in error because it doesn't have a parameterised procedural associated with it.'' 
+
+<br> 
+
+We can create a parameterised procedural and associate it with a '''Cortex&nbsp;Procedural''' using the '''IECoreHoudini.FnProceduralHolder''' function set, just like in IECoreMaya. The function set simply takes a [http://www.sidefx.com/docs/houdini10.0/hom/hou/Node hou.Node] instance at initialisation to specify which SOP to operate on. 
+
+<br> 
+
+[[Image:CortexHoudini procassigned.jpg|480px]]<br> 
+
+<br> 
+
+''When a parametised procedural is associated with a procedural holder SOP it's type and version appear in the '''''<i>Op&nbsp;Type</i>'''''and '''Op Version''' parameters.'' 
+
+<br> 
+
+In this example we create an instance of the '''sphereProcedural''' procedural and assign it to an '''ieProceduralHolder '''SOP. &lt;/span&gt; 
+
+&gt;&gt;&gt; import IECore, IECoreHoudini<br> &gt;&gt;&gt; geo = hou.node("/obj").createNode("geo", run_init_scripts=False) 
+
+&gt;&gt;&gt; cortex_proc = geo.createNode( "ieProceduralHolder" ) 
+
+&nbsp;&gt;&gt;&gt;&nbsp;some_procedural = IECore.ClassLoader.defaultProceduralLoader().load(&nbsp;"sphereProcedural", 0&nbsp;)() 
+
+&gt;&gt;&gt; fn = IECoreHoudini.FnProceduralHolder( cortex_proc ) 
+
+&gt;&gt;&gt;&nbsp;fn.setParameterised( some_procedural )<br> 
+
+<br> 
+
+There is a short-hand for this... 
+
+&gt;&gt;&gt; import IECoreHoudini 
+
+&gt;&gt;&gt;&nbsp;IECoreHoudini.FnProceduralHolder.create(&nbsp;"sphereProcedural", 0&nbsp;) 
+
+<br> 
+
+You can interact with the procedural geometry in exactly the same way you would a normal Houdini object.<br> 
+
+[[Image:CortexHoudini interactive.jpg]]<br> 
+
+''These are not your everyday spheres - each of them is a separate geometry object containing a ieProceduralHolder node which is rendering the example sphereProcedural - but you can pick and transform them as usual.''<br> 
+
+OpenGL&nbsp;shading and lighting works as expected. '''Note: '''there is a known limitation currently, that the material is only applied to the first render primitive rendered by a procedural. 
+
+<br> 
+
+[[Image:CortexHoudini material.jpg]]<br> 
+
+''A Cortex procedural&nbsp;(half-dome)&nbsp;with a Decal material applied and a point light.'' 
+
+<br> 
+
+== Parameters  ==
+
+The dynamic parameter interface is created when a procedural is set on the holder SOP and can represent these standard parameter types: 
+
+*Int 
+*Float 
+*Double 
+*Bool 
+*String 
+*Path, DirName, FileName, FileSequence 
+*V2i, V2f, V2d 
+*V3i, V3f, V3d 
+*Color3f, Color4f 
+*M44f, M44d
+
+<br> 
+
+[[Image:CortexHoudini parmtypes.jpg]]<br> 
+
+<br> 
+
+Currently unsupported parameter types are:<br> 
+
+*VectorParameter types<br> 
+*Compound 
+*FrameList 
+*Box2i, Box2f, Box2d<br> 
+*M44f, M44d 
+*Box3i, Box3f, Box3d
+
+'''Note: '''Also presets are not currently supported. 
+
+<br> 
+
+IECoreHoudini can modify behaviour/appearance based on some optional parameter 'userData' entries. 
+
+*'''label''' (StringData)<br>The parameter label in Houdini. Defaults to using a pretty-formatted version of the parameter's name. 
+*'''gui_update''' (BoolData)<br>Whether this parameter will force a gui update. Defaults to True.
+
+<br> 
+
+For example, here is a V3iParameter with a label which will not update the gui when it is modified.<br> 
+
+V3iParameter(<br>&nbsp;&nbsp;&nbsp;&nbsp; name = "v3iparm",<br>&nbsp;&nbsp;&nbsp; description = "A v3i parameter",<br>&nbsp;&nbsp;&nbsp; defaultValue = V3iData( V3i( 5, 5, 5 ) ),<br>&nbsp;&nbsp;&nbsp; userData = { 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "label":StringData("My V3i&nbsp;Parameter"), 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "gui_update":BoolData(False) 
+
+&nbsp;&nbsp;&nbsp; }<br> )<br> 
+
+<br> 
+
+<br> 
+
+= Conversions  =
+
+The IECoreHoudini.FromHoudiniSopConverter() can convert native Houdini SOP geometry (meshes or points) into Cortex Primitives. Currently it only converts points, and consequently only detail and point attributes are converted into Cortex primitive variables. 
+
+This example takes a Torus SOP (/obj/geo1/torus1)&nbsp;and using the converter creates a Cortex IECore.MeshPrimitive object.<br> 
+
+<br> 
+
+[[Image:CortexHoudini converter.jpg|640px]] 
+
+<br> 
+
+&gt;&gt;&gt;&nbsp;import IECoreHoudini 
+
+&gt;&gt;&gt; scatter = hou.node(&nbsp;"/obj/geo1/scatter1"&nbsp;)<br> 
+
+&gt;&gt;&gt; converter = IECoreHoudini.FromHoudiniSopConverter( scatter ) 
+
+&gt;&gt;&gt;&nbsp;cortex_points = converter.convert() 
+
+&gt;&gt;&gt; print cortex_points.numPoints 
+
+5000 
+
+= Utility HDAs  =
+
+There are a couple of digital assets included with IECoreHoudini to make life a little bit easier. 
+
+*'''Cortex Rman Inject'''
+
+This is a geometry SHOP for injecting a Cortex ParameterisedProcedural into a render via Soho's RIB generation. It wraps up the native Renderman DelayedLoad geometry SHOP and adds some extra controls for specifying alternative bounds and adding extra procedural arguments. 
+
+<br> 
+
+[[Image:CortexHoudini render.jpg|640px]]<br> 
+
+<br> 
+
+*'''Cortex Writer'''
+
+This is a SOP geometry writer ROP which converts SOP geometry and writes out FIO or COB files. Behind the scenes it just uses a regular geometryROP and an instance of IECoreHoudini.FromHoudiniSopConverter() that calls convert() per frame before writing the output. Feel free to dive in and have a look!<br> 
+
+<br> 
+
+[[Image:CortexHoudini writer.jpg|640px]]<br>
+
+
+blah blah blah
+
+
+= Introduction =
+
+Add your content here.
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
