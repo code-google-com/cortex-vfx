@@ -95,19 +95,19 @@ Run the unit tests from the *IECoreHoudini* root using Houdini's _hython_ comman
 
 When a parameterised procedural is associated with the SOP it will be rendered in the OpenGL viewport and it's parameters will appear on the *Parameters* pane allowing you to interface with the procedural. 
 
-IMG
+http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_grab1.jpg
 
 ^A parameterised procedural with parameters, previewed in the Houdini viewport.^
 
 By default, when a *Cortex Procedural* is dropped it has no parameterised procedural associated with it. 
 
-IMG
+http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_operror.jpg
 
 ^A procedural holder SOP in error because it doesn't have a parameterised procedural associated with it.^
 
 We can create a parameterised procedural and associate it with a *Cortex Procedural* using the *IECoreHoudini.FnProceduralHolder* function set, just like in *IECoreMaya*. The function set simply takes a [http://www.sidefx.com/docs/houdini10.0/hom/hou/Node hou.Node] instance at initialisation to specify which SOP to operate on. 
 
-IMG
+http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_procassigned.jpg
 
 ^When a parametised procedural is associated with a procedural holder SOP it's type and version appear in the _Op Type_ and _Op Version_ parameters.^
 
@@ -130,14 +130,14 @@ IECoreHoudini.FnProceduralHolder.create("cortex_sphere", "sphereProcedural", 1 )
 
 You can interact with the procedural geometry in exactly the same way you would a normal Houdini object.
 
-IMG
+http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_interactive.jpg
 
 ^These are not your everyday spheres - each of them is a separate geometry object containing a ieProceduralHolder node which is rendering the example sphereProcedural - but you can pick and transform them as usual.^
 
 OpenGL shading and lighting works as expected.
 *NOTE:* there is a known limitation currently, that the material is only applied to the first render primitive rendered by a procedural. 
 
-IMG
+http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_material.jpg
 
 ^A Cortex procedural (half-dome) with a Decal material applied and a point light.^
 
