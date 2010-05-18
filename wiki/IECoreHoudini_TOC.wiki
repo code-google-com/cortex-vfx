@@ -1,5 +1,5 @@
- * [IECoreHoudini#Introduction Introduction]
- * [IECoreHoudini#Building/Installation Building/Installation]
+ * [#Introduction Introduction]
+ * [#Building/Installation Building/Installation]
    * [IECoreHoudini#Overview Overview]
    * [IECoreHoudini#Houdini_CFlags Houdini CFlags]
    * [IECoreHoudini#Installation Installation]
