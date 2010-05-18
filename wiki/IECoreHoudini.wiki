@@ -107,7 +107,7 @@ http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_operror-e1274
 
 We can create a parameterised procedural and associate it with a *Cortex Procedural* using the *IECoreHoudini.FnProceduralHolder* function set, just like in *IECoreMaya*. The function set simply takes a [http://www.sidefx.com/docs/houdini10.0/hom/hou/Node hou.Node] instance at initialisation to specify which SOP to operate on. 
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_procassigned.jpg
+http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_procassigned-e1274145088644.jpg
 
 ^When a parametised procedural is associated with a procedural holder SOP it's type and version appear in the _Op Type_ and _Op Version_ parameters.^
 
