@@ -1,4 +1,5 @@
 #summary Houdini application support for Cortex.
+#sidebar TableOfContents
 
 = Introduction  =
 
