@@ -143,116 +143,72 @@ IMG
 == Parameters  ==
 
 The dynamic parameter interface is created when a procedural is set on the holder SOP and can represent these standard parameter types: 
+ * Int 
+ * Float 
+ * Double 
+ * Bool 
+ * String 
+ * Path, DirName, FileName, FileSequence 
+ * V2i, V2f, V2d 
+ * V3i, V3f, V3d 
+ * Color3f, Color4f 
+ * M44f, M44d
 
-*Int 
-*Float 
-*Double 
-*Bool 
-*String 
-*Path, DirName, FileName, FileSequence 
-*V2i, V2f, V2d 
-*V3i, V3f, V3d 
-*Color3f, Color4f 
-*M44f, M44d
+IMG
 
-<br> 
+Currently unsupported parameter types are:
+ * VectorParameter types
+ * Compound 
+ * FrameList 
+ * Box2i, Box2f, Box2d
+ * M44f, M44d 
+ * Box3i, Box3f, Box3d
 
-[[Image:CortexHoudini parmtypes.jpg]]<br> 
+*NOTE:* Presets are also not currently supported. 
 
-<br> 
+*IECoreHoudini* can modify behaviour/appearance based on some optional parameter _userData_ entries. 
 
-Currently unsupported parameter types are:<br> 
+ * *label* (StringData) - the parameter label in Houdini. Defaults to using a pretty-formatted version of the parameter's name. 
+ * *gui_update* (BoolData) - whether this parameter will force a gui update. Defaults to True.
 
-*VectorParameter types<br> 
-*Compound 
-*FrameList 
-*Box2i, Box2f, Box2d<br> 
-*M44f, M44d 
-*Box3i, Box3f, Box3d
-
-'''Note: '''Also presets are not currently supported. 
-
-<br> 
-
-IECoreHoudini can modify behaviour/appearance based on some optional parameter 'userData' entries. 
-
-*'''label''' (StringData)<br>The parameter label in Houdini. Defaults to using a pretty-formatted version of the parameter's name. 
-*'''gui_update''' (BoolData)<br>Whether this parameter will force a gui update. Defaults to True.
-
-<br> 
-
-For example, here is a V3iParameter with a label which will not update the gui when it is modified.<br> 
-
-V3iParameter(<br>&nbsp;&nbsp;&nbsp;&nbsp; name = "v3iparm",<br>&nbsp;&nbsp;&nbsp; description = "A v3i parameter",<br>&nbsp;&nbsp;&nbsp; defaultValue = V3iData( V3i( 5, 5, 5 ) ),<br>&nbsp;&nbsp;&nbsp; userData = { 
-
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "label":StringData("My V3i&nbsp;Parameter"), 
-
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "gui_update":BoolData(False) 
-
-&nbsp;&nbsp;&nbsp; }<br> )<br> 
-
-<br> 
-
-<br> 
+For example, here is a V3iParameter with a label which will not update the gui when it is modified:
+{{{
+V3iParameter(
+     name = "v3iparm",
+    description = "A v3i parameter",
+    defaultValue = V3iData( V3i( 5, 5, 5 ) ),
+    userData = {
+        "label":StringData("My V3i Parameter"),
+        "gui_update":BoolData(False)
+    }
+)
+}}}
 
 = Conversions  =
 
-The IECoreHoudini.FromHoudiniSopConverter() can convert native Houdini SOP geometry (meshes or points) into Cortex Primitives. Currently it only converts points, and consequently only detail and point attributes are converted into Cortex primitive variables. 
+The *IECoreHoudini.FromHoudiniSopConverter()* class can convert native Houdini SOP geometry (meshes or points) into Cortex Primitives. Currently it only converts points, and consequently only detail and point attributes are converted into Cortex primitive variables. 
 
-This example takes a Torus SOP (/obj/geo1/torus1)&nbsp;and using the converter creates a Cortex IECore.MeshPrimitive object.<br> 
+This example takes a Torus SOP (_/obj/geo1/torus1_) and using the converter creates a Cortex IECore.MeshPrimitive object.
 
-<br> 
+IMG
 
-[[Image:CortexHoudini converter.jpg|640px]] 
-
-<br> 
-
-&gt;&gt;&gt;&nbsp;import IECoreHoudini 
-
-&gt;&gt;&gt; scatter = hou.node(&nbsp;"/obj/geo1/scatter1"&nbsp;)<br> 
-
-&gt;&gt;&gt; converter = IECoreHoudini.FromHoudiniSopConverter( scatter ) 
-
-&gt;&gt;&gt;&nbsp;cortex_points = converter.convert() 
-
-&gt;&gt;&gt; print cortex_points.numPoints 
-
-5000 
+{{{
+import IECoreHoudini
+scatter = hou.node( "/obj/geo1/scatter1" )
+converter = IECoreHoudini.FromHoudiniSopConverter( scatter )
+cortex_points = converter.convert()
+}}}
 
 = Utility HDAs  =
 
-There are a couple of digital assets included with IECoreHoudini to make life a little bit easier. 
+There are a couple of digital assets included with *IECoreHoudini* to make life a little bit easier. 
 
-*'''Cortex Rman Inject'''
+== Cortex Rman Inject ==
+This is a geometry SHOP for injecting a Cortex Parameterised Procedural into a render via Soho's RIB generation. It wraps up the native Renderman Delayed Load geometry SHOP and adds some extra controls for specifying alternative bounds and adding extra procedural arguments.
 
-This is a geometry SHOP for injecting a Cortex ParameterisedProcedural into a render via Soho's RIB generation. It wraps up the native Renderman DelayedLoad geometry SHOP and adds some extra controls for specifying alternative bounds and adding extra procedural arguments. 
+IMG
 
-<br> 
+== Cortex Writer ==
+This is a SOP geometry writer ROP which converts SOP geometry and writes out FIO or COB files. Behind the scenes it just uses a regular geometryROP and an instance of IECoreHoudini.FromHoudiniSopConverter() that calls convert() per frame before writing the output. Feel free to dive in and have a look!
 
-[[Image:CortexHoudini render.jpg|640px]]<br> 
-
-<br> 
-
-*'''Cortex Writer'''
-
-This is a SOP geometry writer ROP which converts SOP geometry and writes out FIO or COB files. Behind the scenes it just uses a regular geometryROP and an instance of IECoreHoudini.FromHoudiniSopConverter() that calls convert() per frame before writing the output. Feel free to dive in and have a look!<br> 
-
-<br> 
-
-[[Image:CortexHoudini writer.jpg|640px]]<br>
-
-
-blah blah blah
-
-
-= Introduction =
-
-Add your content here.
-
-
-= Details =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+IMG
