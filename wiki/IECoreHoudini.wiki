@@ -15,13 +15,11 @@
 
 = Building/Installation  =
 
-== Overview  ==
+== Dependencies  ==
 
-First, make sure you have a working installation of *Cortex v5* from the *trunk*. You will need at least *r3324*. It must be built against *Python 2.5* and *Boost 1.33.1* to work correctly with *Houdini 10.0*. 
+First, make sure you have a working installation of *Cortex v5* from the *trunk*. You will need at least *r3393*. It must be built against *Python 2.5* and *Boost 1.33.1* to work correctly with *Houdini 10.0*. 
 
-There are 3 ways to build IECoreHoudini. You can use the SConstruct file found in the trunk, you can use the IECoreHoudini specific SConstruct, or you can use CMake.
-
-== _scons_ using trunk/SConstruct ==
+== Building with SCons ==
 
 You can build using:
 {{{
@@ -36,47 +34,7 @@ Depending on your setup, your options file may need to specify :
  * `INSTALL_HOUDINIOTL_DIR` - The directory in which to install Houdini otls.
  * `INSTALL_HOUDINIICON_DIR` - The directory under which to install Houdini icons.
 
-
-== _scons_ using contrib/IECoreHoudini/SConstruct ==
-
-To build you should reuse the _options_ file you used to build Cortex in the first place and in addition set the following build options:
- * `CORTEX_ROOT`- This is the root of your Cortex installation.
- * `HFS` - This is your houdini installation path. Normally defined as the `$HFS` envvar.
- * `HOUDINI_CXX_FLAGS` - The cflags used by Houdini to build dsos (see below).
-
-You can add these to your original _options_ file (recommended) or specify them on the command line to _scons_. 
-
-With those added to your options file you can build using:
-{{{
-% scons OPTIONS=/path/to/my/options
-}}}
-
-The tools will all be built under the _build_ directory.
-
-{{{
-build/
-|-- houdini
-|   |-- dso
-|   |   `-- ieCoreHoudini.so
-|   `-- otls
-|       `-- ieCoreHoudini.otl
-`-- lib
-    |-- libIECoreHoudini.so
-    `-- python2.5
-        `-- site-packages
-            `-- IECoreHoudini
-                |-- FnProceduralHolder.py
-                |-- ParmTemplates.py
-                |-- Utils.py
-                |-- _IECoreHoudini.so
-                `-- __init__.py
-}}}
-
-*NOTE:* These tools have only been built and tested on Linux x86_64. 
-
-== CMake  ==
-
-There is a *CMake* script for building *IECoreHoudini* if you'd prefer. This has the advantage of not requiring an existing options configuration, and being able to find dependencies and build flags using the CMake modules installed in _config/cmake_. 
+The __scons install__ target will install the Houdini components into suitable locations. By default these are under _$CORTEX/houdini_ but can be overridden using the _INSTALL_ variables described above.
 
 == Houdini CFlags ==
 
@@ -84,7 +42,7 @@ Houdini passes a lot of flags to the compiler when building dsos. The easiest wa
 
 {{{
 % touch test.cpp
-% hcustom -t -e test.cpp
+% hcustom -t -e -i /tmp test.cpp
 g++ -DVERSION=\"10.0.554\" -DDLLEXPORT= -D_GNU_SOURCE -DLINUX -DAMD64 -m64 -fPIC 
 -DSIZEOF_VOID_P=8 -DSESI_LITTLE_ENDIAN -DENABLE_THREADS -DUSE_PTHREADS -D_REENTRANT 
 -D_FILE_OFFSET_BITS=64 -c -DGCC4 -DGCC3 -Wno-deprecated -I/drd/software/ext/houdini/lin64
@@ -92,15 +50,6 @@ g++ -DVERSION=\"10.0.554\" -DDLLEXPORT= -D_GNU_SOURCE -DLINUX -DAMD64 -m64 -fPIC
 /htools -Wall -W -Wno-parentheses -Wno-sign-compare -Wno-reorder -Wno-uninitialized 
 -Wunused -Wno-unused-parameter -O2 -DMAKING_DSO -o test.o test.cpp
 }}}
-
-== Installation  ==
-
-*IECoreHoudini* depends on the following components, which must be available to Houdini. 
- * Python Module - _IECoreHoudini_ must be on your _PYTHONPATH_ (installed to _build/lib/python2.5/site-packages_)
- * C++ Library - _libIECoreHoudini.so_ must be on you _LD_LIBRARY_PATH_ (installed to _build/lib_)
- * Houdini DSO - _ieCoreHoudini.so_ must be on your _HOUDINI_DSO_PATH_ (installed to _build/houdini/dso_)
- * Houdini OTL - _CortexHDAs.otl_ must be on your _HOUDINI_OTLSCAN_PATH_ (installed to _build/houdini/otls_)
- * Houdini Icons - must be on your _HOUDINI_UI_ICON_PATH_ (installed to _build/houdini/icons_)
 
 == Testing  ==
 
