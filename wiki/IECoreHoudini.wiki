@@ -25,7 +25,7 @@ There are 3 ways to build IECoreHoudini. You can use the SConstruct file found i
 
 You can build using:
 {{{
-% scons APP=houdini OPTIONS=/path/to/my/options
+% scons OPTIONS=/path/to/my/options
 }}}
 
 Depending on your setup, your options file may need to specify :
