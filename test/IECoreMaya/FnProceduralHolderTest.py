@@ -67,10 +67,6 @@ class FnProceduralHolderTest( IECoreMaya.TestCase ) :
 		def doRender( self, renderer, args ) :
 			
 			renderer.sphere( args["radius"].value, -1, 1, 360, {} )
-			
-		def doRenderState( self, renderer, args ) :
-			
-			pass
 
 	def testScene( self ) :
 
