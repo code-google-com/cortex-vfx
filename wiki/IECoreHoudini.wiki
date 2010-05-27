@@ -63,23 +63,25 @@ Run the unit tests from the *IECoreHoudini* root using Houdini's _hython_ comman
 
 *IECoreHoudini* defines a SOP node for holding Procedurals. This is under the tab menu as *Cortex Procedural* (node type is *ieProceduralHolder*).
 
-When a parameterised procedural is associated with the SOP it will be rendered in the OpenGL viewport and it's parameters will appear on the *Parameters* pane allowing you to interface with the procedural. 
-
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_grab1-e1274144990789.jpg
-
-^A parameterised procedural with parameters, previewed in the Houdini viewport.^
-
 By default, when a *Cortex Procedural* is dropped it has no parameterised procedural associated with it. 
 
 http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_operror-e1274145048691.jpg
 
 ^A procedural holder SOP in error because it doesn't have a parameterised procedural associated with it.^
 
-We can create a parameterised procedural and associate it with a *Cortex Procedural* using the `IECoreHoudini.FnProceduralHolder()` function set, just like in *IECoreMaya*. The function set simply takes a [http://www.sidefx.com/docs/houdini10.0/hom/hou/Node hou.Node()] instance at initialisation to specify which SOP to operate on. 
+You can pick a procedural from the drop-down on the 'Class' parameter tab to associate it with this node. 
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_procassigned-e1274145088644.jpg
+http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_proceduralInterface-e1274942766574.jpg
 
-^When a parametised procedural is associated with a procedural holder SOP it's type and version appear in the `Op Type` and `Op Version` parameters.^
+^Picking a procedural/version from the interface.^
+
+When a parameterised procedural is associated with the SOP it will be rendered in the OpenGL viewport and it's parameters will appear on the *Parameters* pane allowing you to interface with the procedural. 
+
+http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_grab1-e1274144990789.jpg
+
+^A parameterised procedural with parameters, previewed in the Houdini viewport.^
+
+We can also create a parameterised procedural and associate it with a *Cortex Procedural* via Python, using the `IECoreHoudini.FnProceduralHolder()` function set, just like in *IECoreMaya*. The function set simply takes a [http://www.sidefx.com/docs/houdini10.0/hom/hou/Node hou.Node()] instance at initialisation to specify which SOP to operate on. 
 
 In this example we create an instance of the *sphereProcedural* procedural and assign it to an *ieProceduralHolder* SOP.
 
@@ -92,7 +94,7 @@ fn = IECoreHoudini.FnProceduralHolder( cortex_proc )
 fn.setParameterised( some_procedural )
 }}}
 
-There is a short-hand for this... 
+There is also a short-hand for this... 
 {{{
 import IECoreHoudini
 IECoreHoudini.FnProceduralHolder.create("cortex_sphere", "sphereProcedural", 1 )
@@ -157,7 +159,7 @@ V3iParameter(
 
 = Conversions  =
 
-The `IECoreHoudini.FromHoudiniSopConverter()` class can convert native Houdini SOP geometry (meshes or points) into Cortex Primitives. Currently it only converts points, and consequently only detail and point attributes are converted into Cortex primitive variables. 
+The `IECoreHoudini.FromHoudiniSopConverter()` class can convert native Houdini SOP geometry (meshes or points) into Cortex Primitives. Meshes and points are converted to their Cortex equivalent (PointsPrimitive or MeshPrimitive) and attributes are converted into Cortex primitive variables.
 
 This example takes a Scatter SOP (_/obj/geo1/scatter_) and using the converter creates a Cortex `IECore.PointsPrimitive` object.
 
