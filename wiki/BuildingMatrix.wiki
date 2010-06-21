@@ -1,0 +1,30 @@
+#summary Build Matrix for Cortex 5
+
+= Introduction =
+
+There is no standard library configuration that software developers are using. So different kind of standard software like Maya or Houdini might need a different library configuration. In a studio environment you might want to work with Cortex across multiple software platforms and hence you will have to build a specific Cortex configuration that works with the intended 3rd party software.
+The below build matrix shows a number of configuration that are successfully being used in a Linux environment and Cortex 5.
+
+= Build Matrix =
+
+The 'odd ones out' are in *bold*.
+
+|| Configuration Name / Library || *Base* || *Maya2009-sp1* || *Maya2011* || *Houdini10.0* || *Houdini11.0* || *Nuke6.0v4* ||
+|| *Python* || 2.5 || 2.5 || *2.6* || 2.5 || 2.5 || 2.5 ||
+|| *Boost* || 1.42.0 || *1.38.0* || 1.42.0 || *1.33.1* || *1.37.0* || 1.42.0 ||
+|| *TBB* || 2.2 || 2.2 || 2.2 || 2.2 || 2.2 || 2.2 ||
+|| *IlmBase* || 1.0.1 || 1.0.1 || 1.0.1 || 1.0.1 || 1.0.1 || 1.0.1 ||
+|| *OpenEXR* || 1.6.1 || 1.6.1 || 1.6.1 || 1.6.1 || 1.6.1 || 1.6.1 ||
+|| *Freetype* || 2.3.7 || 2.3.7 || 2.3.7 || 2.3.7 || 2.3.7 || 2.3.7 ||
+|| *GLEW* || 1.5.3 || 1.5.3 || 1.5.3 || 1.5.3 || 1.5.3 || 1.5.3 ||
+|| *Freeglut* || 2.6.0 || 2.6.0 || 2.6.0 || 2.6.0 || 2.6.0 || 2.6.0 ||
+|| *Doxygen* || 1.5.7 || 1.5.7 || 1.5.7 || 1.5.7 || 1.5.7 || 1.5.7 ||
+|| *3delight* ||   || 9.0.36 || 9.0.36 || 9.0.36 || 9.0.36 ||   ||
+|| *Maya* ||   || 2009-sp1 || 2011 ||   ||   ||   ||
+|| *Houdini* ||   ||   ||   || 10 || 11 ||   ||
+|| *Nuke* ||   ||   ||   ||   ||   || 6.0v4 ||
+||  ||   ||   ||   ||   ||   ||  ||
+|| *_Status_* || ok  || ok  || ok  || ok  || untested  || untested ||
+
+Notes:
+ * Maya2009-sp1 uses TBB 2.1, however Cortex uses multiple TBB 2.2 features - so far no adverse affects have been noticed using Cortex linked against TBB 2.2 with Maya2009-sp1 
