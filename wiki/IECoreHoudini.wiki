@@ -69,9 +69,9 @@ http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_operror-e1274
 
 ^A procedural holder SOP in error because it doesn't have a parameterised procedural associated with it.^
 
-You can pick a procedural from the drop-down on the 'Class' parameter tab to associate it with this node. 
+You can pick a procedural from the drop-down on the 'Class' parameter tab to associate it with this node.
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_proceduralInterface-e1274942766574.jpg
+http://www.pawfal.org/dan/wp-content/uploads/2010/06/IECoreHoudini_pamInterface-e1277430114264.jpg
 
 ^Picking a procedural/version from the interface.^
 
@@ -127,15 +127,15 @@ The dynamic parameter interface is created when a procedural is set on the holde
  * `V3i`, `V3f`, `V3d` 
  * `Color3f`, `Color4f`
  * `M44f`, `M44d`
+ * `Box2i`, `Box2f`, `Box2d`
+ * `Box3i`, `Box3f`, `Box3d`
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_parmtypes-e1274145474859.jpg
+http://www.pawfal.org/dan/wp-content/uploads/2010/06/IECoreHoudini_parameterPane-e1277430168351.jpg
 
 Currently unsupported parameter types are:
  * `VectorParameter` types
  * `Compound` 
  * `FrameList` 
- * `Box2i`, `Box2f`, `Box2d`
- * `Box3i`, `Box3f`, `Box3d`
 
 *NOTE:* Presets are also not currently supported. 
 
