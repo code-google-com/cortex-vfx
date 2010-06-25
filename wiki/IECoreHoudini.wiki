@@ -143,6 +143,7 @@ Currently unsupported parameter types are:
 
  * *label* (`StringData`) - the parameter label in Houdini. Defaults to using a pretty-formatted version of the parameter's name. 
  * *gui_update* (`BoolData`) - whether this parameter will force a gui update. Defaults to True.
+ * *hidden* (`BoolData`) - this can be used to hide a parameter from the interface. the parameter still exists and evaluates as usual but is 'invisible' in Houdini terms. Defaults to False.
 
 For example, here is a `V3iParameter` with a label which will not update the gui when it is modified:
 {{{
