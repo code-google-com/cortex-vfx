@@ -4,7 +4,7 @@
 = Overview  =
 [http://cortex-vfx.googlecode.com/svn/wiki/images/Cortexproc_icon.jpg]
 
-This example shows you how to quickly create a *Cortex Procedural SOP* using a python function and associate it with a Cortex Procedural. You must have your procedurals installed as detailed in [TODO]. 
+This example shows you how to quickly create a *Cortex Procedural SOP* using a python function and associate it with a Cortex Procedural. You must have your procedurals installed as detailed [ExamplesProceduralsIntro here]. 
 
 = Usage  =
 {{{
