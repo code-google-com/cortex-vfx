@@ -16,7 +16,7 @@
    * [ExamplesProceduralsSimpleGeometry Simple Cube Geometry] 
    * [ExamplesProceduralsTransformationBlur Transformation Blur]
    * [ExamplesProceduralsDeformationBlur Deformation Blur]
-   * [ExamplesProceduralsVelocityBlur Velocity Blur]
+   * [ExamplesProceduralsPointVelocityBlur Point Velocity Blur]
    * [ExamplesProceduralsMeshRender Mesh Render]
    * [ExamplesProceduralsSubdivisonSurfaceRender Subdivison Surface Render]
    * [ExamplesProceduralsPointRender Point Render]
