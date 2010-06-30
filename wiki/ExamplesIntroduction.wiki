@@ -1,4 +1,4 @@
-#summary Introducing the Cortex Examples
+#summary Code Examples
 #sidebar ExamplesTOC
 
 = Examples =
