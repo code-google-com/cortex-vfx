@@ -1,0 +1,24 @@
+#summary Interpolating Attribute Caches
+#sidebar ExamplesTOC
+
+= Introduction =
+
+This example loads a sequence of attribute cache files from disk and uses linear interpolation to extract sub-frame versions of the cached attributes. Here we extract the 'our_attribute' attribute from the 'our_object' object. 
+
+= Code  =
+{{{
+ from IECore import *
+ 
+ ic = InterpolatedCache( "test.####.fio", 1.0,
+ 			InterpolatedCache.Interpolation.Linear,
+ 			OversamplesCalculator( 24.0, 1, 24 ) )
+ 
+ co = ic.read( "our_object", "our_attribute" )
+ print "attribute at 1.0: ", co
+ ic.setFrame(2.0)
+ co = ic.read( "our_object", "our_attribute" )
+ print "attribute at 2.0: ", co
+ ic.setFrame(1.5)
+ co = ic.read( "our_object", "our_attribute" )
+ print "interpolated attribute at 1.5: ", co
+}}}
