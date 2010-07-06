@@ -22,7 +22,11 @@ and set *$CORTEX_POINTDISTRIBUTION_TILESET* accordingly, if you haven't already 
 = Code =
 
 {{{
-class ShadedFurExample( IECore.ParameterisedProcedural ) :
+
+from IECore import *
+import random
+
+class ShadedFurExample( ParameterisedProcedural ) :
 
 	def __init__( self ) :
 
