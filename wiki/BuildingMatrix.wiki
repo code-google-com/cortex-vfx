@@ -25,8 +25,8 @@ The 'odd ones out' are in *bold*.
 || *Houdini* ||   ||   ||   ||   || 10 || 11 ||   ||
 || *Nuke* ||   ||   ||   ||   ||   ||   || 6.0v3 ||
 ||  ||   ||   ||   ||   ||   ||   ||  ||
-|| *_Status_* || ok  || ok  || ok  || ok  || ok  || untested  || ok ||
-|| *_last checked with Cortex_* || 5.5.0 ||   || 5.5.0 ||   || 5.4.0 ||   || 5.5.0 ||
+|| *_Status_* || ok  || ok  || ok  || ok  || ok  || ok  || ok ||
+|| *_last checked with Cortex_* || 5.5.0 ||   || 5.5.0 || 5.18.0  || 5.4.0 ||   || 5.5.0 ||
 
 Notes:
  * Maya2009-sp1 uses TBB 2.1, however Cortex uses multiple TBB 2.2 features - so far no adverse affects have been noticed using Cortex linked against TBB 2.2 with Maya2009-sp1 
