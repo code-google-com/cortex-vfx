@@ -5,6 +5,14 @@
 
 We would like to keep it as simple as possible to contribute to Cortex in order to encourage as much participation as possible. However, in order to maintain quality and robustness we ask you to try and adhere to the following guidelines whilst making your submissions.
 
+== Coding Conventions ==
+
+We realize that everyone has their own style of coding, but in order to keep the libraries consistent, we're documenting the preferred coding conventions for contributions to Cortex. Please try to follow these guidelines, and if in doubt, don't hesitate to post to the [http://groups.google.com/group/cortexdev cortexdev group].
+
+Here is a [CppCodingConventions C++ example] and a [PythonCodingConventions Python example] which include syntax, documentation, layout, and class/variable naming conventions. In IECoreMaya we try to use as little mel as possible, but if mel necessary, try to follow the C++ guidelines.
+
+We apologize in advance for not following our own guidelines to the letter. We will try to commit such layout fixes as we come across them.
+
 == Bugs ==
 
 Discuss the bug in the [http://groups.google.com/group/cortexdev cortexdev group], to clarify whether or not the behavior you are experiencing is expected or not, or whether it's already a known issue.
