@@ -11,9 +11,11 @@ If you encounter problems with this process please raise them on the [http://gro
  
 If the SCons build tool is not available on your system it should be downloaded and installed from http://www.scons.org. You will need at least version 0.97.
 
-You will also need the [http://www.openexr.org OpenEXR] and [http://www.boost.org boost] libraries. Internally at Image Engine we currently use OpenEXR 1.6.1 and boost 1.38.0, but builds with earlier versions (1.4.0 and 1.35.0 respectively) are known to work.
+You will also need the [http://www.openexr.org OpenEXR], [http://www.boost.org boost], and [http://www.threadingbuildingblocks.org tbb] libraries. Internally at Image Engine we currently use OpenEXR 1.6.1, boost 1.42.0, and tbb 2.2.
 
-Finally, you'll need at least Python version 2.4. This is preinstalled on many systems, but you may wish to download and install a version from http://www.python.org/download. Image Engine is currently using Python 2.5 but Python 2.6 is known to work too.
+Finally, you'll need at least Python version 2.4. This is preinstalled on many systems, but you may wish to download and install a version from http://www.python.org/download. Image Engine is currently using both Python 2.5 and 2.6.
+
+Many vfx software packages use specific versions of these libraries internally. It is critical to use the same versions as the application you're imbedding Cortex into. We try to maintain a [BuildingMatrix] of dependencies that have been tested in production environments. If in doubt about version compatibility, check this matrix for results that have proven successful.
 
 = Optional Prerequisites =
 
