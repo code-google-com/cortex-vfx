@@ -6,6 +6,8 @@
      * [ExamplesDataAttributeCacheInterpolation Interpolating AttributeCaches]
      * [ExamplesDataCompoundObjects CompoundObjects]
      * [ExamplesCppCompoundObject CompoundObjects in C++]
+   * Parameters and Ops
+     * [ExamplesParameterUserData Parameter userData conventions]
    * Point Primitives
    * Mesh Primitives
      * [ExamplesPrimitivesParticleSurfacing Surfacing points]
