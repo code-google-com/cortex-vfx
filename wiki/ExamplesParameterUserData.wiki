@@ -1,14 +1,14 @@
-= UserData Conventions =
+= !UserData Conventions =
 
-UserData is a means of collecting arbitrary information attached to a Parameter. Each Parameter has a userData() method which will retrieve it's CompoundObject. We try to document the various uses of user data in the relevant Cortex headers. As it may be overwhelming to locate all of the existing userData conventions, we have categorized them below.
+!UserData is a means of collecting arbitrary information attached to a Parameter. Each Parameter has a userData() method which will retrieve it's !CompoundObject. We try to document the various uses of user data in the relevant Cortex headers. As it may be overwhelming to locate all of the existing userData conventions, we have categorized them below.
 
-Each line indicates a series of keys into CompoundObjects, followed by the TypedData expected, and finally a brief description of the intended purpose.
+Each line indicates a series of keys into !CompoundObjects, followed by the !TypedData expected, and finally a brief description of the intended purpose.
 
 i.e.
 
-["key"]["anotherKey"]["usefullness"] --> FloatData - This is how I'm intended to be used
+["key"]["anotherKey"]["usefulness"] --> !FloatData - This is how I'm intended to be used
 
-would correspond to this python code the user data on this StringParameter:
+would correspond to this python code the user data on this !StringParameter:
 
 {{{
 IECore.StringParameter(
@@ -19,7 +19,7 @@ IECore.StringParameter(
 )
 }}}
 
-Note that in reality, each of those dictionaries is a CompoundObject.
+Note that in reality, each of those dictionaries is a !CompoundObject.
 
 Some userData is generic (although it may only be currently used in specific libraries), while other userData is application specific, in which case the first key should always be the application name (see the Maya section).
 
