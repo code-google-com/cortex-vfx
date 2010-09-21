@@ -1,3 +1,4 @@
+#sidebar ExamplesTOC
 = !UserData Conventions =
 
 !UserData is a means of collecting arbitrary information attached to a Parameter. Each Parameter has a userData() method which will retrieve it's !CompoundObject. We try to document the various uses of user data in the relevant Cortex headers. As it may be overwhelming to locate all of the existing userData conventions, we have categorized them below.
