@@ -29,3 +29,12 @@ It'd be great to move IECoreHoudini out of contrib and have it as a standard par
 == IECoreNuke improvements ==
 
 It'd be great to see a !ToCoreConverter which takes a Nuke node and returns an !ImagePrimitive directly. Currently we render to temp files and then reread them which is a little ugly and inefficient.
+
+
+== OIIO Support (carsten.kolve) ==
+This is really more a discussion item than a soid aim. OIIO has made a lot of progress in the last year and now has support for nearly all of the relevant image formats, including exr, dpx and cin. If it was used as a backend to the ImagePrimitive, one could potentially benefit from a whole lot of active development on the project.
+http://openimageio.org/ 
+
+== Alembic Support (carsten.kolve) ==
+Ok - this is probably even more premature (the first version is not even released). But in case it really does get the broad support from 3rd party developers that was promised, then it could be tempting to write reader/writer to and from common cortex primitives for interchange and compatibility purposes.
+
