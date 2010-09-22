@@ -12,7 +12,7 @@ It might also be interesting to provide simple methods for getting threadsafe ac
 
 == Parameter improvements ==
 
-It'd be very useful to have a standard way of knowing when a Parameter value has changed. We currently do this manually using the slightly ugly updateCount mechanism which is only implemented in IECoreMaya. It might be great to have a Parameter::hash() method which gives a (kindof) unique hash for the current value. How we would quickly come up with reasonable hashes for very large Objects like MeshPrimitives could be a tricky question however.
+It'd be very useful to have a standard way of knowing when a Parameter value has changed. We currently do this manually using the slightly ugly updateCount mechanism which is only implemented in IECoreMaya. It might be great to have a Parameter::hash() method which gives a (kindof) unique hash for the current value. How we would quickly come up with reasonable hashes for very large Objects like !MeshPrimitives could be a tricky question however.
 
 == Op improvements ==
 
