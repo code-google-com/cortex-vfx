@@ -22,6 +22,10 @@ Another particularly useful possibility this introduces could be the ability to 
 
 One implication of this is that Ops really really have to stop cheating and getting their values from the parameters rather than from the operands passed to doOperation().
 
+== Procedural improvements ==
+
+We should revisit the ongoing argument we have internally about whether a renderer should be passed to Procedural::bound(). We have several procedurals which do change bounding box depending on whether they're rendered in GL or RenderMan, and it'd be nice to query this accurately. The argument against is that you should be able to always get a worst case bound - perhaps that is achieved by passing 0 for the renderer?
+
 == IECoreHoudini improvements ==
 
 It'd be great to move IECoreHoudini out of contrib and have it as a standard part of cortex. We might want to make minor adjustments so it conforms more closely to the cortex coding conventions, and also perhaps standardise a !ParameterisedHolder api between IECoreMaya and IECoreHoudini.
@@ -37,4 +41,3 @@ http://openimageio.org/
 
 == Alembic Support (carsten.kolve) ==
 Ok - this is probably even more premature (the first version is not even released). But in case it really does get the broad support from 3rd party developers that was promised, then it could be tempting to write reader/writer to and from common cortex primitives for interchange and compatibility purposes.
-
