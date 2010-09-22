@@ -1,0 +1,27 @@
+#summary Things we might want to aim for in Cortex 6
+
+== IO improvements ==
+
+FileIndexedIO has less than ideal performance when opening very large files, as it reads the whole index at open time. This somewhat negates any advantages subsequent random access gives. It'd be great to address this, either with optimisations to FileIndexedIO or with a new backend perhaps based around HDF5.
+
+== Data improvements ==
+
+Currently all Data subclasses share the same lazy-copy-on-write behaviour implemented in !TypedData.h. This is likely counterproductive for the very small datatypes like those typedefed in !SimpleTypedData.h - there's a whole extra !RefCounted object behind the scenes when we might be storing something as simple as a char. It might be good to replace the single !TypedData class with a !SimpleTypedData class (with direct storage in the Data instance) and a !ComplexTypedData (or !VectorTypedData?) class with the existing lazy-copy-on write implementation. The interface of both these classes would be identical so we probably don't need to change any other code.
+
+It might also be interesting to provide simple methods for getting threadsafe access to !TypedData::readable() and !TypedData::writable(). These could allow multiple concurrent readers but only a single writer.
+
+== Op improvements ==
+
+It'd be great to be able to pass arguments to Op::operate() (and similar methods elsewhere), so that a single Op instance could easily be used with multiple sets of arguments, each in a different thread. This is motivated by the todo in IECore/!CachedReader.cpp, and also earlier questions about the overhead of instantiating multiple identical ops in the same process. 
+
+Another particularly useful possibility this introduces could be the ability to pass !LayeredDict and !SubstitutedDict style argument lists to C++ ops. We currently do this for procedurals in python and it's invaluable but we hit problems when we need to pass such arguments to C++. We could maybe achieve this by having some sort of !CompoundObjectInterface in C++, which defines a minimal API for getting parameter values.
+
+One implication of this is that Ops really really have to stop cheating and getting their values from the parameters rather than from the operands passed to doOperation().
+
+== IECoreHoudini improvements ==
+
+It'd be great to move IECoreHoudini out of contrib and have it as a standard part of cortex. We might want to make minor adjustments so it conforms more closely to the cortex coding conventions, and also perhaps standardise a !ParameterisedHolder api between IECoreMaya and IECoreHoudini.
+
+== IECoreNuke improvements ==
+
+It'd be great to see a !ToCoreConverter which takes a Nuke node and returns an !ImagePrimitive directly. Currently we render to temp files and then reread them which is a little ugly and inefficient.
