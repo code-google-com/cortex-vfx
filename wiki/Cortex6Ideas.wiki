@@ -44,3 +44,7 @@ Ok - this is probably even more premature (the first version is not even release
 
 == CMake (carsten.kolve) ==
 Switch to cmake to make the build process more transparent.
+
+== Maya 2011 Support ==
+
+We looked at this briefly for Cortex 5 and hit a few snags. We'll need to get this sorted for the next version.
