@@ -41,3 +41,6 @@ http://openimageio.org/
 
 == Alembic Support (carsten.kolve) ==
 Ok - this is probably even more premature (the first version is not even released). But in case it really does get the broad support from 3rd party developers that was promised, then it could be tempting to write reader/writer to and from common cortex primitives for interchange and compatibility purposes.
+
+== CMake (carsten.kolve) ==
+Switch to cmake to make the build process more transparent.
