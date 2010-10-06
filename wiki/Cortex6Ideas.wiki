@@ -34,7 +34,6 @@ It'd be great to move IECoreHoudini out of contrib and have it as a standard par
 
 It'd be great to see a !ToCoreConverter which takes a Nuke node and returns an !ImagePrimitive directly. Currently we render to temp files and then reread them which is a little ugly and inefficient.
 
-
 == OIIO Support (carsten.kolve) ==
 This is really more a discussion item than a soid aim. OIIO has made a lot of progress in the last year and now has support for nearly all of the relevant image formats, including exr, dpx and cin. If it was used as a backend to the ImagePrimitive, one could potentially benefit from a whole lot of active development on the project.
 http://openimageio.org/ 
@@ -50,3 +49,8 @@ Switch to cmake to make the build process more transparent.
 == Maya 2011 Support ==
 
 We looked at this briefly for Cortex 5 and hit a few snags. We'll need to get this sorted for the next version.
+
+== Nuke Geometry (dan.bethell) ==
+
+I'd like to see geometry converters for Nuke and an OpHolder equivalent. This would allow us to use geometry reading/workflow Ops in Nuke's 3d workflow.
+
