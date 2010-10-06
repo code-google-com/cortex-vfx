@@ -31,6 +31,8 @@ Some userData is generic (although it may only be currently used in specific lib
 ["parser"]["flagless"] --> StringVectorData - flagless parameters are parsed in the order they are specified in the data element
 ["parser"]["serialise"] --> BoolData - Should the parameter be serialised by the parser?
 ["UI"]["visible"] --> BoolData - Should the parameter show up in the UI?
+["UI"]["update"] --> BoolData - Should the UI update when the parameter value changes?
+["UI"]["label"] --> StringData - The UI label for the parameter. Defaults to a UI-ified version of the parameter name
 ["UI"]["collapsable"] --> BoolData - Is the parameter UI collapsable?
 ["UI"]["collapsed"] --> BoolData - Should the groups instantiated for CompoundParameters be collapsed?
 ["UI"]["buttonLabel"] --> StringData - Defines the label to use for an Operate button
@@ -83,11 +85,4 @@ Manipulators
 ["maya"]["valueProvider"]["connectedNodeName"] --> StringData - StringParameter value will be the name of the connected node
 ["maya"]["valueProvider"]["setMembers"] --> StringData - StringVectorParameter value will be the names of the members of the connected set
 ["maya"]["useGeometryCombiner"] --> BoolData - Should the geometry combiner be used?
-}}}
-
-= Houdini Specific =
-{{{
-["gui_update"] will become ["UI"]["update"] --> BoolData - Should the UI update when the parameter value changes?
-["label"] will become ["UI"]["label"] --> StringData - The UI label for the parameter. Defaults to a UI-ified version of the parameter name
-["hidden"] depreacted in favor of ["UI"]["visible"]
 }}}
