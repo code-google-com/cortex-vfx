@@ -54,3 +54,6 @@ We looked at this briefly for Cortex 5 and hit a few snags. We'll need to get th
 
 I'd like to see geometry converters for Nuke and an OpHolder equivalent. This would allow us to use geometry reading/workflow Ops in Nuke's 3d workflow.
 
+== End User Tools ==
+
+It'd be nice to have menus in Maya for creating procedurals, exporting geometry, creating and applying vertcaches etc. These probably wouldn't be used by the larger studios but might help smaller places and individuals start getting into cortex. IE needs to look into whether we can provide this or not - current agreement with management is that we open source libraries rather than end user tools.
