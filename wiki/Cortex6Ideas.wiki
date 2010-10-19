@@ -60,4 +60,4 @@ It'd be nice to have menus in Maya for creating procedurals, exporting geometry,
 
 == Misc Other Stuff ==
 
-ColorTransformOp and ColorSpaceTransformOp are pretty confusing - can they be consolidated into one?
+!ColorTransformOp and !ColorSpaceTransformOp are pretty confusing - can they be consolidated into one? At what point do we let OpenColorIO do all this for us?
