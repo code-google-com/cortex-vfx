@@ -64,4 +64,4 @@ It'd be nice to have menus in Maya for creating procedurals, exporting geometry,
 
 Use GCC visibility stuff to reduce binary sizes and linking times (http://gcc.gnu.org/wiki/Visibility). We tried this before but there were some issues - need to get Mark's input as to what they were.
 
-Deprecate/remove classes which have been unused for a long time. The slow point distribution stuff? RadixSort? HierarchicalCache?
+Deprecate/remove classes which have been unused for a long time. The slow point distribution stuff? !RadixSort? !HierarchicalCache?
