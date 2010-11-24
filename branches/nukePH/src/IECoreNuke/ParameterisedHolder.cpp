@@ -127,7 +127,7 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 		
 		std::map<std::string, std::string> knobScripts;
 		DD::Image::Knob *pKnob = 0;
-		for( int i=0; pKnob = BaseType::knob( i ); i++ )
+		for( int i=0; (pKnob = BaseType::knob( i )); i++ )
 		{
 			if( pKnob->name().compare( 0, 5, "parm_" ) == 0 )
 			{
@@ -139,7 +139,7 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 		
 		m_numParameterKnobs = replace_knobs( m_classReloadKnob, m_numParameterKnobs, parameterKnobs, this );
 		
-		for( int i=0; pKnob = BaseType::knob( i ); i++ )
+		for( int i=0; (pKnob = BaseType::knob( i )); i++ )
 		{
 			std::map<std::string, std::string>::const_iterator it = knobScripts.find( pKnob->name() );
 			if( it!=knobScripts.end() )
@@ -189,33 +189,36 @@ IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( const char *cl
 		object mainModule = object( handle<>( borrowed( PyImport_AddModule( "__main__" ) ) ) );
 		object mainModuleNamespace = mainModule.attr( "__dict__" );
 	
+		// first make sure IECore is imported, and the loader is refreshed if required
+	
+		string toExecute = "import IECore\n";
 		if( refreshLoader )
 		{
-			string toExecute = ( boost::format(
-				"IECore.ClassLoader.defaultLoader( \"%s\" ).refresh()\n"
-				) % searchPathEnvVar
-			).str();
-			handle<> resultHandle( PyRun_String(
-				toExecute.c_str(),
-				Py_eval_input,
-				mainModuleNamespace.ptr(),
-				mainModuleNamespace.ptr()
-			) );
+			toExecute += ( boost::format( "IECore.ClassLoader.defaultLoader( \"%s\" ).refresh()\n" ) % searchPathEnvVar ).str();
 		}
+		
+		handle<> resultHandle( PyRun_String(
+			toExecute.c_str(),
+			Py_file_input,
+			mainModuleNamespace.ptr(),
+			mainModuleNamespace.ptr()
+		) );
 	
-		string toExecute = ( boost::format(
+		// then load an instance of the class
+	
+		toExecute = ( boost::format(
 			"IECore.ClassLoader.defaultLoader( \"%s\" ).load( \"%s\", %d )()\n"
 			) % searchPathEnvVar % className % classVersion
 		).str();
 	
-		handle<> resultHandle( PyRun_String(
+		handle<> classHandle( PyRun_String(
 			toExecute.c_str(),
 			Py_eval_input,
 			mainModuleNamespace.ptr(),
 			mainModuleNamespace.ptr() )
 		);
 		
-		object result( resultHandle );
+		object result( classHandle );
 		return extract<RunTimeTypedPtr>( result )();
 	}
 	catch( error_already_set & )
