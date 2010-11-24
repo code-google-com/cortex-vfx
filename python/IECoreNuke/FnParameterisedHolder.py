@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,26 +32,48 @@
 #
 ##########################################################################
 
-import unittest
 import IECore
-import sys
 
-sys.path.append( "test/IECoreNuke" )
+class FnParameterisedHolder :
 
-from KnobAccessorsTest import *
-from FnAxisTest import *
-from StringUtilTest import *
-from KnobConvertersTest import *
-from ParameterisedHolderTest import ParameterisedHolderTest
+	def __init__( self, node ) :
+	
+		if isinstance( node, basestring ) :
+			self.__node = nuke.toNode( node )
+		else :
+			self.__node = node
 
-unittest.TestProgram(
-	testRunner = unittest.TextTestRunner(
-		stream = IECore.CompoundStream(
-			[
-				sys.stderr,
-				open( "test/IECoreNuke/resultsPython.txt", "w" )
-			]
-		),
-		verbosity = 2
-	)
-)
+	def node( self ) :
+	
+		return self.__node
+
+	def setParameterised( self, className, classVersion, searchPathEnvVar ) :
+	
+		if classVersion is None or classVersion < 0 :
+			classVersions = IECore.ClassLoader.defaultLoader( searchPathEnvVar ).versions( className )
+			classVersion = classVersions[-1] if classVersions else 0 
+	
+		self.__node.knob( "className" ).setValue( className )
+		self.__node.knob( "classVersion" ).setValue( classVersion )
+		self.__node.knob( "classSearchPathEnvVar" ).setValue( searchPathEnvVar )
+		
+		# trigger load
+		loadKnob = self.__node.knob( "classLoad" )
+		loadKnob.setValue( loadKnob.getValue() + 1 )
+		
+	## Returns a tuple of the form ( parameterised, className, classVersion, searchPathEnvVar ).
+	# Note that currently parameterised will always be None.
+	# \todo Implement parameterised return value.
+	# This is hard because in Nuke a single node may hold many DD::Image::Ops, for
+	# different output contexts. Each of those will store a different Parameterised
+	# instance, so there's no such thing as a single instance to be returned. Ideally I think we need to create
+	# a unique instance representing the current time.
+	def getParameterised( self ) :
+	
+		return ( 
+			None,
+			self.__node.knob( "className" ).getText(),
+			int( self.__node.knob( "classVersion" ).getValue() ),
+			self.__node.knob( "classSearchPathEnvVar" ).getText(),		
+		)
+	

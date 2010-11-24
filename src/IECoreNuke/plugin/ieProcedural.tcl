@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,26 +32,4 @@
 #
 ##########################################################################
 
-import unittest
-import IECore
-import sys
-
-sys.path.append( "test/IECoreNuke" )
-
-from KnobAccessorsTest import *
-from FnAxisTest import *
-from StringUtilTest import *
-from KnobConvertersTest import *
-from ParameterisedHolderTest import ParameterisedHolderTest
-
-unittest.TestProgram(
-	testRunner = unittest.TextTestRunner(
-		stream = IECore.CompoundStream(
-			[
-				sys.stderr,
-				open( "test/IECoreNuke/resultsPython.txt", "w" )
-			]
-		),
-		verbosity = 2
-	)
-)
+load ieCore

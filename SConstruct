@@ -532,6 +532,12 @@ o.Add(
 )
 
 o.Add(
+	"INSTALL_NUKEPLUGIN_NAME",
+	"The name under which to install nuke plugins.",
+	"$INSTALL_PREFIX/nuke/plugins/$IECORE_NAME",
+)
+
+o.Add(
 	"INSTALL_DOC_DIR",
 	"The directory in which to install the documentation.",
 	"$INSTALL_PREFIX/share/cortex",
@@ -1736,18 +1742,39 @@ if doConfigure :
 		mayaPythonTestEnv.Alias( "testMayaPython", mayaPythonTest )			
 
 ###########################################################################################
-# Build and install the coreNuke library and headers
+# Build and install the coreNuke library, plugin, python module and headers
 ###########################################################################################
 
 nukeEnv = env.Copy( IECORE_NAME = "IECoreNuke" )
-nukeEnv.Append( CPPPATH = [ "$NUKE_ROOT/include" ] )
-nukeEnv.Prepend( LIBPATH = [ "$NUKE_ROOT", "./lib" ] )
-nukeEnv.Prepend( LIBS = [ "GLEW" ] )
+nukeEnv.Append(
+	
+	CPPPATH = [
+		"$NUKE_ROOT/include",
+		"$GLEW_INCLUDE_PATH",
+	],
+	
+	CPPFLAGS = [
+		pythonEnv["PYTHON_INCLUDE_FLAGS"],
+	],
+	
+	LIBPATH = [
+		"$NUKE_ROOT",
+		"./lib"
+	],
+
+	LIBS = [
+		"GLEW",
+		"boost_python$BOOST_LIB_SUFFIX",
+	]
+)
 		
 nukePythonEnv = pythonEnv.Copy( IECORE_NAME = "IECoreNuke" )
 
+nukePluginEnv = nukeEnv.Copy( IECORE_NAME="ieCore" )
+
 nukeTestEnv = testEnv.Copy()
 nukeTestEnv["ENV"]["LM_LICENSE_FILE"] = nukeTestEnv["NUKE_LICENSE_FILE"]
+nukeTestEnv["ENV"]["NUKE_PATH"] = "plugins/nuke"
 
 if doConfigure :
 
@@ -1806,7 +1833,11 @@ if doConfigure :
 				c.Finish()
 				
 				# we can't add this earlier as then it's built during the configure stage, and that's no good
-				nukeEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
+				nukeEnv.Append( LIBS = [
+					os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ),
+					os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ),
+					os.path.basename( glEnv.subst( "$INSTALL_LIB_NAME" ) ),
+				]	)
 				
 				nukeEnv.Append( LIBS = [ nukeLibName ] )
 
@@ -1816,10 +1847,13 @@ if doConfigure :
     					"-DIECORENUKE_NUKE_MINOR_VERSION=$NUKE_MINOR_VERSION",
 					]
 				)
-
+				
 				nukeHeaders = glob.glob( "include/IECoreNuke/*.h" ) + glob.glob( "include/IECoreNuke/*.inl" )
 				nukeSources = glob.glob( "src/IECoreNuke/*.cpp" )
 				nukePythonScripts = glob.glob( "python/IECoreNuke/*.py" )
+				nukePluginSources = glob.glob( "src/IECoreNuke/plugin/*.cpp" )
+
+				# nuke library
 
 				nukeLibrary = nukeEnv.SharedLibrary( "lib/" + os.path.basename( nukeEnv.subst( "$INSTALL_NUKELIB_NAME" ) ), nukeSources )
 				nukeLibraryInstall = nukeEnv.Install( os.path.dirname( nukeEnv.subst( "$INSTALL_NUKELIB_NAME" ) ), nukeLibrary )
@@ -1828,10 +1862,14 @@ if doConfigure :
 				nukeEnv.Alias( "installNuke", nukeLibraryInstall )
 				nukeEnv.Alias( "installLib", [ nukeLibraryInstall ] )
 
+				# nuke headers
+
 				nukeHeaderInstall = nukeEnv.Install( "$INSTALL_HEADER_DIR/IECoreNuke", nukeHeaders )
 				nukeEnv.AddPostAction( "$INSTALL_HEADER_DIR/IECoreNuke", lambda target, source, env : makeSymLinks( nukeEnv, nukeEnv["INSTALL_HEADER_DIR"] ) )
 				nukeEnv.Alias( "installNuke", nukeHeaderInstall )
 				nukeEnv.Alias( "install", nukeHeaderInstall )
+
+				# nuke python module
 
 				nukePythonModuleInstall = nukePythonEnv.Install( "$INSTALL_NUKEPYTHON_DIR/IECoreNuke", nukePythonScripts )
 				nukePythonEnv.AddPostAction( "$INSTALL_NUKEPYTHON_DIR/IECoreNuke", lambda target, source, env : makeSymLinks( nukePythonEnv, nukePythonEnv["INSTALL_NUKEPYTHON_DIR"] ) )
@@ -1843,11 +1881,46 @@ if doConfigure :
 					nukeEnv.Alias( "install", nukeLibraryInstall, "$INSTALL_CORENUKE_POST_COMMAND" ) 
 					nukeEnv.Alias( "installNuke", nukeLibraryInstall, "$INSTALL_CORENUKE_POST_COMMAND" ) 
 
-				Default( [ nukeLibrary ] )
+				# nuke plugin
+
+				nukePluginEnv.Append(
+					LIBPATH = [ "./lib" ],
+					LIBS = [
+						os.path.basename( coreEnv.subst( "$INSTALL_NUKELIB_NAME" ) ),
+						os.path.basename( nukeEnv.subst( "$INSTALL_NUKELIB_NAME" ) ),
+					]
+				)
+				nukePluginTarget = "plugins/nuke/" + os.path.basename( nukePluginEnv.subst( "$INSTALL_NUKEPLUGIN_NAME" ) )
+				nukePlugin = nukePluginEnv.SharedLibrary( nukePluginTarget, nukePluginSources, SHLIBPREFIX="" )
+				nukePluginInstall = nukePluginEnv.Install( os.path.dirname( nukePluginEnv.subst( "$INSTALL_NUKEPLUGIN_NAME" ) ), nukePlugin )
+		
+				nukePluginEnv.AddPostAction( nukePluginInstall, lambda target, source, env : makeSymLinks( nukePluginEnv, nukePluginEnv["INSTALL_NUKEPLUGIN_NAME"] ) )
+				nukePluginEnv.Alias( "install", nukePluginInstall )
+				nukePluginEnv.Alias( "installNuke", nukePluginInstall )
+		
+				Default( [ nukeLibrary, nukePlugin ] )
+				
+				# stubs for each of nodes within the plugin
+				
+				nukeStubs = []
+				for nodeName in [ "ieProcedural"] :
+				
+					nukeStubEnv = nukePluginEnv.Copy( IECORE_NAME=nodeName )
+					nukeStubName = "plugins/nuke/" + os.path.basename( nukeStubEnv.subst( "$INSTALL_NUKEPLUGIN_NAME" ) ) + ".tcl"
+					nukeStub = nukePluginEnv.Command( nukeStubName, nukePlugin, "echo 'load ieCore' > $TARGET" )
+					nukeStubInstall = nukeStubEnv.Install( os.path.dirname( nukeStubEnv.subst( "$INSTALL_NUKEPLUGIN_NAME" ) ), nukeStub )
+					nukeStubEnv.Alias( "install", nukeStubInstall )
+					nukeStubEnv.Alias( "installNuke", nukeStubInstall )
+					nukeStubs.append( nukeStub )
+					Default( [ nukeStub ] )
+
+				# nuke tests
 
 				nukeTest = nukeTestEnv.Command( "test/IECoreNuke/resultsPython.txt", nukeLibrary, "echo \"execfile( '$TEST_NUKE_SCRIPT' )\" | $NUKE_ROOT/Nuke${NUKE_MAJOR_VERSION}.${NUKE_MINOR_VERSION} -t" )
 				NoCache( nukeTest )
 				nukeTestEnv.Depends( nukeTest, glob.glob( "test/IECoreNuke/*.py" ) )
+				nukeTestEnv.Depends( nukeTest, nukePlugin )
+				nukeTestEnv.Depends( nukeTest, nukeStubs )
 				nukeTestEnv.Alias( "testNuke", nukeTest )			
 
 ###########################################################################################

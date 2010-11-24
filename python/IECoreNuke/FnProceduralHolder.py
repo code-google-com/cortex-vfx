@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,26 +32,30 @@
 #
 ##########################################################################
 
-import unittest
-import IECore
-import sys
+import nuke
 
-sys.path.append( "test/IECoreNuke" )
+import IECoreNuke
 
-from KnobAccessorsTest import *
-from FnAxisTest import *
-from StringUtilTest import *
-from KnobConvertersTest import *
-from ParameterisedHolderTest import ParameterisedHolderTest
+class FnProceduralHolder( IECoreNuke.FnParameterisedHolder ) :
 
-unittest.TestProgram(
-	testRunner = unittest.TextTestRunner(
-		stream = IECore.CompoundStream(
-			[
-				sys.stderr,
-				open( "test/IECoreNuke/resultsPython.txt", "w" )
-			]
-		),
-		verbosity = 2
-	)
-)
+	def __init__( self, node ) :
+	
+		IECoreNuke.FnParameterisedHolder.__init__( self, node )
+
+	def setProcedural( self, className, classVersion=None ) :
+	
+		self.setParameterised( className, classVersion, "IECORE_PROCEDURAL_PATHS" )
+		
+	def getProcedural( self ) :
+	
+		return self.getParameterised()[0]
+
+	@staticmethod
+	def create( nodeName, className, classVersion=None ) :
+	
+		node = nuke.createNode( "ieProcedural" )
+		node.setName( nodeName )
+		fnPH = FnProceduralHolder( node )
+		fnPH.setProcedural( className, classVersion )
+		
+		return fnPH
