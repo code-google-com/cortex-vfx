@@ -1764,7 +1764,6 @@ nukeEnv.Append(
 
 	LIBS = [
 		"GLEW",
-		"boost_python$BOOST_LIB_SUFFIX",
 	]
 )
 		
@@ -1839,7 +1838,7 @@ if doConfigure :
 					os.path.basename( glEnv.subst( "$INSTALL_LIB_NAME" ) ),
 				]	)
 				
-				nukeEnv.Append( LIBS = [ nukeLibName ] )
+				nukeEnv.Append( LIBS = [ nukeLibName, "boost_python$BOOST_LIB_SUFFIX" ] )
 
 				nukeEnv.Append(
 					CPPFLAGS = [
