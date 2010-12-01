@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,12 +32,61 @@
 #
 ##########################################################################
 
-from _IECoreNuke import *
+import nuke
 
-from KnobAccessors import setKnobValue, getKnobValue
-from FnAxis import FnAxis
-from StringUtil import nukeFileSequence, ieCoreFileSequence
-from KnobConverters import registerParameterKnobConverters, createKnobsFromParameter, setKnobsFromParameter, setParameterFromKnobs
-from FnParameterisedHolder import FnParameterisedHolder
-from FnProceduralHolder import FnProceduralHolder
-from UndoManagers import UndoState, UndoDisabled, UndoEnabled, UndoBlock
+## A context object intended for use with python's "with" block. It ensures
+# that all operations in the block are performed with nuke's undo in a
+# particular state (enabled or disabled) and that the previous state is correctly
+# restored on exit from the block.
+class UndoState :
+
+	## state should be True to enable undo, and False to disable it.
+	def __init__( self, state ) :
+	
+		self.__state = state
+
+	def __enter__( self ) :
+
+		self.__prevState = not nuke.Undo.disabled()
+		if self.__state :
+			nuke.Undo.enable()
+		else :
+			nuke.Undo.disable()
+
+	def __exit__( self, type, value, traceBack ) :
+
+		if self.__prevState :
+			nuke.Undo.enable()
+		else :
+			nuke.Undo.disable()
+
+## A context object intended for use with python's "with" block. It ensures
+# that all operations in the block are performed with undo disabled, and that
+# undo is reenabled if necessary upon exit from the block.
+class UndoDisabled( UndoState ) :
+
+	def __init__( self ) :
+	
+		UndoState.__init__( self, False )
+
+## A context object intended for use with python's "with" block. It ensures
+# that all operations in the block are performed with undo enabled, and that
+# undo is disabled if necessary upon exit from the block.
+class UndoEnabled( UndoState ) :
+
+	def __init__( self ) :
+	
+		UndoState.__init__( self, True )
+
+## A context object intended for use with python's "with" block. It groups a
+# series of actions into a single Nuke undo.
+class UndoBlock :
+
+	def __enter__( self ) :
+	
+		nuke.Undo.begin()
+		
+	def __exit__( self, type, value, traceBack ) :
+
+		nuke.Undo.end()
+		

@@ -32,6 +32,8 @@
 #
 ##########################################################################
 
+from __future__ import with_statement
+
 import unittest
 import os
 import weakref
@@ -125,6 +127,41 @@ class ObjectKnobTest( unittest.TestCase ) :
 				
 		n2 = nuke.nodePaste( "test/IECoreNuke/objectKnob.nk" )
 		self.assertEqual( n2.knob( "object" ).getValue(), None )	
+	
+	def testUndo( self ) :
+	
+		# check our custom knob undoes in the same way as
+		# standard knobs
+	
+		n = nuke.createNode( "ieObject" )
+		n2 = nuke.createNode( "Blur" )
+
+		self.assertEqual( n.knob( "object" ).getValue(), None )
+		self.assertEqual( n2.knob( "size" ).getValue(), 0 )
+		
+		self.assertEqual( nuke.Undo.disabled(), True )
+		
+		with IECoreNuke.UndoEnabled() :
+		
+			self.assertEqual( nuke.Undo.disabled(), False )
+		
+			with IECoreNuke.UndoBlock() :
+					
+				n.knob( "object" ).setValue( IECore.IntData( 10 ) )
+				self.assertEqual( n.knob( "object" ).getValue(), IECore.IntData( 10 ) )
+
+				n2.knob( "size" ).setValue( 10 )
+				self.assertEqual( n2.knob( "size" ).getValue(), 10 )
+
+		self.assertEqual( nuke.Undo.disabled(), True )
+
+		self.assertEqual( n.knob( "object" ).getValue(), IECore.IntData( 10 ) )
+		self.assertEqual( n2.knob( "size" ).getValue(), 10 )
+		
+		nuke.undo()
+		
+		self.assertEqual( n2.knob( "size" ).getValue(), 0 )
+		self.assertEqual( n.knob( "object" ).getValue(), None )
 				
 	def tearDown( self ) :
 	
