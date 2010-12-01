@@ -37,7 +37,7 @@ import unittest
 import IECore
 import IECoreNuke
 
-class ParameterisedHolderTest( unittest.TestCase ) :
+class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 
 	def __checkParameterKnobs( self, parameter, node, knobName=None ) :
 	

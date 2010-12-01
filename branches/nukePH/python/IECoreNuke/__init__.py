@@ -41,3 +41,4 @@ from KnobConverters import registerParameterKnobConverters, createKnobsFromParam
 from FnParameterisedHolder import FnParameterisedHolder
 from FnProceduralHolder import FnProceduralHolder
 from UndoManagers import UndoState, UndoDisabled, UndoEnabled, UndoBlock
+from TestCase import TestCase

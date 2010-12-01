@@ -38,10 +38,12 @@ import unittest
 import os
 import weakref
 
+import nuke
+
 import IECore
 import IECoreNuke
 
-class ObjectKnobTest( unittest.TestCase ) :
+class ObjectKnobTest( IECoreNuke.TestCase ) :
 	
 	def testNameAndLabel( self ) :
 	
