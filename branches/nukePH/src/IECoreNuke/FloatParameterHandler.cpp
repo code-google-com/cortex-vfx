@@ -60,6 +60,11 @@ void FloatParameterHandler::knobs( DD::Image::Knob_Callback f )
 			
 	DD::Image::IRange range( floatParameter->minValue(), floatParameter->maxValue() );
 	Float_knob( f, &m_storage, range, knobName(), knobLabel() );
+	DD::Image::SetFlags( f, DD::Image::Knob::FORCE_RANGE );
+	if( !(floatParameter->hasMinValue() && floatParameter->hasMaxValue()) )
+	{
+		DD::Image::ClearFlags( f, DD::Image::Knob::SLIDER );
+	}
 	Tooltip( f, parameter()->description() );
 }
 
