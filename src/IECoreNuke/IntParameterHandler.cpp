@@ -60,6 +60,7 @@ void IntParameterHandler::knobs( DD::Image::Knob_Callback f )
 		
 	DD::Image::IRange range( intParameter->minValue(), intParameter->maxValue() );
 	Int_knob( f, &m_storage, range, knobName(), knobLabel() );
+	DD::Image::SetFlags( f, DD::Image::Knob::FORCE_RANGE );
 	Tooltip( f, parameter()->description() );
 }
 
