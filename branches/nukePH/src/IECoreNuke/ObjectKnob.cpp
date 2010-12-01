@@ -77,6 +77,7 @@ bool ObjectKnob::setValue( IECore::ConstObjectPtr value )
 {
 	if( !valuesEqual( m_value, value ) )
 	{
+		new_undo();
 		m_value = value ? value->copy() : 0;
 		changed();
 		return true;
