@@ -32,22 +32,18 @@
 #
 ##########################################################################
 
-import math
 import unittest
-import IECoreNuke
-import IECore
+
 import nuke
 
-class KnobAccessorsTest( IECoreNuke.TestCase ) :
+## A class to help implement unit tests for nuke functionality. It
+# implements setUp() to clear the nuke script and undo queue.
+class TestCase( unittest.TestCase ) :
 
-	def test( self ) :
-
-		n = nuke.nodes.RadialDistort()
-		k = n.knob( "scale" )
-
-		self.assertEqual( IECoreNuke.getKnobValue( k ), IECore.V3f( 1 ) )
-		self.assertEqual( IECoreNuke.getKnobValue( k, resultType=IECore.V3d ), IECore.V3d( 1 ) )
-
-if __name__ == "__main__":
-    unittest.main()
-
+	## Derived classes may override this, but they should call the
+	# base class implementation too.
+	def setUp( self ) :
+	
+		nuke.scriptClear()
+		nuke.Undo.undoTruncate( 0 )
+		nuke.Undo.redoTruncate( 0 )
