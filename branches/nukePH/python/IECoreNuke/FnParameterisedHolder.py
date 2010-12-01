@@ -32,6 +32,8 @@
 #
 ##########################################################################
 
+import nuke
+
 import IECore
 
 class FnParameterisedHolder :
@@ -53,13 +55,15 @@ class FnParameterisedHolder :
 			classVersions = IECore.ClassLoader.defaultLoader( searchPathEnvVar ).versions( className )
 			classVersion = classVersions[-1] if classVersions else 0 
 	
-		self.__node.knob( "className" ).setValue( className )
-		self.__node.knob( "classVersion" ).setValue( classVersion )
-		self.__node.knob( "classSearchPathEnvVar" ).setValue( searchPathEnvVar )
-		
-		# trigger load
-		loadKnob = self.__node.knob( "classLoad" )
-		loadKnob.setValue( loadKnob.getValue() + 1 )
+		d = self.__node.knob( "classSpecifier" ).getValue()
+		if d is None :
+			d = IECore.CompoundObject()
+			
+		d["className"] = IECore.StringData( className )
+		d["classVersion"] = IECore.IntData( classVersion )
+		d["classSearchPathEnvVar"] = IECore.StringData( searchPathEnvVar )
+	
+		self.__node.knob( "classSpecifier" ).setValue( d )
 		
 	## Returns a tuple of the form ( parameterised, className, classVersion, searchPathEnvVar ).
 	# Note that currently parameterised will always be None.
@@ -70,10 +74,11 @@ class FnParameterisedHolder :
 	# a unique instance representing the current time.
 	def getParameterised( self ) :
 	
+		d = self.__node.knob( "classSpecifier" ).getValue()
 		return ( 
 			None,
-			self.__node.knob( "className" ).getText(),
-			int( self.__node.knob( "classVersion" ).getValue() ),
-			self.__node.knob( "classSearchPathEnvVar" ).getText(),		
+			d["className"].value if d else "",
+			d["classVersion"].value if d else 0,
+			d["classSearchPathEnvVar"].value if d else "",		
 		)
 	

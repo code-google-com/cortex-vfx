@@ -41,6 +41,7 @@
 
 #include "IECore/MessageHandler.h"
 #include "IECore/CompoundParameter.h"
+#include "IECore/SimpleTypedData.h"
 #include "IECorePython/ScopedGILLock.h"
 
 #include "IECoreNuke/ParameterisedHolder.h"
@@ -54,14 +55,8 @@ using namespace IECoreNuke;
 template<typename BaseType>
 ParameterisedHolder<BaseType>::ParameterisedHolder( Node *node )
 	:	BaseType( node ),
-		m_className( 0 ),
-		m_classNameKnob( 0 ),
-		m_classVersion( -1 ),
-		m_classVersionKnob( 0 ),
-		m_classSearchPathEnvVar( 0 ),
-		m_classSearchPathEnvVarKnob( 0 ),
-		m_classLoad( 0 ),
-		m_classLoadKnob( 0 ),
+		m_classSpecifier( 0 ),
+		m_classSpecifierKnob( 0 ),
 		m_classReloadKnob( 0 ),
 		m_parameterised( 0 ),
 		m_parameterHandler( 0 ),
@@ -80,29 +75,23 @@ void ParameterisedHolder<BaseType>::knobs( DD::Image::Knob_Callback f )
 {	
 	BaseType::knobs( f );
 	
-	m_classNameKnob = String_knob( f, &m_className, "className", "Class Name" );
-	
-	m_classVersionKnob = Int_knob( f, &m_classVersion, "classVersion", "Class Version" );
-	
-	m_classSearchPathEnvVarKnob = String_knob( f, &m_classSearchPathEnvVar, "classSearchPathEnvVar", "SearchPath" );
-	
-	m_classLoadKnob = Int_knob( f, &m_classLoad, "classLoad" );
-	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS /*| DD::Image::Knob::HIDDEN*/ );
+	m_classSpecifierKnob = ObjectKnob::objectKnob( f, &m_classSpecifier, "classSpecifier", "classSpecifier" );
+	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS );
 	
 	m_classReloadKnob = Button( f, "classReload", "Reload" );
-		
+	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS );
+	
 	BaseType::add_knobs( parameterKnobs, this, f );
 }
 
 template<typename BaseType>
 int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
-{
-	
-	if( knob==m_classLoadKnob || knob==m_classReloadKnob )
-	{
+{	
+	if( knob==m_classSpecifierKnob || knob==m_classReloadKnob )
+	{			
 		// reload the class, or load a new class
 	
-		m_parameterised = loadClass( m_classNameKnob->get_text(), (int)m_classVersionKnob->get_value(), m_classSearchPathEnvVarKnob->get_text(), knob==m_classReloadKnob );
+		m_parameterised = loadClass( knob==m_classReloadKnob );
 		
 		// get a new ParameterHandler
 		
@@ -180,8 +169,27 @@ void ParameterisedHolder<BaseType>::parameterKnobs( void *that, DD::Image::Knob_
 }
 
 template<typename BaseType>
-IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( const char *className, int classVersion, const char *searchPathEnvVar, bool refreshLoader )
+IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( bool refreshLoader )
 {
+
+	std::string className;
+	int classVersion;
+	std::string classSearchPathEnvVar;
+	
+	IECore::ConstCompoundObjectPtr d = IECore::runTimeCast<const IECore::CompoundObject>( m_classSpecifierKnob->getValue() );
+
+	if( d )
+	{
+		className = d->member<IECore::StringData>( "className" )->readable();
+		classVersion = d->member<IECore::IntData>( "classVersion" )->readable();
+		classSearchPathEnvVar = d->member<IECore::StringData>( "classSearchPathEnvVar" )->readable();
+	}		
+
+	if( className=="" )
+	{
+		return 0;
+	}
+			
 	IECorePython::ScopedGILLock gilLock;
 
 	try
@@ -189,26 +197,24 @@ IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( const char *cl
 		object mainModule = object( handle<>( borrowed( PyImport_AddModule( "__main__" ) ) ) );
 		object mainModuleNamespace = mainModule.attr( "__dict__" );
 	
-		// first make sure IECore is imported, and the loader is refreshed if required
+		// make sure the loader is refreshed if required
 	
-		string toExecute = "import IECore\n";
 		if( refreshLoader )
 		{
-			toExecute += ( boost::format( "IECore.ClassLoader.defaultLoader( \"%s\" ).refresh()\n" ) % searchPathEnvVar ).str();
+			string toExecute = ( boost::format( "IECore.ClassLoader.defaultLoader( \"%s\" ).refresh()\n" ) % classSearchPathEnvVar ).str();
+			handle<> resultHandle( PyRun_String(
+				toExecute.c_str(),
+				Py_file_input,
+				mainModuleNamespace.ptr(),
+				mainModuleNamespace.ptr()
+			) );
 		}
-		
-		handle<> resultHandle( PyRun_String(
-			toExecute.c_str(),
-			Py_file_input,
-			mainModuleNamespace.ptr(),
-			mainModuleNamespace.ptr()
-		) );
 	
 		// then load an instance of the class
 	
-		toExecute = ( boost::format(
+		string toExecute = ( boost::format(
 			"IECore.ClassLoader.defaultLoader( \"%s\" ).load( \"%s\", %d )()\n"
-			) % searchPathEnvVar % className % classVersion
+			) % classSearchPathEnvVar % className % classVersion
 		).str();
 	
 		handle<> classHandle( PyRun_String(

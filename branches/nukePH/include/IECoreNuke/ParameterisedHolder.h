@@ -50,6 +50,7 @@ namespace Image
 #include "IECore/Parameterised.h"
 
 #include "IECoreNuke/ParameterHandler.h"
+#include "IECoreNuke/ObjectKnob.h"
 
 namespace IECoreNuke
 {
@@ -73,25 +74,20 @@ class ParameterisedHolder : public BaseType
 		//@}
 	
 		/// \todo Consider how these should fit in really.
-		IECore::RunTimeTypedPtr getParameterised(); 
+		/// Should they be protected?
+		IECore::RunTimeTypedPtr getParameterised();
 		void setParameterValues();
 		
 	private :
 
 		// class specification
-		const char *m_className;
-		DD::Image::Knob *m_classNameKnob;
-		int m_classVersion;
-		DD::Image::Knob *m_classVersionKnob;
-		const char *m_classSearchPathEnvVar;
-		DD::Image::Knob *m_classSearchPathEnvVarKnob;
-		int m_classLoad;
-		DD::Image::Knob *m_classLoadKnob; // for triggering loading programmatically and during load
+		IECore::ObjectPtr m_classSpecifier;
+		ObjectKnob *m_classSpecifierKnob;
 		DD::Image::Knob *m_classReloadKnob; // for triggering reloading as a user
 		
 		// class loading
 		IECore::RunTimeTypedPtr m_parameterised;
-		IECore::RunTimeTypedPtr loadClass( const char *className, int classVersion, const char *searchPathEnvVar, bool refreshLoader );
+		IECore::RunTimeTypedPtr loadClass( bool refreshLoader );
 
 		// knob creation
 		ParameterHandlerPtr m_parameterHandler;

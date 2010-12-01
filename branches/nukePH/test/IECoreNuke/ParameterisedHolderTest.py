@@ -106,7 +106,7 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 		fnPH.node().knob( "parm_files_frame" ).setValue( 10 )
 		self.assertEqual( fnPH.node().knob( "parm_files_frame" ).getValue(), 10 )
 		
-		fnPH.setProcedural( "read", 1 ) # trigger reload
+		fnPH.node().knob( "classReload" ).execute() # trigger reload
 		
 		self.assertEqual( fnPH.node().knob( "parm_files_frame" ).getValue(), 10 )
 
@@ -118,7 +118,7 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 		self.failUnless( fnPH.node().knob( "parm_files_frame" ).hasExpression() )
 		self.failUnless( fnPH.node().knob( "parm_files_frame" ).isAnimated() )
 				
-		fnPH.setProcedural( "read", 1 ) # trigger reload
+		fnPH.node().knob( "classReload" ).execute() # trigger reload
 		
 		self.failUnless( fnPH.node().knob( "parm_files_frame" ).hasExpression() )
 		self.failUnless( fnPH.node().knob( "parm_files_frame" ).isAnimated() )
@@ -132,11 +132,63 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 		fnPH.node().knob( "parm_files_frame" ).setValue( 10 )
 		self.assertEqual( fnPH.node().knob( "parm_files_frame" ).getValue(), 10 )
 		
-		fnPH.setProcedural( "read", 1 ) # trigger reload
+		fnPH.node().knob( "classReload" ).execute() # trigger reload
 		
 		self.assertEqual( fnPH.node().knob( "parm_files_frame" ).getValue(), 10 )
 		self.assertEqual( fnPH.node().knob( "parm_files_frame" ).defaultValue(), 1 )
+		
+	def testCopyPaste( self ) :
+	
+		fnPH = IECoreNuke.FnProceduralHolder.create( "procedural", "read", 1 )
+		
+		nuke.nodeCopy( "test/IECoreNuke/parameterisedHolder.nk" )
+		
+		nuke.scriptClear()
+	
+		n = nuke.nodePaste( "test/IECoreNuke/parameterisedHolder.nk" )
+		
+		fnPH = IECoreNuke.FnProceduralHolder( n )
+		
+		p = fnPH.getParameterised()
+		
+		self.assertEqual( p[1], "read" )
+		self.failUnless( isinstance( p[2], int ) )
+		self.assertEqual( p[2], 1 )
+		self.assertEqual( p[3], "IECORE_PROCEDURAL_PATHS" )
+	
+	def testRemoveClass( self ) :
+	
+		fnPH = IECoreNuke.FnProceduralHolder.create( "procedural", "read", 1 )
 
+		p = fnPH.getParameterised()
+		
+		self.assertEqual( p[1], "read" )
+		self.failUnless( isinstance( p[2], int ) )
+		self.assertEqual( p[2], 1 )
+		self.assertEqual( p[3], "IECORE_PROCEDURAL_PATHS" )
+		
+		fnPH.setProcedural( "", 0 )
+		
+		p = fnPH.getParameterised()
+		
+		self.assertEqual( p[1], "" )
+		self.failUnless( isinstance( p[2], int ) )
+		self.assertEqual( p[2], 0 )
+		self.assertEqual( p[3], "IECORE_PROCEDURAL_PATHS" )
+		
+		for k in fnPH.node().knobs() :
+		
+			self.failIf( k.startswith( "parm_" ) )
+		
+	def tearDown( self ) :
+	
+		for f in [
+				"test/IECoreNuke/parameterisedHolder.nk",
+			] :
+			
+			if os.path.exists( f ) :
+				os.remove( f )
+				
 if __name__ == "__main__":
 	unittest.main()
 
