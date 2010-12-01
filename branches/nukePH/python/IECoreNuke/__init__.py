@@ -32,6 +32,8 @@
 #
 ##########################################################################
 
+from _IECoreNuke import *
+
 from KnobAccessors import setKnobValue, getKnobValue
 from FnAxis import FnAxis
 from StringUtil import nukeFileSequence, ieCoreFileSequence

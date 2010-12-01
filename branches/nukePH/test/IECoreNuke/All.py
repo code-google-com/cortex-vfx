@@ -43,6 +43,7 @@ from FnAxisTest import *
 from StringUtilTest import *
 from KnobConvertersTest import *
 from ParameterisedHolderTest import ParameterisedHolderTest
+from ObjectKnobTest import ObjectKnobTest
 
 unittest.TestProgram(
 	testRunner = unittest.TextTestRunner(
