@@ -45,25 +45,38 @@ ParameterHandler::Description<Color3fParameterHandler> Color3fParameterHandler::
 
 Color3fParameterHandler::Color3fParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
 	:	ParameterHandler( parameter, knobName ),
-		m_storage( 0 )
+		m_storage( 0 ),
+		m_knob( 0 )
 {
 }
 		
 void Color3fParameterHandler::knobs( DD::Image::Knob_Callback f )
 {
-	const Color3fParameter *color3fParameter = static_cast<Color3fParameter *>( parameter().get() );
+	const Color3fParameter *color3fParameter = static_cast<Color3fParameter *>( parameter() );
 	
 	if( f.makeKnobs() )
 	{
 		m_storage = color3fParameter->typedDefaultValue();
 	}
 			
-	Color_knob( f, &m_storage.x, knobName(), knobLabel() );
+	m_knob = Color_knob( f, &m_storage.x, knobName(), knobLabel() );
 	Tooltip( f, parameter()->description() );
 }
 
-void Color3fParameterHandler::setParameterValue()
+void Color3fParameterHandler::setParameterValue( Parameter *parameter, ValueSource valueSource )
 {
-	static_cast<Color3fParameter *>( parameter().get() )->setTypedValue( m_storage );
+	Imath::Color3f value;
+	if( valueSource==Storage )
+	{
+		value = m_storage;
+	}
+	else
+	{
+		value[0] = m_knob->get_value( 0 );
+		value[1] = m_knob->get_value( 1 );
+		value[2] = m_knob->get_value( 2 );
+	}
+	
+	static_cast<Color3fParameter *>( parameter )->setTypedValue( value );
 }
 

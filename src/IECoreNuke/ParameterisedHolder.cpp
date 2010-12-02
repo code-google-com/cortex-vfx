@@ -52,6 +52,8 @@ using namespace boost::python;
 using namespace IECore;
 using namespace IECoreNuke;
 
+static IECore::RunTimeTypedPtr g_getParameterisedResult = 0;
+
 template<typename BaseType>
 ParameterisedHolder<BaseType>::ParameterisedHolder( Node *node )
 	:	BaseType( node ),
@@ -60,7 +62,8 @@ ParameterisedHolder<BaseType>::ParameterisedHolder( Node *node )
 		m_classReloadKnob( 0 ),
 		m_parameterised( 0 ),
 		m_parameterHandler( 0 ),
-		m_numParameterKnobs( 0 )
+		m_numParameterKnobs( 0 ),
+		m_getParameterisedKnob( 0 )
 {
 	
 }
@@ -77,6 +80,9 @@ void ParameterisedHolder<BaseType>::knobs( DD::Image::Knob_Callback f )
 	
 	m_classSpecifierKnob = ObjectKnob::objectKnob( f, &m_classSpecifier, "classSpecifier", "classSpecifier" );
 	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS );
+	
+	m_getParameterisedKnob = Button( f, "getParameterised" );
+	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS | DD::Image::Knob::INVISIBLE );
 	
 	m_classReloadKnob = Button( f, "classReload", "Reload" );
 	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS );
@@ -137,6 +143,23 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 			}
 		}
 		
+		return 1;
+	}
+	else if( knob==m_getParameterisedKnob )
+	{
+		// this is triggered by the FnParameterisedHolder.getParameterised implementation.
+		// currently there's no way to get an Op * and call a method on it from
+		// python, so we use the knob_changed() mechanism to simulate a function call by
+		// shoving the result into g_getParameterisedResult for subsequent retrieval.
+		
+		g_getParameterisedResult = loadClass( knob==m_classReloadKnob );
+		if( g_getParameterisedResult )
+		{
+			ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( g_getParameterisedResult.get() );
+			// get values directly from knobs as they haven't been stored at this point
+			m_parameterHandler->setParameterValue( parameterisedInterface->parameters(), ParameterHandler::Knob );
+		}
+	
 		return 1;
 	}
 	
@@ -241,6 +264,14 @@ IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( bool refreshLo
 	}
 	return 0;
 
+}
+
+template<typename BaseType>
+IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::getParameterisedResult()
+{
+	IECore::RunTimeTypedPtr result = g_getParameterisedResult;
+	g_getParameterisedResult = 0;
+	return result;
 }
 
 // explicit instantiation

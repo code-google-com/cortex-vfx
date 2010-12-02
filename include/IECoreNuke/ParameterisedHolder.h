@@ -94,6 +94,11 @@ class ParameterisedHolder : public BaseType
 		size_t m_numParameterKnobs;
 		static void parameterKnobs( void *that, DD::Image::Knob_Callback f );
 		
+		// FnParameterisedHolder support
+		DD::Image::Knob *m_getParameterisedKnob; // this knob triggers a simulated getParameterised function.
+		static IECore::RunTimeTypedPtr getParameterisedResult(); // and this function retrieves the result
+		friend void bindFnParameterisedHolder();
+		
 };
 
 typedef ParameterisedHolder<DD::Image::Op> ParameterisedHolderOp;

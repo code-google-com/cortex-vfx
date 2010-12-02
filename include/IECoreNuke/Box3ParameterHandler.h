@@ -49,11 +49,12 @@ class Box3ParameterHandler : public ParameterHandler
 		Box3ParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName );
 		
 		virtual void knobs( DD::Image::Knob_Callback f );
-		virtual void setParameterValue();
+		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
 				
 	private :
 	
 		Imath::Box3f m_storage;
+		DD::Image::Knob *m_knob;
 	
 		static Description<Box3ParameterHandler> g_description;
 		

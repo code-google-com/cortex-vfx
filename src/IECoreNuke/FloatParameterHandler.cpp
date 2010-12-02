@@ -45,13 +45,14 @@ ParameterHandler::Description<FloatParameterHandler> FloatParameterHandler::g_de
 
 FloatParameterHandler::FloatParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
 	:	ParameterHandler( parameter, knobName ),
-		m_storage( 0 )
+		m_storage( 0 ),
+		m_knob( 0 )
 {
 }
 		
 void FloatParameterHandler::knobs( DD::Image::Knob_Callback f )
 {
-	const FloatParameter *floatParameter = static_cast<FloatParameter *>( parameter().get() );
+	const FloatParameter *floatParameter = static_cast<FloatParameter *>( parameter() );
 	
 	if( f.makeKnobs() )
 	{
@@ -59,7 +60,7 @@ void FloatParameterHandler::knobs( DD::Image::Knob_Callback f )
 	}
 			
 	DD::Image::IRange range( floatParameter->minValue(), floatParameter->maxValue() );
-	Float_knob( f, &m_storage, range, knobName(), knobLabel() );
+	m_knob = Float_knob( f, &m_storage, range, knobName(), knobLabel() );
 	DD::Image::SetFlags( f, DD::Image::Knob::FORCE_RANGE );
 	if( !(floatParameter->hasMinValue() && floatParameter->hasMaxValue()) )
 	{
@@ -68,8 +69,16 @@ void FloatParameterHandler::knobs( DD::Image::Knob_Callback f )
 	Tooltip( f, parameter()->description() );
 }
 
-void FloatParameterHandler::setParameterValue()
+void FloatParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )
 {
-	static_cast<FloatParameter *>( parameter().get() )->setNumericValue( m_storage );
+	FloatParameter *floatParameter = static_cast<FloatParameter *>( parameter );
+	if( valueSource==Storage )
+	{
+		floatParameter->setNumericValue( m_storage );
+	}
+	else
+	{
+		floatParameter->setNumericValue( m_knob->get_value() );
+	}
 }
 

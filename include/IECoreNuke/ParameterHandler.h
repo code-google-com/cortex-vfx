@@ -45,23 +45,45 @@ namespace IECoreNuke
 
 IE_CORE_FORWARDDECLARE( ParameterHandler )
 
+/// ParameterHandlers are responsible for mapping between IECore::Parameters
+/// and DD::Image::Knobs.
 class ParameterHandler : public IECore::RefCounted
 {
 
 	public :
-				
-		ParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName );
+		
+		enum ValueSource
+		{
+			Knob,
+			Storage
+		};
 		
 		/// Declares knobs to represent the Parameter.
 		virtual void knobs( DD::Image::Knob_Callback f ) = 0;
-		/// Transfers the value from Nuke onto the Parameter.
-		virtual void setParameterValue() = 0;
 		
+		/// Transfers the value from Nuke onto the Parameter.
+		/// This calls setParameterValue( parameter() ) so doesn't
+		/// need reimplementing by subclasses. ValueSource may be passed
+		/// a value of Knob if it is known that Nuke hasn't stored knob
+		/// values yet - for instance in a knob_changed() method with
+		/// a KNOB_CHANGED_ALWAYS knob. This causes the value to be retrieved
+		/// directly from the knob at the current time, rather than from the
+		/// value stored by the knob.
+		void setParameterValue( ValueSource valueSource = Storage );
+		/// As above but a different parameter may be specified to receive the value.
+		/// In this case it is the caller's responsibility to ensure that the passed
+		/// parameter is totally compatible with the original parameter the handler
+		/// was created for.
+		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage ) = 0;
+		
+		/// Factory function to create a ParameterHandler for a given Parameter.
 		static ParameterHandlerPtr create( IECore::ParameterPtr parameter, const std::string &knobName );
 		
 	protected :
 	
-		IECore::ParameterPtr parameter() const;
+		ParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName );
+	
+		IECore::Parameter *parameter() const;
 		const char *knobName() const;
 		const char *knobLabel() const;
 		

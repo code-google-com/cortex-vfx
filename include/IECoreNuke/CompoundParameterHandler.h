@@ -48,12 +48,12 @@ class CompoundParameterHandler : public ParameterHandler
 		CompoundParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName );
 		
 		virtual void knobs( DD::Image::Knob_Callback f );
-		virtual void setParameterValue();
+		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
 				
 	private :
 	
 		ParameterHandlerPtr handler( IECore::ParameterPtr child, bool createIfMissing );
-		typedef std::map<IECore::ParameterPtr, ParameterHandlerPtr> HandlerMap;
+		typedef std::map<IECore::InternedString, ParameterHandlerPtr> HandlerMap;
 		HandlerMap m_handlers;
 		
 		static Description<CompoundParameterHandler> g_description;

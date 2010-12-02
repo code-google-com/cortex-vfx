@@ -51,7 +51,7 @@ CompoundParameterHandler::CompoundParameterHandler( IECore::ParameterPtr paramet
 		
 void CompoundParameterHandler::knobs( DD::Image::Knob_Callback f )
 {
-	CompoundParameter *compoundParameter = static_cast<CompoundParameter *>( parameter().get() );
+	CompoundParameter *compoundParameter = static_cast<CompoundParameter *>( parameter() );
 	
 	if( strcmp( knobName(), "parm" ) ) // only make a group if non-top-level parameters
 	{
@@ -74,23 +74,23 @@ void CompoundParameterHandler::knobs( DD::Image::Knob_Callback f )
 	}
 }
 
-void CompoundParameterHandler::setParameterValue()
+void CompoundParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )
 {
-	CompoundParameter *compoundParameter = static_cast<CompoundParameter *>( parameter().get() );
+	CompoundParameter *compoundParameter = static_cast<CompoundParameter *>( parameter );
 	const CompoundParameter::ParameterVector &childParameters = compoundParameter->orderedParameters();
 	for( CompoundParameter::ParameterVector::const_iterator cIt=childParameters.begin(); cIt!=childParameters.end(); cIt++ )
 	{
 		ParameterHandlerPtr h = handler( *cIt, false );
 		if( h )
 		{
-			h->setParameterValue();
+			h->setParameterValue( cIt->get(), valueSource );
 		}
 	}
 }
 
 ParameterHandlerPtr CompoundParameterHandler::handler( ParameterPtr child, bool createIfMissing )
 {
-	HandlerMap::const_iterator it = m_handlers.find( child );
+	HandlerMap::const_iterator it = m_handlers.find( child->internedName() );
 	if( it!=m_handlers.end() )
 	{
 		return it->second;
@@ -108,6 +108,6 @@ ParameterHandlerPtr CompoundParameterHandler::handler( ParameterPtr child, bool 
 		IECore::msg( IECore::Msg::Warning, "IECoreNuke::CompoundParameterHandler", boost::format(  "Unable to create handler for parameter \"%s\" of type \"%s\"" ) % child->name() % child->typeName() );
 	}
 	
-	m_handlers[child] = h;
+	m_handlers[child->internedName()] = h;
 	return h;
 }

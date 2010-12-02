@@ -32,33 +32,20 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECORENUKE_PRESETSONLYPARAMETERHANDLER_H
-#define IECORENUKE_PRESETSONLYPARAMETERHANDLER_H
+#include "boost/python.hpp"
 
-#include "IECoreNuke/ParameterHandler.h"
+#include "IECoreNuke/ParameterisedHolder.h"
+
+using namespace boost::python;
 
 namespace IECoreNuke
 {
 
-class PresetsOnlyParameterHandler : public ParameterHandler
+void bindFnParameterisedHolder()
 {
 
-	public :
-				
-		PresetsOnlyParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName );
-		
-		virtual void knobs( DD::Image::Knob_Callback f );
-		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
-				
-	private :
+	def( "_parameterisedHolderGetParameterisedResult", ParameterisedHolderOp::getParameterisedResult );
 	
-		int m_storage;
-		int m_defaultIndex;
-		DD::Image::Knob *m_knob;
-		std::vector<const char *> m_names;
-			
-};
+}
 
 } // namespace IECoreNuke
-
-#endif // IECORENUKE_PRESETSONLYPARAMETERHANDLER_H

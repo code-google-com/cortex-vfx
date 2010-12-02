@@ -35,6 +35,7 @@
 #include "boost/python.hpp"
 
 #include "IECoreNuke/bindings/ObjectKnobBinding.h"
+#include "IECoreNuke/bindings/FnParameterisedHolderBinding.h"
 
 using namespace boost::python;
 using namespace IECoreNuke;
@@ -42,4 +43,5 @@ using namespace IECoreNuke;
 BOOST_PYTHON_MODULE( _IECoreNuke )
 {
 	bindObjectKnob();
+	bindFnParameterisedHolder();
 }

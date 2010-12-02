@@ -35,6 +35,7 @@
 import nuke
 
 import IECore
+from _IECoreNuke import _parameterisedHolderGetParameterisedResult
 
 class FnParameterisedHolder :
 
@@ -66,17 +67,18 @@ class FnParameterisedHolder :
 		self.__node.knob( "classSpecifier" ).setValue( d )
 		
 	## Returns a tuple of the form ( parameterised, className, classVersion, searchPathEnvVar ).
-	# Note that currently parameterised will always be None.
-	# \todo Implement parameterised return value.
-	# This is hard because in Nuke a single node may hold many DD::Image::Ops, for
-	# different output contexts. Each of those will store a different Parameterised
-	# instance, so there's no such thing as a single instance to be returned. Ideally I think we need to create
-	# a unique instance representing the current time.
+	# Note that in Nuke a single node may hold many DD::Image::Ops, each for a different output
+	# context. Each of these will store a different Parameterised instance, so there's no such thing
+	# as a single instance to be returned. For this reason a brand new instance is returned, representing
+	# the current time. This can be manipulated as desired without affecting the instances held on the node.
 	def getParameterised( self ) :
 	
+		self.__node.knob( "getParameterised" ).execute()
+		p = _parameterisedHolderGetParameterisedResult()
+		
 		d = self.__node.knob( "classSpecifier" ).getValue()
 		return ( 
-			None,
+			p,
 			d["className"].value if d else "",
 			d["classVersion"].value if d else 0,
 			d["classSearchPathEnvVar"].value if d else "",		

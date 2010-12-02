@@ -44,7 +44,7 @@ using namespace IECoreNuke;
 ParameterHandler::Description<StringParameterHandler> StringParameterHandler::g_description( StringParameter::staticTypeId() );
 
 StringParameterHandler::StringParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName ), m_storage( 0 )
+	:	ParameterHandler( parameter, knobName ), m_storage( 0 ), m_knob( 0 )
 {
 }
 		
@@ -52,15 +52,24 @@ void StringParameterHandler::knobs( DD::Image::Knob_Callback f )
 {
 	if( f.makeKnobs() )
 	{
-		m_storage = static_cast<StringParameter *>( parameter().get() )->typedDefaultValue().c_str();
+		m_storage = static_cast<StringParameter *>( parameter() )->typedDefaultValue().c_str();
 	}
 
-	String_knob( f, &m_storage, knobName(), knobLabel() );
+	m_knob = String_knob( f, &m_storage, knobName(), knobLabel() );
 	Tooltip( f, parameter()->description() );
 }
 
-void StringParameterHandler::setParameterValue()
+void StringParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )
 {
-	static_cast<StringParameter *>( parameter().get() )->setTypedValue( m_storage );
+	StringParameter *stringParameter = static_cast<StringParameter *>( parameter );
+	if( valueSource==Storage )
+	{
+		stringParameter->setTypedValue( m_storage );
+	}
+	else
+	{
+		std::ostringstream s;
+		m_knob->to_script( s, 0, false );
+		stringParameter->setTypedValue( s.str() );
+	}
 }
-

@@ -32,33 +32,14 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECORENUKE_PRESETSONLYPARAMETERHANDLER_H
-#define IECORENUKE_PRESETSONLYPARAMETERHANDLER_H
-
-#include "IECoreNuke/ParameterHandler.h"
+#ifndef IECORENUKE_FNPARAMETERISEDHOLDERBINDING_H
+#define IECORENUKE_FNPARAMETERISEDHOLDERBINDING_H
 
 namespace IECoreNuke
 {
 
-class PresetsOnlyParameterHandler : public ParameterHandler
-{
+void bindFnParameterisedHolder();
 
-	public :
-				
-		PresetsOnlyParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName );
-		
-		virtual void knobs( DD::Image::Knob_Callback f );
-		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
-				
-	private :
-	
-		int m_storage;
-		int m_defaultIndex;
-		DD::Image::Knob *m_knob;
-		std::vector<const char *> m_names;
-			
-};
+}
 
-} // namespace IECoreNuke
-
-#endif // IECORENUKE_PRESETSONLYPARAMETERHANDLER_H
+#endif // IECORENUKE_FNPARAMETERISEDHOLDERBINDING_H
