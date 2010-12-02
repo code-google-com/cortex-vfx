@@ -44,7 +44,7 @@ using namespace IECoreNuke;
 ParameterHandler::Description<BoolParameterHandler> BoolParameterHandler::g_description( BoolParameter::staticTypeId() );
 
 BoolParameterHandler::BoolParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName )
+	:	ParameterHandler( parameter, knobName ), m_knob( 0 )
 {
 }
 		
@@ -52,14 +52,22 @@ void BoolParameterHandler::knobs( DD::Image::Knob_Callback f )
 {
 	if( f.makeKnobs() )
 	{
-		m_storage = static_cast<BoolParameter *>( parameter().get() )->typedDefaultValue();
+		m_storage = static_cast<BoolParameter *>( parameter() )->typedDefaultValue();
 	}
 	
-	Bool_knob( f, &m_storage, knobName(), knobLabel() );
+	m_knob = Bool_knob( f, &m_storage, knobName(), knobLabel() );
 	Tooltip( f, parameter()->description() );
 }
 
-void BoolParameterHandler::setParameterValue()
+void BoolParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )
 {
-	static_cast<BoolParameter *>( parameter().get() )->setTypedValue( m_storage );
+	BoolParameter *boolParameter = static_cast<BoolParameter *>( parameter );
+	if( valueSource==Storage )
+	{
+		boolParameter->setTypedValue( m_storage );
+	}
+	else
+	{
+		boolParameter->setTypedValue( m_knob->get_value() > 0.0 );
+	}
 }

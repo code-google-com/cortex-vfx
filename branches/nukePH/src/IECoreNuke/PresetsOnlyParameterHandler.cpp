@@ -40,7 +40,7 @@ using namespace IECore;
 using namespace IECoreNuke;
 
 PresetsOnlyParameterHandler::PresetsOnlyParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName )
+	:	ParameterHandler( parameter, knobName ), m_knob( 0 )
 {
 	for( Parameter::PresetsContainer::const_iterator it = parameter->presets().begin(); it!=parameter->presets().end(); it++ )
 	{
@@ -62,12 +62,21 @@ void PresetsOnlyParameterHandler::knobs( DD::Image::Knob_Callback f )
 		m_storage = m_defaultIndex;
 	}
 	
-	Enumeration_knob( f, &m_storage, &(m_names[0]), knobName(), knobLabel() );
+	m_knob = Enumeration_knob( f, &m_storage, &(m_names[0]), knobName(), knobLabel() );
 	
 	Tooltip( f, parameter()->description() );
 }
 
-void PresetsOnlyParameterHandler::setParameterValue()
+void PresetsOnlyParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )
 {
-	parameter()->setValue( parameter()->presets()[m_storage].second );
+	int presetIndex = 0;
+	if( valueSource==Storage )
+	{
+		presetIndex = m_storage;
+	}
+	else
+	{
+		presetIndex = (int)m_knob->get_value();
+	}
+	parameter->setValue( parameter->presets()[m_storage].second );
 }

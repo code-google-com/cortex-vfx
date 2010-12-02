@@ -34,6 +34,8 @@
 
 import unittest
 
+import nuke
+
 import IECore
 import IECoreNuke
 
@@ -53,33 +55,39 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 			knob = node.knob( knobName )
 			self.failUnless( knob is not None )
 			
-			knobValue = None
-			try :
-				knobValue = IECoreNuke.getKnobValue( knob )
-			except :
-				# not all knob types have accessors yet
-				pass
+			if isinstance( knob, nuke.Enumeration_Knob ) :
+				self.assertEqual( knob.value(), parameter.getCurrentPresetName() )
+			else :
+				knobValue = None
+				try :
+					knobValue = IECoreNuke.getKnobValue( knob )
+				except :
+					# not all knob types have accessors yet. some of the numeric
+					# knobs don't have them because nuke has bugs and returns those
+					# knobs as the wrong type. try to get the value another way.
+					try :
+						knobValue = knob.getValue()
+					except :
+						pass
 				
-			if knobValue is not None :
-
-				parameterValue = parameter.getValue()
-				self.assertEqual( parameterValue.value, knobValue )
+				if knobValue is not None :
+					self.assertEqual( parameter.getValue().value, knobValue )
 					
 	def testCreate( self ) :
 
 		fnPH = IECoreNuke.FnProceduralHolder.create( "procedural", "read", 1 )
 		
 		self.assertEqual( fnPH.node().name(), "procedural" )
+				
 		p = fnPH.getParameterised()
 		
+		self.failUnless( isinstance( p[0], IECore.ReadProcedural ) )
 		self.assertEqual( p[1], "read" )
 		self.failUnless( isinstance( p[2], int ) )
 		self.assertEqual( p[2], 1 )
 		self.assertEqual( p[3], "IECORE_PROCEDURAL_PATHS" )
-		
-		procedural = IECore.ClassLoader.defaultProceduralLoader().load( "read", 1 )()
-		
-		self.__checkParameterKnobs( procedural.parameters(), fnPH.node() )
+				
+		self.__checkParameterKnobs( p[0].parameters(), fnPH.node() )
 
 	def testCreateWithoutVersion( self ) :
 	
@@ -88,14 +96,13 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 		self.assertEqual( fnPH.node().name(), "procedural2" )
 		p = fnPH.getParameterised()
 		
+		self.failUnless( isinstance( p[0], IECore.ReadProcedural ) )
 		self.assertEqual( p[1], "read" )
 		self.failUnless( isinstance( p[2], int ) )
 		self.assertEqual( p[2], 1 )
 		self.assertEqual( p[3], "IECORE_PROCEDURAL_PATHS" )
-		
-		procedural = IECore.ClassLoader.defaultProceduralLoader().load( "read", 1 )()
-		
-		self.__checkParameterKnobs( procedural.parameters(), fnPH.node() )
+				
+		self.__checkParameterKnobs( p[0].parameters(), fnPH.node() )
 
 	def testReloadShouldntLoseValues( self ) :
 		
@@ -179,7 +186,18 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 		for k in fnPH.node().knobs() :
 		
 			self.failIf( k.startswith( "parm_" ) )
-		
+	
+	def testGetParameterisedHasCorrectValues( self ) :
+	
+		fnPH = IECoreNuke.FnProceduralHolder.create( "procedural", "read", 1 )
+
+		fnPH.node().knob( "parm_files_frame" ).setValue( 100 )
+		fnPH.node().knob( "parm_files_name" ).setValue( "test" )
+		fnPH.node().knob( "parm_motion_blur" ).setValue( False )
+		fnPH.node().knob( "parm_bounds_specified" ).setValue( [ 0, 1, 2, 3, 4, 5 ] )
+				
+		self.__checkParameterKnobs( fnPH.getParameterised()[0].parameters(), fnPH.node() )
+				
 	def tearDown( self ) :
 	
 		for f in [

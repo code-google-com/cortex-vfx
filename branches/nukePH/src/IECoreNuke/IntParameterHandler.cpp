@@ -45,13 +45,14 @@ ParameterHandler::Description<IntParameterHandler> IntParameterHandler::g_descri
 
 IntParameterHandler::IntParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
 	:	ParameterHandler( parameter, knobName ),
-		m_storage( 0 )
+		m_storage( 0 ),
+		m_knob( 0 )
 {
 }
 		
 void IntParameterHandler::knobs( DD::Image::Knob_Callback f )
 {
-	const IntParameter *intParameter = static_cast<IntParameter *>( parameter().get() );
+	const IntParameter *intParameter = static_cast<IntParameter *>( parameter() );
 	
 	if( f.makeKnobs() )
 	{
@@ -59,13 +60,21 @@ void IntParameterHandler::knobs( DD::Image::Knob_Callback f )
 	}
 		
 	DD::Image::IRange range( intParameter->minValue(), intParameter->maxValue() );
-	Int_knob( f, &m_storage, range, knobName(), knobLabel() );
+	m_knob = Int_knob( f, &m_storage, range, knobName(), knobLabel() );
 	DD::Image::SetFlags( f, DD::Image::Knob::FORCE_RANGE );
 	Tooltip( f, parameter()->description() );
 }
 
-void IntParameterHandler::setParameterValue()
+void IntParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )
 {
-	static_cast<IntParameter *>( parameter().get() )->setNumericValue( m_storage );
+	IntParameter *intParameter = static_cast<IntParameter *>( parameter );
+	if( valueSource==Storage )
+	{
+		intParameter->setNumericValue( m_storage );
+	}
+	else
+	{
+		intParameter->setNumericValue( (int)m_knob->get_value() );
+	}
 }
 

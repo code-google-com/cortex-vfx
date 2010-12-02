@@ -43,6 +43,11 @@ ParameterHandler::ParameterHandler( IECore::ParameterPtr parameter, const std::s
 {
 }
 
+void ParameterHandler::setParameterValue( ValueSource valueSource )
+{
+	setParameterValue( parameter(), valueSource );
+}
+
 ParameterHandlerPtr ParameterHandler::create( IECore::ParameterPtr parameter, const std::string &knobName )
 {
 	if( parameter->presetsOnly() )
@@ -70,9 +75,9 @@ ParameterHandler::CreatorFnMap &ParameterHandler::creatorFns()
 	return creators;
 }
 
-IECore::ParameterPtr ParameterHandler::parameter() const
+IECore::Parameter *ParameterHandler::parameter() const
 {
-	return m_parameter;
+	return m_parameter.get();
 }
 
 const char *ParameterHandler::knobName() const

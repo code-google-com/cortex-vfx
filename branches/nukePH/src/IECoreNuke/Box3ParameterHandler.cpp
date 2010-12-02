@@ -46,7 +46,8 @@ ParameterHandler::Description<Box3ParameterHandler<T> > Box3ParameterHandler<T>:
 
 template<typename T>
 Box3ParameterHandler<T>::Box3ParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName )
+	:	ParameterHandler( parameter, knobName ),
+		m_knob( 0 )
 {
 }
 		
@@ -55,23 +56,37 @@ void Box3ParameterHandler<T>::knobs( DD::Image::Knob_Callback f )
 {
 	if( f.makeKnobs() )
 	{
-		typename T::ValueType defaultValue = static_cast<T *>( parameter().get() )->typedDefaultValue();
+		typename T::ValueType defaultValue = static_cast<T *>( parameter() )->typedDefaultValue();
 		m_storage.min = defaultValue.min;
 		m_storage.max = defaultValue.max;
 	}
 	
-	Box3_knob( f, (float *)&m_storage, knobName(), knobLabel() );
+	m_knob = Box3_knob( f, (float *)&m_storage, knobName(), knobLabel() );
 	Tooltip( f, parameter()->description() );
 }
 
 template<typename T>
-void Box3ParameterHandler<T>::setParameterValue()
+void Box3ParameterHandler<T>::setParameterValue(IECore::Parameter *parameter, ValueSource valueSource )
 {
+	T *boxParameter = static_cast<T *>( parameter );
+
 	typename T::ValueType value;
-	value.min = m_storage.min;
-	value.max = m_storage.max;
+	if( valueSource==Storage )
+	{
+		value.min = m_storage.min;
+		value.max = m_storage.max;
+	}
+	else
+	{
+		value.min.x = m_knob->get_value( 0 );
+		value.min.y = m_knob->get_value( 1 );
+		value.min.z = m_knob->get_value( 2 );
+		value.max.x = m_knob->get_value( 3 );
+		value.max.y = m_knob->get_value( 4 );
+		value.max.z = m_knob->get_value( 5 );
+	}
 	
-	static_cast<T *>( parameter().get() )->setTypedValue( value );
+	boxParameter->setTypedValue( value );
 }
 
 // explicit instantiation

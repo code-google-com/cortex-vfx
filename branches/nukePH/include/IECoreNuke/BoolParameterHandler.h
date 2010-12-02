@@ -48,11 +48,12 @@ class BoolParameterHandler : public ParameterHandler
 		BoolParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName );
 		
 		virtual void knobs( DD::Image::Knob_Callback f );
-		virtual void setParameterValue();
+		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
 				
 	private :
 	
 		bool m_storage;
+		DD::Image::Knob *m_knob;
 	
 		static Description<BoolParameterHandler> g_description;
 		
