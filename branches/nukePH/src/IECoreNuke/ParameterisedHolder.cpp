@@ -34,10 +34,12 @@
 
 #include "boost/python.hpp"
 #include "boost/format.hpp"
+#include "boost/python/suite/indexing/container_utils.hpp"
 
 #include "DDImage/Op.h"
 #include "DDImage/Knobs.h"
 #include "DDImage/Knob.h"
+#include "DDImage/Enumeration_KnobI.h"
 
 #include "IECore/MessageHandler.h"
 #include "IECore/CompoundParameter.h"
@@ -48,6 +50,7 @@
 #include "IECoreNuke/ParameterHandler.h"
 
 using namespace std;
+using namespace boost;
 using namespace boost::python;
 using namespace IECore;
 using namespace IECoreNuke;
@@ -60,6 +63,7 @@ ParameterisedHolder<BaseType>::ParameterisedHolder( Node *node )
 		m_classSpecifier( 0 ),
 		m_classSpecifierKnob( 0 ),
 		m_classReloadKnob( 0 ),
+		m_classDividerKnob( 0 ),
 		m_parameterised( 0 ),
 		m_parameterHandler( 0 ),
 		m_numParameterKnobs( 0 ),
@@ -84,9 +88,20 @@ void ParameterisedHolder<BaseType>::knobs( DD::Image::Knob_Callback f )
 	m_getParameterisedKnob = Button( f, "getParameterised" );
 	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS | DD::Image::Knob::INVISIBLE );
 	
+	static const char *noVersions[] = { "No class loaded", "", 0 };
+	m_versionChooserKnob = PyPulldown_knob( f, noVersions, "versionChooser", "No class loaded" );
+	
 	m_classReloadKnob = Button( f, "classReload", "Reload" );
 	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS );
 	
+	DD::Image::Knob *classDividerKnob = Divider( f, "Parameters" );
+	if( classDividerKnob )
+	{
+		// the Divider() call only returns a value during knob creation, and
+		// returns 0 the rest of the time.
+		m_classDividerKnob = classDividerKnob;
+	}
+			
 	BaseType::add_knobs( parameterKnobs, this, f );
 }
 
@@ -97,7 +112,14 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 	{			
 		// reload the class, or load a new class
 	
-		m_parameterised = loadClass( knob==m_classReloadKnob );
+		string className;
+		int classVersion;
+		vector<int> classVersions;
+		m_parameterised = loadClass( knob==m_classReloadKnob, &className, &classVersion, &classVersions );
+		
+		// update the version menu
+		
+		updateVersionChooser( className, classVersion, classVersions );
 		
 		// get a new ParameterHandler
 		
@@ -132,7 +154,7 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 			}
 		}
 		
-		m_numParameterKnobs = replace_knobs( m_classReloadKnob, m_numParameterKnobs, parameterKnobs, this );
+		m_numParameterKnobs = replace_knobs( m_classDividerKnob, m_numParameterKnobs, parameterKnobs, this );
 		
 		for( int i=0; (pKnob = BaseType::knob( i )); i++ )
 		{
@@ -192,7 +214,40 @@ void ParameterisedHolder<BaseType>::parameterKnobs( void *that, DD::Image::Knob_
 }
 
 template<typename BaseType>
-IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( bool refreshLoader )
+void ParameterisedHolder<BaseType>::updateVersionChooser( std::string &className, int classVersion, std::vector<int> &classVersions )
+{
+	string label;
+	vector<string> menuItems;
+	if( m_parameterised )
+	{
+		label = className + " v" + lexical_cast<string>( classVersion );
+	
+		for( unsigned i=0; i<classVersions.size(); i++ )
+		{
+			menuItems.push_back( string( "v" ) + lexical_cast<string>( classVersions[i] ) );
+			
+			std::string s =
+				
+				"fnPH = IECoreNuke.FnParameterisedHolder( nuke.thisNode() )\n"
+				"current = fnPH.getParameterised()\n"
+				"fnPH.setParameterised( current[1], " + lexical_cast<string>( classVersions[i] ) + ", current[3] )";
+			
+			menuItems.push_back( s );
+		}
+	}
+	else
+	{
+		label = "No class loaded";
+		menuItems.push_back( label );
+		menuItems.push_back( "" );
+	}
+	
+	m_versionChooserKnob->label( label.c_str() );
+	m_versionChooserKnob->enumerationKnob()->menu( menuItems );
+}
+
+template<typename BaseType>
+IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( bool refreshLoader, std::string *classNameOut, int *classVersionOut, std::vector<int> *classVersionsOut )
 {
 
 	std::string className;
@@ -248,6 +303,39 @@ IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( bool refreshLo
 		);
 		
 		object result( classHandle );
+		
+		// if that went well then fill in the optional outputs
+		
+		if( classNameOut )
+		{
+			*classNameOut = className;
+		}
+		
+		if( classVersionOut )
+		{
+			*classVersionOut = classVersion;
+		}
+		
+		if( classVersionsOut )
+		{
+			toExecute = ( boost::format(
+				"IECore.ClassLoader.defaultLoader( \"%s\" ).versions( \"%s\" )\n"
+				) % classSearchPathEnvVar % className
+			).str();
+
+			handle<> versionsHandle( PyRun_String(
+				toExecute.c_str(),
+				Py_eval_input,
+				mainModuleNamespace.ptr(),
+				mainModuleNamespace.ptr() )
+			);
+
+			object versionsObject( versionsHandle );
+			container_utils::extend_container( *classVersionsOut, versionsObject );			
+		}
+		
+		// and then return the class
+		
 		return extract<RunTimeTypedPtr>( result )();
 	}
 	catch( error_already_set & )

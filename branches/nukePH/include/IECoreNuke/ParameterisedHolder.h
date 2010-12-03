@@ -81,13 +81,20 @@ class ParameterisedHolder : public BaseType
 	private :
 
 		// class specification
+		////////////////////////////////////////////////////
 		IECore::ObjectPtr m_classSpecifier;
 		ObjectKnob *m_classSpecifierKnob;
-		DD::Image::Knob *m_classReloadKnob; // for triggering reloading as a user
+		DD::Image::Knob *m_versionChooserKnob; // for display of class name and user selection of version
+		DD::Image::Knob *m_classReloadKnob; // for user to trigger reloading
+		DD::Image::Knob *m_classDividerKnob;
+		void updateVersionChooser( std::string &className , int classVersion, std::vector<int> &classVersions );
 		
 		// class loading
+		////////////////////////////////////////////////////
 		IECore::RunTimeTypedPtr m_parameterised;
-		IECore::RunTimeTypedPtr loadClass( bool refreshLoader );
+		// loads an instance of the class specified by m_classSpecifierKnob, and fills in the optional
+		// arguments with details of the class loaded.
+		IECore::RunTimeTypedPtr loadClass( bool refreshLoader, std::string *className = 0, int *classVersion = 0, std::vector<int> *classVersions = 0 );
 
 		// knob creation
 		ParameterHandlerPtr m_parameterHandler;
@@ -98,7 +105,7 @@ class ParameterisedHolder : public BaseType
 		DD::Image::Knob *m_getParameterisedKnob; // this knob triggers a simulated getParameterised function.
 		static IECore::RunTimeTypedPtr getParameterisedResult(); // and this function retrieves the result
 		friend void bindFnParameterisedHolder();
-		
+				
 };
 
 typedef ParameterisedHolder<DD::Image::Op> ParameterisedHolderOp;
