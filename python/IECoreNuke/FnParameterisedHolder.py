@@ -101,9 +101,14 @@ class _ParameterModificationContext :
 	def __enter__( self ) :
 	
 		self.__parameterised = self.__fnPH.getParameterised()[0]
+		
+		nuke.Undo.begin()
+		
 		return self.__parameterised
 		
 	def __exit__( self, type, value, traceBack ) :
 	
 		_parameterisedHolderSetKnobValuesInput( self.__parameterised )
 		self.__fnPH.node().knob( "setKnobValues" ).execute()
+
+		nuke.Undo.end()

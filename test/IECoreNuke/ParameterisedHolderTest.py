@@ -214,7 +214,29 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 			parameters["b"].setNumericValue( 20 )
 			
 		self.assertEqual( fnOH.node().knob( "parm_a" ).getValue(), 10 )
-		self.assertEqual( fnOH.node().knob( "parm_b" ).getValue(), 20 )	
+		self.assertEqual( fnOH.node().knob( "parm_b" ).getValue(), 20 )
+		
+	def testModifyParametersAndUndo( self ) :
+	
+		fnOH = IECoreNuke.FnOpHolder.create( "mult", "maths/multiply", 2 )
+
+		self.assertEqual( fnOH.node().knob( "parm_a" ).getValue(), 1 )
+		self.assertEqual( fnOH.node().knob( "parm_b" ).getValue(), 2 )
+		
+		with IECoreNuke.UndoEnabled() :
+
+			with fnOH.parameterModificationContext() as parameters :
+
+				parameters["a"].setNumericValue( 10 )
+				parameters["b"].setNumericValue( 20 )
+
+			self.assertEqual( fnOH.node().knob( "parm_a" ).getValue(), 10 )
+			self.assertEqual( fnOH.node().knob( "parm_b" ).getValue(), 20 )
+			
+		nuke.undo()
+		
+		self.assertEqual( fnOH.node().knob( "parm_a" ).getValue(), 1 )
+		self.assertEqual( fnOH.node().knob( "parm_b" ).getValue(), 2 )
 				
 	def tearDown( self ) :
 	
