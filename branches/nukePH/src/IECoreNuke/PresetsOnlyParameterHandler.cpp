@@ -80,3 +80,17 @@ void PresetsOnlyParameterHandler::setParameterValue( IECore::Parameter *paramete
 	}
 	parameter->setValue( parameter->presets()[m_storage].second );
 }
+
+void PresetsOnlyParameterHandler::setKnobValue( const IECore::Parameter *parameter )
+{
+	const Parameter::PresetsContainer &presets = parameter->presets();
+	std::string currentPresetName = parameter->getCurrentPresetName();
+	size_t presetIndex = 0;
+	for( Parameter::PresetsContainer::const_iterator it = presets.begin(); it!=presets.end(); it++, presetIndex++ )
+	{
+		if( it->first==currentPresetName )
+		{
+			m_knob->set_value( presetIndex );
+		}
+	}
+}

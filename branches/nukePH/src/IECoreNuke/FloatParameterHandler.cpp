@@ -82,3 +82,8 @@ void FloatParameterHandler::setParameterValue( IECore::Parameter *parameter, Val
 	}
 }
 
+void FloatParameterHandler::setKnobValue( const IECore::Parameter *parameter )
+{
+	const FloatParameter *floatParameter = static_cast<const FloatParameter *>( parameter );
+	m_knob->set_value( floatParameter->getNumericValue() );
+}

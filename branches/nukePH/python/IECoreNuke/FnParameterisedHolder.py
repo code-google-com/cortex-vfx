@@ -36,6 +36,7 @@ import nuke
 
 import IECore
 from _IECoreNuke import _parameterisedHolderGetParameterisedResult
+from _IECoreNuke import _parameterisedHolderSetKnobValuesInput
 
 class FnParameterisedHolder :
 
@@ -84,3 +85,25 @@ class FnParameterisedHolder :
 			d["classSearchPathEnvVar"].value if d else "",		
 		)
 	
+	## Returns a context manager for use with the with statement. This can be used to scope edits
+	# to Parameter values in such a way that they are automatically transferred onto the nuke
+	# knobs on exit from the with block.
+	def parameterModificationContext( self ) :
+	
+		return _ParameterModificationContext( self )
+
+class _ParameterModificationContext :
+
+	def __init__( self, fnPH ) :
+	
+		self.__fnPH = fnPH
+		
+	def __enter__( self ) :
+	
+		self.__parameterised = self.__fnPH.getParameterised()[0]
+		return self.__parameterised
+		
+	def __exit__( self, type, value, traceBack ) :
+	
+		_parameterisedHolderSetKnobValuesInput( self.__parameterised )
+		self.__fnPH.node().knob( "setKnobValues" ).execute()

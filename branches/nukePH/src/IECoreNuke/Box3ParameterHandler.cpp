@@ -89,6 +89,19 @@ void Box3ParameterHandler<T>::setParameterValue(IECore::Parameter *parameter, Va
 	boxParameter->setTypedValue( value );
 }
 
+template<typename T>
+void Box3ParameterHandler<T>::setKnobValue( const IECore::Parameter *parameter )
+{
+	const T *boxParameter = static_cast<const T *>( parameter );
+	typename T::ValueType value = boxParameter->getTypedValue();
+	m_knob->set_value( value.min.x, 0 );
+	m_knob->set_value( value.min.y, 1 );
+	m_knob->set_value( value.min.z, 2 );
+	m_knob->set_value( value.max.x, 3 );
+	m_knob->set_value( value.max.y, 4 );
+	m_knob->set_value( value.max.z, 5 );
+}
+
 // explicit instantiation
 
 template class Box3ParameterHandler<Box3fParameter>;

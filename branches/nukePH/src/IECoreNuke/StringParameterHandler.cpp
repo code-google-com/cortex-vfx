@@ -73,3 +73,9 @@ void StringParameterHandler::setParameterValue( IECore::Parameter *parameter, Va
 		stringParameter->setTypedValue( s.str() );
 	}
 }
+
+void StringParameterHandler::setKnobValue( const IECore::Parameter *parameter )
+{
+	const StringParameter *stringParameter = static_cast<const StringParameter *>( parameter );
+	m_knob->set_text( stringParameter->getTypedValue().c_str() );	
+}

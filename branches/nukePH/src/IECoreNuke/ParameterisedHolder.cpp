@@ -56,6 +56,7 @@ using namespace IECore;
 using namespace IECoreNuke;
 
 static IECore::RunTimeTypedPtr g_getParameterisedResult = 0;
+static IECore::RunTimeTypedPtr g_setKnobValuesInput = 0;
 
 template<typename BaseType>
 ParameterisedHolder<BaseType>::ParameterisedHolder( Node *node )
@@ -67,7 +68,8 @@ ParameterisedHolder<BaseType>::ParameterisedHolder( Node *node )
 		m_parameterised( 0 ),
 		m_parameterHandler( 0 ),
 		m_numParameterKnobs( 0 ),
-		m_getParameterisedKnob( 0 )
+		m_getParameterisedKnob( 0 ),
+		m_setKnobValuesKnob( 0 )
 {
 	
 }
@@ -86,6 +88,9 @@ void ParameterisedHolder<BaseType>::knobs( DD::Image::Knob_Callback f )
 	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS );
 	
 	m_getParameterisedKnob = Button( f, "getParameterised" );
+	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS | DD::Image::Knob::INVISIBLE );
+	
+	m_setKnobValuesKnob = Button( f, "setKnobValues" );
 	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS | DD::Image::Knob::INVISIBLE );
 	
 	static const char *noVersions[] = { "No class loaded", "", 0 };
@@ -184,6 +189,15 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 	
 		return 1;
 	}
+	else if( knob==m_setKnobValuesKnob )
+	{
+		// this is triggered by the FnParameterisedHolder.classModificationContext() implementation.
+		
+		setKnobValues( g_setKnobValuesInput.get() );
+		g_setKnobValuesInput = 0;
+		
+		return 1;
+	}
 	
 	return BaseType::knob_changed( knob );
 }
@@ -200,6 +214,20 @@ void ParameterisedHolder<BaseType>::setParameterValues()
 	if( m_parameterHandler )
 	{
 		m_parameterHandler->setParameterValue();
+	}
+}
+
+template<typename BaseType>
+void ParameterisedHolder<BaseType>::setKnobValues( IECore::RunTimeTyped *parameterised )
+{
+	if( m_parameterHandler )
+	{
+		if( !parameterised )
+		{
+			parameterised = m_parameterised.get();
+		}
+		ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( parameterised );
+		m_parameterHandler->setKnobValue( parameterisedInterface->parameters() );
 	}
 }
 
@@ -360,6 +388,12 @@ IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::getParameterisedResult()
 	IECore::RunTimeTypedPtr result = g_getParameterisedResult;
 	g_getParameterisedResult = 0;
 	return result;
+}
+
+template<typename BaseType>
+void ParameterisedHolder<BaseType>::setKnobValuesInput( IECore::RunTimeTypedPtr parameterised )
+{
+	g_setKnobValuesInput = parameterised;
 }
 
 // explicit instantiation

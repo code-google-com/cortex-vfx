@@ -77,6 +77,7 @@ class ParameterisedHolder : public BaseType
 		/// Should they be protected?
 		IECore::RunTimeTypedPtr getParameterised();
 		void setParameterValues();
+		void setKnobValues( IECore::RunTimeTyped *parameterised = 0 );
 		
 	private :
 
@@ -97,13 +98,20 @@ class ParameterisedHolder : public BaseType
 		IECore::RunTimeTypedPtr loadClass( bool refreshLoader, std::string *className = 0, int *classVersion = 0, std::vector<int> *classVersions = 0 );
 
 		// knob creation
+		////////////////////////////////////////////////////
 		ParameterHandlerPtr m_parameterHandler;
 		size_t m_numParameterKnobs;
 		static void parameterKnobs( void *that, DD::Image::Knob_Callback f );
 		
 		// FnParameterisedHolder support
+		////////////////////////////////////////////////////
+		
 		DD::Image::Knob *m_getParameterisedKnob; // this knob triggers a simulated getParameterised function.
 		static IECore::RunTimeTypedPtr getParameterisedResult(); // and this function retrieves the result
+		
+		DD::Image::Knob *m_setKnobValuesKnob; // this knob triggers a simulated setKnobValues function
+		static void setKnobValuesInput( IECore::RunTimeTypedPtr parameterised ); // and this function specifies the parameter values to set the knobs from
+		
 		friend void bindFnParameterisedHolder();
 				
 };

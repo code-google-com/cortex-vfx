@@ -1910,7 +1910,7 @@ if doConfigure :
 				# stubs for each of nodes within the plugin
 				
 				nukeStubs = []
-				for nodeName in [ "ieProcedural", "ieObject" ] :
+				for nodeName in [ "ieProcedural", "ieObject", "ieOp" ] :
 				
 					nukeStubEnv = nukePluginEnv.Copy( IECORE_NAME=nodeName )
 					nukeStubName = "plugins/nuke/" + os.path.basename( nukeStubEnv.subst( "$INSTALL_NUKEPLUGIN_NAME" ) ) + ".tcl"

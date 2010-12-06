@@ -80,3 +80,11 @@ void Color3fParameterHandler::setParameterValue( Parameter *parameter, ValueSour
 	static_cast<Color3fParameter *>( parameter )->setTypedValue( value );
 }
 
+void Color3fParameterHandler::setKnobValue( const IECore::Parameter *parameter )
+{
+	Imath::Color3f value = static_cast<const Color3fParameter *>( parameter )->getTypedValue();
+	m_knob->set_value( value[0], 0 );
+	m_knob->set_value( value[1], 1 );
+	m_knob->set_value( value[2], 2 );
+}
+

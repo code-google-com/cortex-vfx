@@ -32,6 +32,8 @@
 #
 ##########################################################################
 
+from __future__ import with_statement
+
 import unittest
 import os
 
@@ -198,6 +200,21 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 		fnPH.node().knob( "parm_bounds_specified" ).setValue( [ 0, 1, 2, 3, 4, 5 ] )
 				
 		self.__checkParameterKnobs( fnPH.getParameterised()[0].parameters(), fnPH.node() )
+	
+	def testModifyParametersAndTransferToKnobs( self ) :
+	
+		fnOH = IECoreNuke.FnOpHolder.create( "mult", "maths/multiply", 2 )
+
+		self.assertEqual( fnOH.node().knob( "parm_a" ).getValue(), 1 )
+		self.assertEqual( fnOH.node().knob( "parm_b" ).getValue(), 2 )
+
+		with fnOH.parameterModificationContext() as parameters :
+		
+			parameters["a"].setNumericValue( 10 )
+			parameters["b"].setNumericValue( 20 )
+			
+		self.assertEqual( fnOH.node().knob( "parm_a" ).getValue(), 10 )
+		self.assertEqual( fnOH.node().knob( "parm_b" ).getValue(), 20 )	
 				
 	def tearDown( self ) :
 	

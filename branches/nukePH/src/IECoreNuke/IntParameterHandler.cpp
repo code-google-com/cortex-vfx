@@ -78,3 +78,9 @@ void IntParameterHandler::setParameterValue( IECore::Parameter *parameter, Value
 	}
 }
 
+void IntParameterHandler::setKnobValue( const IECore::Parameter *parameter )
+{
+	const IntParameter *intParameter = static_cast<const IntParameter *>( parameter );
+	m_knob->set_value( intParameter->getNumericValue(), 0 );
+}
+
