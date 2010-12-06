@@ -32,34 +32,47 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECORENUKE_BOOLPARAMETERHANDLER_H
-#define IECORENUKE_BOOLPARAMETERHANDLER_H
+#ifndef IECORENUKE_OPHOLDER_H
+#define IECORENUKE_OPHOLDER_H
 
-#include "IECoreNuke/ParameterHandler.h"
+#include "DDImage/Op.h"
+
+#include "IECore/Op.h"
+
+#include "IECoreNuke/ParameterisedHolder.h"
 
 namespace IECoreNuke
 {
 
-class BoolParameterHandler : public ParameterHandler
+/// This class allows IECore::Op objects to be executed by nodes in Nuke.
+class OpHolder : public ParameterisedHolderOp
 {
 
 	public :
-				
-		BoolParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName );
+
+		OpHolder( Node *node );
+		virtual ~OpHolder();
+
+		//! @name Reimplementation of Nuke methods.
+		/////////////////////////////////////////////////////////////////////
+		//@{
+		virtual const char *Class() const;
+		virtual const char *node_help() const;
+		//@}
 		
-		virtual void knobs( DD::Image::Knob_Callback f );
-		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
-		virtual void setKnobValue( const IECore::Parameter *parameter );
-				
+		/// Executes the held IECore::Op and returns the result.
+		virtual IECore::ObjectPtr engine();
+
 	private :
 	
-		bool m_storage;
-		DD::Image::Knob *m_knob;
-	
-		static Description<BoolParameterHandler> g_description;
+		static const Description g_description;
+		static DD::Image::Op *build( Node *node );
 		
+		IECore::ObjectPtr m_result;
+		DD::Image::Hash m_resultHash;
+
 };
 
 } // namespace IECoreNuke
 
-#endif // IECORENUKE_BOOLPARAMETERHANDLER_H
+#endif // IECORENUKE_OPHOLDER_H

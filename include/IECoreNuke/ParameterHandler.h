@@ -76,6 +76,9 @@ class ParameterHandler : public IECore::RefCounted
 		/// was created for.
 		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage ) = 0;
 		
+		/// Transfers the value from the Parameter back onto the nuke knob at the current time.
+		virtual void setKnobValue( const IECore::Parameter *parameter ) = 0;
+		
 		/// Factory function to create a ParameterHandler for a given Parameter.
 		static ParameterHandlerPtr create( IECore::ParameterPtr parameter, const std::string &knobName );
 		

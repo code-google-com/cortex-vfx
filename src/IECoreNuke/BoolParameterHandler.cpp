@@ -71,3 +71,9 @@ void BoolParameterHandler::setParameterValue( IECore::Parameter *parameter, Valu
 		boolParameter->setTypedValue( m_knob->get_value() > 0.0 );
 	}
 }
+
+void BoolParameterHandler::setKnobValue( const IECore::Parameter *parameter )
+{
+	const BoolParameter *boolParameter = static_cast<const BoolParameter *>( parameter );
+	m_knob->set_value( boolParameter->getTypedValue() ? 1.0 : 0.0 );
+}

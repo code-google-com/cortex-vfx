@@ -50,6 +50,7 @@ class Box3ParameterHandler : public ParameterHandler
 		
 		virtual void knobs( DD::Image::Knob_Callback f );
 		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
+		virtual void setKnobValue( const IECore::Parameter *parameter );
 				
 	private :
 	

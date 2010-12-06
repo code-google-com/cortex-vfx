@@ -88,6 +88,20 @@ void CompoundParameterHandler::setParameterValue( IECore::Parameter *parameter, 
 	}
 }
 
+void CompoundParameterHandler::setKnobValue( const IECore::Parameter *parameter )
+{
+	const CompoundParameter *compoundParameter = static_cast<const CompoundParameter *>( parameter );
+	const CompoundParameter::ParameterVector &childParameters = compoundParameter->orderedParameters();
+	for( CompoundParameter::ParameterVector::const_iterator cIt=childParameters.begin(); cIt!=childParameters.end(); cIt++ )
+	{
+		ParameterHandlerPtr h = handler( *cIt, false );
+		if( h )
+		{
+			h->setKnobValue( cIt->get() );
+		}
+	}
+}
+
 ParameterHandlerPtr CompoundParameterHandler::handler( ParameterPtr child, bool createIfMissing )
 {
 	HandlerMap::const_iterator it = m_handlers.find( child->internedName() );

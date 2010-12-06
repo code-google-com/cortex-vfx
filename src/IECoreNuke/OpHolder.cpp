@@ -32,34 +32,54 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECORENUKE_BOOLPARAMETERHANDLER_H
-#define IECORENUKE_BOOLPARAMETERHANDLER_H
+#include "IECoreNuke/OpHolder.h"
 
-#include "IECoreNuke/ParameterHandler.h"
+using namespace IECoreNuke;
 
-namespace IECoreNuke
+const DD::Image::Op::Description OpHolder::g_description( "ieOp", build );
+
+OpHolder::OpHolder( Node *node )
+	:	ParameterisedHolderOp( node ),
+		m_result( 0 )
 {
+}
 
-class BoolParameterHandler : public ParameterHandler
+OpHolder::~OpHolder()
 {
+}
 
-	public :
-				
-		BoolParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName );
-		
-		virtual void knobs( DD::Image::Knob_Callback f );
-		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
-		virtual void setKnobValue( const IECore::Parameter *parameter );
-				
-	private :
+IECore::ObjectPtr OpHolder::engine()
+{
+	if( m_result && hash()==m_resultHash )
+	{
+		return m_result;
+	}
 	
-		bool m_storage;
-		DD::Image::Knob *m_knob;
+	IECore::OpPtr op = IECore::runTimeCast<IECore::Op>( getParameterised() );
+	if( !op )
+	{
+		return 0;
+	}
+
+	setParameterValues();
 	
-		static Description<BoolParameterHandler> g_description;
-		
-};
+	m_result = op->operate();
+	m_resultHash = hash();
+	
+	return m_result;
+}
 
-} // namespace IECoreNuke
+DD::Image::Op *OpHolder::build( Node *node )
+{
+	return new OpHolder( node );
+}
 
-#endif // IECORENUKE_BOOLPARAMETERHANDLER_H
+const char *OpHolder::Class() const
+{
+	return g_description.name;
+}
+
+const char *OpHolder::node_help() const
+{
+	return "Executes Cortex Ops.";
+}

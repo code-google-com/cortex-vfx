@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,14 +32,30 @@
 #
 ##########################################################################
 
-from _IECoreNuke import *
+import nuke
 
-from KnobAccessors import setKnobValue, getKnobValue
-from FnAxis import FnAxis
-from StringUtil import nukeFileSequence, ieCoreFileSequence
-from KnobConverters import registerParameterKnobConverters, createKnobsFromParameter, setKnobsFromParameter, setParameterFromKnobs
-from FnParameterisedHolder import FnParameterisedHolder
-from FnProceduralHolder import FnProceduralHolder
-from UndoManagers import UndoState, UndoDisabled, UndoEnabled, UndoBlock
-from TestCase import TestCase
-from FnOpHolder import FnOpHolder
+import IECoreNuke
+
+class FnOpHolder( IECoreNuke.FnParameterisedHolder ) :
+
+	def __init__( self, node ) :
+	
+		IECoreNuke.FnParameterisedHolder.__init__( self, node )
+
+	def setOp( self, className, classVersion=None ) :
+	
+		self.setParameterised( className, classVersion, "IECORE_OP_PATHS" )
+		
+	def getOp( self ) :
+	
+		return self.getParameterised()[0]
+
+	@staticmethod
+	def create( nodeName, className, classVersion=None ) :
+	
+		node = nuke.createNode( "ieOp" )
+		node.setName( nodeName )
+		fnOH = FnOpHolder( node )
+		fnOH.setOp( className, classVersion )
+		
+		return fnOH
