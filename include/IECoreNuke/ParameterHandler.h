@@ -59,36 +59,26 @@ class ParameterHandler : public IECore::RefCounted
 		};
 		
 		/// Declares knobs to represent the Parameter.
-		virtual void knobs( DD::Image::Knob_Callback f ) = 0;
-		
-		/// Transfers the value from Nuke onto the Parameter.
-		/// This calls setParameterValue( parameter() ) so doesn't
-		/// need reimplementing by subclasses. ValueSource may be passed
+		virtual void knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f ) = 0;
+		/// Transfers the value from Nuke onto the Parameter. ValueSource may be passed
 		/// a value of Knob if it is known that Nuke hasn't stored knob
 		/// values yet - for instance in a knob_changed() method with
 		/// a KNOB_CHANGED_ALWAYS knob. This causes the value to be retrieved
 		/// directly from the knob at the current time, rather than from the
 		/// value stored by the knob.
-		void setParameterValue( ValueSource valueSource = Storage );
-		/// As above but a different parameter may be specified to receive the value.
-		/// In this case it is the caller's responsibility to ensure that the passed
-		/// parameter is totally compatible with the original parameter the handler
-		/// was created for.
 		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage ) = 0;
 		
 		/// Transfers the value from the Parameter back onto the nuke knob at the current time.
 		virtual void setKnobValue( const IECore::Parameter *parameter ) = 0;
 		
-		/// Factory function to create a ParameterHandler for a given Parameter.
-		static ParameterHandlerPtr create( IECore::ParameterPtr parameter, const std::string &knobName );
+		/// Factory function to create a ParameterHandler suitable for a given Parameter.
+		static ParameterHandlerPtr create( const IECore::Parameter *parameter );
 		
 	protected :
 	
-		ParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName );
+		ParameterHandler();
 	
-		IECore::Parameter *parameter() const;
-		const char *knobName() const;
-		const char *knobLabel() const;
+		const char *knobLabel( const IECore::Parameter *parameter ) const;
 		
 		template<typename T>
 		class Description
@@ -102,19 +92,16 @@ class ParameterHandler : public IECore::RefCounted
 
 			private :
 				
-				static ParameterHandlerPtr creator( IECore::ParameterPtr parameter, const std::string &knobName  )
+				static ParameterHandlerPtr creator()
 				{
-					return new T( parameter, knobName );
+					return new T();
 				}
 					
 		};
 
 	private :
-	
-		const IECore::ParameterPtr m_parameter;
-		const IECore::InternedString m_knobName;
-		
-		typedef ParameterHandlerPtr (*CreatorFn)( IECore::ParameterPtr parameter, const std::string &knobName  );
+			
+		typedef ParameterHandlerPtr (*CreatorFn)();
 	
 		typedef std::map<IECore::TypeId, CreatorFn> CreatorFnMap;
 		static CreatorFnMap &creatorFns();

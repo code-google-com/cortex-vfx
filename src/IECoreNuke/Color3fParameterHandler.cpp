@@ -43,24 +43,21 @@ using namespace IECoreNuke;
 
 ParameterHandler::Description<Color3fParameterHandler> Color3fParameterHandler::g_description( Color3fParameter::staticTypeId() );
 
-Color3fParameterHandler::Color3fParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName ),
-		m_storage( 0 ),
-		m_knob( 0 )
+Color3fParameterHandler::Color3fParameterHandler()
 {
 }
 		
-void Color3fParameterHandler::knobs( DD::Image::Knob_Callback f )
+void Color3fParameterHandler::knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )
 {
-	const Color3fParameter *color3fParameter = static_cast<Color3fParameter *>( parameter() );
+	const Color3fParameter *color3fParameter = static_cast<const Color3fParameter *>( parameter );
 	
 	if( f.makeKnobs() )
 	{
 		m_storage = color3fParameter->typedDefaultValue();
 	}
 			
-	m_knob = Color_knob( f, &m_storage.x, knobName(), knobLabel() );
-	Tooltip( f, parameter()->description() );
+	m_knob = Color_knob( f, &m_storage.x, knobName, knobLabel( parameter ) );
+	Tooltip( f, parameter->description() );
 }
 
 void Color3fParameterHandler::setParameterValue( Parameter *parameter, ValueSource valueSource )

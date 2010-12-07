@@ -43,20 +43,20 @@ using namespace IECoreNuke;
 
 ParameterHandler::Description<StringParameterHandler> StringParameterHandler::g_description( StringParameter::staticTypeId() );
 
-StringParameterHandler::StringParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName ), m_storage( 0 ), m_knob( 0 )
+StringParameterHandler::StringParameterHandler()
+	:	m_storage( 0 ), m_knob( 0 )
 {
 }
 		
-void StringParameterHandler::knobs( DD::Image::Knob_Callback f )
+void StringParameterHandler::knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )
 {
 	if( f.makeKnobs() )
 	{
-		m_storage = static_cast<StringParameter *>( parameter() )->typedDefaultValue().c_str();
+		m_storage = static_cast<const StringParameter *>( parameter )->typedDefaultValue().c_str();
 	}
 
-	m_knob = String_knob( f, &m_storage, knobName(), knobLabel() );
-	Tooltip( f, parameter()->description() );
+	m_knob = String_knob( f, &m_storage, knobName, knobLabel( parameter ) );
+	Tooltip( f, parameter->description() );
 }
 
 void StringParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )

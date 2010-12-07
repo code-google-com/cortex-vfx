@@ -38,21 +38,15 @@
 using namespace IECore;
 using namespace IECoreNuke;
 
-ParameterHandler::ParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	m_parameter( parameter ), m_knobName( knobName )
+ParameterHandler::ParameterHandler()
 {
 }
 
-void ParameterHandler::setParameterValue( ValueSource valueSource )
-{
-	setParameterValue( parameter(), valueSource );
-}
-
-ParameterHandlerPtr ParameterHandler::create( IECore::ParameterPtr parameter, const std::string &knobName )
+ParameterHandlerPtr ParameterHandler::create( const IECore::Parameter *parameter )
 {
 	if( parameter->presetsOnly() )
 	{
-		return new PresetsOnlyParameterHandler( parameter, knobName );
+		return new PresetsOnlyParameterHandler();
 	}
 
 	const CreatorFnMap &creators = creatorFns();
@@ -62,7 +56,7 @@ ParameterHandlerPtr ParameterHandler::create( IECore::ParameterPtr parameter, co
 		CreatorFnMap::const_iterator it = creators.find( typeId );
 		if( it!=creators.end() )
 		{
-			return it->second( parameter, knobName );
+			return it->second();
 		}	
 		typeId = RunTimeTyped::baseTypeId( typeId );
 	}
@@ -75,18 +69,8 @@ ParameterHandler::CreatorFnMap &ParameterHandler::creatorFns()
 	return creators;
 }
 
-IECore::Parameter *ParameterHandler::parameter() const
-{
-	return m_parameter.get();
-}
-
-const char *ParameterHandler::knobName() const
-{
-	return m_knobName.value().c_str();
-}
-
-const char *ParameterHandler::knobLabel() const
+const char *ParameterHandler::knobLabel( const IECore::Parameter *parameter ) const
 {
 	/// \todo Implement some nice camel case based string formatting
-	return m_parameter->name().c_str();
+	return parameter->name().c_str();
 }

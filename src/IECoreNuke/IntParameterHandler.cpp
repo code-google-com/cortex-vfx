@@ -43,16 +43,15 @@ using namespace IECoreNuke;
 
 ParameterHandler::Description<IntParameterHandler> IntParameterHandler::g_description( IntParameter::staticTypeId() );
 
-IntParameterHandler::IntParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName ),
-		m_storage( 0 ),
+IntParameterHandler::IntParameterHandler()
+	:	m_storage( 0 ),
 		m_knob( 0 )
 {
 }
 		
-void IntParameterHandler::knobs( DD::Image::Knob_Callback f )
+void IntParameterHandler::knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )
 {
-	const IntParameter *intParameter = static_cast<IntParameter *>( parameter() );
+	const IntParameter *intParameter = static_cast<const IntParameter *>( parameter );
 	
 	if( f.makeKnobs() )
 	{
@@ -60,9 +59,9 @@ void IntParameterHandler::knobs( DD::Image::Knob_Callback f )
 	}
 		
 	DD::Image::IRange range( intParameter->minValue(), intParameter->maxValue() );
-	m_knob = Int_knob( f, &m_storage, range, knobName(), knobLabel() );
+	m_knob = Int_knob( f, &m_storage, range, knobName, knobLabel( parameter ) );
 	DD::Image::SetFlags( f, DD::Image::Knob::FORCE_RANGE );
-	Tooltip( f, parameter()->description() );
+	Tooltip( f, parameter->description() );
 }
 
 void IntParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )

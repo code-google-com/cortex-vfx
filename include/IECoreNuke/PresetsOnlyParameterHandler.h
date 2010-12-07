@@ -45,16 +45,15 @@ class PresetsOnlyParameterHandler : public ParameterHandler
 
 	public :
 				
-		PresetsOnlyParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName );
+		PresetsOnlyParameterHandler();
 		
-		virtual void knobs( DD::Image::Knob_Callback f );
+		virtual void knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f );
 		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
 		virtual void setKnobValue( const IECore::Parameter *parameter );
 				
 	private :
 	
 		int m_storage;
-		int m_defaultIndex;
 		DD::Image::Knob *m_knob;
 		std::vector<const char *> m_names;
 			

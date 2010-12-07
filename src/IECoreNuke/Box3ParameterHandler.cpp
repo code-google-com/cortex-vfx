@@ -45,24 +45,23 @@ template<typename T>
 ParameterHandler::Description<Box3ParameterHandler<T> > Box3ParameterHandler<T>::g_description( T::staticTypeId() );
 
 template<typename T>
-Box3ParameterHandler<T>::Box3ParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName ),
-		m_knob( 0 )
+Box3ParameterHandler<T>::Box3ParameterHandler()
+	:	m_knob( 0 )
 {
 }
 		
 template<typename T>
-void Box3ParameterHandler<T>::knobs( DD::Image::Knob_Callback f )
+void Box3ParameterHandler<T>::knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )
 {
 	if( f.makeKnobs() )
 	{
-		typename T::ValueType defaultValue = static_cast<T *>( parameter() )->typedDefaultValue();
+		typename T::ValueType defaultValue = static_cast<const T *>( parameter )->typedDefaultValue();
 		m_storage.min = defaultValue.min;
 		m_storage.max = defaultValue.max;
 	}
 	
-	m_knob = Box3_knob( f, (float *)&m_storage, knobName(), knobLabel() );
-	Tooltip( f, parameter()->description() );
+	m_knob = Box3_knob( f, (float *)&m_storage, knobName, knobLabel( parameter ) );
+	Tooltip( f, parameter->description() );
 }
 
 template<typename T>
