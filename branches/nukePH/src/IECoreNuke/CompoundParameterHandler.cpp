@@ -44,31 +44,20 @@ using namespace IECoreNuke;
 
 ParameterHandler::Description<CompoundParameterHandler> CompoundParameterHandler::g_description( CompoundParameter::staticTypeId() );
 
-CompoundParameterHandler::CompoundParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName )
+CompoundParameterHandler::CompoundParameterHandler( )
 {
 }
 		
-void CompoundParameterHandler::knobs( DD::Image::Knob_Callback f )
-{
-	CompoundParameter *compoundParameter = static_cast<CompoundParameter *>( parameter() );
-	
-	if( strcmp( knobName(), "parm" ) ) // only make a group if non-top-level parameters
+void CompoundParameterHandler::knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )
+{	
+	if( strcmp( knobName, "parm" ) ) // only make a group if non-top-level parameters
 	{
-		DD::Image::BeginClosedGroup( f, knobName(), knobLabel() );
+		DD::Image::BeginClosedGroup( f, knobName, knobLabel( parameter ) );
 	}
 
-		const CompoundParameter::ParameterVector &childParameters = compoundParameter->orderedParameters();
-		for( CompoundParameter::ParameterVector::const_iterator cIt=childParameters.begin(); cIt!=childParameters.end(); cIt++ )
-		{
-			ParameterHandlerPtr h = handler( *cIt, true );
-			if( h )
-			{
-				h->knobs( f );
-			}
-		}
+		childKnobs( parameter, knobName, f );
 	
-	if( strcmp( knobName(), "parm" ) )
+	if( strcmp( knobName, "parm" ) )
 	{
 		DD::Image::EndGroup( f );
 	}
@@ -80,7 +69,7 @@ void CompoundParameterHandler::setParameterValue( IECore::Parameter *parameter, 
 	const CompoundParameter::ParameterVector &childParameters = compoundParameter->orderedParameters();
 	for( CompoundParameter::ParameterVector::const_iterator cIt=childParameters.begin(); cIt!=childParameters.end(); cIt++ )
 	{
-		ParameterHandlerPtr h = handler( *cIt, false );
+		ParameterHandlerPtr h = handler( cIt->get(), false );
 		if( h )
 		{
 			h->setParameterValue( cIt->get(), valueSource );
@@ -94,7 +83,7 @@ void CompoundParameterHandler::setKnobValue( const IECore::Parameter *parameter 
 	const CompoundParameter::ParameterVector &childParameters = compoundParameter->orderedParameters();
 	for( CompoundParameter::ParameterVector::const_iterator cIt=childParameters.begin(); cIt!=childParameters.end(); cIt++ )
 	{
-		ParameterHandlerPtr h = handler( *cIt, false );
+		ParameterHandlerPtr h = handler( cIt->get(), false );
 		if( h )
 		{
 			h->setKnobValue( cIt->get() );
@@ -102,7 +91,23 @@ void CompoundParameterHandler::setKnobValue( const IECore::Parameter *parameter 
 	}
 }
 
-ParameterHandlerPtr CompoundParameterHandler::handler( ParameterPtr child, bool createIfMissing )
+void CompoundParameterHandler::childKnobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )
+{
+	const CompoundParameter *compoundParameter = static_cast<const CompoundParameter *>( parameter );
+
+	const CompoundParameter::ParameterVector &childParameters = compoundParameter->orderedParameters();
+	for( CompoundParameter::ParameterVector::const_iterator cIt=childParameters.begin(); cIt!=childParameters.end(); cIt++ )
+	{
+		ParameterHandlerPtr h = handler( *cIt, true );
+		if( h )
+		{
+			std::string childKnobName = std::string( knobName ) + "_" + (*cIt)->name();
+			h->knobs( cIt->get(), childKnobName.c_str(), f );
+		}
+	}
+}
+
+ParameterHandlerPtr CompoundParameterHandler::handler( const Parameter *child, bool createIfMissing )
 {
 	HandlerMap::const_iterator it = m_handlers.find( child->internedName() );
 	if( it!=m_handlers.end() )
@@ -115,8 +120,7 @@ ParameterHandlerPtr CompoundParameterHandler::handler( ParameterPtr child, bool 
 		return 0;
 	}
 	
-	std::string childKnobName = std::string( knobName() ) + "_" + child->name();
-	ParameterHandlerPtr h = ParameterHandler::create( child, childKnobName );
+	ParameterHandlerPtr h = ParameterHandler::create( child );
 	if( !h )
 	{
 		IECore::msg( IECore::Msg::Warning, "IECoreNuke::CompoundParameterHandler", boost::format(  "Unable to create handler for parameter \"%s\" of type \"%s\"" ) % child->name() % child->typeName() );

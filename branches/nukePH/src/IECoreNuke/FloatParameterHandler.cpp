@@ -43,16 +43,15 @@ using namespace IECoreNuke;
 
 ParameterHandler::Description<FloatParameterHandler> FloatParameterHandler::g_description( FloatParameter::staticTypeId() );
 
-FloatParameterHandler::FloatParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName ),
-		m_storage( 0 ),
+FloatParameterHandler::FloatParameterHandler()
+	:	m_storage( 0 ),
 		m_knob( 0 )
 {
 }
 		
-void FloatParameterHandler::knobs( DD::Image::Knob_Callback f )
+void FloatParameterHandler::knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )
 {
-	const FloatParameter *floatParameter = static_cast<FloatParameter *>( parameter() );
+	const FloatParameter *floatParameter = static_cast<const FloatParameter *>( parameter );
 	
 	if( f.makeKnobs() )
 	{
@@ -60,13 +59,13 @@ void FloatParameterHandler::knobs( DD::Image::Knob_Callback f )
 	}
 			
 	DD::Image::IRange range( floatParameter->minValue(), floatParameter->maxValue() );
-	m_knob = Float_knob( f, &m_storage, range, knobName(), knobLabel() );
+	m_knob = Float_knob( f, &m_storage, range, knobName, knobLabel( parameter ) );
 	DD::Image::SetFlags( f, DD::Image::Knob::FORCE_RANGE );
 	if( !(floatParameter->hasMinValue() && floatParameter->hasMaxValue()) )
 	{
 		DD::Image::ClearFlags( f, DD::Image::Knob::SLIDER );
 	}
-	Tooltip( f, parameter()->description() );
+	Tooltip( f, parameter->description() );
 }
 
 void FloatParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )

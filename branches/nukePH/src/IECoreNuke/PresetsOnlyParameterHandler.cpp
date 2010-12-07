@@ -39,32 +39,32 @@
 using namespace IECore;
 using namespace IECoreNuke;
 
-PresetsOnlyParameterHandler::PresetsOnlyParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName ), m_knob( 0 )
+PresetsOnlyParameterHandler::PresetsOnlyParameterHandler()
+	:	m_knob( 0 )
 {
-	for( Parameter::PresetsContainer::const_iterator it = parameter->presets().begin(); it!=parameter->presets().end(); it++ )
-	{
-		if( it->second->isEqualTo( parameter->defaultValue() ) )
-		{
-			m_defaultIndex = m_names.size();
-		}
-		
-		InternedString presetName( it->first );
-		m_names.push_back( presetName.value().c_str() );
-	}
-	m_names.push_back( 0 );
 }
 		
-void PresetsOnlyParameterHandler::knobs( DD::Image::Knob_Callback f )
+void PresetsOnlyParameterHandler::knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )
 {
 	if( f.makeKnobs() )
 	{
-		m_storage = m_defaultIndex;
+		m_names.clear();
+		for( Parameter::PresetsContainer::const_iterator it = parameter->presets().begin(); it!=parameter->presets().end(); it++ )
+		{
+			if( it->second->isEqualTo( parameter->defaultValue() ) )
+			{
+				m_storage = m_names.size();
+			}
+
+			InternedString presetName( it->first );
+			m_names.push_back( presetName.value().c_str() );
+		}
+		m_names.push_back( 0 );
 	}
 	
-	m_knob = Enumeration_knob( f, &m_storage, &(m_names[0]), knobName(), knobLabel() );
+	m_knob = Enumeration_knob( f, &m_storage, &(m_names[0]), knobName, knobLabel( parameter ) );
 	
-	Tooltip( f, parameter()->description() );
+	Tooltip( f, parameter->description() );
 }
 
 void PresetsOnlyParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )

@@ -43,20 +43,20 @@ using namespace IECoreNuke;
 
 ParameterHandler::Description<BoolParameterHandler> BoolParameterHandler::g_description( BoolParameter::staticTypeId() );
 
-BoolParameterHandler::BoolParameterHandler( IECore::ParameterPtr parameter, const std::string &knobName )
-	:	ParameterHandler( parameter, knobName ), m_knob( 0 )
+BoolParameterHandler::BoolParameterHandler()
+	:	m_knob( 0 )
 {
 }
 		
-void BoolParameterHandler::knobs( DD::Image::Knob_Callback f )
+void BoolParameterHandler::knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f  )
 {
 	if( f.makeKnobs() )
 	{
-		m_storage = static_cast<BoolParameter *>( parameter() )->typedDefaultValue();
+		m_storage = static_cast<const BoolParameter *>( parameter )->typedDefaultValue();
 	}
 	
-	m_knob = Bool_knob( f, &m_storage, knobName(), knobLabel() );
-	Tooltip( f, parameter()->description() );
+	m_knob = Bool_knob( f, &m_storage, knobName, knobLabel( parameter ) );
+	Tooltip( f, parameter->description() );
 }
 
 void BoolParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )

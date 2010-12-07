@@ -134,7 +134,7 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 			ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( m_parameterised.get() );
 			if( parameterisedInterface )
 			{
-				m_parameterHandler = ParameterHandler::create( parameterisedInterface->parameters(), "parm" );
+				m_parameterHandler = ParameterHandler::create( parameterisedInterface->parameters() );
 			}
 		}
 		
@@ -213,7 +213,8 @@ void ParameterisedHolder<BaseType>::setParameterValues()
 {
 	if( m_parameterHandler )
 	{
-		m_parameterHandler->setParameterValue();
+		ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( m_parameterised.get() );
+		m_parameterHandler->setParameterValue( parameterisedInterface->parameters().get() );
 	}
 }
 
@@ -235,9 +236,10 @@ template<typename BaseType>
 void ParameterisedHolder<BaseType>::parameterKnobs( void *that, DD::Image::Knob_Callback f )
 {
 	ParameterisedHolder *parameterisedHolder = static_cast<ParameterisedHolder *>( that );
-	if( parameterisedHolder->m_parameterHandler )
+	ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( parameterisedHolder->m_parameterised.get() );
+	if( parameterisedInterface )
 	{
-		parameterisedHolder->m_parameterHandler->knobs( f );
+		parameterisedHolder->m_parameterHandler->knobs( parameterisedInterface->parameters().get(), "parm", f );
 	}
 }
 
