@@ -51,7 +51,7 @@ class ObjectKnob : public DD::Image::Knob
 		/// A copy of the value is taken. Returns true if the new value is different
 		/// to the old value and false otherwise.
 		bool setValue( IECore::ConstObjectPtr value );
-		const IECore::ObjectPtr getValue() const;
+		IECore::ConstObjectPtr getValue() const;
 		
 		/// Call this from an Op::knobs() implementation to create an ObjectKnob. The value placed in storage by the knob
 		/// must be treated as read only.
