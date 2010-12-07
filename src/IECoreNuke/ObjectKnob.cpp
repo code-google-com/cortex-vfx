@@ -86,7 +86,7 @@ bool ObjectKnob::setValue( IECore::ConstObjectPtr value )
 	return false;
 }
 
-const IECore::ObjectPtr ObjectKnob::getValue() const
+IECore::ConstObjectPtr ObjectKnob::getValue() const
 {
 	return m_value;
 }
