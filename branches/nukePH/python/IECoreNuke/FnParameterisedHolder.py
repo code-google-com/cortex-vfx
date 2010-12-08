@@ -36,7 +36,7 @@ import nuke
 
 import IECore
 from _IECoreNuke import _parameterisedHolderGetParameterisedResult
-from _IECoreNuke import _parameterisedHolderSetKnobValuesInput
+from _IECoreNuke import _parameterisedHolderSetModifiedParametersInput
 
 class FnParameterisedHolder :
 
@@ -74,7 +74,7 @@ class FnParameterisedHolder :
 	# the current time. This can be manipulated as desired without affecting the instances held on the node.
 	def getParameterised( self ) :
 	
-		self.__node.knob( "getParameterised" ).execute()
+		self.__node.knob( "__getParameterised" ).execute()
 		p = _parameterisedHolderGetParameterisedResult()
 		
 		d = self.__node.knob( "classSpecifier" ).getValue()
@@ -108,7 +108,7 @@ class _ParameterModificationContext :
 		
 	def __exit__( self, type, value, traceBack ) :
 	
-		_parameterisedHolderSetKnobValuesInput( self.__parameterised )
-		self.__fnPH.node().knob( "setKnobValues" ).execute()
+		_parameterisedHolderSetModifiedParametersInput( self.__parameterised )
+		self.__fnPH.node().knob( "__modifiedParameters" ).execute()
 
 		nuke.Undo.end()

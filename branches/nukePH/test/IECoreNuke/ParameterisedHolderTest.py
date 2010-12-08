@@ -232,11 +232,61 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 
 			self.assertEqual( fnOH.node().knob( "parm_a" ).getValue(), 10 )
 			self.assertEqual( fnOH.node().knob( "parm_b" ).getValue(), 20 )
-			
+					
 		nuke.undo()
 		
 		self.assertEqual( fnOH.node().knob( "parm_a" ).getValue(), 1 )
 		self.assertEqual( fnOH.node().knob( "parm_b" ).getValue(), 2 )
+	
+	def testClassParameterSetClass( self ) :
+	
+		fnOH = IECoreNuke.FnOpHolder.create( "test", "classParameterTest", 1 )
+
+		with fnOH.parameterModificationContext() as parameterised :
+		
+			parameterised["cp"].setClass( "maths/multiply", 2 )
+			
+		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node() )
+
+		self.assertEqual( parameterised.parameters().getValue(), fnOH.getParameterised()[0].parameters().getValue() )		
+
+	def testClassParameterSetClassAndValues( self ) :
+	
+		fnOH = IECoreNuke.FnOpHolder.create( "test", "classParameterTest", 1 )
+
+		with fnOH.parameterModificationContext() as parameterised :
+		
+			parameterised["cp"].setClass( "maths/multiply", 2 )
+			parameterised["cp"]["a"].setNumericValue( 10 )
+			parameterised["cp"]["a"].setNumericValue( 20 )
+			
+		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node() )
+
+		self.assertEqual( parameterised.parameters().getValue(), fnOH.getParameterised()[0].parameters().getValue() )		
+	
+	def testClassParameterSetClassAndValues( self ) :
+	
+		fnOH = IECoreNuke.FnOpHolder.create( "test", "classParameterTest", 1 )
+
+		with fnOH.parameterModificationContext() as parameterised :
+		
+			parameterised["cp"].setClass( "maths/multiply", 2 )
+			parameterised["cp"]["a"].setNumericValue( 10 )
+			parameterised["cp"]["a"].setNumericValue( 20 )
+			
+		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node() )
+
+		nuke.nodeCopy( "test/IECoreNuke/parameterisedHolder.nk" )
+		
+		nuke.scriptClear()
+	
+		n = nuke.nodePaste( "test/IECoreNuke/parameterisedHolder.nk" )
+		
+		fnOH = IECoreNuke.FnOpHolder( n )
+		
+		parameterised2 = fnOH.getParameterised()[0]
+		
+		self.assertEqual( parameterised.parameters().getValue(), parameterised2.parameters().getValue() )
 				
 	def tearDown( self ) :
 	

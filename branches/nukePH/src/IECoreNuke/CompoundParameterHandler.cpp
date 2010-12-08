@@ -91,6 +91,53 @@ void CompoundParameterHandler::setKnobValue( const IECore::Parameter *parameter 
 	}
 }
 
+void CompoundParameterHandler::setState( IECore::Parameter *parameter, const IECore::Object *state )
+{
+	const CompoundObject *o = static_cast<const CompoundObject *>( state );
+	CompoundParameter *compoundParameter = static_cast<CompoundParameter *>( parameter );
+	
+	const CompoundObject::ObjectMap &members = o->members();
+	for( CompoundObject::ObjectMap::const_iterator it = members.begin(); it!=members.end(); it++ )
+	{
+		Parameter *child = compoundParameter->parameter<Parameter>( it->first );
+		if( child )
+		{
+			ParameterHandlerPtr h = handler( child, true );
+			if( h )
+			{
+				h->setState( child, it->second );
+			}
+		}
+	}
+}
+
+IECore::ObjectPtr CompoundParameterHandler::getState( const IECore::Parameter *parameter )
+{
+	const CompoundParameter *compoundParameter = static_cast<const CompoundParameter *>( parameter );
+	CompoundObjectPtr result = new CompoundObject;
+	
+	const CompoundParameter::ParameterVector &childParameters = compoundParameter->orderedParameters();
+	for( CompoundParameter::ParameterVector::const_iterator cIt=childParameters.begin(); cIt!=childParameters.end(); cIt++ )
+	{
+		ParameterHandlerPtr h = handler( *cIt, false );
+		if( h )
+		{
+			ObjectPtr childState = h->getState( *cIt );
+			if( childState )
+			{
+				result->members()[(*cIt)->name()] = childState;
+			}
+		}
+	}
+	
+	if( result->members().size() )
+	{
+		return result;
+	}
+	
+	return 0;
+}
+		
 void CompoundParameterHandler::childKnobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )
 {
 	const CompoundParameter *compoundParameter = static_cast<const CompoundParameter *>( parameter );

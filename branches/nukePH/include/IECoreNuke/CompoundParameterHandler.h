@@ -50,7 +50,9 @@ class CompoundParameterHandler : public ParameterHandler
 		virtual void knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f );
 		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
 		virtual void setKnobValue( const IECore::Parameter *parameter );
-
+		virtual void setState( IECore::Parameter *parameter, const IECore::Object *state );
+		virtual IECore::ObjectPtr getState( const IECore::Parameter *parameter );
+		
 	protected :
 	
 		void childKnobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f );

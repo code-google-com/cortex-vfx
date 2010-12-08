@@ -56,7 +56,7 @@ using namespace IECore;
 using namespace IECoreNuke;
 
 static IECore::RunTimeTypedPtr g_getParameterisedResult = 0;
-static IECore::RunTimeTypedPtr g_setKnobValuesInput = 0;
+static IECore::RunTimeTypedPtr g_modifiedParametersInput = 0;
 
 template<typename BaseType>
 ParameterisedHolder<BaseType>::ParameterisedHolder( Node *node )
@@ -69,7 +69,7 @@ ParameterisedHolder<BaseType>::ParameterisedHolder( Node *node )
 		m_parameterHandler( 0 ),
 		m_numParameterKnobs( 0 ),
 		m_getParameterisedKnob( 0 ),
-		m_setKnobValuesKnob( 0 )
+		m_modifiedParametersKnob( 0 )
 {
 	
 }
@@ -87,10 +87,10 @@ void ParameterisedHolder<BaseType>::knobs( DD::Image::Knob_Callback f )
 	m_classSpecifierKnob = ObjectKnob::objectKnob( f, &m_classSpecifier, "classSpecifier", "classSpecifier" );
 	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS );
 	
-	m_getParameterisedKnob = Button( f, "getParameterised" );
+	m_getParameterisedKnob = Button( f, "__getParameterised" );
 	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS | DD::Image::Knob::INVISIBLE );
 	
-	m_setKnobValuesKnob = Button( f, "setKnobValues" );
+	m_modifiedParametersKnob = Button( f, "__modifiedParameters" );
 	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS | DD::Image::Knob::INVISIBLE );
 	
 	static const char *noVersions[] = { "No class loaded", "", 0 };
@@ -106,7 +106,7 @@ void ParameterisedHolder<BaseType>::knobs( DD::Image::Knob_Callback f )
 		// returns 0 the rest of the time.
 		m_classDividerKnob = classDividerKnob;
 	}
-			
+	
 	BaseType::add_knobs( parameterKnobs, this, f );
 }
 
@@ -116,7 +116,7 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 	if( knob==m_classSpecifierKnob || knob==m_classReloadKnob )
 	{			
 		// reload the class, or load a new class
-	
+		
 		string className;
 		int classVersion;
 		vector<int> classVersions;
@@ -129,46 +129,24 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 		// get a new ParameterHandler
 		
 		m_parameterHandler = 0;
-		if( m_parameterised )
+		ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( m_parameterised.get() );
+		if( parameterisedInterface )
 		{
-			ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( m_parameterised.get() );
-			if( parameterisedInterface )
+			m_parameterHandler = ParameterHandler::create( parameterisedInterface->parameters() );
+			
+			// apply the previously stored handler state
+		
+			ConstCompoundObjectPtr classSpecifier = runTimeCast<const CompoundObject>( m_classSpecifierKnob->getValue() );
+			ConstObjectPtr handlerState = classSpecifier->member<Object>( "handlerState" );
+			if( handlerState )
 			{
-				m_parameterHandler = ParameterHandler::create( parameterisedInterface->parameters() );
+				m_parameterHandler->setState( parameterisedInterface->parameters(), handlerState );
 			}
 		}
-		
+			
 		// and regenerate the knobs used to represent the parameters
-		
-		// in an ideal world, nuke would notice when the new knobs are the same name/type as the old ones,
-		// and keep the values and animation and wotnot - they even have a comment in the docs saying how
-		// nice that would be. but that doesn't exist right now, so we do it ourselves. we're doing
-		// it here rather than complicating the ParameterHandler mechanism in the hope that in the future
-		// Nuke will do it for us and we can then just remove this little bit of code rather than rejig
-		// the actual API.
-		
-		std::map<std::string, std::string> knobScripts;
-		DD::Image::Knob *pKnob = 0;
-		for( int i=0; (pKnob = BaseType::knob( i )); i++ )
-		{
-			if( pKnob->name().compare( 0, 5, "parm_" ) == 0 )
-			{
-				ostringstream ss;
-				pKnob->to_script( ss, 0, false );
-				knobScripts[pKnob->name()] = ss.str();
-			}
-		}
-		
-		m_numParameterKnobs = replace_knobs( m_classDividerKnob, m_numParameterKnobs, parameterKnobs, this );
-		
-		for( int i=0; (pKnob = BaseType::knob( i )); i++ )
-		{
-			std::map<std::string, std::string>::const_iterator it = knobScripts.find( pKnob->name() );
-			if( it!=knobScripts.end() )
-			{
-				pKnob->from_script( it->second.c_str() );			
-			}
-		}
+				
+		replaceKnobs();
 		
 		return 1;
 	}
@@ -183,18 +161,61 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 		if( g_getParameterisedResult )
 		{
 			ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( g_getParameterisedResult.get() );
+			// apply current state
+			ConstCompoundObjectPtr classSpecifier = runTimeCast<const CompoundObject>( m_classSpecifierKnob->getValue() );
+			ConstObjectPtr handlerState = classSpecifier->member<Object>( "handlerState" );
+			if( handlerState )
+			{
+				m_parameterHandler->setState( parameterisedInterface->parameters(), handlerState );
+			}
 			// get values directly from knobs as they haven't been stored at this point
 			m_parameterHandler->setParameterValue( parameterisedInterface->parameters(), ParameterHandler::Knob );
 		}
 	
 		return 1;
 	}
-	else if( knob==m_setKnobValuesKnob )
+	else if( knob==m_modifiedParametersKnob )
 	{
 		// this is triggered by the FnParameterisedHolder.classModificationContext() implementation.
+		// as above, we use this method in lieu of being able to call a method on this class.
 		
-		setKnobValues( g_setKnobValuesInput.get() );
-		g_setKnobValuesInput = 0;
+		// get the new handler state and store it so we have it for save/load copy/paste etc
+		////////////////////////////////////////////////////////////////////////////////////
+				
+		ParameterisedInterface *inputParameterisedInterface = dynamic_cast<ParameterisedInterface *>( g_modifiedParametersInput.get() );
+		ObjectPtr handlerState = m_parameterHandler->getState( inputParameterisedInterface->parameters() );
+		CompoundObjectPtr classSpecifier = runTimeCast<CompoundObject>( m_classSpecifierKnob->getValue()->copy() );
+		if( handlerState )
+		{
+			classSpecifier->members()["handlerState"] = handlerState;
+		}
+		else
+		{
+			classSpecifier->members().erase( "handlerState" );
+		}
+		// it seems that setting the value from inside knob_changed() doesn't emit a new knob_changed(), which
+		// is fortunately what we want.
+		m_classSpecifierKnob->setValue( classSpecifier ); 
+		
+		// apply the new state to the current parameterised object
+		////////////////////////////////////////////////////////////////////////////////////
+		
+		ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( m_parameterised.get() );
+		if( handlerState )
+		{
+			m_parameterHandler->setState( parameterisedInterface->parameters(), handlerState );
+		}
+		parameterisedInterface->parameters()->setValue( inputParameterisedInterface->parameters()->getValue() );
+		
+		// update the knobs using our newly updated parameterised object
+		////////////////////////////////////////////////////////////////////////////////////
+		
+		replaceKnobs();
+		setKnobValues();
+		
+		// forget the input 
+		
+		g_modifiedParametersInput = 0;
 		
 		return 1;
 	}
@@ -219,27 +240,60 @@ void ParameterisedHolder<BaseType>::setParameterValues()
 }
 
 template<typename BaseType>
-void ParameterisedHolder<BaseType>::setKnobValues( IECore::RunTimeTyped *parameterised )
+void ParameterisedHolder<BaseType>::setKnobValues()
 {
 	if( m_parameterHandler )
 	{
-		if( !parameterised )
-		{
-			parameterised = m_parameterised.get();
-		}
-		ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( parameterised );
+		ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( m_parameterised.get() );
 		m_parameterHandler->setKnobValue( parameterisedInterface->parameters() );
 	}
 }
 
 template<typename BaseType>
+void ParameterisedHolder<BaseType>::replaceKnobs()
+{
+
+	// in an ideal world, nuke would notice when the new knobs are the same name/type as the old ones,
+	// and keep the values and animation and wotnot - they even have a comment in the docs saying how
+	// nice that would be. but that doesn't exist right now, so we do it ourselves. we're doing
+	// it here rather than complicating the ParameterHandler mechanism in the hope that in the future
+	// Nuke will do it for us and we can then just remove this little bit of code rather than rejig
+	// the actual API.
+
+	std::map<std::string, std::string> knobScripts;
+	DD::Image::Knob *pKnob = 0;
+	for( int i=0; (pKnob = BaseType::knob( i )); i++ )
+	{
+		if( pKnob->name().compare( 0, 5, "parm_" ) == 0 )
+		{
+			ostringstream ss;
+			pKnob->to_script( ss, 0, false );
+			knobScripts[pKnob->name()] = ss.str();
+		}
+	}
+
+	m_numParameterKnobs = replace_knobs( m_classDividerKnob, m_numParameterKnobs, parameterKnobs, this );
+
+	for( int i=0; (pKnob = BaseType::knob( i )); i++ )
+	{
+		std::map<std::string, std::string>::const_iterator it = knobScripts.find( pKnob->name() );
+		if( it!=knobScripts.end() )
+		{
+			pKnob->from_script( it->second.c_str() );			
+		}
+	}
+
+}
+
+template<typename BaseType>
 void ParameterisedHolder<BaseType>::parameterKnobs( void *that, DD::Image::Knob_Callback f )
 {
-	ParameterisedHolder *parameterisedHolder = static_cast<ParameterisedHolder *>( that );
-	ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( parameterisedHolder->m_parameterised.get() );
-	if( parameterisedInterface )
+	const ParameterisedHolder *parameterisedHolder = static_cast<const ParameterisedHolder *>( that );
+		
+	if( parameterisedHolder->m_parameterHandler )
 	{
-		parameterisedHolder->m_parameterHandler->knobs( parameterisedInterface->parameters().get(), "parm", f );
+		const ParameterisedInterface *parameterisedInterface = dynamic_cast<const ParameterisedInterface *>( parameterisedHolder->m_parameterised.get() );
+		parameterisedHolder->m_parameterHandler->knobs( parameterisedInterface->parameters(), "parm", f );
 	}
 }
 
@@ -393,9 +447,9 @@ IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::getParameterisedResult()
 }
 
 template<typename BaseType>
-void ParameterisedHolder<BaseType>::setKnobValuesInput( IECore::RunTimeTypedPtr parameterised )
+void ParameterisedHolder<BaseType>::setModifiedParametersInput( IECore::RunTimeTypedPtr parameterised )
 {
-	g_setKnobValuesInput = parameterised;
+	g_modifiedParametersInput = parameterised;
 }
 
 // explicit instantiation

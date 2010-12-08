@@ -32,55 +32,34 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "IECoreNuke/ParameterHandler.h"
-#include "IECoreNuke/PresetsOnlyParameterHandler.h"
+#ifndef IECORENUKE_CLASSPARAMETERHANDLER_H
+#define IECORENUKE_CLASSPARAMETERHANDLER_H
 
-using namespace IECore;
-using namespace IECoreNuke;
+#include "IECoreNuke/CompoundParameterHandler.h"
 
-ParameterHandler::ParameterHandler()
+namespace IECoreNuke
 {
-}
 
-void ParameterHandler::setState( IECore::Parameter *parameter, const IECore::Object *state )
+class ClassParameterHandler : public CompoundParameterHandler
 {
-	assert( 0 ); // shouldn't get called because we don't return a state in getState()
-}
 
-IECore::ObjectPtr ParameterHandler::getState( const IECore::Parameter *parameter )
-{
-	return 0;
-}
+	public :
+				
+		ClassParameterHandler();
 		
-ParameterHandlerPtr ParameterHandler::create( const IECore::Parameter *parameter )
-{
-	if( parameter->presetsOnly() )
-	{
-		return new PresetsOnlyParameterHandler();
-	}
+		virtual void knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f );
+		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
+		virtual void setState( IECore::Parameter *parameter, const IECore::Object *state );
+		virtual IECore::ObjectPtr getState( const IECore::Parameter *parameter );
+				
+	private :
+		
+		void classChooserKnob( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f );
+		
+		static Description<ClassParameterHandler> g_description;
+		
+};
 
-	const CreatorFnMap &creators = creatorFns();
-	TypeId typeId = parameter->typeId();
-	while( typeId!=InvalidTypeId )
-	{
-		CreatorFnMap::const_iterator it = creators.find( typeId );
-		if( it!=creators.end() )
-		{
-			return it->second();
-		}	
-		typeId = RunTimeTyped::baseTypeId( typeId );
-	}
-	return 0;
-}
+} // namespace IECoreNuke
 
-ParameterHandler::CreatorFnMap &ParameterHandler::creatorFns()
-{
-	static CreatorFnMap creators;
-	return creators;
-}
-
-const char *ParameterHandler::knobLabel( const IECore::Parameter *parameter ) const
-{
-	/// \todo Implement some nice camel case based string formatting
-	return parameter->name().c_str();
-}
+#endif // IECORENUKE_CLASSPARAMETERHANDLER_H
