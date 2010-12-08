@@ -64,7 +64,7 @@ void PresetsOnlyParameterHandler::knobs( const IECore::Parameter *parameter, con
 	
 	m_knob = Enumeration_knob( f, &m_storage, &(m_names[0]), knobName, knobLabel( parameter ) );
 	
-	Tooltip( f, parameter->description() );
+	setFlagsAndTooltip( parameter, f );
 }
 
 void PresetsOnlyParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )

@@ -56,7 +56,7 @@ void StringParameterHandler::knobs( const IECore::Parameter *parameter, const ch
 	}
 
 	m_knob = String_knob( f, &m_storage, knobName, knobLabel( parameter ) );
-	Tooltip( f, parameter->description() );
+	setFlagsAndTooltip( parameter, f );
 }
 
 void StringParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )

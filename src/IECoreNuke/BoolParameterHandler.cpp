@@ -56,7 +56,7 @@ void BoolParameterHandler::knobs( const IECore::Parameter *parameter, const char
 	}
 	
 	m_knob = Bool_knob( f, &m_storage, knobName, knobLabel( parameter ) );
-	Tooltip( f, parameter->description() );
+	setFlagsAndTooltip( parameter, f );
 }
 
 void BoolParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )

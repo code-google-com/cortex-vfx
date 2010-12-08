@@ -32,9 +32,15 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include "DDImage/Knobs.h"
+
+#include "IECore/CompoundObject.h"
+#include "IECore/SimpleTypedData.h"
+
 #include "IECoreNuke/ParameterHandler.h"
 #include "IECoreNuke/PresetsOnlyParameterHandler.h"
 
+using namespace DD::Image;
 using namespace IECore;
 using namespace IECoreNuke;
 
@@ -83,4 +89,23 @@ const char *ParameterHandler::knobLabel( const IECore::Parameter *parameter ) co
 {
 	/// \todo Implement some nice camel case based string formatting
 	return parameter->name().c_str();
+}
+
+void ParameterHandler::setFlagsAndTooltip( const IECore::Parameter *parameter, DD::Image::Knob_Callback f ) const
+{
+	const CompoundObject *userData = parameter->userData();
+	const CompoundObject *ui = userData->member<CompoundObject>( "UI" );
+	
+	int flags = 0;
+	if( ui )
+	{
+		const BoolData *visible = ui->member<BoolData>( "visible" );
+		if( visible && !visible->readable() )
+		{
+			flags |= Knob::HIDDEN;
+		}
+	}
+	
+	SetFlags( f, flags );
+	Tooltip( f, parameter->description() );
 }

@@ -65,7 +65,7 @@ void FloatParameterHandler::knobs( const IECore::Parameter *parameter, const cha
 	{
 		DD::Image::ClearFlags( f, DD::Image::Knob::SLIDER );
 	}
-	Tooltip( f, parameter->description() );
+	setFlagsAndTooltip( parameter, f );
 }
 
 void FloatParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )
