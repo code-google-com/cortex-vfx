@@ -61,7 +61,7 @@ void Box3ParameterHandler<T>::knobs( const IECore::Parameter *parameter, const c
 	}
 	
 	m_knob = Box3_knob( f, (float *)&m_storage, knobName, knobLabel( parameter ) );
-	Tooltip( f, parameter->description() );
+	setFlagsAndTooltip( parameter, f );
 }
 
 template<typename T>

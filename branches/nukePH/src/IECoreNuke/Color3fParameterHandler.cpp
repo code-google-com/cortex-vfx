@@ -57,7 +57,7 @@ void Color3fParameterHandler::knobs( const IECore::Parameter *parameter, const c
 	}
 			
 	m_knob = Color_knob( f, &m_storage.x, knobName, knobLabel( parameter ) );
-	Tooltip( f, parameter->description() );
+	setFlagsAndTooltip( parameter, f );
 }
 
 void Color3fParameterHandler::setParameterValue( Parameter *parameter, ValueSource valueSource )
