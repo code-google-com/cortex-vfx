@@ -73,11 +73,11 @@ class ParameterisedHolder : public BaseType
 		virtual int knob_changed( DD::Image::Knob *knob );
 		//@}
 	
-		/// \todo Consider how these should fit in really.
-		/// Should they be protected?
+	protected :
+	
 		IECore::RunTimeTypedPtr getParameterised();
 		void setParameterValues();
-		void setKnobValues( IECore::RunTimeTyped *parameterised = 0 );
+		void setKnobValues();
 		
 	private :
 
@@ -101,6 +101,7 @@ class ParameterisedHolder : public BaseType
 		////////////////////////////////////////////////////
 		ParameterHandlerPtr m_parameterHandler;
 		size_t m_numParameterKnobs;
+		void replaceKnobs();
 		static void parameterKnobs( void *that, DD::Image::Knob_Callback f );
 		
 		// FnParameterisedHolder support
@@ -109,8 +110,8 @@ class ParameterisedHolder : public BaseType
 		DD::Image::Knob *m_getParameterisedKnob; // this knob triggers a simulated getParameterised function.
 		static IECore::RunTimeTypedPtr getParameterisedResult(); // and this function retrieves the result
 		
-		DD::Image::Knob *m_setKnobValuesKnob; // this knob triggers a simulated setKnobValues function
-		static void setKnobValuesInput( IECore::RunTimeTypedPtr parameterised ); // and this function specifies the parameter values to set the knobs from
+		DD::Image::Knob *m_modifiedParametersKnob; // this knob triggers a simulated function call to do the work of FnParameterisedHolder.parameterModificationContext()
+		static void setModifiedParametersInput( IECore::RunTimeTypedPtr parameterised ); // and this function specifies the parameter values to set the knobs from
 		
 		friend void bindFnParameterisedHolder();
 				

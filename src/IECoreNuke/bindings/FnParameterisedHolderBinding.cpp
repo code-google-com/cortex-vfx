@@ -45,7 +45,7 @@ void bindFnParameterisedHolder()
 {
 
 	def( "_parameterisedHolderGetParameterisedResult", ParameterisedHolderOp::getParameterisedResult );
-	def( "_parameterisedHolderSetKnobValuesInput", ParameterisedHolderOp::setKnobValuesInput );
+	def( "_parameterisedHolderSetModifiedParametersInput", ParameterisedHolderOp::setModifiedParametersInput );
 	
 }
 

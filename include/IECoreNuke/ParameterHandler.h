@@ -67,9 +67,15 @@ class ParameterHandler : public IECore::RefCounted
 		/// directly from the knob at the current time, rather than from the
 		/// value stored by the knob.
 		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage ) = 0;
-		
 		/// Transfers the value from the Parameter back onto the nuke knob at the current time.
 		virtual void setKnobValue( const IECore::Parameter *parameter ) = 0;
+		/// ParameterHandlers may need to store state separately from the knobs they create,
+		/// so that it is available to the first knobs() call when scripts are loaded. This
+		/// function may be implemented to return such state, and the client must make sure
+		/// it is restored via setState() before knobs() is called. 
+		virtual IECore::ObjectPtr getState( const IECore::Parameter *parameter );
+		/// Restore state previously retrieved by getState().
+		virtual void setState( IECore::Parameter *parameter, const IECore::Object *state );
 		
 		/// Factory function to create a ParameterHandler suitable for a given Parameter.
 		static ParameterHandlerPtr create( const IECore::Parameter *parameter );
