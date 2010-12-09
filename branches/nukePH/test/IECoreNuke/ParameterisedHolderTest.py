@@ -54,7 +54,7 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 				childKnobName = knobName + "_" + parameter[k].name
 				self.__checkParameterKnobs( parameter[k], node, childKnobName )
 		else :
-			
+						
 			knob = node.knob( knobName )
 			self.failUnless( knob is not None )
 			
@@ -287,7 +287,20 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 		parameterised2 = fnOH.getParameterised()[0]
 		
 		self.assertEqual( parameterised.parameters().getValue(), parameterised2.parameters().getValue() )
-				
+	
+	def testNestedClassParameterSetClass( self ) :
+	
+		fnOH = IECoreNuke.FnOpHolder.create( "test", "classParameterTest", 1 )
+
+		with fnOH.parameterModificationContext() as parameterised :
+		
+			parameterised["cp"].setClass( "classParameterTest", 1 )
+			parameterised["cp"]["cp"].setClass( "maths/multiply", 2 )
+						
+		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node() )
+
+		self.assertEqual( parameterised.parameters().getValue(), fnOH.getParameterised()[0].parameters().getValue() )		
+					
 	def tearDown( self ) :
 	
 		for f in [
