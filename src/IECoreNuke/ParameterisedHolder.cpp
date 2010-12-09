@@ -99,7 +99,7 @@ void ParameterisedHolder<BaseType>::knobs( DD::Image::Knob_Callback f )
 	m_classReloadKnob = Button( f, "classReload", "Reload" );
 	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS );
 	
-	DD::Image::Knob *classDividerKnob = Divider( f, "Parameters" );
+	DD::Image::Knob *classDividerKnob = Divider( f, "" );
 	if( classDividerKnob )
 	{
 		// the Divider() call only returns a value during knob creation, and
