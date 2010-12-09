@@ -119,7 +119,7 @@ IECore::ObjectPtr CompoundParameterHandler::getState( const IECore::Parameter *p
 	const CompoundParameter::ParameterVector &childParameters = compoundParameter->orderedParameters();
 	for( CompoundParameter::ParameterVector::const_iterator cIt=childParameters.begin(); cIt!=childParameters.end(); cIt++ )
 	{
-		ParameterHandlerPtr h = handler( *cIt, false );
+		ParameterHandlerPtr h = handler( *cIt, true );
 		if( h )
 		{
 			ObjectPtr childState = h->getState( *cIt );

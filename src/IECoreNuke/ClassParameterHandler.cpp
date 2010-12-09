@@ -38,7 +38,7 @@
 #include "DDImage/Enumeration_KnobI.h"
 
 #include "IECore/MessageHandler.h"
-#include "IECore/CompoundData.h"
+#include "IECore/CompoundObject.h"
 #include "IECore/SimpleTypedData.h"
 
 #include "IECorePython/ScopedGILLock.h"
@@ -75,11 +75,11 @@ void ClassParameterHandler::setParameterValue( IECore::Parameter *parameter, Val
 
 void ClassParameterHandler::setState( IECore::Parameter *parameter, const IECore::Object *state )
 {
-	const CompoundData *d = static_cast<const CompoundData *>( state );
+	const CompoundObject *d = static_cast<const CompoundObject *>( state );
 	
-	const std::string &className = d->member<StringData>( "className" )->readable();
-	int classVersion = d->member<IntData>( "classVersion" )->readable();
-	const std::string &classSearchPathEnvVar = d->member<StringData>( "searchPathEnvVar" )->readable();
+	const std::string &className = d->member<StringData>( "__className" )->readable();
+	int classVersion = d->member<IntData>( "__classVersion" )->readable();
+	const std::string &classSearchPathEnvVar = d->member<StringData>( "__searchPathEnvVar" )->readable();
 
 	/// \todo C++ code shouldn't have to call python explicity to do this stuff.
 	/// We could define an abstract C++ class with the right interface and then derive
@@ -96,12 +96,20 @@ void ClassParameterHandler::setState( IECore::Parameter *parameter, const IECore
 	}
 	catch( const std::exception &e )
 	{
-		msg( Msg::Error, "ClassParameterHandler::updateClass", e.what() );
-	}	
+		msg( Msg::Error, "ClassParameterHandler::setState", e.what() );
+	}
+	
+	CompoundParameterHandler::setState( parameter, state );	
 }
 
 IECore::ObjectPtr ClassParameterHandler::getState( const IECore::Parameter *parameter )
 {
+	CompoundObjectPtr result = staticPointerCast<CompoundObject>( CompoundParameterHandler::getState( parameter ) );
+	if( !result )
+	{
+		result = new CompoundObject;
+	}
+	
 	IECorePython::ScopedGILLock gilLock;
 	try
 	{
@@ -112,12 +120,9 @@ IECore::ObjectPtr ClassParameterHandler::getState( const IECore::Parameter *para
 		int classVersion = extract<int>( classInfo[2] )();
 		std::string searchPathEnvVar = extract<const char *>( classInfo[3] )();
 		
-		IECore::CompoundDataPtr result = new IECore::CompoundData();
-		result->writable()["className"] = new IECore::StringData( className );
-		result->writable()["classVersion"] = new IECore::IntData( classVersion );
-		result->writable()["searchPathEnvVar"] = new IECore::StringData( searchPathEnvVar );
-		
-		return result;
+		result->members()["__className"] = new IECore::StringData( className );
+		result->members()["__classVersion"] = new IECore::IntData( classVersion );
+		result->members()["__searchPathEnvVar"] = new IECore::StringData( searchPathEnvVar );
 	}
 	catch( boost::python::error_already_set )
 	{
@@ -125,9 +130,9 @@ IECore::ObjectPtr ClassParameterHandler::getState( const IECore::Parameter *para
 	}
 	catch( const std::exception &e )
 	{
-		msg( Msg::Error, "ClassParameterHandler::getClass", e.what() );
+		msg( Msg::Error, "ClassParameterHandler::getState", e.what() );
 	}
-	return 0;
+	return result;
 }
 
 void ClassParameterHandler::classChooserKnob( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )
