@@ -140,13 +140,33 @@ void ClassParameterHandler::classChooserKnob( const IECore::Parameter *parameter
 
 	std::string classChooserName = string( knobName ) + "__classChooser";
 	
-	static const char *noVersions[] = { "No class loaded", "", 0 };
-	DD::Image::Knob *classChooser = PyPulldown_knob( f, noVersions, classChooserName.c_str(), "No class loaded" );
+	static const char *emptyMenu[] = { " ", "", 0 };
+	DD::Image::Knob *classChooser = PyPulldown_knob( f, emptyMenu, classChooserName.c_str(), "No class loaded" );
+	
+	if( !f.makeKnobs() )
+	{
+		// making the menu is slow, and only needs doing when we're making knobs (not storing for instance),
+		// so early out now to avoid massive slowdown.
+		return;
+	}
 	
 	vector<string> menuItems;
+	menuItems.push_back( " " );
+	menuItems.push_back( "" );
+	
 	IECorePython::ScopedGILLock gilLock;
 	try
 	{
+		std::string classNameFilter = "*";
+		const CompoundObject *userData = parameter->userData();
+		if( const CompoundObject *ui = userData->member<CompoundObject>( "UI" ) )
+		{
+			if( const StringData *classNameFilterData = ui->member<StringData>( "classNameFilter" ) )
+			{
+				classNameFilter = classNameFilterData->readable();
+			}
+		}
+		
 		object mainModule = import( "__main__" );
 		object mainModuleNamespace = mainModule.attr( "__dict__" );
 	
@@ -158,7 +178,7 @@ void ClassParameterHandler::classChooserKnob( const IECore::Parameter *parameter
 		object ieCore = import( "IECore" );
 		object classLoader = ieCore.attr( "ClassLoader" ).attr( "defaultLoader" )( searchPathEnvVar );
 		
-		object classNames = classLoader.attr( "classNames" )();
+		object classNames = classLoader.attr( "classNames" )( classNameFilter );
 		
 		int numClasses = len( classNames );
 		for( int i=0; i<numClasses; i++ )
@@ -182,12 +202,12 @@ void ClassParameterHandler::classChooserKnob( const IECore::Parameter *parameter
 				}
 				
 				std::string parameterPath = knobName + 5; // naughty! we're not meant to know the knob name format
-				replace_all( parameterPath, "_", "\"][\"" );
+				replace_all( parameterPath, "_", "']['" );
 				
 				std::string cmd = ( boost::format(
 				
 					"with IECoreNuke.FnParameterisedHolder( nuke.thisNode() ).parameterModificationContext() as parameters :"
-					"	parameters['\%s'].setClass( '%s', %d )"
+					"	parameters['%s'].setClass( '%s', %d )"
 					
 				) % parameterPath % className % versionString ).str();
 					
