@@ -54,13 +54,14 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 				childKnobName = knobName + "_" + parameter[k].name
 				self.__checkParameterKnobs( parameter[k], node, childKnobName )
 		else :
-						
+								
 			knob = node.knob( knobName )
 			self.failUnless( knob is not None )
 			
 			if isinstance( knob, nuke.Enumeration_Knob ) :
 				self.assertEqual( knob.value(), parameter.getCurrentPresetName() )
 			else :
+				
 				knobValue = None
 				try :
 					knobValue = IECoreNuke.getKnobValue( knob )
@@ -300,6 +301,66 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node() )
 
 		self.assertEqual( parameterised.parameters().getValue(), fnOH.getParameterised()[0].parameters().getValue() )		
+	
+	def testClassVectorParameter( self ) :
+	
+		fnOH = IECoreNuke.FnOpHolder.create( "test", "classVectorParameterTest", 1 )
+		
+		with fnOH.parameterModificationContext() as parameterised :
+		
+			cv = parameterised["cv"]
+			cv.setClasses( [
+				( "p0", "maths/multiply", 1 ),
+				( "p1", "floatParameter", 1 ),
+			
+			] ) 
+
+		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node() )
+		
+		self.assertEqual( parameterised.parameters().getValue(), fnOH.getParameterised()[0].parameters().getValue() )
+
+	def testNestedClassVectorParameter( self ) :
+	
+		fnOH = IECoreNuke.FnOpHolder.create( "test", "classVectorParameterTest", 1 )
+		
+		with fnOH.parameterModificationContext() as parameterised :
+		
+			cv = parameterised["cv"]
+			cv.setClasses( [
+				( "p0", "classParameterTest", 1 ),
+			] )
+						
+			cp = parameterised["cv"]["p0"]["cp"]
+			cp.setClass( "maths/multiply", 2 ) 
+
+		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node() )
+		
+		self.assertEqual( parameterised.parameters().getValue(), fnOH.getParameterised()[0].parameters().getValue() )
+	
+	def testMoreNestedClassVectorParameter( self ) :
+	
+		fnOH = IECoreNuke.FnOpHolder.create( "test", "classVectorParameterTest", 1 )
+		
+		with fnOH.parameterModificationContext() as parameterised :
+		
+			cv = parameterised["cv"]
+			cv.setClasses( [
+				( "p0", "classVectorParameterTest", 1 ),
+			
+			] )
+			
+			cv2 = cv["p0"]["cv"]
+			
+			cv2.setClasses( [
+				( "p0", "classParameterTest", 1 ),
+			] )
+						
+			cp = cv2["p0"]["cp"]
+			cp.setClass( "maths/multiply", 2 ) 
+
+		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node() )
+		
+		self.assertEqual( parameterised.parameters().getValue(), fnOH.getParameterised()[0].parameters().getValue() )	
 					
 	def tearDown( self ) :
 	
