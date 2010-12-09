@@ -102,7 +102,7 @@ void ParameterHandler::setFlagsAndTooltip( const IECore::Parameter *parameter, D
 		const BoolData *visible = ui->member<BoolData>( "visible" );
 		if( visible && !visible->readable() )
 		{
-			flags |= Knob::HIDDEN;
+			flags |= Knob::INVISIBLE;
 		}
 	}
 	
