@@ -44,17 +44,24 @@ import IECoreNuke
 
 class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 
-	def __checkParameterKnobs( self, parameter, node, knobName=None ) :
+	def __checkParameterKnobs( self, parameter, node, knobName=None, parameterPath=None, ignore=set() ) :
 	
 		if knobName is None :
 			knobName = "parm"
+				
+		if parameterPath in ignore :
+			return
 	
 		if isinstance( parameter, IECore.CompoundParameter ) :
 			for k in parameter.keys() :
 				childKnobName = knobName + "_" + parameter[k].name
-				self.__checkParameterKnobs( parameter[k], node, childKnobName )
+				if not parameterPath :
+					childParameterPath = k
+				else :
+					childParameterPath = parameterPath + "." + k
+				self.__checkParameterKnobs( parameter[k], node, childKnobName, childParameterPath, ignore )
 		else :
-								
+														
 			knob = node.knob( knobName )
 			self.failUnless( knob is not None )
 			
@@ -65,17 +72,16 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 				knobValue = None
 				try :
 					knobValue = IECoreNuke.getKnobValue( knob )
+					if isinstance( parameter, IECore.V2dParameter ) :
+						# getKnobValue defaults to V2f
+						knobValue = IECore.V2d( knobValue[0], knobValue[1] )
 				except :
 					# not all knob types have accessors yet. some of the numeric
 					# knobs don't have them because nuke has bugs and returns those
 					# knobs as the wrong type. try to get the value another way.
-					try :
-						knobValue = knob.getValue()
-					except :
-						pass
+					knobValue = knob.getValue()
 				
-				if knobValue is not None :
-					self.assertEqual( parameter.getValue().value, knobValue )
+				self.assertEqual( parameter.getValue().value, knobValue )
 					
 	def testCreate( self ) :
 
@@ -361,7 +367,36 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node() )
 		
 		self.assertEqual( parameterised.parameters().getValue(), fnOH.getParameterised()[0].parameters().getValue() )	
-					
+	
+	def testParameterTypes( self ) :
+	
+		# the parameters for which we know we have no handler
+		unsupported = set( ( "c", "e", "f", "h", "compound.j", "compound.k", "m", "s", "u", "v", "x", "y", "p1", "p2", "p3", "p4", "p5", "p6", "p7" ) )
+		
+		mh = IECore.CapturingMessageHandler()
+		with mh :
+			fnOH = IECoreNuke.FnOpHolder.create( "test", "parameterTypes", 1 )
+		
+		# make sure there's an error reported for each unsupported parameter
+		self.assertEqual( len( mh.messages ), len( unsupported ) )
+		for n in unsupported :
+			found = False
+			t = "for parameter \"%s\"" % n.split( "." )[-1]
+			for m in mh.messages :
+				if t in m.message :
+					found = True
+					break
+			self.assertEqual( found, True )			
+		
+		self.__checkParameterKnobs( fnOH.getParameterised()[0].parameters(), fnOH.node(), ignore=unsupported )
+	
+		with fnOH.parameterModificationContext() as parameterised :
+		
+			parameterised.parameters()["d"].setTypedValue( "lalal" )
+			
+		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node(), ignore=unsupported )
+		self.__checkParameterKnobs( fnOH.getParameterised()[0].parameters(), fnOH.node(), ignore=unsupported )
+			
 	def tearDown( self ) :
 	
 		for f in [
