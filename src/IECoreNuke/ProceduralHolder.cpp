@@ -50,6 +50,7 @@
 #include "IECorePython/ScopedGILLock.h"
 
 #include "IECoreNuke/ProceduralHolder.h"
+#include "IECoreNuke/Convert.h"
 
 using namespace IECoreNuke;
 
@@ -99,7 +100,14 @@ void ProceduralHolder::knobs( DD::Image::Knob_Callback f )
 
 void ProceduralHolder::build_handles( DD::Image::ViewerContext *ctx )
 {
-	ParameterisedHolderOp::build_handles( ctx );
+	ParameterisedHolderOp::build_handles( ctx );	
+	
+	Imath::Box3f b = bound();
+	if( b.hasVolume() )
+	{
+		ctx->expand_bbox( node_selected(), IECore::convert<DD::Image::Box3>( b ) );
+	}
+	
 	add_draw_handle( ctx );
 }
 

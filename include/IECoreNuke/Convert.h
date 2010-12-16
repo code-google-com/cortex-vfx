@@ -46,6 +46,7 @@
 #include "DDImage/Vector3.h"
 #include "DDImage/Vector4.h"
 #include "DDImage/Box.h"
+#include "DDImage/Box3.h"
 
 /// Specialising in the IECore namespace. This is OK because the Nuke types
 /// will never be referenced in IECore. And it means that all the convert<>
@@ -104,6 +105,9 @@ Imath::M44d convert( const DD::Image::Matrix4 &from );
 
 template<>
 Imath::Box2i convert( const DD::Image::Box &from );
+
+template<>
+DD::Image::Box3 convert( const Imath::Box3f &from );
 
 } // namespace IECore
 
