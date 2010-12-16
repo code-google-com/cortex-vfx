@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,58 +32,25 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "IECore/DisplayDriver.h"
+#ifndef IECORE_DISPLAYDRIVER_INL
+#define IECORE_DISPLAYDRIVER_INL
 
-using namespace std;
-using namespace IECore;
-using namespace Imath;
-
-IE_CORE_DEFINERUNTIMETYPED( DisplayDriver );
-
-DisplayDriver::DisplayDriver( const Box2i &displayWindow, const Box2i &dataWindow, const vector<string> &channelNames, ConstCompoundDataPtr parameters ) :
-	m_displayWindow( displayWindow ), m_dataWindow( dataWindow ), m_channelNames( channelNames )
+namespace IECore
 {
+
+template<typename T>
+DisplayDriver::DisplayDriverDescription<T>::DisplayDriverDescription()
+{
+	registerType( T::staticTypeName(), creator );
 }
 
-DisplayDriver::~DisplayDriver()
+template<typename T>
+DisplayDriverPtr DisplayDriver::DisplayDriverDescription<T>::creator( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, const std::vector<std::string> &channelNames, ConstCompoundDataPtr parameters )
 {
+	return new T( displayWindow, dataWindow, channelNames, parameters );
 }
 
-Imath::Box2i DisplayDriver::displayWindow() const
-{
-	return m_displayWindow;
-}
+}  // namespace IECore
 
-Imath::Box2i DisplayDriver::dataWindow() const
-{
-	return m_dataWindow;
-}
 
-const std::vector<std::string> &DisplayDriver::channelNames() const
-{
-	return m_channelNames;
-}
-
-DisplayDriverPtr DisplayDriver::create( const std::string &typeName, const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, const std::vector<std::string> &channelNames, IECore::ConstCompoundDataPtr parameters )
-{
-	DisplayDriverPtr res;
-	const TypeNamesToCreators &creators = typeNamesToCreators();
-	TypeNamesToCreators::const_iterator it = creators.find( typeName );
-	if( it != creators.end() )
-	{
-		return it->second( displayWindow, dataWindow, channelNames, parameters );
-	}
-	
-	throw Exception( boost::str( boost::format( "Display driver \"%s\" not registered" ) % typeName ) );
-}
-
-void DisplayDriver::registerType( const std::string &typeName, CreatorFn creator )
-{
-	typeNamesToCreators()[typeName] = creator;
-}
-
-DisplayDriver::TypeNamesToCreators &DisplayDriver::typeNamesToCreators()
-{
-	static TypeNamesToCreators creators;
-	return creators;
-}
+#endif // IECORE_DISPLAYDRIVER_INL
