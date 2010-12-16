@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,56 +32,56 @@
 #
 ##########################################################################
 
-import sys
+from __future__ import with_statement
+
+import os
+import unittest
+
 import IECore
 import IECoreRI
+				
+class DspyTest( unittest.TestCase ) :
 
-from SLOReader import *
-from Renderer import *
-from Instancing import *
-from PTCParticleReader import *
-from PTCParticleWriter import *
-from ArchiveRecord import *
-from DoubleSided import *
-from Orientation import *
-from MultipleContextsTest import *
-from Camera import *
-from CurvesTest import *
-from TextureOrientationTest import *
-from ArrayPrimVarTest import *
-from CoordinateSystemTest import *
-from IlluminateTest import *
-from SubsurfaceTest import *
-from PatchMeshTest import *
-from RIBWriterTest import *
-from ParameterisedProcedural import *
-from MotionTest import MotionTest
-from PythonProceduralTest import PythonProceduralTest
-from DetailTest import DetailTest
-from ProceduralThreadingTest import ProceduralThreadingTest
-from StringArrayParameterTest import StringArrayParameterTest
-from CoshaderTest import CoshaderTest
-from GroupTest import GroupTest
-from DspyTest import DspyTest
-
-if hasattr( IECoreRI, "SXRenderer" ) :
-	from SXRendererTest import SXRendererTest
+	def testRenderDirectToImagePrimitive( self ) :
+		
+		r = IECoreRI.Renderer( "" )
+		
+		# write one image direct to memory
+		r.display( "test", "ie", "rgba",
+			{
+				"driverType" : IECore.StringData( "ImageDisplayDriver" ),
+				"handle" : IECore.StringData( "myLovelySphere" ),
+				"quantize" : IECore.FloatVectorData( [ 0, 0, 0, 0 ] ),
+			}
+		)
+		
+		# write another to disk the usual way
+		r.display( "+test/IECoreRI/output/sphere.tif", "tiff", "rgba",
+			{
+				"quantize" : IECore.FloatVectorData( [ 0, 0, 0, 0 ] ),
+			}
+		)
+		
+		with IECore.WorldBlock( r ) :
+		
+			r.concatTransform( IECore.M44f.createTranslated( IECore.V3f( 0, 0, -5 ) ) )
 	
-if hasattr( IECoreRI, "GXEvaluator" ) :
-	from GXEvaluatorTest import GXEvaluatorTest
-
-if IECore.withFreeType() :
-
-	from TextTest import *
-
-unittest.TestProgram(
-	testRunner = unittest.TextTestRunner(
-		stream = IECore.CompoundStream(
-			[
-				sys.stderr,
-				open( "test/IECoreRI/resultsPython.txt", "w" )
-			]
-		),
-		verbosity = 2
-	)
-)
+			r.sphere( 1, -1, 1, 360, {} )
+			
+		# check that they're the same
+		
+		i = IECore.ImageDisplayDriver.removeStoredImage( "myLovelySphere" )
+		i2 = IECore.TIFFImageReader( "test/IECoreRI/output/sphere.tif" ).read()
+		
+		i.blindData().clear()
+		i2.blindData().clear()
+		
+		self.failIf( IECore.ImageDiffOp()( imageA = i, imageB = i2, maxError = 0.001 ).value )
+				
+	def tearDown( self ) :
+	
+		if os.path.exists( "test/IECoreRI/output/sphere.tif" ) :
+			os.remove( "test/IECoreRI/output/sphere.tif" )
+		
+if __name__ == "__main__":
+    unittest.main()
