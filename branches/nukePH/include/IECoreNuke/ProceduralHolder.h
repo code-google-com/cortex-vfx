@@ -88,6 +88,9 @@ class ProceduralHolder : public ParameterisedHolderOp
 		
 		IECoreGL::BoxPrimitivePtr m_bound;
 		DD::Image::Hash m_boundHash;
+		
+		DD::Image::Matrix4 m_transform;
+		DD::Image::Knob *m_transformKnob;
 
 };
 

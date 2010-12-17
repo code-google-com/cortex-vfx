@@ -249,6 +249,28 @@ void ParameterisedHolder<BaseType>::setKnobValues()
 	}
 }
 
+
+template<typename BaseType>
+void ParameterisedHolder<BaseType>::buildParameterKnobHandles( DD::Image::ViewerContext *ctx ) const
+{
+	if( !BaseType::panel_visible() )
+	{
+		return;
+	}
+	
+	int knobIndex = 0;
+	while( DD::Image::Knob *k = BaseType::knob( knobIndex++ ) )
+	{
+		if( k->name().compare( 0, 5, "parm_" ) == 0 )
+		{
+			if( k->build_handle( ctx ) )
+			{
+				k->add_draw_handle( ctx );
+			}
+		}
+	}
+}
+
 template<typename BaseType>
 void ParameterisedHolder<BaseType>::replaceKnobs()
 {

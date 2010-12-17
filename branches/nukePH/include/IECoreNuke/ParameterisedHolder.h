@@ -79,6 +79,10 @@ class ParameterisedHolder : public BaseType
 		void setParameterValues();
 		void setKnobValues();
 		
+		/// Equivalent to DD::Image::Op::build_knob_handles(), but only processes
+		/// knobs that represent parameters.
+		void buildParameterKnobHandles( DD::Image::ViewerContext *ctx ) const;
+		
 	private :
 
 		// class specification
