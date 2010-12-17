@@ -62,7 +62,8 @@ ProceduralHolder::ProceduralHolder( Node *node )
 		m_drawContents( true ),
 		m_drawBound( true ),
 		m_drawCoordinateSystems( true ),
-		m_bound( new IECoreGL::BoxPrimitive( Imath::Box3f() ) )
+		m_bound( new IECoreGL::BoxPrimitive( Imath::Box3f() ) ),
+		m_transform( DD::Image::Matrix4::identity() )
 {
 }
 
@@ -73,6 +74,10 @@ ProceduralHolder::~ProceduralHolder()
 void ProceduralHolder::knobs( DD::Image::Knob_Callback f )
 {
 	ParameterisedHolderOp::knobs( f );
+	
+	DD::Image::Tab_knob( f, "Transform" );
+
+	m_transformKnob = DD::Image::Axis_knob( f, &m_transform, "transform", "Transform" );
 
 	DD::Image::Tab_knob( f, "Display" );
 	
@@ -99,16 +104,31 @@ void ProceduralHolder::knobs( DD::Image::Knob_Callback f )
 }
 
 void ProceduralHolder::build_handles( DD::Image::ViewerContext *ctx )
-{
-	ParameterisedHolderOp::build_handles( ctx );	
-	
-	Imath::Box3f b = bound();
-	if( b.hasVolume() )
+{	
+	if( ctx->transform_mode() == DD::Image::VIEWER_2D )
 	{
-		ctx->expand_bbox( node_selected(), IECore::convert<DD::Image::Box3>( b ) );
+		return;
 	}
 	
-	add_draw_handle( ctx );
+	if( m_transformKnob->build_handle( ctx ) )
+	{
+		m_transformKnob->add_draw_handle( ctx );
+	}
+	
+	DD::Image::Matrix4 parentMatrix = ctx->modelmatrix;
+	ctx->modelmatrix *= m_transform;
+	
+		buildParameterKnobHandles( ctx );
+
+		Imath::Box3f b = bound();
+		if( b.hasVolume() )
+		{
+			ctx->expand_bbox( node_selected(), IECore::convert<DD::Image::Box3>( b ) );
+		}
+
+		add_draw_handle( ctx );
+	
+	ctx->modelmatrix = parentMatrix;
 }
 
 void ProceduralHolder::draw_handle( DD::Image::ViewerContext *ctx )
@@ -118,36 +138,43 @@ void ProceduralHolder::draw_handle( DD::Image::ViewerContext *ctx )
 	
 		GLint prevProgram;
 		glGetIntegerv( GL_CURRENT_PROGRAM, &prevProgram );
-				
-			if( m_drawContents )
+			
+			try
 			{
-				IECoreGL::ConstScenePtr s = scene();
-				if( s )
+				if( m_drawContents )
 				{
-					s->render();
-				}
-			}
-
-			if( m_drawBound )
-			{
-				Imath::Box3f b = bound();
-				if( b.hasVolume() )
-				{
-					static IECoreGL::StatePtr wireframeState = 0;
-					if( !wireframeState )
+					IECoreGL::ConstScenePtr s = scene();
+					if( s )
 					{
-						/// \todo Find a way to make these lines pretty like the nuke ones
-						wireframeState = new IECoreGL::State( true );
-						wireframeState->add( new IECoreGL::Primitive::DrawWireframe( true ) );
-						wireframeState->add( new IECoreGL::Primitive::WireframeWidth( 2 ) );
-						wireframeState->add( new IECoreGL::Primitive::DrawSolid( false ) );
+						s->render();
 					}
-					glPushAttrib( GL_ALL_ATTRIB_BITS );
-						static_cast<IECoreGL::Renderable *>( m_bound.get() )->render( wireframeState.get() );
-					glPopAttrib();
+				}
+
+				if( m_drawBound )
+				{
+					Imath::Box3f b = bound();
+					if( b.hasVolume() )
+					{
+						static IECoreGL::StatePtr wireframeState = 0;
+						if( !wireframeState )
+						{
+							/// \todo Find a way to make these lines pretty like the nuke ones
+							wireframeState = new IECoreGL::State( true );
+							wireframeState->add( new IECoreGL::Primitive::DrawWireframe( true ) );
+							wireframeState->add( new IECoreGL::Primitive::WireframeWidth( 2 ) );
+							wireframeState->add( new IECoreGL::Primitive::DrawSolid( false ) );
+						}
+						glPushAttrib( GL_ALL_ATTRIB_BITS );
+							static_cast<IECoreGL::Renderable *>( m_bound.get() )->render( wireframeState.get() );
+						glPopAttrib();
+					}
 				}
 			}
-		
+			catch( const std::exception &e )
+			{
+				IECore::msg( IECore::Msg::Error, "ProceduralHolder::draw_handle", e.what() );
+			}
+						
 		glUseProgram( prevProgram );
 		
 	}	
