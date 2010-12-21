@@ -42,6 +42,7 @@
 #include "IECore/ParameterisedProcedural.h"
 #include "IECore/MessageHandler.h"
 #include "IECore/SimpleTypedData.h"
+#include "IECore/Convert.h"
 
 #include "IECoreGL/Renderer.h"
 #include "IECoreGL/Scene.h"
@@ -182,6 +183,11 @@ void ProceduralHolder::draw_handle( DD::Image::ViewerContext *ctx )
 	}	
 }
 
+IECore::ConstParameterisedProceduralPtr ProceduralHolder::procedural()
+{
+	return IECore::runTimeCast<const IECore::ParameterisedProcedural>( parameterised() );
+}
+
 IECoreGL::ConstScenePtr ProceduralHolder::scene()
 {
 	if( m_scene && hash()==m_sceneHash )
@@ -189,8 +195,8 @@ IECoreGL::ConstScenePtr ProceduralHolder::scene()
 		return m_scene;
 	}
 	
-	IECore::ParameterisedProceduralPtr procedural = IECore::runTimeCast<IECore::ParameterisedProcedural>( getParameterised() );
-	if( !procedural )
+	IECore::ConstParameterisedProceduralPtr proc = procedural();
+	if( !proc )
 	{
 		return 0;
 	}
@@ -206,7 +212,7 @@ IECoreGL::ConstScenePtr ProceduralHolder::scene()
 
 		{
 			IECore::WorldBlock worldBlock( renderer );
-			procedural->render( renderer, false, true, true, true );
+			proc->render( renderer, false, true, true, true );
 		}
 
 		m_scene = renderer->scene();
@@ -240,8 +246,8 @@ Imath::Box3f ProceduralHolder::bound()
 		return m_bound->getBox();
 	}
 
-	IECore::ParameterisedProceduralPtr procedural = IECore::runTimeCast<IECore::ParameterisedProcedural>( getParameterised() );
-	if( !procedural )
+	IECore::ConstParameterisedProceduralPtr proc = procedural();
+	if( !proc )
 	{
 		m_bound->setBox( Imath::Box3f() );
 	}
@@ -250,7 +256,7 @@ Imath::Box3f ProceduralHolder::bound()
 		try
 		{
 			setParameterValues();
-			m_bound->setBox( procedural->bound() );
+			m_bound->setBox( proc->bound() );
 		}
 		/// \todo I think python errors should be handled in the python wrappers - why should C++
 		/// code have to catch boost::python exceptions?
@@ -272,6 +278,11 @@ Imath::Box3f ProceduralHolder::bound()
 	m_boundHash = hash();
 	
 	return m_bound->getBox();
+}
+
+Imath::M44f ProceduralHolder::transform()
+{
+	return IECore::convert<Imath::M44f>( m_transform );
 }
 
 DD::Image::Op *ProceduralHolder::build( Node *node )

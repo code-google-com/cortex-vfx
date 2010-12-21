@@ -55,11 +55,14 @@ IECore::ObjectPtr OpHolder::engine()
 		return m_result;
 	}
 	
-	IECore::OpPtr op = IECore::runTimeCast<IECore::Op>( getParameterised() );
-	if( !op )
+	IECore::ConstOpPtr constOp = IECore::runTimeCast<const IECore::Op>( parameterised() );
+	if( !constOp )
 	{
 		return 0;
 	}
+
+	/// \todo operate() should be const, then we wouldn't need this cast.
+	IECore::OpPtr op = IECore::constPointerCast<IECore::Op>( constOp );
 
 	setParameterValues();
 	
