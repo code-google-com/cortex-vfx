@@ -38,6 +38,7 @@
 #include "DDImage/Op.h"
 
 #include "IECoreGL/BoxPrimitive.h"
+#include "IECoreGL/Scene.h"
 
 #include "IECoreNuke/ParameterisedHolder.h"
 
@@ -62,11 +63,17 @@ class ProceduralHolder : public ParameterisedHolderOp
 		virtual const char *node_help() const;
 		//@}
 		
+		/// Returns the procedural which is being held.
+		IECore::ConstParameterisedProceduralPtr procedural();
 		/// Returns the scene created by the procedural in a form
 		/// suitable for OpenGL rendering.
 		IECoreGL::ConstScenePtr scene();
-		/// Returns the bounding box for the procedural.
+		/// Returns the bounding box for the procedural in local space.
+		/// Prefer this over calling procedural()->bound() directly because it
+		/// only recomputes when necessary (when input parameters have changed).
 		Imath::Box3f bound();
+		/// Returns the transform for the procedural.
+		Imath::M44f transform();
 		
 	protected :
 	

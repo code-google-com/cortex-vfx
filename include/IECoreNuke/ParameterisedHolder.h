@@ -71,11 +71,21 @@ class ParameterisedHolder : public BaseType
 		virtual void knobs( DD::Image::Knob_Callback f );
 		/// Implemented to load the Parameterised class.
 		virtual int knob_changed( DD::Image::Knob *knob );
+		/// Implemented to store the knob values into the held Parameters.
+		virtual void _validate( bool forReal );
 		//@}
+		
+		/// Returns the class instance held by this DD::Image::Op instance.
+		/// Note that this is not a copy as with FnParameterisedHolder::getParameterised but is
+		/// instead the internal class ready for use in processing in c++.
+		/// If validate() has been called the parameter values will be up to date
+		/// with respect to the knob values.
+		IECore::ConstRunTimeTypedPtr parameterised();
+		/// Convenience method to return dynamic_cast<const IECore::ParameterisedInterface *>( parameterised().get() )
+		const IECore::ParameterisedInterface *parameterisedInterface();
 	
 	protected :
 	
-		IECore::RunTimeTypedPtr getParameterised();
 		void setParameterValues();
 		void setKnobValues();
 		
@@ -87,20 +97,23 @@ class ParameterisedHolder : public BaseType
 
 		// class specification
 		////////////////////////////////////////////////////
-		IECore::ObjectPtr m_classSpecifier;
 		ObjectKnob *m_classSpecifierKnob;
 		DD::Image::Knob *m_versionChooserKnob; // for display of class name and user selection of version
 		DD::Image::Knob *m_classReloadKnob; // for user to trigger reloading
 		DD::Image::Knob *m_classDividerKnob;
-		void updateVersionChooser( std::string &className , int classVersion, std::vector<int> &classVersions );
+		void updateVersionChooser();
 		
 		// class loading
 		////////////////////////////////////////////////////
 		IECore::RunTimeTypedPtr m_parameterised;
-		// loads an instance of the class specified by m_classSpecifierKnob, and fills in the optional
-		// arguments with details of the class loaded.
-		IECore::RunTimeTypedPtr loadClass( bool refreshLoader, std::string *className = 0, int *classVersion = 0, std::vector<int> *classVersions = 0 );
-
+		IECore::ConstObjectPtr m_currentClassSpecification; // contents of m_classSpecifierKnob last time we updated
+		// loads and returns an instance of the class specified by m_classSpecifierKnob.
+		// this does not set m_parameterised.
+		IECore::RunTimeTypedPtr loadClass( bool refreshLoader );
+		// makes sure that m_parameterised is up to date with the class and state dictated by
+		// m_classSpecifierKnob, and also makes sure that m_parameterHandler is valid.
+		void updateParameterised( bool reload );
+		
 		// knob creation
 		////////////////////////////////////////////////////
 		ParameterHandlerPtr m_parameterHandler;

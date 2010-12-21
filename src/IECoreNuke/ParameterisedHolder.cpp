@@ -61,17 +61,16 @@ static IECore::RunTimeTypedPtr g_modifiedParametersInput = 0;
 template<typename BaseType>
 ParameterisedHolder<BaseType>::ParameterisedHolder( Node *node )
 	:	BaseType( node ),
-		m_classSpecifier( 0 ),
 		m_classSpecifierKnob( 0 ),
 		m_classReloadKnob( 0 ),
 		m_classDividerKnob( 0 ),
 		m_parameterised( 0 ),
+		m_currentClassSpecification( 0 ),
 		m_parameterHandler( 0 ),
 		m_numParameterKnobs( 0 ),
 		m_getParameterisedKnob( 0 ),
 		m_modifiedParametersKnob( 0 )
 {
-	
 }
 
 template<typename BaseType>
@@ -84,7 +83,7 @@ void ParameterisedHolder<BaseType>::knobs( DD::Image::Knob_Callback f )
 {	
 	BaseType::knobs( f );
 	
-	m_classSpecifierKnob = ObjectKnob::objectKnob( f, &m_classSpecifier, "classSpecifier", "classSpecifier" );
+	m_classSpecifierKnob = ObjectKnob::objectKnob( f, 0, "classSpecifier", "classSpecifier" );
 	SetFlags( f, DD::Image::Knob::KNOB_CHANGED_ALWAYS );
 	
 	m_getParameterisedKnob = Button( f, "__getParameterised" );
@@ -107,6 +106,15 @@ void ParameterisedHolder<BaseType>::knobs( DD::Image::Knob_Callback f )
 		m_classDividerKnob = classDividerKnob;
 	}
 	
+	// add on the knobs for the parameters. first we must make sure that our held class
+	// is up to date. although we update it in knob_changed when a new class or state has
+	// been requested, this will only be applied to the one lucky ParameterisedHolder instance
+	// that nuke chooses to send knob_changed to. nuke will frequently have other ParameterisedHolder
+	// instances for the same node, and those don't get a chance to update. so we call updateParameterised
+	// here so they can get synced up too.
+	
+	updateParameterised( false );
+	
 	BaseType::add_knobs( parameterKnobs, this, f );
 }
 
@@ -116,38 +124,17 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 	if( knob==m_classSpecifierKnob || knob==m_classReloadKnob )
 	{			
 		// reload the class, or load a new class
-		
-		string className;
-		int classVersion;
-		vector<int> classVersions;
-		m_parameterised = loadClass( knob==m_classReloadKnob, &className, &classVersion, &classVersions );
-		
-		// update the version menu
-		
-		updateVersionChooser( className, classVersion, classVersions );
-		
-		// get a new ParameterHandler
-		
-		m_parameterHandler = 0;
-		ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( m_parameterised.get() );
-		if( parameterisedInterface )
-		{
-			m_parameterHandler = ParameterHandler::create( parameterisedInterface->parameters() );
+
+		updateParameterised( knob==m_classReloadKnob );		
 			
-			// apply the previously stored handler state
-		
-			ConstCompoundObjectPtr classSpecifier = runTimeCast<const CompoundObject>( m_classSpecifierKnob->getValue() );
-			ConstObjectPtr handlerState = classSpecifier->member<Object>( "handlerState" );
-			if( handlerState )
-			{
-				m_parameterHandler->setState( parameterisedInterface->parameters(), handlerState );
-			}
-		}
-			
-		// and regenerate the knobs used to represent the parameters
+		// regenerate the knobs used to represent the parameters
 				
 		replaceKnobs();
 		
+		// update the version menu
+		
+		updateVersionChooser();
+
 		return 1;
 	}
 	else if( knob==m_getParameterisedKnob )
@@ -157,7 +144,7 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 		// python, so we use the knob_changed() mechanism to simulate a function call by
 		// shoving the result into g_getParameterisedResult for subsequent retrieval.
 		
-		g_getParameterisedResult = loadClass( knob==m_classReloadKnob );
+		g_getParameterisedResult = loadClass( false );
 		if( g_getParameterisedResult )
 		{
 			ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( g_getParameterisedResult.get() );
@@ -224,9 +211,22 @@ int ParameterisedHolder<BaseType>::knob_changed( DD::Image::Knob *knob )
 }
 
 template<typename BaseType>
-IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::getParameterised()
+void ParameterisedHolder<BaseType>::_validate( bool forReal )
+{
+	BaseType::_validate( forReal );
+	setParameterValues();
+}
+
+template<typename BaseType>
+IECore::ConstRunTimeTypedPtr ParameterisedHolder<BaseType>::parameterised()
 {
 	return m_parameterised;
+}
+
+template<typename BaseType>
+const IECore::ParameterisedInterface *ParameterisedHolder<BaseType>::parameterisedInterface()
+{
+	return dynamic_cast<const IECore::ParameterisedInterface *>( m_parameterised.get() );
 }
 
 template<typename BaseType>
@@ -320,8 +320,38 @@ void ParameterisedHolder<BaseType>::parameterKnobs( void *that, DD::Image::Knob_
 }
 
 template<typename BaseType>
-void ParameterisedHolder<BaseType>::updateVersionChooser( std::string &className, int classVersion, std::vector<int> &classVersions )
-{
+void ParameterisedHolder<BaseType>::updateVersionChooser()
+{	
+	IECore::ConstCompoundObjectPtr d = IECore::runTimeCast<const IECore::CompoundObject>( m_classSpecifierKnob->getValue() );
+	if( !d )
+	{
+		return;
+	}
+	
+	// get the versions if there are any
+
+	std::string className = d->member<IECore::StringData>( "className" )->readable();
+	int classVersion = d->member<IECore::IntData>( "classVersion" )->readable();
+	std::vector<int> classVersions;
+	if( m_parameterised )
+	{
+	
+		std::string classSearchPathEnvVar = d->member<IECore::StringData>( "classSearchPathEnvVar" )->readable();
+
+		{
+			IECorePython::ScopedGILLock gilLock;
+
+			object ieCore = import( "IECore" );
+			object classLoader = ieCore.attr( "ClassLoader" ).attr( "defaultLoader" )( classSearchPathEnvVar );
+			object classVersionsObject = classLoader.attr( "versions" )( className );
+
+			container_utils::extend_container( classVersions, classVersionsObject );
+		}
+	
+	}
+	
+	// and update the knob with menu items for each version
+	
 	string label;
 	vector<string> menuItems;
 	if( m_parameterised )
@@ -353,21 +383,21 @@ void ParameterisedHolder<BaseType>::updateVersionChooser( std::string &className
 }
 
 template<typename BaseType>
-IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( bool refreshLoader, std::string *classNameOut, int *classVersionOut, std::vector<int> *classVersionsOut )
+IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( bool refreshLoader )
 {
 
 	std::string className;
 	int classVersion;
 	std::string classSearchPathEnvVar;
 	
-	IECore::ConstCompoundObjectPtr d = IECore::runTimeCast<const IECore::CompoundObject>( m_classSpecifierKnob->getValue() );
+	IECore::ConstCompoundObjectPtr d = IECore::runTimeCast<const IECore::CompoundObject>( ((ObjectKnob *)BaseType::knob( "classSpecifier" ))->getValue() );
 
 	if( d )
 	{
 		className = d->member<IECore::StringData>( "className" )->readable();
 		classVersion = d->member<IECore::IntData>( "classVersion" )->readable();
 		classSearchPathEnvVar = d->member<IECore::StringData>( "classSearchPathEnvVar" )->readable();
-	}		
+	}
 
 	if( className=="" )
 	{
@@ -378,69 +408,24 @@ IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( bool refreshLo
 
 	try
 	{
-		object mainModule = object( handle<>( borrowed( PyImport_AddModule( "__main__" ) ) ) );
-		object mainModuleNamespace = mainModule.attr( "__dict__" );
 	
-		// make sure the loader is refreshed if required
+		// get the loader
+		
+		object ieCore = import( "IECore" );
+		object classLoader = ieCore.attr( "ClassLoader" ).attr( "defaultLoader" )( classSearchPathEnvVar );
+	
+		// make sure it's refreshed if required
 	
 		if( refreshLoader )
 		{
-			string toExecute = ( boost::format( "IECore.ClassLoader.defaultLoader( \"%s\" ).refresh()\n" ) % classSearchPathEnvVar ).str();
-			handle<> resultHandle( PyRun_String(
-				toExecute.c_str(),
-				Py_file_input,
-				mainModuleNamespace.ptr(),
-				mainModuleNamespace.ptr()
-			) );
+			classLoader.attr( "refresh" )();
 		}
 	
 		// then load an instance of the class
-	
-		string toExecute = ( boost::format(
-			"IECore.ClassLoader.defaultLoader( \"%s\" ).load( \"%s\", %d )()\n"
-			) % classSearchPathEnvVar % className % classVersion
-		).str();
-	
-		handle<> classHandle( PyRun_String(
-			toExecute.c_str(),
-			Py_eval_input,
-			mainModuleNamespace.ptr(),
-			mainModuleNamespace.ptr() )
-		);
 		
-		object result( classHandle );
+		object result = classLoader.attr( "load" )( className, classVersion )();
 		
-		// if that went well then fill in the optional outputs
-		
-		if( classNameOut )
-		{
-			*classNameOut = className;
-		}
-		
-		if( classVersionOut )
-		{
-			*classVersionOut = classVersion;
-		}
-		
-		if( classVersionsOut )
-		{
-			toExecute = ( boost::format(
-				"IECore.ClassLoader.defaultLoader( \"%s\" ).versions( \"%s\" )\n"
-				) % classSearchPathEnvVar % className
-			).str();
-
-			handle<> versionsHandle( PyRun_String(
-				toExecute.c_str(),
-				Py_eval_input,
-				mainModuleNamespace.ptr(),
-				mainModuleNamespace.ptr() )
-			);
-
-			object versionsObject( versionsHandle );
-			container_utils::extend_container( *classVersionsOut, versionsObject );			
-		}
-		
-		// and then return the class
+		// and return it
 		
 		return extract<RunTimeTypedPtr>( result )();
 	}
@@ -458,6 +443,35 @@ IECore::RunTimeTypedPtr ParameterisedHolder<BaseType>::loadClass( bool refreshLo
 	}
 	return 0;
 
+}
+
+template<typename BaseType>
+void ParameterisedHolder<BaseType>::updateParameterised( bool reload )
+{
+	if( !reload && m_currentClassSpecification==m_classSpecifierKnob->getValue() )
+	{
+		return;
+	}
+
+	m_parameterised = loadClass( reload );		
+			
+	m_parameterHandler = 0;
+	ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( m_parameterised.get() );
+	if( parameterisedInterface )
+	{
+		m_parameterHandler = ParameterHandler::create( parameterisedInterface->parameters() );
+
+		// apply the previously stored handler state
+
+		ConstCompoundObjectPtr classSpecifier = runTimeCast<const CompoundObject>( m_classSpecifierKnob->getValue() );
+		ConstObjectPtr handlerState = classSpecifier->member<Object>( "handlerState" );
+		if( handlerState )
+		{
+			m_parameterHandler->setState( parameterisedInterface->parameters(), handlerState );
+		}
+	}
+	
+	m_currentClassSpecification = m_classSpecifierKnob->getValue();
 }
 
 template<typename BaseType>
