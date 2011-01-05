@@ -26,7 +26,6 @@ class DomeBuilder( IECore.Op ) :
 		IECore.Op.__init__(
 		
 			self,
-			"DomeBuilder",
 			"Builds light domes from environment maps.",
 			IECoreMaya.DAGPathParameter(
 				name = "result",
