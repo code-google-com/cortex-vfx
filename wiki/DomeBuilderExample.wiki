@@ -114,7 +114,7 @@ class DomeBuilder( IECore.Op ) :
 
 		# create the lights in maya using the information we got from the EnvMapSampler
 		lightParentNames = []
-		for i in range( 0, len( lights.directions ) ) :
+		for i in range( 0, len( lights['directions'] ) ) :
 		
 			# make the light
 			lightName = maya.cmds.spotLight()
@@ -124,14 +124,14 @@ class DomeBuilder( IECore.Op ) :
 			# colours so bright or dark you can't see 'em. the 6.66 multiplier was chosen empirically to make
 			# sure that a 100% diffuse object would have a value of 1 when lit with a dome generated from a 100% white
 			# constant map. i'm sure it's just a coincidence that it's the number of the beast.
-			color = lights.colors[i] * 6.66
+			color = lights['colors'][i] * 6.66
 			brightest = max( color[0], color[1], color[2] )
 			color /= brightest
 			maya.cmds.setAttr( lightName + ".color", color[0], color[1], color[2] )
 			maya.cmds.setAttr( lightName + ".intensity", brightest )
 			
 			# get the transform right
-			transform = IECore.M44f.createAimed( IECore.V3f( 0, 0, -1 ), lights.directions[i], IECore.V3f( 0, 1, 0 ) )
+			transform = IECore.M44f.createAimed( IECore.V3f( 0, 0, -1 ), lights['directions'][i], IECore.V3f( 0, 1, 0 ) )
 			s, h, r, t = transform.extractSHRT()
 			r = IECore.radiansToDegrees( r )
 			maya.cmds.xform( lightParentName, rotation=( r[0], r[1], r[2] ) )
