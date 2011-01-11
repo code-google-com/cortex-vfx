@@ -118,18 +118,8 @@ IECore::ObjectPtr FromNukeCameraConverter::doConversion( IECore::ConstCompoundOb
 	// screen window. nuke fits the field of view horizontally to the width of the image, but we also need
 	// to take into account the window translate and scale.
 	float oneOverAspectRatio = (float)resolution.y / (float)resolution.x;
-	Box2f screenWindow;
-	if( m_camera->projection_mode() != DD::Image::CameraOp::LENS_PERSPECTIVE )
-	{
-		// orthographic
-		screenWindow = Box2f( V2f( -filmWidth/4.0f, -filmWidth * oneOverAspectRatio / 4.0f ), V2f( filmWidth/4.0f, filmWidth * oneOverAspectRatio / 4.0f ) );
-	}
-	else
-	{	
-		// perspective
-		screenWindow = Box2f( V2f( -1, -oneOverAspectRatio ), V2f( 1, oneOverAspectRatio ) );
-	}
-	
+	float screenWindowHalfWidth = m_camera->projection_mode() == DD::Image::CameraOp::LENS_PERSPECTIVE ? 1.0f : 0.5f * filmWidth / m_camera->focal_length();
+	Box2f screenWindow( V2f( -screenWindowHalfWidth, -screenWindowHalfWidth * oneOverAspectRatio ), V2f( screenWindowHalfWidth, screenWindowHalfWidth * oneOverAspectRatio ) );
 	V2f screenWindowTranslate = IECore::convert<Imath::V2f>( m_camera->win_translate() );
 	V2f screenWindowScale = IECore::convert<Imath::V2f>( m_camera->win_scale() );
 	screenWindow.min = screenWindow.min * screenWindowScale + screenWindowTranslate;
