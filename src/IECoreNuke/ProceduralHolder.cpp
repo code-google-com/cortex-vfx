@@ -142,41 +142,50 @@ void ProceduralHolder::draw_handle( DD::Image::ViewerContext *ctx )
 		GLint prevProgram;
 		glGetIntegerv( GL_CURRENT_PROGRAM, &prevProgram );
 			
-			try
-			{
-				if( m_drawContents )
+			// nuke apparently uses the name stack to determine which handle is under
+			// the mouse. the IECoreGL::NameStateComponent will ruin this by overwriting
+			// the current name. we work around this by pushing another name onto the stack.
+			// the NameStateComponent will overwrite this name, but nuke will still detect
+			// hits on the procedural using the original name one level lower in the stack.
+			glPushName( 0 );
+			
+				try
 				{
-					IECoreGL::ConstScenePtr s = scene();
-					if( s )
+					if( m_drawContents )
 					{
-						s->render();
-					}
-				}
-
-				if( m_drawBound )
-				{
-					Imath::Box3f b = bound();
-					if( b.hasVolume() )
-					{
-						static IECoreGL::StatePtr wireframeState = 0;
-						if( !wireframeState )
+						IECoreGL::ConstScenePtr s = scene();
+						if( s )
 						{
-							/// \todo Find a way to make these lines pretty like the nuke ones
-							wireframeState = new IECoreGL::State( true );
-							wireframeState->add( new IECoreGL::Primitive::DrawWireframe( true ) );
-							wireframeState->add( new IECoreGL::Primitive::WireframeWidth( 2 ) );
-							wireframeState->add( new IECoreGL::Primitive::DrawSolid( false ) );
+							s->render();
 						}
-						glPushAttrib( GL_ALL_ATTRIB_BITS );
-							static_cast<IECoreGL::Renderable *>( m_bound.get() )->render( wireframeState.get() );
-						glPopAttrib();
+					}
+
+					if( m_drawBound )
+					{
+						Imath::Box3f b = bound();
+						if( b.hasVolume() )
+						{
+							static IECoreGL::StatePtr wireframeState = 0;
+							if( !wireframeState )
+							{
+								/// \todo Find a way to make these lines pretty like the nuke ones
+								wireframeState = new IECoreGL::State( true );
+								wireframeState->add( new IECoreGL::Primitive::DrawWireframe( true ) );
+								wireframeState->add( new IECoreGL::Primitive::WireframeWidth( 2 ) );
+								wireframeState->add( new IECoreGL::Primitive::DrawSolid( false ) );
+							}
+							glPushAttrib( GL_ALL_ATTRIB_BITS );
+								static_cast<IECoreGL::Renderable *>( m_bound.get() )->render( wireframeState.get() );
+							glPopAttrib();
+						}
 					}
 				}
-			}
-			catch( const std::exception &e )
-			{
-				IECore::msg( IECore::Msg::Error, "ProceduralHolder::draw_handle", e.what() );
-			}
+				catch( const std::exception &e )
+				{
+					IECore::msg( IECore::Msg::Error, "ProceduralHolder::draw_handle", e.what() );
+				}
+				
+			glPopName();
 						
 		glUseProgram( prevProgram );
 		

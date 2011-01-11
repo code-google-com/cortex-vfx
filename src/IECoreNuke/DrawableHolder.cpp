@@ -121,15 +121,24 @@ void DrawableHolder::draw_handle( DD::Image::ViewerContext *ctx )
 			GLint prevProgram;
 			glGetIntegerv( GL_CURRENT_PROGRAM, &prevProgram );
 				
-				try
-				{
-					s->render();
-				}
-				catch( const std::exception &e )
-				{
-					IECore::msg( IECore::Msg::Error, "DrawableHolder::draw_handle", e.what() );
-				}
-				
+				// nuke apparently uses the name stack to determine which handle is under
+				// the mouse. the IECoreGL::NameStateComponent will ruin this by overwriting
+				// the current name. we work around this by pushing another name onto the stack.
+				// the NameStateComponent will overwrite this name, but nuke will still detect
+				// hits on the drawable using the original name one level lower in the stack.
+				glPushName( 0 );
+
+					try
+					{
+						s->render();
+					}
+					catch( const std::exception &e )
+					{
+						IECore::msg( IECore::Msg::Error, "DrawableHolder::draw_handle", e.what() );
+					}
+
+				glPopName();
+	
 			glUseProgram( prevProgram );
 		}
 	}	
