@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,23 +32,45 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECORENUKE_TYPEIDS_H
-#define IECORENUKE_TYPEIDS_H
+#ifndef IECORENUKE_FROMNUKECAMERACONVERTER_H
+#define IECORENUKE_FROMNUKECAMERACONVERTER_H
+
+#include "DDImage/CameraOp.h"
+
+#include "IECore/SimpleTypedParameter.h"
+
+#include "IECoreNuke/FromNukeConverter.h"
 
 namespace IECoreNuke
 {
 
-enum TypeId
+class FromNukeCameraConverter : public FromNukeConverter
 {
-	FromNukeConverterTypeId = 107000,
-	MeshFromNukeTypeId = 107001,
-	ToNukeConverterTypeId = 107002,
-	ToNukeGeometryConverterTypeId = 107003,
-	FromNukePointsConverterTypeId = 107004,
-	FromNukeCameraConverterTypeId = 107005,
-	LastCoreNukeTypeId = 107999
+
+	public :
+
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( FromNukeCameraConverter, FromNukeCameraConverterTypeId, FromNukeConverter );
+
+		/// The caller is responsible for ensuring that camera is alive
+		/// for as long as the converter is.
+		FromNukeCameraConverter( const DD::Image::CameraOp *camera );
+		virtual ~FromNukeCameraConverter();
+		
+		IECore::V2iParameter *resolutionParameter();
+		const IECore::V2iParameter *resolutionParameter() const;
+
+	protected :
+
+		virtual IECore::ObjectPtr doConversion( IECore::ConstCompoundObjectPtr operands ) const;
+
+	private :
+
+		const DD::Image::CameraOp *m_camera;
+
 };
+
+IE_CORE_DECLAREPTR( FromNukeCameraConverter );
 
 } // namespace IECoreNuke
 
-#endif // IECORENUKE_TYPEIDS_H
+#endif // IECORENUKE_FROMNUKECAMERACONVERTER_H
