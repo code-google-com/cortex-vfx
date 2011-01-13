@@ -2,7 +2,7 @@
 
 == IO improvements ==
 
-FileIndexedIO has less than ideal performance when opening very large files, as it reads the whole index at open time. This somewhat negates any advantages subsequent random access gives. It'd be great to address this, either with optimisations to FileIndexedIO or with a new backend perhaps based around HDF5.
+FileIndexedIO has less than ideal performance when opening very large files, as it reads the whole index at open time. This somewhat negates any advantages subsequent random access gives. It'd be great to address this, either with optimisations to FileIndexedIO or with a new backend perhaps based around HDF5. We also need to do a much better job of validating names for "files" - we keep accidentally having slashes in them.
 
 == Data improvements ==
 
