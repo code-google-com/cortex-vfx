@@ -34,6 +34,7 @@
    * [ExamplesMayaMeshExport Converting a Mesh ]
    * [ExamplesMayaVertCache Exporting a Vertex Cache]
    * [ExamplesMayaDomeBuilder Building a light dome]
+   * [ExamplesFileDialogs Using the Cortex FileDialog replacement]
  * Cortex & Houdini
    * [ExamplesHoudiniProceduralSop Creating a ProceduralSop]
    * [ExamplesHoudiniRenderingProceduralSop Rendering a ProceduralSop]
