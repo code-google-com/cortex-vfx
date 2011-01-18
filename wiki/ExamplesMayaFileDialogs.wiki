@@ -1,4 +1,5 @@
 #summary Demonstrates a simple addition to the 'right click' parameter menu to allow export of values to disk.
+#sidebar ExamplesTOC
 
 = Introduction =
 
