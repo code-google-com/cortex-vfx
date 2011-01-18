@@ -43,12 +43,12 @@ def __saveParameterValue( parameter, node ) :
 			data = self.__parameter.getValue()
 			
 			IECore.Writer.create( data, paths[0] ).write()
-		
-	exporter = Exporter( node, parameter )
 	
 	# Make an instance of the file extension filter, so we can
 	# make the dialog more picky
 	tools = IECoreMaya.FileBrowser.FileExtensionFilter( [ "cob" ] )
+	
+	exporter = Exporter( node, parameter )
 
 	IECoreMaya.FileDialog(
 		title = "Enter a file name (.cob) to save to",
@@ -92,7 +92,7 @@ IECore.ObjectParameter(
 	types = [ IECore.VisibleRenderable.staticTypeId(), IECore.ObjectVector.staticTypeId() ],
 	userData = {
 		"maya" : {
-			"useGeometryCombiner" : IECore.BoolData( True ),
+			"useValueExportTool" : IECore.BoolData( True ),
 		},
 	},
 )
@@ -145,4 +145,3 @@ def __saveParameterValue( parameter, node ) :
 		options = exporter.drawOptions,		
 	)	
 }}}
-
