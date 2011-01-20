@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -32,28 +32,33 @@
 #
 ##########################################################################
 
-import unittest
 import IECore
-import sys
 
-sys.path.append( "test/IECoreNuke" )
+class objectVectorInOut( IECore.Op ) :
 
-from KnobAccessorsTest import *
-from FnAxisTest import *
-from StringUtilTest import *
-from KnobConvertersTest import *
-from ParameterisedHolderTest import ParameterisedHolderTest
-from ObjectKnobTest import ObjectKnobTest
-from OpHolderTest import OpHolderTest
+	def __init__( self ) :
 
-unittest.TestProgram(
-	testRunner = unittest.TextTestRunner(
-		stream = IECore.CompoundStream(
-			[
-				sys.stderr,
-				open( "test/IECoreNuke/resultsPython.txt", "w" )
-			]
-		),
-		verbosity = 2
-	)
-)
+		IECore.Op.__init__( self, "",
+
+			IECore.ObjectVectorParameter(
+				"result", "",
+				defaultValue = IECore.ObjectVector()
+			)
+							
+		)
+		
+		self.parameters().addParameter(
+		
+			IECore.ObjectVectorParameter(
+				"input",
+				"",
+				defaultValue = IECore.ObjectVector(),
+			),
+		
+		)
+
+	def doOperation( self, args ):
+		
+		return args["input"].copy()
+
+IECore.registerRunTimeTyped( objectVectorInOut )

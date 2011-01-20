@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,6 +46,11 @@ class CompoundParameterHandler : public ParameterHandler
 	public :
 				
 		CompoundParameterHandler();
+
+		virtual int minimumInputs( const IECore::Parameter *parameter );
+		virtual int maximumInputs( const IECore::Parameter *parameter );
+		virtual bool testInput( const IECore::Parameter *parameter, int input, const DD::Image::Op *op );
+		virtual void setParameterValue( IECore::Parameter *parameter, InputIterator first, InputIterator last );
 		
 		virtual void knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f );
 		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
@@ -58,6 +63,8 @@ class CompoundParameterHandler : public ParameterHandler
 		void childKnobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f );
 						
 	private :
+	
+		void inputs( const IECore::Parameter *parameter, int &minimum, int &maximum, bool &error );
 	
 		ParameterHandlerPtr handler( const IECore::Parameter *child, bool createIfMissing );
 		typedef std::map<IECore::InternedString, ParameterHandlerPtr> HandlerMap;

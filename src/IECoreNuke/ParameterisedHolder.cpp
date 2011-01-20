@@ -71,6 +71,7 @@ ParameterisedHolder<BaseType>::ParameterisedHolder( Node *node )
 		m_getParameterisedKnob( 0 ),
 		m_modifiedParametersKnob( 0 )
 {
+	this->inputs( 0 );
 }
 
 template<typename BaseType>
@@ -78,6 +79,39 @@ ParameterisedHolder<BaseType>::~ParameterisedHolder()
 {
 }
 
+template<typename BaseType>
+int ParameterisedHolder<BaseType>::minimum_inputs() const
+{
+	const ParameterisedInterface *parameterisedInterface = dynamic_cast<const ParameterisedInterface *>( m_parameterised.get() );
+	if( parameterisedInterface )
+	{
+		return m_parameterHandler->minimumInputs( parameterisedInterface->parameters() );
+	}
+	return 0;
+}
+
+template<typename BaseType>
+int ParameterisedHolder<BaseType>::maximum_inputs() const
+{
+	const ParameterisedInterface *parameterisedInterface = dynamic_cast<const ParameterisedInterface *>( m_parameterised.get() );
+	if( parameterisedInterface )
+	{
+		return m_parameterHandler->maximumInputs( parameterisedInterface->parameters() );
+	}
+	return 0;
+}
+
+template<typename BaseType>
+bool ParameterisedHolder<BaseType>::test_input( int input, DD::Image::Op *op ) const
+{
+	const ParameterisedInterface *parameterisedInterface = dynamic_cast<const ParameterisedInterface *>( m_parameterised.get() );
+	if( parameterisedInterface )
+	{
+		return m_parameterHandler->testInput( parameterisedInterface->parameters(), input, op );
+	}
+	return false;
+}
+		
 template<typename BaseType>
 void ParameterisedHolder<BaseType>::knobs( DD::Image::Knob_Callback f )
 {	
@@ -227,6 +261,16 @@ template<typename BaseType>
 const IECore::ParameterisedInterface *ParameterisedHolder<BaseType>::parameterisedInterface()
 {
 	return dynamic_cast<const IECore::ParameterisedInterface *>( m_parameterised.get() );
+}
+
+template<typename BaseType>
+void ParameterisedHolder<BaseType>::setParameterValuesFromInputs()
+{
+	if( m_parameterHandler )
+	{
+		ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( m_parameterised.get() );
+		m_parameterHandler->setParameterValue( parameterisedInterface->parameters().get(), BaseType::getInputs().begin(), BaseType::getInputs().end() );
+	}
 }
 
 template<typename BaseType>

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,89 +32,32 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "IECoreNuke/OpHolder.h"
+#ifndef IECORENUKE_OBJECTVECTORPARAMETERHANDLER_H
+#define IECORENUKE_OBJECTVECTORPARAMETERHANDLER_H
 
-using namespace IECoreNuke;
+#include "IECoreNuke/ParameterHandler.h"
 
-static IECore::ObjectPtr g_lastExecuteResult = 0;
-
-const DD::Image::Op::Description OpHolder::g_description( "ieOp", build );
-
-OpHolder::OpHolder( Node *node )
-	:	ParameterisedHolderOp( node ),
-		DD::Image::Executable( this ),
-		m_result( 0 )
+namespace IECoreNuke
 {
-}
 
-OpHolder::~OpHolder()
+class ObjectVectorParameterHandler : public ParameterHandler
 {
-}
 
-IECore::ObjectPtr OpHolder::engine()
-{
-	if( m_result && hash()==m_resultHash )
-	{
-		return m_result;
-	}
+	public :
+				
+		ObjectVectorParameterHandler();
+		
+		virtual int minimumInputs( const IECore::Parameter *parameter );
+		virtual int maximumInputs( const IECore::Parameter *parameter );
+		virtual bool testInput( const IECore::Parameter *parameter, int input, const DD::Image::Op *op );
+		virtual void setParameterValue( IECore::Parameter *parameter, InputIterator first, InputIterator last );
+		
+	protected :
 	
-	IECore::ConstOpPtr constOp = IECore::runTimeCast<const IECore::Op>( parameterised() );
-	if( !constOp )
-	{
-		return 0;
-	}
-
-	/// \todo operate() should be const, then we wouldn't need this cast.
-	IECore::OpPtr op = IECore::constPointerCast<IECore::Op>( constOp );
-
-	setParameterValues(); /// \todo is this really needed?? didn't we do that in validate()?
-	setParameterValuesFromInputs(); /// \todo Should this be done by an engine() call on the base class?
+		static Description<ObjectVectorParameterHandler> g_description;
 	
-	m_result = op->operate();
-	m_resultHash = hash();
-	
-	return m_result;
-}
+};
 
-DD::Image::Op *OpHolder::build( Node *node )
-{
-	return new OpHolder( node );
-}
+} // namespace IECoreNuke
 
-const char *OpHolder::Class() const
-{
-	return g_description.name;
-}
-
-const char *OpHolder::node_help() const
-{
-	return "Executes Cortex Ops.";
-}
-
-DD::Image::Executable *OpHolder::executable()
-{
-	return this;
-}
-
-bool OpHolder::isExecuteThreadSafe() const
-{
-	return false;
-}
-
-void OpHolder::execute()
-{
-	IECore::ObjectPtr result = engine();
-	g_lastExecuteResult = result;
-}
-
-bool OpHolder::isWrite()
-{
-	return false;
-}
-
-IECore::ObjectPtr OpHolder::executeResult()
-{
-	IECore::ObjectPtr result = g_lastExecuteResult;
-	g_lastExecuteResult = 0;
-	return result;
-}
+#endif // IECORENUKE_OBJECTVECTORPARAMETERHANDLER_H

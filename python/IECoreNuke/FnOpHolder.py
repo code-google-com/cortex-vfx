@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -35,6 +35,7 @@
 import nuke
 
 import IECoreNuke
+import _IECoreNuke
 
 class FnOpHolder( IECoreNuke.FnParameterisedHolder ) :
 
@@ -49,6 +50,14 @@ class FnOpHolder( IECoreNuke.FnParameterisedHolder ) :
 	def getOp( self ) :
 	
 		return self.getParameterised()[0]
+	
+	## Executes the node, returning the result of the Op. You may also
+	# use nuke.execute() directly on an OpHolder node, but in this case
+	# the result is not returned (which you might not need).
+	def execute( self ) :
+	
+		nuke.execute( self.node(), nuke.frame(), nuke.frame() )
+		return _IECoreNuke._opHolderExecuteResult()
 
 	@staticmethod
 	def create( nodeName, className, classVersion=None ) :

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,89 +32,59 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "IECoreNuke/OpHolder.h"
+#include "DDImage/GeoOp.h"
+#include "DDImage/Scene.h"
+
+#include "IECore/MeshPrimitive.h"
+#include "IECore/TypedPrimitiveParameter.h"
+
+#include "IECoreNuke/MeshPrimitiveParameterHandler.h"
+#include "IECoreNuke/MeshFromNuke.h"
 
 using namespace IECoreNuke;
 
-static IECore::ObjectPtr g_lastExecuteResult = 0;
+ParameterHandler::Description<MeshPrimitiveParameterHandler> MeshPrimitiveParameterHandler::g_description( IECore::MeshPrimitiveParameter::staticTypeId() );
 
-const DD::Image::Op::Description OpHolder::g_description( "ieOp", build );
-
-OpHolder::OpHolder( Node *node )
-	:	ParameterisedHolderOp( node ),
-		DD::Image::Executable( this ),
-		m_result( 0 )
+MeshPrimitiveParameterHandler::MeshPrimitiveParameterHandler()
 {
 }
-
-OpHolder::~OpHolder()
+		
+int MeshPrimitiveParameterHandler::minimumInputs( const IECore::Parameter *parameter )
 {
+	return 1;
 }
 
-IECore::ObjectPtr OpHolder::engine()
+int MeshPrimitiveParameterHandler::maximumInputs( const IECore::Parameter *parameter )
 {
-	if( m_result && hash()==m_resultHash )
+	return 1;
+}
+
+bool MeshPrimitiveParameterHandler::testInput( const IECore::Parameter *parameter, int input, const DD::Image::Op *op )
+{
+	if( dynamic_cast<const DD::Image::GeoOp *>( op ) )
 	{
-		return m_result;
+		return 1;
+	}
+	return 0;
+}
+
+void MeshPrimitiveParameterHandler::setParameterValue( IECore::Parameter *parameter, InputIterator first, InputIterator last )
+{
+	DD::Image::GeoOp *geoOp = static_cast<DD::Image::GeoOp *>( *first );
+	if( geoOp )
+	{
+		boost::shared_ptr<DD::Image::Scene> scene( new DD::Image::Scene() );
+		geoOp->build_scene( *scene );
+
+		if( scene->objects() )
+		{
+			/// \todo Need to deal with more than just the first object.
+			MeshFromNukePtr converter = new IECoreNuke::MeshFromNuke( &scene->object( 0 ) );
+			parameter->setValue( converter->convert() );
+			return;
+		}
 	}
 	
-	IECore::ConstOpPtr constOp = IECore::runTimeCast<const IECore::Op>( parameterised() );
-	if( !constOp )
-	{
-		return 0;
-	}
-
-	/// \todo operate() should be const, then we wouldn't need this cast.
-	IECore::OpPtr op = IECore::constPointerCast<IECore::Op>( constOp );
-
-	setParameterValues(); /// \todo is this really needed?? didn't we do that in validate()?
-	setParameterValuesFromInputs(); /// \todo Should this be done by an engine() call on the base class?
-	
-	m_result = op->operate();
-	m_resultHash = hash();
-	
-	return m_result;
-}
-
-DD::Image::Op *OpHolder::build( Node *node )
-{
-	return new OpHolder( node );
-}
-
-const char *OpHolder::Class() const
-{
-	return g_description.name;
-}
-
-const char *OpHolder::node_help() const
-{
-	return "Executes Cortex Ops.";
-}
-
-DD::Image::Executable *OpHolder::executable()
-{
-	return this;
-}
-
-bool OpHolder::isExecuteThreadSafe() const
-{
-	return false;
-}
-
-void OpHolder::execute()
-{
-	IECore::ObjectPtr result = engine();
-	g_lastExecuteResult = result;
-}
-
-bool OpHolder::isWrite()
-{
-	return false;
-}
-
-IECore::ObjectPtr OpHolder::executeResult()
-{
-	IECore::ObjectPtr result = g_lastExecuteResult;
-	g_lastExecuteResult = 0;
-	return result;
+	// no input, or conversion failed. set parameter to default value.
+	parameter->setValue( parameter->defaultValue()->copy() );
 }

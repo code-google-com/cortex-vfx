@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,6 +36,7 @@
 
 #include "IECoreNuke/bindings/ObjectKnobBinding.h"
 #include "IECoreNuke/bindings/FnParameterisedHolderBinding.h"
+#include "IECoreNuke/bindings/FnOpHolderBinding.h"
 
 using namespace boost::python;
 using namespace IECoreNuke;
@@ -44,4 +45,5 @@ BOOST_PYTHON_MODULE( _IECoreNuke )
 {
 	bindObjectKnob();
 	bindFnParameterisedHolder();
+	bindFnOpHolder();
 }

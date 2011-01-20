@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -72,6 +72,8 @@ class FnParameterisedHolder :
 	# context. Each of these will store a different Parameterised instance, so there's no such thing
 	# as a single instance to be returned. For this reason a brand new instance is returned, representing
 	# the current time. This can be manipulated as desired without affecting the instances held on the node.
+	# Please note that currently any Parameters which are represented as node inputs rather than as knobs
+	# will not have their values set by this function.
 	def getParameterised( self ) :
 	
 		self.__node.knob( "__getParameterised" ).execute()

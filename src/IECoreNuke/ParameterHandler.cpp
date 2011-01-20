@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -48,6 +48,37 @@ ParameterHandler::ParameterHandler()
 {
 }
 
+int ParameterHandler::minimumInputs( const IECore::Parameter *parameter )
+{
+	return 0;
+}
+
+int ParameterHandler::maximumInputs( const IECore::Parameter *parameter )
+{
+	return 0;
+}
+
+bool ParameterHandler::testInput( const IECore::Parameter *parameter, int input, const DD::Image::Op *op )
+{
+	return false;
+}
+
+void ParameterHandler::setParameterValue( IECore::Parameter *parameter, InputIterator first, InputIterator last )
+{
+}
+
+void ParameterHandler::knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )
+{
+}
+
+void ParameterHandler::setParameterValue( IECore::Parameter *parameter, ValueSource valueSource )
+{
+}
+
+void ParameterHandler::setKnobValue( const IECore::Parameter *parameter )
+{
+}
+		
 void ParameterHandler::setState( IECore::Parameter *parameter, const IECore::Object *state )
 {
 	assert( 0 ); // shouldn't get called because we don't return a state in getState()
