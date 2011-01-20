@@ -67,6 +67,10 @@ class ParameterisedHolder : public BaseType
 		//! @name Reimplementation of functions defined by the Nuke BaseType.
 		/////////////////////////////////////////////////////////////////////
 		//@{
+		/// Uses a ParameterHandler to define the number of inputs.
+		virtual int minimum_inputs() const;
+		virtual int maximum_inputs() const;
+		virtual bool test_input( int input, DD::Image::Op *op ) const;
 		/// Calls knobs() on a ParameterHandler to represent the Parameters.
 		virtual void knobs( DD::Image::Knob_Callback f );
 		/// Implemented to load the Parameterised class.
@@ -86,6 +90,7 @@ class ParameterisedHolder : public BaseType
 	
 	protected :
 	
+		void setParameterValuesFromInputs();
 		void setParameterValues();
 		void setKnobValues();
 		

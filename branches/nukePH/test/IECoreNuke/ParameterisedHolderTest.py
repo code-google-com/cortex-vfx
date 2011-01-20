@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -371,7 +371,9 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 	def testParameterTypes( self ) :
 	
 		# the parameters for which we know we have no handler
-		unsupported = set( ( "c", "e", "f", "h", "compound.j", "compound.k", "m", "s", "u", "v", "x", "y", "p1", "p2", "p3", "p4", "p5", "p6", "p7" ) )
+		unsupported = set( ( "c", "e", "f", "h", "compound.j", "compound.k", "m", "s", "u", "v", "x", "y", "p1", "p2", "p3", "p5", "p6", "p7" ) )
+		# the parameter for which we have a handler but expect inputs instead of knobs
+		inputsNotKnobs = set( ( "p4", ) )
 		
 		mh = IECore.CapturingMessageHandler()
 		with mh :
@@ -388,14 +390,14 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 					break
 			self.assertEqual( found, True )			
 		
-		self.__checkParameterKnobs( fnOH.getParameterised()[0].parameters(), fnOH.node(), ignore=unsupported )
+		self.__checkParameterKnobs( fnOH.getParameterised()[0].parameters(), fnOH.node(), ignore=unsupported | inputsNotKnobs )
 	
 		with fnOH.parameterModificationContext() as parameterised :
 		
 			parameterised.parameters()["d"].setTypedValue( "lalal" )
 			
-		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node(), ignore=unsupported )
-		self.__checkParameterKnobs( fnOH.getParameterised()[0].parameters(), fnOH.node(), ignore=unsupported )
+		self.__checkParameterKnobs( parameterised.parameters(), fnOH.node(), ignore=unsupported | inputsNotKnobs )
+		self.__checkParameterKnobs( fnOH.getParameterised()[0].parameters(), fnOH.node(), ignore=unsupported | inputsNotKnobs )
 			
 	def tearDown( self ) :
 	

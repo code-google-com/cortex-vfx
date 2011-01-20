@@ -67,7 +67,6 @@ ProceduralHolder::ProceduralHolder( Node *node )
 		m_transform( DD::Image::Matrix4::identity() ),
 		m_transformKnob( 0 )
 {
-	inputs( 0 );
 }
 
 ProceduralHolder::~ProceduralHolder()

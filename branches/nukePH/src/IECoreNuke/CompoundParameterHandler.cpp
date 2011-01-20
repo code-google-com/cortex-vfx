@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,8 +44,100 @@ using namespace IECoreNuke;
 
 ParameterHandler::Description<CompoundParameterHandler> CompoundParameterHandler::g_description( CompoundParameter::staticTypeId() );
 
-CompoundParameterHandler::CompoundParameterHandler( )
+CompoundParameterHandler::CompoundParameterHandler()
 {
+}
+
+int CompoundParameterHandler::minimumInputs( const IECore::Parameter *parameter )
+{
+	int min = 0;
+	int max = 0;
+	bool error = false;
+	inputs( parameter, min, max, error );
+	return error ? 0 : min;
+}
+
+int CompoundParameterHandler::maximumInputs( const IECore::Parameter *parameter )
+{
+	int min = 0;
+	int max = 0;
+	bool error = false;
+	inputs( parameter, min, max, error );
+	return error ? 0 : max;
+}
+
+void CompoundParameterHandler::inputs( const IECore::Parameter *parameter, int &minimum, int &maximum, bool &error )
+{
+	const CompoundParameter *compoundParameter = static_cast<const CompoundParameter *>( parameter );
+
+	bool foundOptionalInputs = false;
+	const CompoundParameter::ParameterVector &childParameters = compoundParameter->orderedParameters();
+	for( CompoundParameter::ParameterVector::const_iterator cIt=childParameters.begin(); cIt!=childParameters.end(); cIt++ )
+	{
+		ParameterHandlerPtr h = handler( *cIt, true );
+		if( h )
+		{
+			int min = h->minimumInputs( cIt->get() );
+			int max = h->maximumInputs( cIt->get() );
+			
+			if( min && foundOptionalInputs )
+			{
+				msg( Msg::Error, "CompoundParameterHandler::inputs", "Parameter needing inputs found after parameter needing optional inputs." );
+				error = true;
+			}
+			
+			if( max != min )
+			{
+				foundOptionalInputs = true;
+			}
+			
+			minimum += min;
+			maximum += max;
+		}
+	}
+}
+
+bool CompoundParameterHandler::testInput(  const IECore::Parameter *parameter, int input, const DD::Image::Op *op )
+{
+	const CompoundParameter *compoundParameter = static_cast<const CompoundParameter *>( parameter );
+
+	const CompoundParameter::ParameterVector &childParameters = compoundParameter->orderedParameters();
+	for( CompoundParameter::ParameterVector::const_iterator cIt=childParameters.begin(); cIt!=childParameters.end(); cIt++ )
+	{
+		ParameterHandlerPtr h = handler( *cIt, true );
+		if( h )
+		{
+			int inputs = h->maximumInputs( cIt->get() );
+			if( inputs > input )
+			{
+				return h->testInput( cIt->get(), input, op );
+			}
+			input -= inputs; // make indexing relative to the next handler.
+		}
+	}
+	return false;	
+}
+
+void CompoundParameterHandler::setParameterValue( IECore::Parameter *parameter, InputIterator first, InputIterator last )
+{
+	const CompoundParameter *compoundParameter = static_cast<const CompoundParameter *>( parameter );
+	
+	const CompoundParameter::ParameterVector &childParameters = compoundParameter->orderedParameters();
+	for( CompoundParameter::ParameterVector::const_iterator cIt=childParameters.begin(); cIt!=childParameters.end(); cIt++ )
+	{
+		ParameterHandlerPtr h = handler( *cIt, true );
+		if( h )
+		{
+			int maxInputs = h->maximumInputs( cIt->get() );
+			if( maxInputs )
+			{
+				int minInputs = h->minimumInputs( cIt->get() );
+				int numInputs = minInputs==maxInputs ? minInputs : last - first;
+				h->setParameterValue( cIt->get(), first, first + numInputs );
+				first += numInputs;
+			}
+		}
+	}
 }
 		
 void CompoundParameterHandler::knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f )

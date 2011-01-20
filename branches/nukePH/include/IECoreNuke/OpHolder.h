@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,6 +36,7 @@
 #define IECORENUKE_OPHOLDER_H
 
 #include "DDImage/Op.h"
+#include "DDImage/Executable.h"
 
 #include "IECore/Op.h"
 
@@ -45,7 +46,7 @@ namespace IECoreNuke
 {
 
 /// This class allows IECore::Op objects to be executed by nodes in Nuke.
-class OpHolder : public ParameterisedHolderOp
+class OpHolder : public ParameterisedHolderOp, public DD::Image::Executable
 {
 
 	public :
@@ -58,6 +59,14 @@ class OpHolder : public ParameterisedHolderOp
 		//@{
 		virtual const char *Class() const;
 		virtual const char *node_help() const;
+		virtual DD::Image::Executable *executable();
+		virtual void execute();
+		/// \todo We /are/ threadsafe, but Nuke doesn't release the
+		/// GIL when calling through to here from nuke.execute().
+		/// We therefore have to pretend not to be threadsafe - if
+		/// they fix this we can return true from this instead of false.
+		virtual bool isExecuteThreadSafe() const;
+		virtual bool isWrite();
 		//@}
 		
 		/// Executes the held IECore::Op and returns the result.
@@ -70,6 +79,10 @@ class OpHolder : public ParameterisedHolderOp
 		
 		IECore::ObjectPtr m_result;
 		DD::Image::Hash m_resultHash;
+		
+		static IECore::ObjectPtr executeResult();
+		
+		friend void bindFnOpHolder();
 
 };
 

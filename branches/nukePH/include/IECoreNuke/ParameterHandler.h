@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,7 +46,7 @@ namespace IECoreNuke
 IE_CORE_FORWARDDECLARE( ParameterHandler )
 
 /// ParameterHandlers are responsible for mapping between IECore::Parameters
-/// and DD::Image::Knobs.
+/// and DD::Image::Knobs and DD::Image::Op inputs.
 class ParameterHandler : public IECore::RefCounted
 {
 
@@ -58,17 +58,35 @@ class ParameterHandler : public IECore::RefCounted
 			Storage
 		};
 		
+		typedef std::vector<DD::Image::Op *>::const_iterator InputIterator;
+		
+		/// Returns the minimum number of inputs this Parameter needs to represent itself.
+		/// Defaults to 0, as most ParameterHandlers will instead use the knobs() mechanism
+		/// below.		
+		virtual int minimumInputs( const IECore::Parameter *parameter );
+		/// Returns the maximum number of inputs this Parameter needs to represent itself, also
+		/// defaulting to 0. Please note that it is only possible for the last Parameter on
+		/// any given node to have min!=max - warnings will be issued if this is not the case.
+		virtual int maximumInputs( const IECore::Parameter *parameter );
+		/// Returns true if the specified op is suitable for connection for the specified input.
+		/// Here the input number is relative to the ParameterHandler rather than being absolute for
+		/// the Node. Default implementation returns false.
+		virtual bool testInput( const IECore::Parameter *parameter, int input, const DD::Image::Op *op );
+		/// Sets the value of the parameter from the inputs created based on the result of minimumInputs()
+		/// and maximumInputs().
+		virtual void setParameterValue( IECore::Parameter *parameter, InputIterator first, InputIterator last );
+		
 		/// Declares knobs to represent the Parameter.
-		virtual void knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f ) = 0;
+		virtual void knobs( const IECore::Parameter *parameter, const char *knobName, DD::Image::Knob_Callback f );
 		/// Transfers the value from Nuke onto the Parameter. ValueSource may be passed
 		/// a value of Knob if it is known that Nuke hasn't stored knob
 		/// values yet - for instance in a knob_changed() method with
 		/// a KNOB_CHANGED_ALWAYS knob. This causes the value to be retrieved
 		/// directly from the knob at the current time, rather than from the
 		/// value stored by the knob.
-		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage ) = 0;
+		virtual void setParameterValue( IECore::Parameter *parameter, ValueSource valueSource = Storage );
 		/// Transfers the value from the Parameter back onto the nuke knob at the current time.
-		virtual void setKnobValue( const IECore::Parameter *parameter ) = 0;
+		virtual void setKnobValue( const IECore::Parameter *parameter );
 		/// ParameterHandlers may need to store state separately from the knobs they create,
 		/// so that it is available to the first knobs() call when scripts are loaded. This
 		/// function may be implemented to return such state, and the client must make sure
