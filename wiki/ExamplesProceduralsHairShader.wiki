@@ -28,7 +28,7 @@ from __future__ import with_statement
 from IECore import *
 import random
 
-class shadedFur( ParameterisedProcedural ) :
+class ShadedFurExample( ParameterisedProcedural ) :
 
         def __init__( self ) :
 
