@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,24 +32,40 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECORENUKE_TYPEIDS_H
-#define IECORENUKE_TYPEIDS_H
+#ifndef IECORENUKE_FROMNUKETILECONVERTER_H
+#define IECORENUKE_FROMNUKETILECONVERTER_H
+
+#include "DDImage/Tile.h"
+
+#include "IECoreNuke/FromNukeConverter.h"
 
 namespace IECoreNuke
 {
 
-enum TypeId
+class FromNukeTileConverter : public FromNukeConverter
 {
-	FromNukeConverterTypeId = 107000,
-	MeshFromNukeTypeId = 107001,
-	ToNukeConverterTypeId = 107002,
-	ToNukeGeometryConverterTypeId = 107003,
-	FromNukePointsConverterTypeId = 107004,
-	FromNukeCameraConverterTypeId = 107005,
-	FromNukeTileConverterTypeId = 107006,
-	LastCoreNukeTypeId = 107999
+
+	public :
+
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( FromNukeTileConverter, FromNukeTileConverterTypeId, FromNukeConverter );
+
+		/// The caller is responsible for ensuring that tile is alive
+		/// for as long as the converter is.
+		FromNukeTileConverter( const DD::Image::Tile *tile );
+		virtual ~FromNukeTileConverter();
+		
+	protected :
+
+		virtual IECore::ObjectPtr doConversion( IECore::ConstCompoundObjectPtr operands ) const;
+
+	private :
+
+		const DD::Image::Tile *m_tile;
+
 };
+
+IE_CORE_DECLAREPTR( FromNukeTileConverter );
 
 } // namespace IECoreNuke
 
-#endif // IECORENUKE_TYPEIDS_H
+#endif // IECORENUKE_FROMNUKETILECONVERTER_H

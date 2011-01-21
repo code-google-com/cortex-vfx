@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,24 +32,61 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECORENUKE_TYPEIDS_H
-#define IECORENUKE_TYPEIDS_H
+#include "IECore/ImagePrimitive.h"
 
-namespace IECoreNuke
+#include "IECoreNuke/FromNukeTileConverter.h"
+
+using namespace IECoreNuke;
+using namespace IECore;
+using namespace Imath;
+
+FromNukeTileConverter::FromNukeTileConverter( const DD::Image::Tile *tile )
+	:	FromNukeConverter( "Converts nuke Tiles to IECore ImagePrimitives." ), m_tile( tile )
 {
+}
 
-enum TypeId
+FromNukeTileConverter::~FromNukeTileConverter()
 {
-	FromNukeConverterTypeId = 107000,
-	MeshFromNukeTypeId = 107001,
-	ToNukeConverterTypeId = 107002,
-	ToNukeGeometryConverterTypeId = 107003,
-	FromNukePointsConverterTypeId = 107004,
-	FromNukeCameraConverterTypeId = 107005,
-	FromNukeTileConverterTypeId = 107006,
-	LastCoreNukeTypeId = 107999
-};
+}
+		
+IECore::ObjectPtr FromNukeTileConverter::doConversion( IECore::ConstCompoundObjectPtr operands ) const
+{
+	Box2i dataWindow( V2i( m_tile->x(), m_tile->y() ), V2i( m_tile->r() - 1, m_tile->t() - 1 ) );
+	ImagePrimitivePtr result = new ImagePrimitive( dataWindow, dataWindow );
 
-} // namespace IECoreNuke
-
-#endif // IECORENUKE_TYPEIDS_H
+	foreach( z, m_tile->channels() )
+	{
+		std::string name;
+		switch( z )
+		{
+			case DD::Image::Chan_Red :
+				name = "R";
+				break;
+			case DD::Image::Chan_Green :
+				name = "G";
+				break;
+			case DD::Image::Chan_Blue :
+				name = "B";
+				break;
+			case DD::Image::Chan_Alpha :
+				name = "A";
+				break;
+			case DD::Image::Chan_Z :
+				name = "Z";
+				break;	
+			default :
+				name = getName( z );
+		}
+			
+		FloatVectorDataPtr channelData = result->createChannel<float>( name );
+		float *out = &*(channelData->writable().begin());
+		
+		for( int y=m_tile->t()-1; y>=m_tile->y(); y-- )
+		{
+			memcpy( out, (*m_tile)[z][y] + m_tile->x(), m_tile->w() * sizeof( float ) );
+			out += m_tile->w();
+		}
+	}
+	
+	return result;
+}

@@ -371,9 +371,9 @@ class ParameterisedHolderTest( IECoreNuke.TestCase ) :
 	def testParameterTypes( self ) :
 	
 		# the parameters for which we know we have no handler
-		unsupported = set( ( "c", "e", "f", "h", "compound.j", "compound.k", "m", "s", "u", "v", "x", "y", "p1", "p2", "p3", "p5", "p6", "p7" ) )
+		unsupported = set( ( "c", "e", "f", "h", "compound.j", "compound.k", "m", "s", "u", "v", "x", "y", "p2", "p3", "p5", "p6", "p7" ) )
 		# the parameter for which we have a handler but expect inputs instead of knobs
-		inputsNotKnobs = set( ( "p4", ) )
+		inputsNotKnobs = set( ( "p1", "p4", ) )
 		
 		mh = IECore.CapturingMessageHandler()
 		with mh :

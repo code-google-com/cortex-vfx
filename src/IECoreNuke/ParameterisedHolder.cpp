@@ -37,6 +37,7 @@
 #include "boost/python/suite/indexing/container_utils.hpp"
 
 #include "DDImage/Op.h"
+#include "DDImage/Iop.h"
 #include "DDImage/Knobs.h"
 #include "DDImage/Knob.h"
 #include "DDImage/Enumeration_KnobI.h"
@@ -248,6 +249,16 @@ template<typename BaseType>
 void ParameterisedHolder<BaseType>::_validate( bool forReal )
 {
 	BaseType::_validate( forReal );
+	
+	const std::vector<DD::Image::Op *> &inputs = BaseType::getInputs();
+	for( std::vector<DD::Image::Op *>::const_iterator it=inputs.begin(); it!=inputs.end(); it++ )
+	{
+		if( DD::Image::Iop *iOp = dynamic_cast<DD::Image::Iop *>( *it ) )
+		{
+			iOp->request( DD::Image::Mask_All, 1 );
+		}
+	}
+	
 	setParameterValues();
 }
 
