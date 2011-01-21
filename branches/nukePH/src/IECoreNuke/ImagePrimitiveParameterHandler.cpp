@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,24 +32,55 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECORENUKE_TYPEIDS_H
-#define IECORENUKE_TYPEIDS_H
+#include "IECore/ImagePrimitive.h"
+#include "IECore/TypedPrimitiveParameter.h"
 
-namespace IECoreNuke
+#include "IECoreNuke/ImagePrimitiveParameterHandler.h"
+#include "IECoreNuke/FromNukeTileConverter.h"
+
+using namespace IECoreNuke;
+
+ParameterHandler::Description<ImagePrimitiveParameterHandler> ImagePrimitiveParameterHandler::g_description( IECore::ImagePrimitiveParameter::staticTypeId() );
+
+ImagePrimitiveParameterHandler::ImagePrimitiveParameterHandler()
 {
-
-enum TypeId
+}
+		
+int ImagePrimitiveParameterHandler::minimumInputs( const IECore::Parameter *parameter )
 {
-	FromNukeConverterTypeId = 107000,
-	MeshFromNukeTypeId = 107001,
-	ToNukeConverterTypeId = 107002,
-	ToNukeGeometryConverterTypeId = 107003,
-	FromNukePointsConverterTypeId = 107004,
-	FromNukeCameraConverterTypeId = 107005,
-	FromNukeTileConverterTypeId = 107006,
-	LastCoreNukeTypeId = 107999
-};
+	return 1;
+}
 
-} // namespace IECoreNuke
+int ImagePrimitiveParameterHandler::maximumInputs( const IECore::Parameter *parameter )
+{
+	return 1;
+}
 
-#endif // IECORENUKE_TYPEIDS_H
+bool ImagePrimitiveParameterHandler::testInput( const IECore::Parameter *parameter, int input, const DD::Image::Op *op )
+{
+	if( dynamic_cast<const DD::Image::Iop *>( op ) )
+	{
+		return 1;
+	}
+	return 0;
+}
+
+void ImagePrimitiveParameterHandler::setParameterValue( IECore::Parameter *parameter, InputIterator first, InputIterator last )
+{
+	DD::Image::Iop *iOp = static_cast<DD::Image::Iop *>( *first );
+	if( iOp )
+	{
+		DD::Image::Tile tile( *iOp, iOp->requested_channels(), true );
+		
+		FromNukeTileConverterPtr converter = new FromNukeTileConverter( &tile );
+		IECore::ImagePrimitivePtr image = IECore::staticPointerCast<IECore::ImagePrimitive>( converter->convert() );
+		
+		/// \todo Sort out data window vs display window and suchlike.
+		
+		parameter->setValue( image );
+		return;
+	}
+	
+	// no input - set parameter to default value.
+	parameter->setValue( parameter->defaultValue()->copy() );
+}

@@ -35,6 +35,7 @@
 from __future__ import with_statement
 
 import unittest
+import os
 
 import nuke
 
@@ -99,6 +100,41 @@ class OpHolderTest( IECoreNuke.TestCase ) :
 		fnOH.node().setInput( 3, fnOHMult2.node() )
 								
 		self.assertEqual( fnOH.execute(), IECore.ObjectVector( [ IECore.IntData( 200 ), IECore.IntData( 120 ), IECore.IntData( 200 ), IECore.IntData( 120 ) ] ) )
+	
+	def testExecuteWithImageInput( self ) :
+	
+		fnOH = IECoreNuke.FnOpHolder.create( "test", "imagePrimitiveInOut", 1 )
+		
+		self.assertEqual( fnOH.node().minimumInputs(), 1 )
+		self.assertEqual( fnOH.node().maximumInputs(), 1 )
+		
+		check = nuke.nodes.CheckerBoard()
+		
+		fnOH.node().setInput( 0, check )
+		
+		# get the image as output by the op
+		image = fnOH.execute()
+
+		# write the same image direct to disk without using the op
+		write = nuke.nodes.Write()
+		write.setInput( 0, check )
+		write.knob( "file" ).setValue( "test/IECoreNuke/check.exr" )
+		write.knob( "channels" ).setValue( "rgba" )
+		nuke.execute( write, 1, 1 )
+		
+		# check that they are the same in terms of size and channel data.
+		# allow a slight difference due to one having been saved as half float and reloaded.
+		
+		image2 = IECore.EXRImageReader( "test/IECoreNuke/check.exr" ).read()
+		self.assertEqual( IECore.ImageDiffOp()( imageA = image, imageB = image2, maxError = 0.001 ).value, False )
+
+	def tearDown( self ) :
+		
+		for f in [
+			"test/IECoreNuke/check.exr"
+		] :
+			if os.path.exists( f ) :
+				os.remove( f )
 							
 if __name__ == "__main__":
 	unittest.main()
