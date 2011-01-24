@@ -2190,7 +2190,6 @@ if doConfigure :
 		
 		# tests
 		truelightTestEnv = testEnv.Clone()
-		#riTestEnv["ENV"][testEnv["TEST_LIBRARY_PATH_ENV_VAR"]] = riEnv.subst( ":".join( [ "./lib" ] + riPythonModuleEnv["LIBPATH"] ) )
 		truelightTestEnv["ENV"]["TRUELIGHT_ROOT"] = truelightEnv.subst( "$TRUELIGHT_ROOT" )
 		truelightTest = truelightTestEnv.Command( "test/IECoreTruelight/results.txt", truelightPythonModule, pythonExecutable + " $TEST_TRUELIGHT_SCRIPT" )
 		NoCache( truelightTest )
