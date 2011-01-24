@@ -69,3 +69,5 @@ Use GCC visibility stuff to reduce binary sizes and linking times (http://gcc.gn
 Deprecate/remove classes which have been unused for a long time. The slow point distribution stuff? !RadixSort? !HierarchicalCache?
 
 Update IE build to use a recent SCons version, and get rid of all the warnings that will come from that.
+
+Add python bindings for boost::signal.
