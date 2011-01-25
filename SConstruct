@@ -60,7 +60,11 @@ if "CORTEX_OPTIONS_FILE" in os.environ :
 if "OPTIONS" in ARGUMENTS :
 	optionsFile = ARGUMENTS["OPTIONS"]
 
-o = Options( optionsFile, ARGUMENTS )
+try :
+	o = Variables( optionsFile, ARGUMENTS )
+except NameError :
+	# fallback for old scons versions
+	o = Options( optionsFile, ARGUMENTS )
 
 o.Add(
 	"CXX",
@@ -287,9 +291,15 @@ o.Add(
 
 # OpenGL options
 
-o.Add(
-	BoolOption( "WITH_GL", "Set this to build the IECoreGL library.", False ),
-)
+try :
+	o.Add(
+		BoolVariable( "WITH_GL", "Set this to build the IECoreGL library.", False ),
+	)
+except NameError :
+	# fallback for old scons versions
+	o.Add(
+		BoolOption( "WITH_GL", "Set this to build the IECoreGL library.", False ),
+	)
 
 o.Add(
 	"GLEW_INCLUDE_PATH",
@@ -335,14 +345,24 @@ o.Add(
 	"/usr/adlm/AdlmThinClientCustomEnv.xml",
 )
 
-o.Add(
-	BoolOption( 
-		"WITH_MAYA_PLUGIN_LOADER", 
-		"Set this to install the Maya plugin with a stub loader.",
-		 False
-	),
-)
-
+try :
+	o.Add(
+		BoolVariable( 
+			"WITH_MAYA_PLUGIN_LOADER", 
+			"Set this to install the Maya plugin with a stub loader.",
+			 False
+		),
+	)
+except NameError :
+	# fallback for old scons versions
+	o.Add(
+		BoolOption( 
+			"WITH_MAYA_PLUGIN_LOADER", 
+			"Set this to install the Maya plugin with a stub loader.",
+			 False
+		),
+	)
+	
 # Houdini options
 
 o.Add(
