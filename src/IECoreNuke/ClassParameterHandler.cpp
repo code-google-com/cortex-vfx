@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -154,6 +154,8 @@ void ClassParameterHandler::classChooserKnob( const IECore::Parameter *parameter
 	menuItems.push_back( " " );
 	menuItems.push_back( "" );
 	
+	std::string label = "No class loaded";
+	
 	IECorePython::ScopedGILLock gilLock;
 	try
 	{
@@ -173,6 +175,13 @@ void ClassParameterHandler::classChooserKnob( const IECore::Parameter *parameter
 		boost::python::object pythonParameter( ParameterPtr( const_cast<Parameter *>( parameter ) ) );
 		boost::python::tuple classInfo = extract<boost::python::tuple>( pythonParameter.attr( "getClass" )( true ) );
 
+		std::string className = extract<const char *>( classInfo[1] )();
+		if( className != "" )
+		{
+			int classVersion = extract<int>( classInfo[2] )();
+			label = className + " v" + lexical_cast<string>( classVersion );
+		}
+				
 		std::string searchPathEnvVar = extract<const char *>( classInfo[3] )();
 		
 		object ieCore = import( "IECore" );
@@ -213,7 +222,6 @@ void ClassParameterHandler::classChooserKnob( const IECore::Parameter *parameter
 					
 				menuItems.push_back( cmd );
 			}
-			
 		}
 		
 	}
@@ -226,5 +234,6 @@ void ClassParameterHandler::classChooserKnob( const IECore::Parameter *parameter
 		msg( Msg::Error, "ClassParameterHandler::classChooserKnob", e.what() );
 	}
 	
+	classChooser->label( label.c_str() );
 	classChooser->enumerationKnob()->menu( menuItems );
 }
