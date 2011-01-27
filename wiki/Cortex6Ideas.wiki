@@ -70,4 +70,6 @@ Deprecate/remove classes which have been unused for a long time. The slow point 
 
 ~~Update IE build to use a recent SCons version, and get rid of all the warnings that will come from that.~~ Addressed on nukePH branch.
 
+Deprecate IECoreMaya::PythonCmd? We don't need it now Maya has had python for forever.
+
 Add python bindings for boost::signal.
