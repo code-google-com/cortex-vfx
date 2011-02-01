@@ -62,6 +62,8 @@ It'd be nice to have menus in Maya for creating procedurals, exporting geometry,
 
 == UI ==
 
+soft min/max for relevant parameters would be great.
+
 It'd be nice to be able to specify a uiLabel for a parameter, it's really usefull if you need to avoid language keywords in parameter names, or change something to make it more obvious/artist friendly, without breaking compatibility.
 
 Another small thing, but if we could make the call signature for IECoreMaya.Class/ClassVectorParameterUI.registerClassMenuCallback match, so you don't need to write wrapper functions to re-use the code that does the work. At the moment its:
