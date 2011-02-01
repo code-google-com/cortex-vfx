@@ -60,6 +60,36 @@ I'd like to see geometry converters for Nuke and an OpHolder equivalent. This wo
 
 It'd be nice to have menus in Maya for creating procedurals, exporting geometry, creating and applying vertcaches etc. These probably wouldn't be used by the larger studios but might help smaller places and individuals start getting into cortex. IE needs to look into whether we can provide this or not - current agreement with management is that we open source libraries rather than end user tools.
 
+== UI ==
+
+It'd be nice to be able to specify a uiLabel for a parameter, it's really usefull if you need to avoid language keywords in parameter names, or change something to make it more obvious/artist friendly, without breaking compatibility.
+
+Another small thing, but if we could make the call signature for IECoreMaya.Class/ClassVectorParameterUI.registerClassMenuCallback match, so you don't need to write wrapper functions to re-use the code that does the work. At the moment its:
+{{{
+ callback( menuDefinition, parameter, holderNode ) # Class Parameter
+ callback( menuDefinition, classVectorParameter, childParameter, holderNode ) # ClassVectorParameter
+}}}
+Which means you end up writing functions like
+{{{
+def myCallback( menuDefinition, classVectorParameter, childParameter, holderNode ) :
+   ...
+def myCallbackWrapper( menuDefinition, parameter, holderNode ) :
+    myCallback( menuDefinition, None, parameter, holderNode )
+
+IECoreMaya.ClassVectorParameterUI.registerClassMenuCallback( myCallback )
+IECoreMaya.ClassParameterUI.registerClassMenuCallback( myCallbackWrapper )
+}}}
+It'd be nice to be able to write:
+{{{
+ myCallback( menuDefinition, parameter, holderNode, classVectorParameter=None ) :
+    ...
+IECoreMaya.ClassVectorParameterUI.registerClassMenuCallback( myCallback )
+IECoreMaya.ClassParameterUI.registerClassMenuCallback( myCallback )
+}}}
+... as its pretty easy to handle Cs & CVs in one function.
+
+It'd also be nice to be able to specify exclusive conditions to the ClassLoader to allow specific classes/matched classes to be hidden. 
+
 == Misc Other Stuff ==
 
 !ColorTransformOp and !ColorSpaceTransformOp are pretty confusing - can they be consolidated into one? At what point do we let OpenColorIO do all this for us?
