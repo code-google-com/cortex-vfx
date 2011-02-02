@@ -92,6 +92,8 @@ IECoreMaya.ClassParameterUI.registerClassMenuCallback( myCallback )
 
 It'd also be nice to be able to specify exclusive conditions to the ClassLoader to allow specific classes/matched classes to be hidden. 
 
+It'd be good to separate out the 'label' from the 'control' in all parameter UIs. There are a bunch of cases where we'd like to present controls in other forms - such as ClassVector headers, and in separate tool UIs, without re-implementing their display/functionality.
+
 == Misc Other Stuff ==
 
 !ColorTransformOp and !ColorSpaceTransformOp are pretty confusing - can they be consolidated into one? At what point do we let OpenColorIO do all this for us?
