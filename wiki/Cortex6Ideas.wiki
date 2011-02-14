@@ -107,3 +107,5 @@ Deprecate/remove classes which have been unused for a long time. The slow point 
 Deprecate IECoreMaya::PythonCmd? We don't need it now Maya has had python for forever.
 
 Add python bindings for boost::signal.
+
+Fix OverSamplesCalculator and do todos in InterpolatedCache.
