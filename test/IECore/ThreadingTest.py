@@ -286,6 +286,7 @@ class ThreadingTest( unittest.TestCase ) :
 		
 		cache = IECore.InterpolatedCache(
 			"test/IECore/interpolatedCache.####.fio",
+			1.5,
 			IECore.InterpolatedCache.Interpolation.Linear,
 		)
 		
@@ -294,7 +295,6 @@ class ThreadingTest( unittest.TestCase ) :
 			calls.append(
 				IECore.curry(
 					cache.read,
-					1.5,
 					"object%d" % random.uniform( 0, numObjects ),
 					"attr%d" % random.uniform( 0, numAttrs )
 				)

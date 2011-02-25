@@ -39,6 +39,8 @@
 
 #include "tbb/tbb_thread.h"
 
+#include "boost/format.hpp"
+
 #include "IECore/Exception.h"
 
 namespace IECore
@@ -166,7 +168,7 @@ Ptr LRUCache<Key, Ptr>::get( const Key& key )
 	else
 	{
 		assert( cacheEntry.status==Failed );
-		throw Exception( "Previous attempt to get item failed." );
+		throw Exception( boost::str( boost::format( "Previous attempt to get \"%1%\" failed." ) % key ) );
 	}
 }
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -67,8 +67,8 @@ using namespace IECoreMaya;
 using namespace std;
 
 ProceduralHolderUI::ProceduralHolderUI()
+	:	m_boxPrimitive( new IECoreGL::BoxPrimitive( Imath::Box3f() ) )
 {
-	IECoreGL::init( true );
 }
 
 ProceduralHolderUI::~ProceduralHolderUI()
@@ -242,66 +242,74 @@ void ProceduralHolderUI::draw( const MDrawRequest &request, M3dView &view ) cons
 	view.beginGL();
 	
 	LightingState lightingState;
-	bool restoreLightState = cleanupLights( request, view, &lightingState );	
+	bool restoreLightState = cleanupLights( request, view, &lightingState );
 
-	// maya can sometimes leave an error from it's own code,
-	// and we don't want that to confuse us in our drawing code.
-	while( glGetError()!=GL_NO_ERROR )
-	{
-	}
+	GLint prevProgram; /// \todo I think there's a very good case for putting this bit in
+	glGetIntegerv( GL_CURRENT_PROGRAM, &prevProgram ); // IECoreGL::Scene::render() instead
+	
 
-	try
-	{
-		// draw the bound if asked
-		if( request.token()==BoundDrawMode )
+		// maya can sometimes leave an error from it's own code,
+		// and we don't want that to confuse us in our drawing code.
+		while( glGetError()!=GL_NO_ERROR )
 		{
-			IECoreGL::BoxPrimitive::renderWireframe( IECore::convert<Imath::Box3f>( proceduralHolder->boundingBox() ) );
 		}
 
-		// draw the scene if asked
-		if( request.token()==SceneDrawMode )
+		try
 		{
-			resetHilites();
-
-			IECoreGL::ConstScenePtr scene = proceduralHolder->scene();
-			if( scene )
+			// draw the bound if asked
+			if( request.token()==BoundDrawMode )
 			{
-				IECoreGL::ConstStatePtr displayState = m_displayStyle.baseState( (M3dView::DisplayStyle)request.displayStyle() );
+				IECoreGL::ConstStatePtr wireframeState = m_displayStyle.baseState( M3dView::kWireFrame );
+				m_boxPrimitive->setBox( IECore::convert<Imath::Box3f>( proceduralHolder->boundingBox() ) );
+				IECore::staticPointerCast<IECoreGL::Renderable>( m_boxPrimitive )->render( wireframeState );
+			}
 
-				if ( request.component() != MObject::kNullObj )
+			// draw the scene if asked
+			if( request.token()==SceneDrawMode )
+			{
+				resetHilites();
+
+				IECoreGL::ConstScenePtr scene = proceduralHolder->scene();
+				if( scene )
 				{
-					MDoubleArray col;
-					s = MGlobal::executeCommand( "colorIndex -q 21", col );
-					assert( s );
-					IECoreGL::WireframeColorStateComponentPtr hilite = new IECoreGL::WireframeColorStateComponent( Imath::Color4f( col[0], col[1], col[2], 1.0f ) );
+					IECoreGL::ConstStatePtr displayState = m_displayStyle.baseState( (M3dView::DisplayStyle)request.displayStyle() );
 
-					MFnSingleIndexedComponent fnComp( request.component(), &s );
-					assert( s );
-
-					int len = fnComp.elementCount( &s );
-					assert( s );
-					for ( int j = 0; j < len; j++ )
+					if ( request.component() != MObject::kNullObj )
 					{
-						int compId = fnComp.element(j);
+						MDoubleArray col;
+						s = MGlobal::executeCommand( "colorIndex -q 21", col );
+						assert( s );
+						IECoreGL::WireframeColorStateComponentPtr hilite = new IECoreGL::WireframeColorStateComponent( Imath::Color4f( col[0], col[1], col[2], 1.0f ) );
 
-						assert( proceduralHolder->m_componentToGroupMap.find( compId ) != proceduralHolder->m_componentToGroupMap.end() );
+						MFnSingleIndexedComponent fnComp( request.component(), &s );
+						assert( s );
 
-						hiliteGroups(
-							proceduralHolder->m_componentToGroupMap[compId],
-							hilite,
-							IECore::constPointerCast<IECoreGL::WireframeColorStateComponent>( displayState->get< IECoreGL::WireframeColorStateComponent >() )
-						);
+						int len = fnComp.elementCount( &s );
+						assert( s );
+						for ( int j = 0; j < len; j++ )
+						{
+							int compId = fnComp.element(j);
+
+							assert( proceduralHolder->m_componentToGroupMap.find( compId ) != proceduralHolder->m_componentToGroupMap.end() );
+
+							hiliteGroups(
+								proceduralHolder->m_componentToGroupMap[compId],
+								hilite,
+								IECore::constPointerCast<IECoreGL::WireframeColorStateComponent>( displayState->get< IECoreGL::WireframeColorStateComponent >() )
+							);
+						}
 					}
+					scene->render( displayState );
 				}
-				scene->render( displayState );
 			}
 		}
-	}
-	catch( const IECoreGL::Exception &e )
-	{
-		// much better to catch and report this than to let the application die
-		IECore::msg( IECore::Msg::Error, "ProceduralHolderUI::draw", boost::format( "IECoreGL Exception : %s" ) % e.what() );
-	}
+		catch( const IECoreGL::Exception &e )
+		{
+			// much better to catch and report this than to let the application die
+			IECore::msg( IECore::Msg::Error, "ProceduralHolderUI::draw", boost::format( "IECoreGL Exception : %s" ) % e.what() );
+		}
+
+	glUseProgram( prevProgram );
 
 	if( restoreLightState )
 	{
@@ -343,6 +351,8 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 	view.beginSelect( &selectBuffer[0], selectBufferSize );	
 		glInitNames();
 		glPushName( 0 );
+		GLint prevProgram;
+		glGetIntegerv( GL_CURRENT_PROGRAM,  &prevProgram );
 		
 			if( selectInfo.displayStatus() != M3dView::kHilite )
 			{
@@ -353,12 +363,15 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 				pDrawBound.getValue( drawBound );
 				if( drawBound )
 				{
-					IECoreGL::BoxPrimitive::renderWireframe( IECore::convert<Imath::Box3f>( proceduralHolder->boundingBox() ) );
+					IECoreGL::ConstStatePtr wireframeState = m_displayStyle.baseState( M3dView::kWireFrame );
+					m_boxPrimitive->setBox( IECore::convert<Imath::Box3f>( proceduralHolder->boundingBox() ) );
+					IECore::staticPointerCast<IECoreGL::Renderable>( m_boxPrimitive )->render( wireframeState );
 				}
 			}
 				
 			scene->render( m_displayStyle.baseState( selectInfo.displayStyle() ) );
 		
+		glUseProgram( prevProgram );
 	int numHits = view.endSelect();
 
 	if( !numHits )

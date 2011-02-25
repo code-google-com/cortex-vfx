@@ -118,7 +118,7 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 		try
 		{
 			OversamplesCalculator calc( 24.0, 1, 24 * frameMultiplier );
-			m_cache = new InterpolatedCache( cacheFileName, InterpolatedCache::Linear, calc );
+			m_cache = new InterpolatedCache( cacheFileName, frame, InterpolatedCache::Linear, calc );
 		}
 		catch ( IECore::InvalidArgumentException e )
 		{
@@ -143,7 +143,8 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 	
 	try
 	{
-		m_cache->objects( frame, objects );
+		m_cache->setFrame( frame );
+		m_cache->objects( objects );
 	}
 	catch ( IECore::Exception e )
 	{
@@ -180,8 +181,8 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 		
 		try
 		{
-			m_cache->attributes( frame, *oIt, attrs );
-			attributes = m_cache->read( frame, *oIt );
+			m_cache->attributes( *oIt, attrs );
+			attributes = m_cache->read( *oIt );
 		}
 		catch ( IECore::Exception e )
 		{
