@@ -1,7 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
 //  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
-//  Copyright (c) 2011, John Haddon. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -1167,7 +1166,6 @@ static const AttributeSetterMap *attributeSetters()
 		(*a)["gl:cullingSpace"] = rendererSpaceSetter<CullingSpaceStateComponent>;
 		(*a)["gl:cullingBox"] = typedAttributeSetter<CullingBoxStateComponent>;
 		(*a)["gl:procedural:reentrant"] = typedAttributeSetter<ProceduralThreadingStateComponent>;
-		(*a)["gl:depthTest"] = typedAttributeSetter<DepthTestStateComponent>;
 	}
 	return a;
 }
@@ -1213,7 +1211,6 @@ static const AttributeGetterMap *attributeGetters()
 		(*a)["gl:cullingSpace"] = rendererSpaceGetter<CullingSpaceStateComponent>;
 		(*a)["gl:cullingBox"] = typedAttributeGetter<CullingBoxStateComponent>;
 		(*a)["gl:procedural:reentrant"] = typedAttributeGetter<ProceduralThreadingStateComponent>;
-		(*a)["gl:depthTest"] = typedAttributeGetter<DepthTestStateComponent>;
 	}
 	return a;
 }

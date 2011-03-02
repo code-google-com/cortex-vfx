@@ -1,7 +1,6 @@
 ##########################################################################
 #
 #  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
-#  Copyright (c) 2011, John Haddon. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -57,16 +56,12 @@
 # subMenu : a callable object which returns a MenuDefinition, to produce
 # a dynamically generated submenu.
 #
-# checkBox : A callable item to return True or False for checkBox state, or None
-# for no checkBox at all. When checkBox is not None, the callable specified by the
-# command attribute will be called whenever the checkBox is toggled.
-#
 # \todo Validation of attribute values, so for instance divider and command
 # can't both be set at the same time.
 # \ingroup python
 class MenuItemDefinition :
 
-	__slots__ = [ "command", "secondaryCommand", "divider", "active", "description", "subMenu", "checkBox", "blindData" ]
+	__slots__ = [ "command", "secondaryCommand", "divider", "active", "description", "subMenu", "blindData" ]
 
 	def __init__( self, dictionary = None, **kwArgs ) :
 
@@ -76,7 +71,6 @@ class MenuItemDefinition :
 		self.active = True
 		self.description = ""
 		self.subMenu = None
-		self.checkBox = None
 		self.blindData = {}
 
 		if dictionary :

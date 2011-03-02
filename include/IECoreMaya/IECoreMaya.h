@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,7 +37,6 @@
 
 #include "maya/MFnPlugin.h"
 
-/// The IECoreMaya namespace holds all the functionality of libIECoreMaya.
 namespace IECoreMaya
 {
 
@@ -61,12 +60,15 @@ MStatus uninitialize( MFnPlugin &plugin );
 ///
 /// <br>
 
-/// \addtogroup environmentGroup
+/// \defgroup environmentgroup Environment variables
+///
+/// Various aspects of the IECoreMaya library are configured using environment variables.
+/// These are listed below.
 ///
 /// <b>IECOREMAYA_DISABLEOUTPUTREDIRECTION</b><br>
 /// By default all python output and IECore::MessageHandler output are redirected through
 /// the appropriate MGlobal::display*() functions, so that they appear in the script editor.
-/// Setting this environment variable disables this redirection, causing the messages to appear
+/// Setting this environment variables disables this redirection, causing the messages to appear
 /// in the shell.
 
 #endif // IE_COREMAYA_COREMAYA_H

@@ -45,7 +45,6 @@ namespace IECore
 /// when rendering a sequence of images, as you get a slow refinement of
 /// the whole sequence, providing earlier information about stuff going on
 /// in the middle and end of the sequence.
-/// \ingroup fileSequenceGroup
 class BinaryFrameList : public ReorderedFrameList
 {
 	public:
