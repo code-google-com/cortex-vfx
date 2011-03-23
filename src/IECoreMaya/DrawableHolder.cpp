@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -111,8 +111,6 @@ MBoundingBox DrawableHolder::boundingBox() const
 
 void DrawableHolder::draw( M3dView &view, const MDagPath &path, M3dView::DisplayStyle style, M3dView::DisplayStatus displayStatus )
 {
-	IECoreGL::init( true );
-
 	IECoreGL::ConstScenePtr s = scene();
 	if( !s )
 	{
@@ -128,7 +126,10 @@ void DrawableHolder::draw( M3dView &view, const MDagPath &path, M3dView::Display
 	}
 	
 	view.beginGL();
-			
+	
+	GLint prevProgram;
+	glGetIntegerv( GL_CURRENT_PROGRAM, &prevProgram );
+		
 		// maya can sometimes leave an error from it's own code,
 		// and we don't want that to confuse us in our drawing code.
 		while( glGetError()!=GL_NO_ERROR )
@@ -162,7 +163,9 @@ void DrawableHolder::draw( M3dView &view, const MDagPath &path, M3dView::Display
 		{
 			IECore::msg( IECore::Msg::Error, "DrawableHolder::draw", e.what() );
 		}
-			
+	
+	glUseProgram( prevProgram );
+		
 	view.endGL();
 }
 

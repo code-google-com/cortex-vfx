@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -33,7 +33,6 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "IECoreMaya/CallbackId.h"
-#include "IECoreMaya/StatusException.h"
 
 using namespace IECoreMaya;
 
@@ -51,7 +50,7 @@ CallbackId::~CallbackId()
 {
 	if( m_id )
 	{
-		StatusException::throwIfError( MMessage::removeCallback( m_id ) );
+		MMessage::removeCallback( m_id );
 	}
 }
 
@@ -59,7 +58,7 @@ const CallbackId &CallbackId::operator = ( MCallbackId id )
 {
 	if( m_id )
 	{
-		StatusException::throwIfError( MMessage::removeCallback( m_id ) );
+		MMessage::removeCallback( m_id );
 	}
 	m_id = id;
 	return *this;

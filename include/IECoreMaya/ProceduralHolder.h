@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -62,6 +62,12 @@ IE_CORE_FORWARDDECLARE( Renderer );
 
 namespace IECoreMaya
 {
+
+/// \addtogroup environmentgroup
+///
+/// <b>IECORE_PROCEDURAL_PATHS</b><br>
+/// This environment variable is used to find procedural classes to be held by the ProceduralHolder
+/// node.
 
 /// The ProceduralHolder class represents implementation of the IECore::Renderer::Procedural
 /// class, presenting the procedural parameters as maya attributes. It also draws a bounding
@@ -146,14 +152,12 @@ class ProceduralHolder : public ParameterisedHolderComponentShape
 		/// struct with named fields instead of the hard to understand std::pairs.		
 		typedef std::map<IECore::InternedString,  std::pair< unsigned int, IECoreGL::GroupPtr > > ComponentsMap;
 		typedef std::map< int, std::set< std::pair< std::string, IECoreGL::GroupPtr > > > ComponentToGroupMap;
-		typedef std::map<IECore::InternedString, Imath::M44f> ComponentTransformsMap;
 
 		void buildComponents();
 		void buildComponents( IECoreGL::ConstNameStateComponentPtr nameState, IECoreGL::GroupPtr group, const Imath::M44f &parentTransform );
 
 		ComponentsMap m_componentsMap;
 		ComponentToGroupMap m_componentToGroupMap;
-		ComponentTransformsMap m_componentTransforms;
 
 };
 

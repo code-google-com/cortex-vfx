@@ -34,7 +34,6 @@
 
 //! \file AngleConversion.h
 /// Defines templates conversions between radians and degrees
-/// \ingroup mathGroup
 
 #ifndef IE_CORE_ANGLECONVERSION_H
 #define IE_CORE_ANGLECONVERSION_H
