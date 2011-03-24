@@ -73,7 +73,7 @@ ArchiveBegin "|cortex_sphere|cortex_sphereShape"  # {
   # |cortex_sphere|cortex_sphereShape
 
   AttributeBegin  # {
-    Procedural "DynamicLoad" [ "iePython" "IECoreRI.executeProcedural( \"sphereProcedural\", 1, \"-radius 1 -theta 360\" )" ] [ -1 1 -1 1 -1 1 ] 
+    Procedural "DynamicLoad" [ "iePython" "IECoreRI.executeProcedural( \"sphereProcedural\", 1, ['-radius', '1', '-theta', '360' ] )" ] [ -1 1 -1 1 -1 1 ] 
   AttributeEnd  # }
 
 ArchiveEnd  # }
