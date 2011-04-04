@@ -456,6 +456,7 @@ class frizz( IECore.Parameterised ) :
 				points[i] += IECore.V3f( random.random()-0.5, random.random()-0.5, random.random()-0.5 ) * localAmount
 				
 				i += 1
+}}}
 
   * ./gravity
   * ./gravity/gravity-1.py:
