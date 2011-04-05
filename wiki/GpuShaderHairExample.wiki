@@ -2,6 +2,8 @@
 
 http://opensource.image-engine.com/images/examples/shadedHairExample.jpg
 
+http://opensource.image-engine.com/images/examples/basicHairExampleAE.png
+
 = Introduction =
 
 An example of a simple hair system inside a procedural, complete with Marschner based hair shading. Sadly no shadows yet.
