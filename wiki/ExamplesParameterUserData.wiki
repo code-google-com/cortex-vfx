@@ -41,6 +41,7 @@ Some userData is generic (although it may only be currently used in specific lib
 ['UI']['draggable'] --> BoolData - Is the parameter UI draggable?
 ["UI"]["autoExpandDepth"] --> IntData - The number of levels of the CompoundParameter UI that should expand automatically
 ["UI"]["fileDialogKey"] --> StringData - A key, used in the 'recent items' history mechanism of the fileDialog. This allows diferent parameters to remeber their own path by specifying different keys.
+["UI"]["fileDialog"]["saveMode"] --> BoolData - Determines if the FileDialog is for reading or writing a file
 ["UI"]["defaultPath"] --> StringData - The default filesystem path for the parameter
 ["UI"]["obeyDefaultPath"] --> BoolData - Should filesystem dialogs begin at the defaultPath or at their current location
 ["UI"]["acceptsProceduralObjectName"] --> BoolData - Causes the UI to add menu items for putting the name of selected procedural components into the parameter
