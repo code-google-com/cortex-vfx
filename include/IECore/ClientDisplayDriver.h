@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,10 +46,10 @@
 namespace IECore
 {
 
-
-/// Connects to a DisplayDriverServer and pass every call do DisplayDriver functions to it as socket messages.
-/// The protocol is explained in DisplayDriverServer class. This client class works synchronously.
-/// \ingroup renderingGroup
+/*
+* Connects to a DisplayDriverServer and pass every call do DisplayDriver functions to it as socket messages.
+* The protocol is explained in DisplayDriverServer class. This client class works synchronously.
+*/
 class ClientDisplayDriver : public DisplayDriver
 {
 	public:
@@ -75,8 +75,6 @@ class ClientDisplayDriver : public DisplayDriver
 		virtual void imageClose();
 
 	private:
-
-		static const DisplayDriverDescription<ClientDisplayDriver> g_description;
 
 		void sendHeader( DisplayDriverServer::MessageType msg, size_t dataSize );
 		size_t receiveHeader( DisplayDriverServer::MessageType msg );

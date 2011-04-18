@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,7 +45,6 @@ namespace IECoreMaya
 {
 
 /// Converts maya curveShape objects into IECore::CurvesPrimitive objects.
-/// \ingroup conversionGroup
 class FromMayaCurveConverter : public FromMayaShapeConverter
 {
 
@@ -71,7 +70,6 @@ class FromMayaCurveConverter : public FromMayaShapeConverter
 		IECore::PrimitivePtr doPrimitiveConversion( MFnNurbsCurve &fnCurve ) const;
 
 		static Description<FromMayaCurveConverter> m_description;
-		static Description<FromMayaCurveConverter> m_dataDescription;
 
 		IECore::BoolParameterPtr m_linearParameter;
 

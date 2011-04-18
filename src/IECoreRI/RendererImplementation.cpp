@@ -96,11 +96,7 @@ IECoreRI::RendererImplementation::RendererImplementation( const std::string &nam
 	}
 	else
 	{
-#ifdef PRMANEXPORT	
-		RiBegin( "launch:prman? -t" );
-#else
 		RiBegin( 0 );
-#endif		
 	}
 	m_context = RiGetContext();
 }
@@ -236,11 +232,7 @@ IECore::ConstDataPtr IECoreRI::RendererImplementation::getOption( const std::str
 	}
 	else if( name.compare( 0, 5, "user:" )==0 )
 	{
-#ifdef PRMANEXPORT	
-		return getRxOption( name.c_str() + 5 );
-#else		
-		return getRxOption( name.c_str() );		
-#endif		
+		return getRxOption( name.c_str() );
 	}
 	else if( name.compare( 0, 3, "ri:" )==0 )
 	{

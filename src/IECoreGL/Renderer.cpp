@@ -1,7 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
 //  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
-//  Copyright (c) 2011, John Haddon. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -59,7 +58,6 @@
 #include "IECoreGL/CurvesPrimitive.h"
 #include "IECoreGL/ToGLMeshConverter.h"
 #include "IECoreGL/Font.h"
-#include "IECoreGL/FontLoader.h"
 #include "IECoreGL/TextPrimitive.h"
 #include "IECoreGL/DiskPrimitive.h"
 #include "IECoreGL/ToGLCurvesConverter.h"
@@ -140,7 +138,6 @@ struct IECoreGL::Renderer::MemberData
 		V2f shutter;
 		IECore::CompoundDataMap user;
 		string fontSearchPath;
-		string fontSearchPathDefault;
 		string shaderSearchPath;
 		string shaderSearchPathDefault;
 		string shaderIncludePath;
@@ -161,10 +158,7 @@ struct IECoreGL::Renderer::MemberData
 	RendererImplementationPtr implementation;
 	ShaderManagerPtr shaderManager;
 	TextureLoaderPtr textureLoader;
-#ifdef IECORE_WITH_FREETYPE
-	FontLoaderPtr fontLoader;
-#endif // IECORE_WITH_FREETYPE
-	
+
 	typedef std::map<std::string, GroupPtr> InstanceMap;
 	InstanceMap instances;
 	Group *currentInstance;
@@ -177,6 +171,11 @@ struct IECoreGL::Renderer::MemberData
 	// being called from.
 	std::set<RenderablePtr> removedObjects;
 	tbb::mutex removedObjectsMutex;
+
+#ifdef IECORE_WITH_FREETYPE
+	typedef std::map<std::string, FontPtr> FontMap;
+	FontMap fonts;
+#endif // IECORE_WITH_FREETYPE
 
 };
 
@@ -192,7 +191,7 @@ IECoreGL::Renderer::Renderer()
 	m_data->options.shutter = V2f( 0 );
 
 	const char *fontPath = getenv( "IECORE_FONT_PATHS" );
-	m_data->options.fontSearchPath = m_data->options.fontSearchPathDefault = fontPath ? fontPath : "";
+	m_data->options.fontSearchPath = fontPath ? fontPath : "";
 	const char *shaderPath = getenv( "IECOREGL_SHADER_PATHS" );
 	m_data->options.shaderSearchPath = m_data->options.shaderSearchPathDefault = shaderPath ? shaderPath : "";
 	const char *shaderIncludePath = getenv( "IECOREGL_SHADER_INCLUDE_PATHS" );
@@ -524,18 +523,6 @@ void IECoreGL::Renderer::worldBegin()
 	{
 		m_data->textureLoader = new TextureLoader( IECore::SearchPath( m_data->options.textureSearchPath, ":" ) );
 	}
-	
-#ifdef IECORE_WITH_FREETYPE
-	if( m_data->options.fontSearchPath==m_data->options.fontSearchPathDefault )
-	{
-		// use the shared default cache if we can
-		m_data->fontLoader = FontLoader::defaultFontLoader();
-	}
-	else
-	{
-		m_data->fontLoader = new FontLoader( IECore::SearchPath( m_data->options.fontSearchPath, ":" ) );
-	}
-#endif // IECORE_WITH_FREETYPE
 
 	if( m_data->options.cameras.size() )
 	{
@@ -1179,7 +1166,6 @@ static const AttributeSetterMap *attributeSetters()
 		(*a)["gl:cullingSpace"] = rendererSpaceSetter<CullingSpaceStateComponent>;
 		(*a)["gl:cullingBox"] = typedAttributeSetter<CullingBoxStateComponent>;
 		(*a)["gl:procedural:reentrant"] = typedAttributeSetter<ProceduralThreadingStateComponent>;
-		(*a)["gl:depthTest"] = typedAttributeSetter<DepthTestStateComponent>;
 	}
 	return a;
 }
@@ -1225,7 +1211,6 @@ static const AttributeGetterMap *attributeGetters()
 		(*a)["gl:cullingSpace"] = rendererSpaceGetter<CullingSpaceStateComponent>;
 		(*a)["gl:cullingBox"] = typedAttributeGetter<CullingBoxStateComponent>;
 		(*a)["gl:procedural:reentrant"] = typedAttributeGetter<ProceduralThreadingStateComponent>;
-		(*a)["gl:depthTest"] = typedAttributeGetter<DepthTestStateComponent>;
 	}
 	return a;
 }
@@ -1490,7 +1475,31 @@ void IECoreGL::Renderer::text( const std::string &font, const std::string &text,
 {
 
 #ifdef IECORE_WITH_FREETYPE
-	FontPtr f = m_data->fontLoader->load( font );
+	FontPtr f = 0;
+	MemberData::FontMap::const_iterator it = m_data->fonts.find( font );
+	if( it!=m_data->fonts.end() )
+	{
+		f = it->second;
+	}
+	else
+	{
+		IECore::SearchPath s( m_data->options.fontSearchPath, ":" );
+		string file = s.find( font ).string();
+		if( file!="" )
+		{
+			try
+			{
+				IECore::FontPtr cf = new IECore::Font( file );
+				cf->setResolution( 128 ); // makes for better texture resolutions - maybe it could be an option?
+				f = new Font( cf );
+			}
+			catch( const std::exception &e )
+			{
+				IECore::msg( IECore::Msg::Warning, "Renderer::text", e.what() );
+			}
+		}
+		m_data->fonts[font] = f;
+	}
 
 	if( !f )
 	{
