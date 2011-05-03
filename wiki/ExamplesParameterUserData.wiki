@@ -87,3 +87,8 @@ Manipulators
 ["maya"]["valueProvider"]["setMembers"] --> StringData - StringVectorParameter value will be the names of the members of the connected set
 ["maya"]["useGeometryCombiner"] --> BoolData - Should the geometry combiner be used?
 }}}
+
+= Nuke Specific =
+{{{
+["nuke"]["defaultExpression"] --> StringData - the default expression for this parameter's knob
+}}}
