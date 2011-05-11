@@ -336,7 +336,7 @@ class ShadedHairExample( IECore.ParameterisedProcedural ) :
                 lastP = origin
                 for i in range(segments+1):
                         
-                        thisP = lastP + IECore.V3f( 0.0, 0.0, 1.0 ) * segLength
+                        thisP = lastP + growth * segLength
                         lastP = thisP
                  
                         pointsData.append( thisP )
