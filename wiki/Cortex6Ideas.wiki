@@ -12,6 +12,8 @@ We might like to introduce some sort of native support for !IndexedData.
 
 It might also be interesting to provide simple methods for getting threadsafe access to !TypedData::readable() and !TypedData::writable(). These could allow multiple concurrent readers but only a single writer.
 
+We might like to introduce specialized !PointVectorData, !NormalVectorData, and !VectorVectorData (although the last name is terribly confusing...) to distinguish between the various data that is all currently stored as !V3fVectorData.
+
 == Parameter improvements ==
 
 It'd be very useful to have a standard way of knowing when a Parameter value has changed. We currently do this manually using the slightly ugly updateCount mechanism which is only implemented in IECoreMaya. It might be great to have a Parameter::hash() method which gives a (kindof) unique hash for the current value. How we would quickly come up with reasonable hashes for very large Objects like !MeshPrimitives could be a tricky question however. Perhaps there might be a good case for it being the responsibility of the host to compute the hash?
