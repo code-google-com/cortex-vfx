@@ -1,9 +1,6 @@
 ##########################################################################
 #
-#  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
-#  its affiliates and/or its licensors.
-#
-#  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -52,28 +49,33 @@ class parameterTypes( ParameterisedProcedural ) :
 					name = "a",
 					description = "An int which has a very long description to help test the help formatting. i wonder if there's anything more interesting i could write here.",
 					defaultValue = 1,
-					userData = { 'UI': { "label" : StringData( "Int" ), "update" : BoolData( True ), "visible" : BoolData( False ) } }
+					userData = { "label":StringData("Int"), "gui_update":BoolData(True), "hidden":BoolData(True) }
 				),
 
 				FloatParameter(
 					name = "b",
 					description = "A float which has a very long description to help test the help formatting. i wonder if there's anything more interesting i could write here.",
 					defaultValue = 2,
-					userData = { 'UI': { "update" : BoolData( True ) } }
+					userData = { "gui_update":BoolData(True) }
 				),
 
 				DoubleParameter(
 					name = "c",
 					description = "A double",
 					defaultValue = 3,
-					userData = { 'UI': { "label" : StringData( "Double" ), "update" : BoolData( True ), "visible" : BoolData( False ) } }
+					userData = { 'UI': { 
+									'visible':BoolData(False),
+									'label':StringData("Double"),
+									'update':BoolData(True)
+									} 
+								}
 				),
 
 				StringParameter(
 					name = "d",
 					description = "A string",
 					defaultValue = "ssss",
-					userData = { 'UI': { "update" : BoolData( True ) } }
+					userData = { "gui_update":BoolData(True) }
 				),
 
 				IntVectorParameter(
@@ -92,7 +94,7 @@ class parameterTypes( ParameterisedProcedural ) :
 					name = "g",
 					description = "A v2f",
 					defaultValue = V2fData( V2f( 1,2 ) ),
-					userData = { 'UI': { "label" : StringData( "V2f" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("V2f"), "gui_update":BoolData(True) }
 				),
 
 				V3fParameter(
@@ -104,28 +106,29 @@ class parameterTypes( ParameterisedProcedural ) :
 						( "y", V3f( 0, 1, 0 ) ),
 						( "z", V3f( 0, 0, 1 ) )
 					),
-					userData = { 'UI': { "label" : StringData( "V3f" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("V3f"), "gui_update":BoolData(True) }
 				),
 
 				V2dParameter(
 					name = "i",
 					description = "a v2d",
 					defaultValue = V2dData( V2d( 1, 1 ) ),
-					userData = { 'UI': { "label" : StringData( "V2d" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("V2d"), "gui_update":BoolData(True) }
 				),
 
 				V3dParameter(
 					name = "i_2",
 					description = "a v3d",
 					defaultValue = V3dData( V3d( 1, 1, 0 ) ),
-					userData = { 'UI': { "label" : StringData( "V2d" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("V3d"), "gui_update":BoolData(True) }
 				),
 
 				CompoundParameter(
 
 					name = "compound",
 					description = "a compound parameter",
-					userData = { 'UI': { "label" : StringData( "My Compound" ) } },
+					userData = { "label":StringData("My Compound") },
+
 					members = [
 
 						V3dParameter(
@@ -157,14 +160,14 @@ class parameterTypes( ParameterisedProcedural ) :
 					name = "l",
 					description = "a color3f",
 					defaultValue = Color3fData( Color3f( 1, 0, 1 )),
-					userData = { 'UI': { "label" : StringData( "Colour 3" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("Colour 3"), "gui_update":BoolData(True) }
 				),
 
 				Color4fParameter(
 					name = "m",
 					description = "a color4f",
 					defaultValue = Color4fData( Color4f( 1, 0, 1, 0.5 ) ),
-					userData = { 'UI': { "label" : StringData( "Colour 4" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("Colour 4"), "gui_update":BoolData(True) }
 				),
 
 				FileNameParameter(
@@ -173,7 +176,7 @@ class parameterTypes( ParameterisedProcedural ) :
 					defaultValue = "test.tif",
 					extensions = "tif",
 					allowEmptyString = True,
-					userData = { 'UI': { "label" : StringData( "File Name" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("File Name"), "gui_update":BoolData(True) }
 				),
 
 				DirNameParameter(
@@ -182,21 +185,21 @@ class parameterTypes( ParameterisedProcedural ) :
 					defaultValue = os.getcwd(),
 					check = DirNameParameter.CheckType.MustExist,
 					allowEmptyString = True,
-					userData = { 'UI': { "label" : StringData( "Dir Name" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("Dir Name"), "gui_update":BoolData(True) }
 				),
 
 				BoolParameter(
 					name = "q",
 					description = "blah",
 					defaultValue = True,
-					userData = { 'UI': { "label" : StringData( "Boolean" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("Boolean"), "gui_update":BoolData(True) }
 				),
 
 				FileSequenceParameter(
 					name = "r",
 					description = "File sequence please!",
 					defaultValue = "/path/to/sequence.####.tif",
-					userData = { 'UI': { "label" : StringData( "File Seq" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("File Seq"), "gui_update":BoolData(True) }
 				),
 
 				Box2dParameter(
@@ -227,7 +230,7 @@ class parameterTypes( ParameterisedProcedural ) :
 					name = "u",
 					description = "A v2i",
 					defaultValue = V2iData( V2i( 2, 2 ) ),
-					userData = { 'UI': { "label" : StringData( "V2i" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("V2i"), "gui_update":BoolData(True) }
 				),
 
 
@@ -235,7 +238,7 @@ class parameterTypes( ParameterisedProcedural ) :
 					name = "v",
 					description = "A v3i",
 					defaultValue = V3iData( V3i( 5, 5, 5 ) ),
-					userData = { 'UI': { "label" : StringData( "V3i" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("V3i"), "gui_update":BoolData(True) }
 				),
 
 				FrameListParameter(
@@ -252,7 +255,7 @@ class parameterTypes( ParameterisedProcedural ) :
 						( "one", M44f( 1 ) ),
 						( "two", M44f( 2 ) )
 					),
-					userData = { 'UI': { "label" : StringData( "M44f" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("M44f"), "gui_update":BoolData(True) }
 				),
 
 				M44dParameter(
@@ -263,7 +266,7 @@ class parameterTypes( ParameterisedProcedural ) :
 						( "one", M44d( 1 ) ),
 						( "two", M44d( 2 ) )
 					),
-					userData = { 'UI': { "label" : StringData( "M44d" ), "update" : BoolData( True ) } }
+					userData = { "label":StringData("M44d"), "gui_update":BoolData(True) }
 				),
 			]
 		)

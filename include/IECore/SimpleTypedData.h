@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,7 @@
 #ifndef IE_CORE_SIMPLETYPEDDATA_H
 #define IE_CORE_SIMPLETYPEDDATA_H
 
-#include <string>
+#include "IECore/TypedData.h"
 
 #include "OpenEXR/ImathVec.h"
 #include "OpenEXR/ImathBox.h"
@@ -44,8 +44,7 @@
 #include "OpenEXR/ImathColor.h"
 #include "OpenEXR/half.h"
 
-#include "IECore/TypedData.h"
-#include "IECore/LineSegment.h"
+#include <string>
 
 namespace IECore
 {
@@ -86,8 +85,6 @@ typedef TypedData<Imath::M44f> M44fData;
 typedef TypedData<Imath::M44d> M44dData;
 typedef TypedData<Imath::Quatf> QuatfData;
 typedef TypedData<Imath::Quatd> QuatdData;
-typedef TypedData<LineSegment3f> LineSegment3fData;
-typedef TypedData<LineSegment3d> LineSegment3dData;
 
 // pointer declarations
 IE_CORE_DECLAREPTR( BoolData );
@@ -125,8 +122,6 @@ IE_CORE_DECLAREPTR( M44fData );
 IE_CORE_DECLAREPTR( M44dData );
 IE_CORE_DECLAREPTR( QuatfData );
 IE_CORE_DECLAREPTR( QuatdData );
-IE_CORE_DECLAREPTR( LineSegment3fData );
-IE_CORE_DECLAREPTR( LineSegment3dData );
 
 #include "IECore/SimpleTypedDataTraits.inl"
 

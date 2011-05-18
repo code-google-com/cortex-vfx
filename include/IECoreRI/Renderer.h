@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,7 +47,6 @@ namespace IECoreRI
 /// However, when rendering live (with a Renderer constructed with Renderer( "" )), procedurals may
 /// be expanded concurrently in multiple threads, and in this case each procedural will see a separate
 /// Renderer instance to provide thread safety.
-/// \ingroup renderingGroup
 class Renderer : public IECore::Renderer
 {
 
@@ -127,7 +126,7 @@ class Renderer : public IECore::Renderer
 		/// specify just part of a scene (without a world block). This hacky parameter is therefore provided
 		/// to cause the immediate output of the camera to support this situation.
 		///
-		/// \todo Support moving cameras, and named cameras using RiCamera.
+		/// \todo Support moving cameras.
 		virtual void camera( const std::string &name, const IECore::CompoundDataMap &parameters );
 		virtual void display( const std::string &name, const std::string &type, const std::string &data, const IECore::CompoundDataMap &parameters );
 

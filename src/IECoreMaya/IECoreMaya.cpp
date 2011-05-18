@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,6 +37,9 @@
 
 #include "boost/format.hpp"
 
+#include "IECoreGL/IECoreGL.h"
+#include "IECoreGL/GL.h"
+
 #include "maya/MPxNode.h"
 #include "maya/MPxLocatorNode.h"
 #include "maya/MPxDeformerNode.h"
@@ -47,11 +50,6 @@
 
 #include "IECore/Parameterised.h"
 #include "IECore/LevelFilteredMessageHandler.h"
-
-#ifdef IECOREMAYA_WITH_RI
-// for DL_INTERFACE as used below
-#include "ri.h"
-#endif
 
 #include "IECoreMaya/IECoreMaya.h"
 #include "IECoreMaya/CacheSet.h"
@@ -100,6 +98,11 @@ MStatus initialize(MFnPlugin &plugin)
 
 	if (g_refCount == 0)
 	{
+
+		if( MGlobal::mayaState()==MGlobal::kInteractive )
+		{
+			IECoreGL::init( true );
+		}
 
 		// register plugin
 
@@ -203,7 +206,7 @@ MStatus initialize(MFnPlugin &plugin)
 			
 		s = plugin.registerContextCommand("ieParameterisedHolderManipContext", &ParameterisedHolderManipContextCommand::creator );
 		
-#ifdef DL_INTERFACE // we are building for 3delight
+#ifdef IECOREMAYA_WITH_RI
 		s = plugin.registerCommand( "ieDelightProceduralCache", DelightProceduralCacheCommand::creator, DelightProceduralCacheCommand::newSyntax );
 #endif
 
@@ -224,12 +227,6 @@ MStatus initialize(MFnPlugin &plugin)
 			h = new IECore::LevelFilteredMessageHandler( h, IECore::LevelFilteredMessageHandler::defaultLevel() );
 			IECore::MessageHandler::pushHandler( h );
 		}
-		
-		if( MGlobal::mayaState() == MGlobal::kInteractive )
-		{
-			MGlobal::executePythonCommand( "import IECoreMaya; IECoreMaya.Menus.createCortexMenu()" );
-		}
-		
 	}
 
 	g_refCount ++;
@@ -278,7 +275,7 @@ MStatus uninitialize(MFnPlugin &plugin)
 		s = plugin.deregisterCommand( "ieParameterisedHolderSetValue" );
 		s = plugin.deregisterContextCommand("ieParameterisedHolderManipContext");
 
-#ifdef DL_INTERFACE // we are building for 3delight
+#ifdef IECOREMAYA_WITH_RI
 		s = plugin.deregisterCommand( "ieDelightProceduralCache" );
 #endif
 
@@ -293,12 +290,6 @@ MStatus uninitialize(MFnPlugin &plugin)
 		// guarantee that we're popping the one we pushed (other people could have pushed their own
 		// handlers since ours, and not popped 'em). Not sure - maybe we need some guidelines as to
 		// the nesting of handlers?
-		
-		if( MGlobal::mayaState() == MGlobal::kInteractive )
-		{
-			MGlobal::executePythonCommand( "import IECoreMaya; IECoreMaya.Menus.removeCortexMenu()" );
-		}
-		
 	}
 
 	return s;

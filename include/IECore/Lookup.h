@@ -45,7 +45,6 @@ namespace IECore
 /// The Lookup class takes a function over a one dimensional domain and
 /// accelerates its computation using linear interpolation between precomputed
 /// values stored in a table.
-/// \ingroup mathGroup
 template<typename X, typename Y>
 class Lookup
 {

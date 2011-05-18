@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,9 +39,16 @@ namespace IECoreMaya
 {
 
 template<class T>
-FromMayaDagNodeConverter::Description<T>::Description( const MFn::Type fromType, const IECore::TypeId resultType, bool defaultConversion )
+FromMayaDagNodeConverter::Description<T>::Description( const MFn::Type *fromTypes, const IECore::TypeId *resultTypes )
 {
-	FromMayaDagNodeConverter::registerConverter( fromType, resultType, defaultConversion, creator );
+	while( *fromTypes!=MFn::kInvalid )
+	{
+		for( const IECore::TypeId *t = resultTypes; *t!=IECore::InvalidTypeId; t++ )
+		{
+			FromMayaDagNodeConverter::registerConverter( *fromTypes, *t, creator );
+		}
+		fromTypes++;
+	}
 }
 
 template<class T>

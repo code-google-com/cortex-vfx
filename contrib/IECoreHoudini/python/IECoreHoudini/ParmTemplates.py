@@ -3,8 +3,6 @@
 #  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 #  its affiliates and/or its licensors.
 #
-#  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
-#
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
 #  met:
@@ -149,8 +147,10 @@ def createParm( p, folders=None, parent=None, top_level=False ):
 		do_hide = False
 		if 'UI' in p.userData() and 'visible' in p.userData()['UI']:
 			do_hide = not bool(p.userData()['UI']['visible'].value)
+		if 'hidden' in p.userData(): # TODO: this flag is deprecated
+			do_hide = bool(p.userData()['hidden'].value)
 		parm['tuple'].hide( do_hide )
-		
+			
 		# add our list of parent folders
 		parm['folder'] = folders
 		parm['cortex_name'] = p.name
@@ -177,6 +177,10 @@ def createParm( p, folders=None, parent=None, top_level=False ):
 	# our parent folder list
 	return results
 
+# tries to pretty-print a parameter, in case it doesn't have a label
+def labelFormat( str ):
+	return IECore.CamelCase.toSpaced( str )
+
 # returns a houdini parameter name, give it's cortex name
 def parmName( name, prefix=None ) :
 	if not prefix :
@@ -185,11 +189,13 @@ def parmName( name, prefix=None ) :
 	return "_".join( [ prefix, name ] )
 
 # returns a parameter label
-def parmLabel( p ) :
-	if 'UI' in p.userData() and 'label' in p.userData()['UI'] :
-		return p.userData()['UI']['label'].value
-	else :
-		return IECore.CamelCase.toSpaced( p.name )
+def parmLabel( p ):
+        label = labelFormat(p.name)
+        if 'UI' in p.userData() and 'label' in p.userData()['UI']:
+                label = p.userData()['UI']['label'].value
+        if 'label' in p.userData(): # TODO: this userData key is deprecated
+                label = p.userData()['label'].value
+        return label
 
 # sets the parmTemplate menu arguments for preset parameters
 def presetsMenuArgs( p ) :

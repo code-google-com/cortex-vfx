@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -96,11 +96,7 @@ IECoreRI::RendererImplementation::RendererImplementation( const std::string &nam
 	}
 	else
 	{
-#ifdef PRMANEXPORT	
-		RiBegin( "launch:prman? -t" );
-#else
 		RiBegin( 0 );
-#endif		
 	}
 	m_context = RiGetContext();
 }
@@ -236,11 +232,7 @@ IECore::ConstDataPtr IECoreRI::RendererImplementation::getOption( const std::str
 	}
 	else if( name.compare( 0, 5, "user:" )==0 )
 	{
-#ifdef PRMANEXPORT	
-		return getRxOption( name.c_str() + 5 );
-#else		
-		return getRxOption( name.c_str() );		
-#endif		
+		return getRxOption( name.c_str() );
 	}
 	else if( name.compare( 0, 3, "ri:" )==0 )
 	{
@@ -371,7 +363,6 @@ void IECoreRI::RendererImplementation::camera( const std::string &name, const IE
 	if( outputNow )
 	{
 		outputCamera( camera );
-		m_camera = 0;
 	}
 	else
 	{
@@ -471,10 +462,7 @@ void IECoreRI::RendererImplementation::display( const std::string &name, const s
 void IECoreRI::RendererImplementation::worldBegin()
 {
 	ScopedContext scopedContext( m_context );
-	if( m_camera )
-	{
-		outputCamera( m_camera );
-	}
+	outputCamera( m_camera );
 	RiWorldBegin();
 }
 

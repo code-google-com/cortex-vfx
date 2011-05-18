@@ -251,9 +251,7 @@ void CurvesPrimitive::renderRibbons( const State * state, IECore::TypeId style )
 					float cosTheta = sqrt( 1.0f - sinTheta * sinTheta );
 					uTangent *= halfWidth / cosTheta;
 					glNormal( normal );
-					glTexCoord2f( 0.0f, 0.0f );
 					glVertex( p1 - uTangent );
-					glTexCoord2f( 1.0f, 0.0f );
 					glVertex( p1 + uTangent );
 				}
 
@@ -327,9 +325,7 @@ void CurvesPrimitive::renderRibbons( const State * state, IECore::TypeId style )
 									V3f normal;
 									V3f uTangent = uTangentAndNormal( lastP, cameraCentre, cameraView, perspective, v, normal );
 									uTangent *= halfWidth;
-									glTexCoord2f( 0.0f, 0.0f );
 									glVertex( lastP - uTangent );
-									glTexCoord2f( 1.0f, 0.0f );
 									glVertex( lastP + uTangent );
 								}
 								else
@@ -348,9 +344,7 @@ void CurvesPrimitive::renderRibbons( const State * state, IECore::TypeId style )
 							uTangent *= halfWidth;
 
 							glNormal( normal );
-							glTexCoord2f( 0.0f, 0.0f );
 							glVertex( lastP - uTangent );
-							glTexCoord2f( 1.0f, 0.0f );
 							glVertex( lastP + uTangent );
 
 							if( i==0 && ti==2 )
@@ -370,9 +364,7 @@ void CurvesPrimitive::renderRibbons( const State * state, IECore::TypeId style )
 									V3f uTangent = uTangentAndNormal( p, cameraCentre, cameraView, perspective, v, normal );
 									uTangent *= halfWidth;
 									glNormal( normal );
-									glTexCoord2f( 0.0f, 0.0f );
 									glVertex( p - uTangent );
-									glTexCoord2f( 1.0f, 0.0f );
 									glVertex( p + uTangent );
 								}
 								else
@@ -382,14 +374,10 @@ void CurvesPrimitive::renderRibbons( const State * state, IECore::TypeId style )
 									V3f uTangent = uTangentAndNormal( p, cameraCentre, cameraView, perspective, vAvg, normal );
 									uTangent *= halfWidth;
 									glNormal( normal );
-									glTexCoord2f( 0.0f, 0.0f );
 									glVertex( p - uTangent );
-									glTexCoord2f( 1.0f, 0.0f );
 									glVertex( p + uTangent );
 									glNormal( firstNormal );
-									glTexCoord2f( 0.0f, 0.0f );
 									glVertex( firstP - firstUTangent );
-									glTexCoord2f( 1.0f, 0.0f );
 									glVertex( firstP + firstUTangent );
 								}
 							}

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -391,101 +391,171 @@ class InterpolatedCache::Implementation : public IECore::RefCounted
 // InterpolatedCache class
 //////////////////////////////////////////////////////////////////////////
 
+ClassData<InterpolatedCache, InterpolatedCache::ImplementationPtr> InterpolatedCache::g_implementations;
+
 InterpolatedCache::InterpolatedCache( const std::string &pathTemplate, Interpolation interpolation,  const OversamplesCalculator &o, size_t maxOpenFiles )
-	:	m_implementation( new Implementation( pathTemplate, interpolation, o, maxOpenFiles ) )
 {
+	g_implementations.create( this, new Implementation( pathTemplate, interpolation, o, maxOpenFiles ) );
+	setFrame( 0.0f );
+}
+		
+InterpolatedCache::InterpolatedCache( const std::string &pathTemplate, float frame, Interpolation interpolation, const OversamplesCalculator &o )
+{
+	g_implementations.create( this, new Implementation( pathTemplate, interpolation, o, 10 ) );
+	setFrame( frame );
 }
 
 InterpolatedCache::~InterpolatedCache()
 {
+	g_implementations.erase( this );
 }
 
 void InterpolatedCache::setPathTemplate( const std::string &pathTemplate )
 {
-	m_implementation->setPathTemplate( pathTemplate );
+	g_implementations[this]->setPathTemplate( pathTemplate );
 }
 
 const std::string &InterpolatedCache::getPathTemplate() const
 {
-	return m_implementation->getPathTemplate();
+	return g_implementations[this]->getPathTemplate();
 }
 
 void InterpolatedCache::setMaxOpenFiles( size_t maxOpenFiles )
 {
-	m_implementation->setMaxOpenFiles( maxOpenFiles );
+	g_implementations[this]->setMaxOpenFiles( maxOpenFiles );
 }
 
 size_t InterpolatedCache::getMaxOpenFiles() const
 {
-	return m_implementation->getMaxOpenFiles();
+	return g_implementations[this]->getMaxOpenFiles();
+}
+		
+void InterpolatedCache::setFrame( float frame )
+{
+	m_frame = frame;
+}
+
+float InterpolatedCache::getFrame() const
+{
+	return m_frame;
 }
 
 void InterpolatedCache::setInterpolation( InterpolatedCache::Interpolation interpolation )
 {
-	m_implementation->setInterpolation( interpolation );
+	g_implementations[this]->setInterpolation( interpolation );
 }
 
 InterpolatedCache::Interpolation InterpolatedCache::getInterpolation() const
 {
-	return m_implementation->getInterpolation();
+	return g_implementations[this]->getInterpolation();
 }
 
 void InterpolatedCache::setOversamplesCalculator( const OversamplesCalculator &oc )
 {
-	m_implementation->setOversamplesCalculator( oc );
+	g_implementations[this]->setOversamplesCalculator( oc );
 }
 
-const OversamplesCalculator &InterpolatedCache::getOversamplesCalculator() const
+OversamplesCalculator InterpolatedCache::getOversamplesCalculator() const
 {
-	return m_implementation->getOversamplesCalculator();
+	return g_implementations[this]->getOversamplesCalculator();
+}
+
+ObjectPtr InterpolatedCache::read( const ObjectHandle &obj, const AttributeHandle &attr ) const
+{
+	return read( m_frame, obj, attr );
 }
 
 ObjectPtr InterpolatedCache::read( float frame, const ObjectHandle &obj, const AttributeHandle &attr ) const
 {
-	return m_implementation->read( frame, obj, attr );
+	return g_implementations[this]->read( frame, obj, attr );
+}
+
+CompoundObjectPtr InterpolatedCache::read( const ObjectHandle &obj ) const
+{
+	return read( m_frame, obj );
 }
 
 CompoundObjectPtr InterpolatedCache::read( float frame, const ObjectHandle &obj ) const
 {
-	return m_implementation->read( frame, obj );
+	return g_implementations[this]->read( frame, obj );
+}
+
+ObjectPtr InterpolatedCache::readHeader( const HeaderHandle &hdr ) const
+{
+	return readHeader( m_frame, hdr );
 }
 
 ObjectPtr InterpolatedCache::readHeader( float frame, const HeaderHandle &hdr ) const
 {
-	return m_implementation->readHeader( frame, hdr );
+	return g_implementations[this]->readHeader( frame, hdr );
+}
+
+CompoundObjectPtr InterpolatedCache::readHeader() const
+{
+	return readHeader( m_frame );
 }
 
 CompoundObjectPtr InterpolatedCache::readHeader( float frame ) const
 {
-	return m_implementation->readHeader( frame );
+	return g_implementations[this]->readHeader( frame );
+}
+
+void InterpolatedCache::objects( std::vector<ObjectHandle> &objs ) const
+{
+	return objects( m_frame, objs );
 }
 
 void InterpolatedCache::objects( float frame, std::vector<ObjectHandle> &objs ) const
 {
-	return m_implementation->objects( frame, objs );
+	return g_implementations[this]->objects( frame, objs );
+}
+
+void InterpolatedCache::headers( std::vector<HeaderHandle> &hds ) const
+{
+	return headers( m_frame, hds );
 }
 
 void InterpolatedCache::headers( float frame, std::vector<HeaderHandle> &hds ) const
 {
-	return m_implementation->headers( frame, hds );
+	return g_implementations[this]->headers( frame, hds );
+}
+
+void InterpolatedCache::attributes( const ObjectHandle &obj, std::vector<AttributeHandle> &attrs ) const
+{
+	return attributes( m_frame, obj, attrs );
 }
 
 void InterpolatedCache::attributes( float frame, const ObjectHandle &obj, std::vector<AttributeHandle> &attrs ) const
 {
-	return m_implementation->attributes( frame, obj, attrs );
+	return g_implementations[this]->attributes( frame, obj, attrs );
+}
+
+void InterpolatedCache::attributes( const ObjectHandle &obj, const std::string regex, std::vector<AttributeHandle> &attrs ) const
+{
+	return attributes( m_frame, obj, regex, attrs );
 }
 
 void InterpolatedCache::attributes( float frame, const ObjectHandle &obj, const std::string regex, std::vector<AttributeHandle> &attrs ) const
 {
-	return m_implementation->attributes( frame, obj, regex, attrs );
+	return g_implementations[this]->attributes( frame, obj, regex, attrs );
+}
+
+bool InterpolatedCache::contains( const ObjectHandle &obj ) const
+{
+	return contains( m_frame, obj );
 }
 
 bool InterpolatedCache::contains( float frame, const ObjectHandle &obj ) const
 {
-	return m_implementation->contains( frame, obj );
+	return g_implementations[this]->contains( frame, obj );
+}
+
+bool InterpolatedCache::contains( const ObjectHandle &obj, const AttributeHandle &attr ) const
+{
+	return contains( m_frame, obj, attr );
 }
 
 bool InterpolatedCache::contains( float frame, const ObjectHandle &obj, const AttributeHandle &attr ) const
 {
-	return m_implementation->contains( frame, obj, attr );
+	return g_implementations[this]->contains( frame, obj, attr );
 }

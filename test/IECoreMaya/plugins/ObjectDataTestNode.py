@@ -37,6 +37,8 @@ import IECoreMaya
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
 
+import sys
+
 class ObjectDataTestNode( OpenMayaMPx.MPxNode ):
 
 	typeId = OpenMaya.MTypeId( 0x00070000 )
@@ -56,13 +58,14 @@ class ObjectDataTestNode( OpenMayaMPx.MPxNode ):
 
 		fnData = OpenMaya.MFnPluginData()
 
+		defaultValue = fnData.create( IECoreMaya.MayaTypeId.ObjectData )
+
 		tAttr = OpenMaya.MFnTypedAttribute()
 		ObjectDataTestNode.objectDataAttr = tAttr.create(
 			"objectData",
 			"od",
 			IECoreMaya.MayaTypeId.ObjectData,
-			# should have a default value of ObjectData here, but maya will
-			# leak it and prevent the plugin unloading if we do that.
+			defaultValue
 		)
 		tAttr.setStorable( True )
 		tAttr.setReadable( True )

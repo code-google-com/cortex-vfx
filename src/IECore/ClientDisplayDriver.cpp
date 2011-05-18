@@ -47,19 +47,44 @@ using boost::asio::ip::tcp;
 
 IE_CORE_DEFINERUNTIMETYPED( ClientDisplayDriver );
 
-const DisplayDriver::DisplayDriverDescription<ClientDisplayDriver> ClientDisplayDriver::g_description;
-
 ClientDisplayDriver::ClientDisplayDriver( const Imath::Box2i &displayWindow, const Imath::Box2i &dataWindow, const std::vector<std::string> &channelNames, IECore::ConstCompoundDataPtr parameters ) :
 		DisplayDriver( displayWindow, dataWindow, channelNames, parameters ),
 		m_service(), m_host(""), m_port(""), m_scanLineOrderOnly(false), m_socket( m_service )
 {
-	// expects three custom StringData parameters : displayHost, displayPort and displayType
-	const StringData *displayHostData = parameters->member<StringData>( "displayHost", true /* throw if missing */ );
-	const StringData *displayPortData = parameters->member<StringData>( "displayPort", true /* throw if missing */ );
-	
-	m_host = displayHostData->readable();
-	m_port = displayPortData->readable();
-	
+	// expects two custom StringData parameters: displayHost and displayPort
+	CompoundDataMap::const_iterator it = parameters->readable().find("displayHost");
+	if ( it == parameters->readable().end() )
+	{
+		// for backward compatibility...
+		it = parameters->readable().find("host");
+	}
+	if ( it == parameters->readable().end() )
+	{
+		throw Exception( "Could not find 'host' parameter!" );
+	}
+	DataPtr data = it->second;
+	if ( data->typeId() != StringDataTypeId )
+	{
+		throw Exception( "Invalid 'host' type parameter. Should be StringData." );
+	}
+	m_host = staticPointerCast<const StringData>(data)->readable();
+	it = parameters->readable().find("displayPort");
+	if ( it == parameters->readable().end() )
+	{
+		// for backward compatibility...
+		it = parameters->readable().find("port");
+	}
+	if ( it == parameters->readable().end() )
+	{
+		throw Exception( "Could not find 'port' parameter!" );
+	}
+	data = it->second;
+	if ( data->typeId() != StringDataTypeId )
+	{
+		throw Exception( "Invalid 'port' parameter. Should be a StringData." );
+	}
+	m_port = staticPointerCast<const StringData>(data)->readable();
+
 	tcp::resolver resolver(m_service);
 	tcp::resolver::query query(m_host, m_port);
 	tcp::resolver::iterator iterator = resolver.resolve(query);
@@ -73,21 +98,19 @@ ClientDisplayDriver::ClientDisplayDriver( const Imath::Box2i &displayWindow, con
 		throw Exception( std::string("Could not connect to remote display driver server: ") + e.what() );
 	}
 
+
 	MemoryIndexedIOPtr io;
 	ConstCharVectorDataPtr buf;
 	Box2iDataPtr displayWindowData = new Box2iData( displayWindow );
 	Box2iDataPtr dataWindowData = new Box2iData( dataWindow );
 	StringVectorDataPtr channelNamesData = new StringVectorData( channelNames );
 
-	IECore::CompoundDataPtr tmpParameters = parameters->copy();
-	tmpParameters->writable()[ "clientPID" ] = new IntData( getpid() );
-
 	// build the data block
 	io = new MemoryIndexedIO( ConstCharVectorDataPtr(), "/", IndexedIO::Exclusive | IndexedIO::Write );
 	displayWindowData->Object::save( io, "displayWindow" );
 	dataWindowData->Object::save( io, "dataWindow" );
 	channelNamesData->Object::save( io, "channelNames" );
-	tmpParameters->Object::save( io, "parameters" );
+	parameters->Object::save( io, "parameters" );
 	buf = io->buffer();
 
 	size_t dataSize = buf->readable().size();

@@ -34,7 +34,7 @@
 
 #include "boost/format.hpp"
 
-#include "OP/OP_Director.h" 
+#include "OP/OP_Director.h"
 #include "PRM/PRM_Default.h"
 #include "PRM/PRM_Template.h"
 
@@ -112,7 +112,6 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 	std::string attributeSuffix = paramVal.toStdString();
 	
 	int frameMultiplier = evalInt( "frameMultiplier", 0, time );
-	
 	// create the InterpolatedCache
 	if ( cacheFileName.compare( m_cacheFileName ) != 0 || frameMultiplier != m_frameMultiplier )
 	{
@@ -120,7 +119,7 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 		{
 			float fps = OPgetDirector()->getChannelManager()->getSamplesPerSec();
 			OversamplesCalculator calc( fps, 1, (int)fps * frameMultiplier );
-			m_cache = new InterpolatedCache( cacheFileName, InterpolatedCache::Linear, calc );
+			m_cache = new InterpolatedCache( cacheFileName, frame, InterpolatedCache::Linear, calc );
 		}
 		catch ( IECore::InvalidArgumentException e )
 		{
@@ -145,7 +144,8 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 	
 	try
 	{
-		m_cache->objects( frame, objects );
+		m_cache->setFrame( frame );
+		m_cache->objects( objects );
 	}
 	catch ( IECore::Exception e )
 	{
@@ -182,8 +182,8 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 		
 		try
 		{
-			m_cache->attributes( frame, *oIt, attrs );
-			attributes = m_cache->read( frame, *oIt );
+			m_cache->attributes( *oIt, attrs );
+			attributes = m_cache->read( *oIt );
 		}
 		catch ( IECore::Exception e )
 		{

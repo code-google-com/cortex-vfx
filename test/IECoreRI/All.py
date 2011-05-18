@@ -62,7 +62,6 @@ from ProceduralThreadingTest import ProceduralThreadingTest
 from StringArrayParameterTest import StringArrayParameterTest
 from CoshaderTest import CoshaderTest
 from GroupTest import GroupTest
-from DspyTest import DspyTest
 
 if hasattr( IECoreRI, "SXRenderer" ) :
 	from SXRendererTest import SXRendererTest

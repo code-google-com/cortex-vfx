@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -46,7 +46,6 @@ namespace IECore
 /// The LineSegment class represents the portion of a line bounded
 /// by two endpoints - this is in contrast to the Imath::Line class
 /// which represents a line with infinite extent.
-/// \ingroup mathGroup
 template<class T>
 class LineSegment
 {
@@ -81,9 +80,9 @@ class LineSegment
 		/// t ranges from 0 at p0 to 1 at p1.
 		T operator() ( BaseType t ) const;
 
-		/// p1 - p0
+		/// p0 - p1
 		T direction() const;
-		/// (p1 - p0).normalized()
+		/// (p0 - p1).normalized()
 		T normalizedDirection() const;
 
 		/// Distance between p0 and p1
@@ -111,9 +110,6 @@ class LineSegment
 		bool intersect( const Imath::Plane3<S> &plane, T &intersection ) const;
 		template<class S>
 		bool intersectT( const Imath::Plane3<S> &plane, BaseType &t ) const;
-
-		/// Simply returns the dimensions of the underlying point type.
-		static unsigned int	dimensions();
 
 };
 

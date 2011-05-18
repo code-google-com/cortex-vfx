@@ -37,8 +37,6 @@
 
 #include "boost/python.hpp"
 
-#include "tbb/tbb_thread.h"
-
 #include "IECorePython/RefCountedBinding.h"
 #include "IECorePython/RunTimeTypedBinding.h"
 #include "IECorePython/ExceptionBinding.h"
@@ -290,7 +288,6 @@
 #include "IECorePython/EnvMapSHProjectorBinding.h"
 #include "IECorePython/LightBinding.h"
 #include "IECorePython/ContrastSmoothSkinningWeightsOpBinding.h"
-#include "IECorePython/CamelCaseBinding.h"
 #include "IECore/IECore.h"
 
 using namespace IECorePython;
@@ -579,7 +576,6 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindCapturingRenderer();
 	bindLight();
 	bindContrastSmoothSkinningWeightsOp();
-	bindCamelCase();
 		
 	def( "majorVersion", &IECore::majorVersion );
 	def( "minorVersion", &IECore::minorVersion );
@@ -590,7 +586,6 @@ BOOST_PYTHON_MODULE(_IECore)
 	def( "withJPEG", &IECore::withJPEG );
 	def( "withFreeType", &IECore::withFreeType );
 	def( "initThreads", &PyEval_InitThreads );
-	def( "hardwareConcurrency", &tbb::tbb_thread::hardware_concurrency );
 
 }
 

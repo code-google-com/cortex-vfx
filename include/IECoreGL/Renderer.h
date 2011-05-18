@@ -1,7 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
-//  Copyright (c) 2011, John Haddon. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,19 +46,6 @@ namespace IECoreGL
 
 IE_CORE_FORWARDDECLARE( Scene );
 
-/// \addtogroup environmentGroup
-///
-/// <b>IECOREGL_SHADER_PATHS</b><br>
-/// <b>IECOREGL_SHADER_INCLUDE_PATHS</b><br>
-/// <b>IECOREGL_TEXTURE_PATHS</b><br>
-/// <b>IECORE_FONT_PATHS</b><br>
-/// Used to specify default resource locations for the IECoreGL::Renderer.
-
-/// The IECoreGL::Renderer class implements the IECore::Renderer interface to
-/// allow rendering to OpenGL. Immediate mode rendering allows the generation of
-/// images and deferred mode rendering allows scenes to be captured for later interactive
-/// display.
-/// \ingroup renderingGroup
 class Renderer : public IECore::Renderer
 {
 	public :
@@ -324,11 +310,6 @@ class Renderer : public IECore::Renderer
 		/// When true, procedurals may be evaluated in multiple parallel threads.
 		/// When false they will be evaluated from the same thread they were specified
 		/// from.
-		/// \par Implementation specific depth buffer attributes :
-		////////////////////////////////////////////////////////////
-		///
-		/// \li <b>"gl:depthTest" BoolData true</b><br>
-		/// Maps to glEnable/Disable GL_DEPTH_TEST
 		virtual void setAttribute( const std::string &name, IECore::ConstDataPtr value );
 		virtual IECore::ConstDataPtr getAttribute( const std::string &name ) const;
 		/// Supports only shader type "surface" or "gl:surface", looking for "name.vert" and  "name.frag" GLSL source files
