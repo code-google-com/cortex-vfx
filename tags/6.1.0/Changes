@@ -1,0 +1,171 @@
+Cortex 6.1.0
+============
+
+Additions :
+
+* Added RelativePreset class. Can be used to apply parameter changes on similar Parameterised objects.
+
+* Added PkgConfig configuration file, generated on install.
+
+Improvements :
+
+* Improved the appearance of parameter user interfaces in Maya 2011 and 2012.
+
+* MeshMergeOp will merge PrimitiveVariables from either the input mesh or the secondary mesh. It also optionally ignores variables that don't exist on both meshes or fills the data with default values.
+
+Changes :
+
+Bug Fixes :
+
+* Fixed build bug which meant that the binary component of the IECoreNuke python module wasn't built unless "install" was in the SCons command.
+
+* Fixed bug in IECoreMaya::MeshParameterHandler which prevented saved files containing MeshParameters from loading properly.
+
+* IECoreMaya.FnParameterisedHolder.parameterPlug() now returns a null MPlug if no plug exists, rather than erroring.
+
+Cortex 6.0.0
+============
+
+Additions :
+
+* New Nuke plugin provides hosting of procedurals and ops within Nuke.
+
+* LineSegmentParameters provide a convenient means of specifying lines to Parameterised classes, and are represented in Nuke as a line which can be manipulated in the viewport.
+
+* StringAlgo.h now provides useful isUpperCase and isLowerCase functions.
+
+* BoxOps.h now provides boxMajorAxis and boxSplit functions, the latter of which is used to bind an IECore.Box*.split() method.
+
+* MotionBlock class provides a convenient means of managing Renderer::motionBegin/motionEnd blocks in an exception-safe way.
+
+* PointDistributionOp provides an easy way to evenly distribute points on a mesh.
+
+* New class DataInterleaveOp provides a means of interleaving data from several VectorTypedData inputs into a single VectorTypedData output. See test/IECore/DataInterleaveOpTest.py for examples.
+
+* New class DataConvertOp provides a means of converting between different numeric VectorTypedData types, with scaling performed by ScaledDataConversion. See test/IECore/DataConvertOpTest.py for examples.
+
+* New maya UI handler called NotesParameterUI, for displaying a StringParameter with its "typeHint" set to "note". This displays the string as a label in the attribute editor, with an edit button next to it which launches an edit dialog.
+
+* Added PNGImageReader.
+
+* Added ieRayConeIntersection to RayAlgo.h
+
+Improvements :
+
+* DisplayDriver factory mechanism has been improved, and support for mapping RenderMan displays to IECore::DisplayDrivers has been added to IECoreRI. Images can now be rendered direct to memory using 3delight with no intermediate rib or image files. A display driver dso for 3delight also allows images to be rendered from rib to any cortex DisplayDriver. See test/IECoreRI/DspyTest.py for examples.
+
+* AttributeCache now performs validation of names for headers, objects and attributes.
+
+* IECoreMaya::ToMayaImageConverter and IECoreMaya::FromMayaImageConverter now have python bindings. See test/IECoreMaya/ImageConverterTest.py for examples.
+
+* IECoreMaya::FromMayaStringPlugConverter now has python bindings.
+
+* ToMayaPlugConverter can now set plugs which expect IECoreMaya::ObjectData values.
+
+* IECoreGL::Renderer provides control over GL_DEPTH_TEST with the new gl:depthTest attribute.
+
+* IECoreRI now accepts V3fData and V3fVectorData as values for shader parameters of type float[3]. This is handy for passing vectors when you do not want the automatic object->current transformation to be performed.
+
+* Improved performance of IECoreGL::Renderer text rendering when using many renderers - they can now share a cache of fonts rather than each recomputing their own copies.
+
+* Added IECore::RunTimeTyped::inheritsFrom() overloads taking two arguments, to simplify querying whether or not one class derives from another.
+
+* IECoreMaya.ParameterUI.create() now falls back to uis registered without a typeHint if a ui with the specific typeHint can't be found.
+
+* The IECore.CamelCase functions are now implemented in C++ in IECore/CamelCase.h. This makes them available in both C++ and Python.
+
+* IECoreHoudini.TemporaryParameterValues now handles unexpanded strings and expressions correctly.
+
+* IECoreMaya.FnOpHolder.create() now loads the default version for the op if no version is specified.
+
+* Maya plugin now has a menu for the creation of nodes holding procedurals and ops. This can be disabled by setting the IECOREMAYA_DISABLE_MENU environment variable to 1. Similar menus can be constructed using the functions in IECoreMaya.Menus.
+
+* ClassParameterHandler::doRestore() and ClassVectorParameterHandler::doRestore() are now proper virtual functions overriding a new ParameterHandler::doRestore() method. Clients simply call the ParameterHandler::restore method now rather than downcasting to the Class*ParameterHandler types first. Other ParameterHandlers may also implement doRestore() behaviour if necessary. This tidies up code which was added with the constraint of maintaining binary compatibility with major version 5.
+
+* LRUCache is now usable directly from Python rather than just from C++. See test/IECore/LRUCacheTest.py for an example. LRUCache should also now be usable with boost::shared_ptr as the pointer type.
+
+* TypeTraits.h has new IsNumericBasedVectorTypedData, IsNumericBasedSimpleTypedData and is IsNumericBasedTypedData classes. These help when using despatchTypedData with a functor which operates using TypeData::baseReadable() and TypedData::baseWritable().
+
+* Hiding implementation details from ClientDisplayDriver and DisplayDriverServer. Also switching from boost::thread to tbb::thread.
+
+* Numeric VectorTypedData classes now have a toString() method bound in python, allowing access to the raw data as a byte string. This is particularly useful if using the DataInterleaveOp for preparing images to be passed to ui toolkits like PyQt.
+
+* Houdini parameters on a SOP_ParameterisedHolder now use the corresponding Cortex parameter descriptions as help documentation.
+
+* IECoreMaya.StringParameterUI now supports the additional values "parent", "parentFull" and "parentPartial" for the ["UI"]["acceptedNodeNameFormat"] user data key.
+
+* IECoreMaya.FromMayaCameraConverter can now be constructed directly in Python, in addition to the previous ability to create one using the FromMayaDagNodeConverter.create() factory method.
+
+* The iePython renderman procedural now prevents python from registering the signal handler which turns Ctrl-C into a python KeyboardInterrupt exception.
+
+* IECoreRI::Renderers now share a single shader cache unless they have been given non-default searchpaths. This can significantly reduce time spent loading shaders if many shaders are loaded by many procedurals.
+
+* The IECoreRI::SLOReader now reads parameters of type shader and shader[], adding StringData and StringVectorData objects to Shader::parameters respectively.
+
+* Added support for installing a pkgConfig configuration file in $INSTALL_PREFIX/lib/pkgconfig. This can be used to simplify the process of building against Cortex.
+
+* The CapturingRenderer accepts the attribute "cp:procedural:reentrant" to decide whether or not to render procedurals on multiple threads.
+
+Changes :
+
+* Removed deprecated methods from InterpolatedCache - all queries now specify a frame, allowing efficient sharing of one cache among multiple threads.
+
+* Removed deprecated methods classParameterModificationContext, setClassParameterClass and setClassVectorParameterClasses from IECoreMaya.FnParameterisedHolder. The parameterModificationContext method should be used instead.
+
+* Removed deprecated IECore.initializeLog function - a FilteredMessageHandler created based on IECORE_LOG_LEVEL is automatically created now anyway.
+
+* PrimitiveEvaluator queries require raw pointers to the PrimitiveEvaluator::Result rather than references to smart pointers.
+
+* ClassVectorParameter now copies the userData over for each of its classes, so that if you set self.parameters().userData() in the constructor of any of the classes it contains, this info is now copied over.
+
+* ClassLoader now prints a warning on load if the class didn't register as RunTimeTyped.
+
+* Removed obsolete ProceduralTypeId from TypeId python bindings.
+
+* FromHoudiniPolygonsConverter returns an empty MeshPrimitive (rather than throwing an exception) if there are no polygon vertices in the GU_Detail.
+
+* Exposed the minSequenceSize parameter of IECore.ls() to SequenceLsOp
+
+* SOP_InterpolatedCacheReader returns an empty GU_Detail and a warning when the cache is missing, rather than an error.
+
+Bug fixes :
+
+* Fixed crashes caused by using SxRenderer with texture lookup shaders in multiple threads.
+
+* TriangulateOp no longer changes the mesh interpolation.
+
+* IECoreRI::GXEvaluator no longer crashes when zero length arrays are passed to the evaluate() method.
+
+* Fixed bug which caused results from the wrong face to be returned when using the GXEValuator s,t based query.
+
+* Fixed bugs which prevented NukeFileExaminer working with spaces in filenames or with Nuke's new # based padding syntax.
+
+* Fixed bug which caused SequenceLsOp to perform modificationTime comparisons in the wrong timezone.
+
+* CameraController::unproject now actually works.
+
+* Fixed bugs which meant that RunTimeTyped::typeNameFromTypeId( RunTimeTypedTypeId ) and RunTimeTyped::typeIdFromTypeName( "RunTimeTyped" ) returned incorrect results.
+
+* Fixed a long standing bug which meant that the various FromMaya*Converter::create() functions wouldn't always return the same type of converter. As an additional benefit converters are matched against the base classes of the types they return, making it possible to request a result type of Primitive from a mesh and have the FromMayaMeshConverter be considered as a match.
+
+* Fixed bugs which meant that the RunTimeTyped methods of python classes derived from some Parameter types would not function correctly.
+
+* Fixed IECoreNuke::CurveLookup to be compatible with Nuke 6.2.
+
+* Fixed bug in DPXImageWriter and CINImageWriter to prevent color "wrap around" when the intensities are higher than what these formats can represent ( > 13 ).
+
+* Fixed crash when calling Parameter.valueValid( None ) in Python or Parameter::valueValid( 0 ) in C++.
+
+* Fixed bug in IECore.Enum.__hash__, whereby the type of the Enum wasn't taken into account and values from distinct Enums would regularly hash equal.
+
+* Fixed a bug which could cause crashes and erroneous python error reports when a python class subclassing a c++ class didn't provide an override for a method which was not directly bound (for instance the protected doRender() method of ParameterisedProcedural).
+
+* Fixed a bug which prevented the attribute range in maya being set correctly when the minimum or maximum value was removed from a NumericParameter.
+
+* Fixed plugin load error caused by ieProceduralHolderUI.mel in Maya 2012.
+
+* Worked around Maya problem which prevented OpHolder values being computed properly when scenes were first loaded.
+
+* ToHoudiniGroupConverter now accounts for transforms on the groups and applys them to the children.
+
+* SOP_ToHoudiniConverter properly handles the GIL before using the CapturingRenderer.
