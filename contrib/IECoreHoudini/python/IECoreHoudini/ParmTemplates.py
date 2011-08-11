@@ -3,8 +3,6 @@
 #  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 #  its affiliates and/or its licensors.
 #
-#  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
-#
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
 #  met:
@@ -149,8 +147,10 @@ def createParm( p, folders=None, parent=None, top_level=False ):
 		do_hide = False
 		if 'UI' in p.userData() and 'visible' in p.userData()['UI']:
 			do_hide = not bool(p.userData()['UI']['visible'].value)
+		if 'hidden' in p.userData(): # TODO: this flag is deprecated
+			do_hide = bool(p.userData()['hidden'].value)
 		parm['tuple'].hide( do_hide )
-		
+			
 		# add our list of parent folders
 		parm['folder'] = folders
 		parm['cortex_name'] = p.name
@@ -177,6 +177,10 @@ def createParm( p, folders=None, parent=None, top_level=False ):
 	# our parent folder list
 	return results
 
+# tries to pretty-print a parameter, in case it doesn't have a label
+def labelFormat( str ):
+	return IECore.CamelCase.toSpaced( str )
+
 # returns a houdini parameter name, give it's cortex name
 def parmName( name, prefix=None ) :
 	if not prefix :
@@ -185,11 +189,13 @@ def parmName( name, prefix=None ) :
 	return "_".join( [ prefix, name ] )
 
 # returns a parameter label
-def parmLabel( p ) :
-	if 'UI' in p.userData() and 'label' in p.userData()['UI'] :
-		return p.userData()['UI']['label'].value
-	else :
-		return IECore.CamelCase.toSpaced( p.name )
+def parmLabel( p ):
+        label = labelFormat(p.name)
+        if 'UI' in p.userData() and 'label' in p.userData()['UI']:
+                label = p.userData()['UI']['label'].value
+        if 'label' in p.userData(): # TODO: this userData key is deprecated
+                label = p.userData()['label'].value
+        return label
 
 # sets the parmTemplate menu arguments for preset parameters
 def presetsMenuArgs( p ) :
@@ -237,7 +243,7 @@ def intParm( p, dim=1, parent=None ):
 	parm = hou.IntParmTemplate(
 		name, label, dim, default_value=default,
 	 	min=min_val, max=max_val, min_is_strict=min_lock, max_is_strict=max_lock,
-		naming_scheme=naming, help=p.description
+		naming_scheme=naming
 	)
 	
 	if dim == 1 :
@@ -279,7 +285,7 @@ def floatParm( p, dim=1, parent=None ):
 	parm = hou.FloatParmTemplate(
 		name, label, dim, default_value=default,
 		min=min_val, max=max_val, min_is_strict=min_lock, max_is_strict=max_lock,
-		look=hou.parmLook.Regular, naming_scheme=naming, help=p.description
+		look=hou.parmLook.Regular, naming_scheme=naming
 	)
 	
 	if dim == 1 :
@@ -296,7 +302,7 @@ def boolParm( p, parent=None ):
 	name = parmName( p.name, prefix=parent )
 	label = parmLabel( p )
 	default = p.defaultValue.value
-	parm = hou.ToggleParmTemplate( name, label, default_value=default, disable_when="", help=p.description )
+	parm = hou.ToggleParmTemplate( name, label, default_value=default, disable_when="" )
 	
 	return { 'name' : name, 'tuple' : parm, 'initialValue' : [ p.getTypedValue() ] }
 
@@ -307,7 +313,7 @@ def stringParm( p, parent=None ):
 	
 	parm = hou.StringParmTemplate(
 		name, label, 1,	default_value=default,
-		naming_scheme = hou.parmNamingScheme.Base1, help=p.description,
+		naming_scheme = hou.parmNamingScheme.Base1,
 		**presetsMenuArgs( p )
 	)
 	
@@ -320,7 +326,7 @@ def pathParm( p, parent=None ):
 	parm = hou.StringParmTemplate(
 		name, label, 1, default_value=default,
 		naming_scheme=hou.parmNamingScheme.Base1,
-		string_type=hou.stringParmType.FileReference, help=p.description,
+		string_type=hou.stringParmType.FileReference,
 		**presetsMenuArgs( p )
 	)
 	
@@ -334,7 +340,7 @@ def colParm( p, dim, parent=None ):
 		name, label, dim, default_value=default,
 		min=0, max=1, min_is_strict=False, max_is_strict=False,
 		look=hou.parmLook.ColorSquare,
-		naming_scheme=hou.parmNamingScheme.RGBA, help=p.description
+		naming_scheme=hou.parmNamingScheme.RGBA
 	)
 	
 	return { 'name' : name, 'tuple' : parm, 'initialValue' : list(p.getTypedValue()) }
@@ -354,7 +360,7 @@ def matrixParm( p, dim=16, parent=None ):
 	parm = hou.FloatParmTemplate(
 		name, label, dim, default_value=default,
 		min=min_val, max=max_val, min_is_strict=min_lock, max_is_strict=max_lock,
-		look=hou.parmLook.Regular, naming_scheme=hou.parmNamingScheme.Base1, help=p.description
+		look=hou.parmLook.Regular, naming_scheme=hou.parmNamingScheme.Base1
 	)
 	
 	matrix = p.getTypedValue()
@@ -379,7 +385,7 @@ def boxParmInt( p, dim, parent=None ):
 	parm = hou.IntParmTemplate(
 		name, label, dim * 2, default_value=default,
 		min=min_val, max=max_val, min_is_strict=min_lock, max_is_strict=max_lock,
-		naming_scheme=hou.parmNamingScheme.Base1, help=p.description
+		naming_scheme=hou.parmNamingScheme.Base1
 	)
 	
 	box = p.getTypedValue()
@@ -402,7 +408,7 @@ def boxParmFloat( p, dim, parent=None ):
 	parm = hou.FloatParmTemplate(
 		name, label, dim * 2, default_value=default,
 		min=min_val, max=max_val, min_is_strict=min_lock, max_is_strict=max_lock,
-		look=hou.parmLook.Regular, naming_scheme=hou.parmNamingScheme.Base1, help=p.description
+		look=hou.parmLook.Regular, naming_scheme=hou.parmNamingScheme.Base1
 	)
 	
 	box = p.getTypedValue()

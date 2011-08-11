@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -35,7 +35,6 @@
 import _IECore as IECore
 from FileExaminer import FileExaminer
 import re
-import shlex
 
 ## The NukeFileExaminer class implements the FileExaminer interface for
 # nuke script files.
@@ -146,7 +145,7 @@ class NukeFileExaminer( FileExaminer ) :
 
 		for line in node[1:-1] :
 
-			words = shlex.split( line )
+			words = line.split()
 			if len( words )==2 and words[0]==knobName :
 				return words[1]
 
@@ -161,6 +160,9 @@ class NukeFileExaminer( FileExaminer ) :
 			padder = m.group( 2 )
 			if len( padder ) :
 
+				if ' ' in fileName :
+					raise Exception( "Sequence fileName \%s\" contains a space." % fileName )
+
 				if padder[0]=="0" :
 					padding = int( padder[1:] )
 				else :
@@ -168,12 +170,11 @@ class NukeFileExaminer( FileExaminer ) :
 					# nuke seems to pad with spaces. we won't accept
 					# spaces in a filename
 					raise Exception( "Filename \"%s\" is padded with spaces." % fileName )
-			
-			fileName = m.group( 1 ) + "#" * padding + m.group( 3 )
-		
-		if "#" in fileName :
-			return fileName + " " + str( IECore.FrameRange( min( firstFrame, lastFrame ), max( firstFrame, lastFrame ) ) )
+
+			return m.group( 1 ) + "".ljust( padding, '#' ) + m.group( 3 ) + " " + str( IECore.FrameRange( min( firstFrame, lastFrame ), max( firstFrame, lastFrame ) ) )
+
 		else :
+
 			return fileName
 
 FileExaminer.registerExaminer( [ "nk" ], NukeFileExaminer )

@@ -14,10 +14,6 @@ surface types(
 	color cav[] = {};
 	point pav[] = {};
 	matrix mav[] = {};
-	float f3[3] = { 1, 2, 3 };
-	shader sh = null;
-	shader sha[] = {};
-	shader sha3[3] = { null, null, null };
 )
 {
 	Ci = 1;

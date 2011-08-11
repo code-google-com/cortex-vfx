@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 #
 #  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 #  its affiliates and/or its licensors.
@@ -184,12 +184,6 @@ class TestParameter( unittest.TestCase ) :
 		self.assert_( p.getValue() == FloatData( 1 ) )
 		p.smartSetValue( q.getValue() )
 		self.assert_( p.getValue() == IntData( 2 ) )
-		
-	def testNoneIsValid( self ) :
-	
-		p = Parameter( "p", "description", FloatData( 1 ) )
-
-		self.failIf( p.valueValid( None )[0] )
 
 class TestNumericParameter( unittest.TestCase ) :
 
@@ -967,32 +961,6 @@ class TestCompoundParameter( unittest.TestCase ) :
 		self.assertEqual( items[1][0], "d" )
 		self.failUnless( items[0][1].isSame( a["b"] ) )
 		self.failUnless( items[1][1].isSame( a["d"] ) )
-		
-	def testValueValidReason( self ) :
-	
-		i = IntParameter( "i", "", 1, 0, 10 )
-		c = CompoundParameter(
-			"c",
-			members = [
-				i
-			]
-		)
-		
-		childReason = i.valueValid( IntData( 20 ) )[1]
-		compoundReason = c.valueValid( CompoundObject( { "i" : IntData( 20 ) } ) )[1]
-		
-		self.assertEqual( compoundReason, "i : " + childReason )
-		
-		cc = CompoundParameter(
-			members = [
-				c
-			]
-		)
-		
-		compoundCompoundReason = cc.valueValid( CompoundObject( { "c" : { "i" : IntData( 20 ) } } ) )[1]
-		
-		self.assertEqual( compoundCompoundReason, "c.i : " + childReason )
-		
 		
 class TestValidatedStringParameter( unittest.TestCase ) :
 

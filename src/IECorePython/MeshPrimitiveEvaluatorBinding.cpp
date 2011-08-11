@@ -46,7 +46,7 @@ using namespace IECore;
 namespace IECorePython
 {
 
-static bool barycentricPosition( const MeshPrimitiveEvaluator &e, unsigned int t, const Imath::V3f &b, PrimitiveEvaluator::Result *r )
+static bool barycentricPosition( const MeshPrimitiveEvaluator &e, unsigned int t, const Imath::V3f &b, const PrimitiveEvaluator::ResultPtr &r )
 {
 	e.validateResult( r );
 	return e.barycentricPosition( t, b, r );

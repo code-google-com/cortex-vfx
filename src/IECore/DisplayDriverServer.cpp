@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,10 +37,8 @@
 
 #include "boost/asio.hpp"
 #include "boost/bind.hpp"
-#include "tbb/tbb_thread.h"
 
 #include "IECore/DisplayDriverServer.h"
-#include "IECore/private/DisplayDriverServerHeader.h"
 #include "IECore/SimpleTypedData.h"
 #include "IECore/MemoryIndexedIO.h"
 #include "IECore/MessageHandler.h"
@@ -50,64 +48,6 @@ using boost::asio::ip::tcp;
 using namespace boost;
 
 IE_CORE_DEFINERUNTIMETYPED( DisplayDriverServer );
-
-class DisplayDriverServer::Session : public RefCounted
-{
-	public:
-
-		Session( boost::asio::io_service& io_service );
-		~Session();
-
-		boost::asio::ip::tcp::socket& socket();
-		void start();
-
-	private:
-
-		void handleReadHeader( const boost::system::error_code& error );
-		void handleReadOpenParameters( const boost::system::error_code& error );
-		void handleReadDataParameters( const boost::system::error_code& error );
-		void sendResult( DisplayDriverServerHeader::MessageType msg, size_t dataSize );
-		void sendException( const char *message );
-
-	private:
-		boost::asio::ip::tcp::socket m_socket;
-		DisplayDriverPtr m_displayDriver;
-		DisplayDriverServerHeader m_header;
-		CharVectorDataPtr m_buffer;
-};
-
-struct DisplayDriverServer::PrivateData : public RefCounted
-{
-	bool m_success;
-	boost::asio::ip::tcp::endpoint m_endpoint;
-	boost::asio::io_service m_service;
-	boost::asio::ip::tcp::acceptor m_acceptor;
-	tbb::tbb_thread m_thread;
-
-	PrivateData( int portNumber ) :
-		m_success(false),
-		m_endpoint(tcp::v4(), portNumber),
-		m_service(),
-		m_acceptor( m_service ),
-		m_thread()
-	{
-		m_acceptor.open(  m_endpoint.protocol() );
-		m_acceptor.set_option( boost::asio::ip::tcp::acceptor::reuse_address(true));
-		m_acceptor.bind( m_endpoint );
-		m_acceptor.listen();
-		m_success = true;
-	}
-
-	~PrivateData()
-	{
-		if ( m_success )
-		{
-			m_acceptor.cancel();
-			m_acceptor.close();
-			m_thread.join();
-		}
-	}
-};
 
 /* Set the FD_CLOEXEC flag for the given socket descriptor, so that it will not exist on child processes.*/
 static void fixSocketFlags( int socketDesc )
@@ -120,28 +60,41 @@ static void fixSocketFlags( int socketDesc )
 }
 
 DisplayDriverServer::DisplayDriverServer( int portNumber ) :
-		m_data( 0 )
+		m_endpoint(tcp::v4(), portNumber),
+		m_service(),
+		m_acceptor( m_service ),
+		m_thread(),
+		m_startThread(false)
 {
-	m_data = new DisplayDriverServer::PrivateData( portNumber );
-
-	DisplayDriverServer::SessionPtr newSession( new DisplayDriverServer::Session( m_data->m_service ) );
-	m_data->m_acceptor.async_accept( newSession->socket(),
+	m_acceptor.open(  m_endpoint.protocol() );
+	m_acceptor.set_option( boost::asio::ip::tcp::acceptor::reuse_address(true));
+	m_acceptor.bind( m_endpoint );
+	m_acceptor.listen();
+	DisplayDriverServer::SessionPtr newSession( new DisplayDriverServer::Session( m_service ) );
+	m_acceptor.async_accept( newSession->socket(),
 			boost::bind( &DisplayDriverServer::handleAccept, this, newSession,
 			boost::asio::placeholders::error));
-	fixSocketFlags( m_data->m_acceptor.native() );
-	tbb::tbb_thread newThread( boost::bind(&DisplayDriverServer::serverThread, this) );
-	m_data->m_thread = newThread;
+	fixSocketFlags( m_acceptor.native() );
+	boost::thread newThread( boost::bind(&DisplayDriverServer::serverThread, this) );
+	m_thread.swap( newThread );
+	m_startThread = true;
 }
 
 DisplayDriverServer::~DisplayDriverServer()
 {
+	if (m_startThread)
+	{
+		m_acceptor.cancel();
+		m_acceptor.close();
+		m_thread.join();
+	}
 }
 
 void DisplayDriverServer::serverThread()
 {
 	try
 	{
-		m_data->m_service.run();
+		m_service.run();
 	}
 	catch( std::exception &e )
 	{
@@ -153,17 +106,75 @@ void DisplayDriverServer::handleAccept( DisplayDriverServer::SessionPtr session,
 {
 	if (!error)
 	{
-		DisplayDriverServer::SessionPtr newSession( new DisplayDriverServer::Session( m_data->m_service ) );
-		m_data->m_acceptor.async_accept( newSession->socket(),
+		DisplayDriverServer::SessionPtr newSession( new DisplayDriverServer::Session( m_service ) );
+		m_acceptor.async_accept( newSession->socket(),
 				boost::bind( &DisplayDriverServer::handleAccept,  this, newSession,
 				boost::asio::placeholders::error));
 		session->start();
 	}
 }
 
-/* 
- * DisplayDriverServer::Session functions 
- */
+/* DisplayDriverServer::Header functions */
+
+enum byteOrder {
+	orderMagicNumber = 0,
+	orderProtocolVersion,
+	orderMessageType,
+	orderDataSize1,
+	orderDataSize2,
+	orderDataSize3,
+	orderDataSize4
+};
+
+DisplayDriverServer::Header::Header()
+{
+	memset( &m_header[0], 0, sizeof(m_header) );
+}
+
+DisplayDriverServer::Header::Header( MessageType msg, size_t dataSize )
+{
+	m_header[orderMagicNumber] = magicNumber;
+	m_header[orderProtocolVersion] = currentProtocolVersion;
+	m_header[orderMessageType] = msg;
+	setDataSize( dataSize );
+}
+
+unsigned char *DisplayDriverServer::Header::buffer()
+{
+	return &m_header[0];
+}
+
+bool DisplayDriverServer::Header::valid()
+{
+	if ( m_header[orderMagicNumber] != magicNumber || m_header[orderProtocolVersion] != currentProtocolVersion ||
+		( m_header[orderMessageType] != imageOpen && m_header[orderMessageType] != imageData &&
+			m_header[orderMessageType] != imageClose && m_header[orderMessageType] != exception ) )
+	{
+		return false;
+	}
+	return true;
+}
+
+size_t DisplayDriverServer::Header::getDataSize()
+{
+	return (unsigned int)m_header[orderDataSize1] | ((unsigned int)m_header[orderDataSize2] << 8) |
+				((unsigned int)m_header[orderDataSize3] << 16) | ((unsigned int)m_header[orderDataSize4] << 24);
+}
+
+void DisplayDriverServer::Header::setDataSize( size_t dataSize )
+{
+	m_header[orderDataSize1] = dataSize & 0xff;
+	m_header[orderDataSize2] = ( dataSize >> 8 ) & 0xff;
+	m_header[orderDataSize3] = ( dataSize >> 16 ) & 0xff;
+	m_header[orderDataSize4] = ( dataSize >> 24 ) & 0xff;
+}
+
+DisplayDriverServer::MessageType DisplayDriverServer::Header::messageType()
+{
+	return (MessageType)m_header[2];
+}
+
+/* DisplayDriverServer::Session functions */
 
 DisplayDriverServer::Session::Session( boost::asio::io_service& io_service ) :
 	m_socket( io_service ), m_displayDriver(0), m_buffer( new CharVectorData( ) )
@@ -217,21 +228,21 @@ void DisplayDriverServer::Session::handleReadHeader( const boost::system::error_
 	// service
 	switch( m_header.messageType() )
 	{
-	case DisplayDriverServerHeader::imageOpen:
+	case imageOpen:
 		boost::asio::async_read( m_socket,
 				boost::asio::buffer( &data[0], bytesAhead ),
 				boost::bind( &DisplayDriverServer::Session::handleReadOpenParameters, SessionPtr(this), boost::asio::placeholders::error)
 		);
 		break;
 
-	case DisplayDriverServerHeader::imageData:
+	case imageData:
 		boost::asio::async_read( m_socket,
 				boost::asio::buffer( &data[0], bytesAhead ),
 				boost::bind(&DisplayDriverServer::Session::handleReadDataParameters, SessionPtr(this),
 				boost::asio::placeholders::error));
 		break;
 
-	case DisplayDriverServerHeader::imageClose:
+	case imageClose:
 		if ( m_displayDriver )
 		{
 			try
@@ -247,7 +258,7 @@ void DisplayDriverServer::Session::handleReadHeader( const boost::system::error_
 			}
 			try
 			{
-				sendResult( DisplayDriverServerHeader::imageClose, 0 );
+				sendResult( imageClose, 0 );
 			}
 			catch( std::exception &e )
 			{
@@ -293,10 +304,8 @@ void DisplayDriverServer::Session::handleReadOpenParameters( const boost::system
 		channelNames = staticPointerCast<StringVectorData>( Object::load( io, "channelNames" ) );
 		parameters = staticPointerCast<CompoundData>( Object::load( io, "parameters" ) );
 
-		const StringData *displayType = parameters->member<StringData>( "remoteDisplayType", true /* throw if missing */ );
-
 		// create a displayDriver using the factory function.
-		m_displayDriver = DisplayDriver::create( displayType->readable(), displayWindow->readable(), dataWindow->readable(), channelNames->readable(), parameters );
+		m_displayDriver = DisplayDriver::create( displayWindow->readable(), dataWindow->readable(), channelNames->readable(), parameters );
 
 		scanLineOrder = m_displayDriver->scanLineOrderOnly();
 	}
@@ -311,7 +320,7 @@ void DisplayDriverServer::Session::handleReadOpenParameters( const boost::system
 	try
 	{
 		// send the result back.
-		sendResult( DisplayDriverServerHeader::imageOpen, sizeof(scanLineOrder) );
+		sendResult( imageOpen, sizeof(scanLineOrder) );
 		m_socket.send( boost::asio::buffer( &scanLineOrder, sizeof(scanLineOrder) ) );
 
 		// prepare for getting imageData packages
@@ -378,15 +387,15 @@ void DisplayDriverServer::Session::handleReadDataParameters( const boost::system
 	}
 }
 
-void DisplayDriverServer::Session::sendResult( DisplayDriverServerHeader::MessageType msg, size_t dataSize )
+void DisplayDriverServer::Session::sendResult( MessageType msg, size_t dataSize )
 {
-	DisplayDriverServerHeader header( msg, dataSize );
+	DisplayDriverServer::Header header( msg, dataSize );
 	m_socket.send( boost::asio::buffer( header.buffer(), header.headerLength ) );
 }
 
 void DisplayDriverServer::Session::sendException( const char *message )
 {
 	size_t msgLen = strlen( message ) + 1;
-	sendResult( DisplayDriverServerHeader::exception, msgLen );
+	sendResult( DisplayDriverServer::exception, msgLen );
 	m_socket.send( boost::asio::buffer( message, msgLen ) );
 }

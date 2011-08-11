@@ -39,6 +39,8 @@
 
 #include "tbb/tbb_thread.h"
 
+#include "boost/format.hpp"
+
 #include "IECore/Exception.h"
 
 namespace IECore
@@ -46,7 +48,7 @@ namespace IECore
 
 template<typename Key, typename Ptr>
 LRUCache<Key, Ptr>::CacheEntry::CacheEntry()
-	:	cost( 0 ), status( New ), data()
+	:	cost( 0 ), status( New ), data( 0 )
 {
 }
 			
@@ -132,8 +134,8 @@ Ptr LRUCache<Key, Ptr>::get( const Key& key )
 	
 	if( cacheEntry.status==New || cacheEntry.status==Erased || cacheEntry.status==TooCostly )
 	{
-		assert( cacheEntry.data==Ptr() );
-		Ptr data = Ptr();
+		assert( cacheEntry.data==0 );
+		Ptr data = 0;
 		Cost cost = 0;
 		try
 		{
@@ -166,7 +168,7 @@ Ptr LRUCache<Key, Ptr>::get( const Key& key )
 	else
 	{
 		assert( cacheEntry.status==Failed );
-		throw Exception( "Previous attempt to get item failed." );
+		throw Exception( boost::str( boost::format( "Previous attempt to get \"%1%\" failed." ) % key ) );
 	}
 }
 
@@ -180,7 +182,7 @@ bool LRUCache<Key, Ptr>::set( const Key &key, const Ptr &data, Cost cost )
 	if( cacheEntry.status==Cached )
 	{
 		m_currentCost -= cacheEntry.cost;
-		cacheEntry.data = Ptr();
+		cacheEntry.data = 0;
 		m_list.erase( cacheEntry.listIterator );
 	}
 	
@@ -236,7 +238,7 @@ bool LRUCache<Key, Ptr>::erase( const Key &key )
 	{
 		m_currentCost -= it->second.cost;
 		m_list.erase( it->second.listIterator );
-		it->second.data = Ptr();
+		it->second.data = 0;
 	}
 	
 	it->second.status = Erased;

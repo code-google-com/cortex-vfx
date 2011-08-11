@@ -34,7 +34,7 @@
 
 #include "boost/format.hpp"
 
-#include "OP/OP_Director.h" 
+#include "OP/OP_Director.h"
 #include "PRM/PRM_Default.h"
 #include "PRM/PRM_Template.h"
 
@@ -91,6 +91,8 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 	
 	gdp->stashAll();
 	
+	duplicatePointSource( 0, context );
+	
 	float time = context.getTime();
 	float frame = context.getFloatFrame();
 	
@@ -110,7 +112,6 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 	std::string attributeSuffix = paramVal.toStdString();
 	
 	int frameMultiplier = evalInt( "frameMultiplier", 0, time );
-	
 	// create the InterpolatedCache
 	if ( cacheFileName.compare( m_cacheFileName ) != 0 || frameMultiplier != m_frameMultiplier )
 	{
@@ -118,11 +119,11 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 		{
 			float fps = OPgetDirector()->getChannelManager()->getSamplesPerSec();
 			OversamplesCalculator calc( fps, 1, (int)fps * frameMultiplier );
-			m_cache = new InterpolatedCache( cacheFileName, InterpolatedCache::Linear, calc );
+			m_cache = new InterpolatedCache( cacheFileName, frame, InterpolatedCache::Linear, calc );
 		}
 		catch ( IECore::InvalidArgumentException e )
 		{
-			addWarning( SOP_ATTRIBUTE_INVALID, e.what() );
+			addError( SOP_ATTRIBUTE_INVALID, e.what() );
 			unlockInputs();
 			return error();
 		}
@@ -143,16 +144,15 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 	
 	try
 	{
-		m_cache->objects( frame, objects );
+		m_cache->setFrame( frame );
+		m_cache->objects( objects );
 	}
 	catch ( IECore::Exception e )
 	{
-		addWarning( SOP_ATTRIBUTE_INVALID, e.what() );
+		addError( SOP_ATTRIBUTE_INVALID, e.what() );
 		unlockInputs();
 		return error();
 	}
-	
-	duplicatePointSource( 0, context );
 	
 	GB_Group *group;
 	const GB_GroupList &pointGroups = gdp->pointGroups();
@@ -182,8 +182,8 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 		
 		try
 		{
-			m_cache->attributes( frame, *oIt, attrs );
-			attributes = m_cache->read( frame, *oIt );
+			m_cache->attributes( *oIt, attrs );
+			attributes = m_cache->read( *oIt );
 		}
 		catch ( IECore::Exception e )
 		{
@@ -233,27 +233,17 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 					continue;
 				}
 				
-				size_t index = 0;
-				size_t entries = points.entries();
 				const std::vector<Imath::V3f> &pos = positions->readable();
-				
-				// Attempting to account for the vertex difference between an IECore::CurvesPrimitive and Houdini curves.
-				// As Houdini implicitly triples the endpoints of a curve, a cache generated from a single CurvesPrimitive
-				// will have exactly four extra vertices. In this case, we adjust the cache by ignoring the first two and
-				// last two V3fs. In all other cases, we report a warning and don't apply the cache to these points.
-				if ( pos.size() - 4 == entries )
+				if ( pos.size() != points.entries() )
 				{
-					index = 2;
-				}
-				else if ( pos.size() != entries )
-				{
-					addWarning( SOP_ATTRIBUTE_INVALID, ( boost::format( "Geometry/Cache mismatch: %s contains %d points, while cache expects %d." ) % group->getName().toStdString() % entries % pos.size() ).str().c_str() );
-					continue;
+					addError( SOP_ATTRIBUTE_INVALID, ( boost::format( "Geometry/Cache mismatch: Geometry contains %d points, while cache expects %d." ) % points.entries() % pos.size() ).str().c_str() );
+					unlockInputs();
+					return error();
 				}
 				
-				for ( size_t i=0; i < entries; i++, index++ )
+				for ( size_t i=0; i < pos.size(); i++ )
 				{
-					points[i]->setPos( IECore::convert<UT_Vector3>( pos[index] ) );
+					points[i]->setPos( IECore::convert<UT_Vector3>( pos[i] ) );
 				}
 			}
 			else

@@ -156,9 +156,6 @@ class ClassVectorParameter( IECore.CompoundParameter ) :
 
 			parameter.clearParameters()
 			parameter.addParameters( instance[0].parameters().values() )
-			
-			# copy user data over:
-			parameter.userData().copyFrom( instance[0].parameters().userData() )
 	
 	## Removes the class held by the named parameter.
 	def removeClass( self, parameterName ) :

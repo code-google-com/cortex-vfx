@@ -50,8 +50,6 @@ namespace IECore
 /// in that the former keeps the rawSize() of the data constant,
 /// while this keeps the size() constant (e.g. one V3f is made from
 /// each float).
-/// \ingroup coreGroup
-/// \see DataCastOp, DataConvertOp
 class DataPromoteOp : public Op
 {
 	public :

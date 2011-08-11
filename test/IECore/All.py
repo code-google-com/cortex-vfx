@@ -231,7 +231,6 @@ from PointVelocityDisplaceOp import *
 from HexConversionTest import HexConversionTest
 from CompressAndDecompressSmoothSkinningDataOpsTest import CompressAndDecompressSmoothSkinningDataOpsTest
 from BasicPreset import TestBasicPreset
-from RelativePreset import TestRelativePreset
 from ReorderSmoothSkinningInfluencesOpTest import ReorderSmoothSkinningInfluencesOpTest
 from NormalizeSmoothSkinningWeightsOpTest import NormalizeSmoothSkinningWeightsOpTest
 from LimitSmoothSkinningInfluencesOpTest import LimitSmoothSkinningInfluencesOpTest
@@ -247,11 +246,6 @@ from CamelCaseTest import CamelCaseTest
 from CapturingRendererTest import CapturingRendererTest
 from LightTest import LightTest
 from ContrastSmoothSkinningWeightsOpTest import ContrastSmoothSkinningWeightsOpTest
-from CameraControllerTest import CameraControllerTest
-from PointDistributionOpTest import PointDistributionOpTest
-from LRUCacheTest import LRUCacheTest
-from DataInterleaveOpTest import DataInterleaveOpTest
-from DataConvertOpTest import DataConvertOpTest
 
 if IECore.withASIO() :
 	from DisplayDriverTest import *
@@ -266,9 +260,6 @@ if IECore.withJPEG() :
 
 if IECore.withFreeType() :
 	from FontTest import *
-
-if IECore.withPNG() :
-	from PNGImageReader import TestPNGReader
 
 unittest.TestProgram(
 	testRunner = unittest.TextTestRunner(

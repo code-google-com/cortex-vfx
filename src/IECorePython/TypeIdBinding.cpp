@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 //  its affiliates and/or its licensors.
@@ -186,7 +186,7 @@ void bindTypeId()
 		.value( "ModifyOp", ModifyOpTypeId )
 		.value( "ImageOp", ImageOpTypeId )
 		.value( "PrimitiveOp", PrimitiveOpTypeId )
-		// skipping binding for obsolete ProceduralTypeId
+		.value( "Procedural", ProceduralTypeId )
 		.value( "Box3iParameter", Box3iParameterTypeId )
 		.value( "V2iParameter", V2iParameterTypeId )
 		.value( "V3iParameter", V3iParameterTypeId )
@@ -390,13 +390,6 @@ void bindTypeId()
 		.value( "Light", LightTypeId )
 		.value( "ContrastSmoothSkinningWeightsOp", ContrastSmoothSkinningWeightsOpTypeId )
 		.value( "PointDistributionOp", PointDistributionOpTypeId )
-		.value( "LineSegment3fData", LineSegment3fDataTypeId )
-		.value( "LineSegment3dData", LineSegment3dDataTypeId )
-		.value( "LineSegment3fParameter", LineSegment3fParameterTypeId )
-		.value( "LineSegment3dParameter", LineSegment3dParameterTypeId )
-		.value( "DataInterleaveOp", DataInterleaveOpTypeId )
-		.value( "DataConvertOp", DataConvertOpTypeId )
-		.value( "PNGImageReader", PNGImageReaderTypeId )
 	;
 }
 

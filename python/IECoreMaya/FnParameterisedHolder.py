@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -112,6 +112,32 @@ class FnParameterisedHolder( maya.OpenMaya.MFnDependencyNode ) :
 	def parameterModificationContext( self ) :
 	
 		return _ParameterModificationContext( self )
+
+	## \deprecated
+	## \todo Remove for major version 6
+	def classParameterModificationContext( self ) :
+	
+		warnings.warn( "Use parameterModificationContext() instead.", DeprecationWarning, 2 )
+
+		return self.parameterModificationContext()
+
+	## \deprecated
+	## \todo Remove for major version 6
+	def setClassParameterClass( self, parameter, className, classVersion, searchPathEnvVar ) :
+		
+		warnings.warn( "Use classParameterModificationContext() and manipulate the parameter yourself.", DeprecationWarning, 2 )
+		
+		with self.classParameterModificationContext() :
+			parameter.setClass( className, classVersion, searchPathEnvVar )
+		
+	## \deprecated
+	## \todo Remove for major version 6
+	def setClassVectorParameterClasses( self, parameter, classes ) :
+		
+		warnings.warn( "Use classParameterModificationContext() and manipulate the parameter yourself.", DeprecationWarning, 2 )
+		
+		with self.classParameterModificationContext() :
+			parameter.setClasses( classes )
 		
 	## Sets the values of the plugs representing the parameterised object,
 	# using the current values of the parameters. If the undoable parameter is True
@@ -153,8 +179,6 @@ class FnParameterisedHolder( maya.OpenMaya.MFnDependencyNode ) :
 	def parameterPlug( self, parameter ) :
 
 		plugName = _IECoreMaya._parameterisedHolderParameterPlug( self, parameter )
-		if plugName == "" :
-			return maya.OpenMaya.MPlug()
 		
 		return StringUtil.plugFromString( self.fullPathName() + "." + plugName )
 
@@ -326,8 +350,6 @@ class _ParameterModificationContext :
 		self.__fnPH.setParameterisedValues()
 		self.__originalValues = self.__fnPH.getParameterised()[0].parameters().getValue().copy()
 		self.__originalClasses = self.__fnPH._classParameterStates()
-		
-		return self.__fnPH.getParameterised()[0]
 		
 	def __exit__( self, type, value, traceBack ) :
 	

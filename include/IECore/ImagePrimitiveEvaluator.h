@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,7 +44,6 @@ namespace IECore
 {
 
 /// An implementation of PrimitiveEvaluator to allow queries to be performed on ImagePrimitive instances
-/// \ingroup imageProcessingGroup
 class ImagePrimitiveEvaluator : public PrimitiveEvaluator
 {
 	public:
@@ -109,17 +108,17 @@ class ImagePrimitiveEvaluator : public PrimitiveEvaluator
 
 		virtual PrimitiveEvaluator::ResultPtr createResult() const;
 
-		virtual void validateResult( PrimitiveEvaluator::Result *result ) const;
+		virtual void validateResult( const PrimitiveEvaluator::ResultPtr &result ) const;
 
-		virtual bool closestPoint( const Imath::V3f &p, PrimitiveEvaluator::Result *result ) const;
+		virtual bool closestPoint( const Imath::V3f &p, const PrimitiveEvaluator::ResultPtr &result ) const;
 
-		virtual bool pointAtUV( const Imath::V2f &uv, PrimitiveEvaluator::Result *result ) const;
+		virtual bool pointAtUV( const Imath::V2f &uv, const PrimitiveEvaluator::ResultPtr &result ) const;
 
 		/// Returns the object-space point at the center of the specified pixel
-		virtual bool pointAtPixel( const Imath::V2i &pixel, PrimitiveEvaluator::Result *result ) const;
+		virtual bool pointAtPixel( const Imath::V2i &pixel, const PrimitiveEvaluator::ResultPtr &result ) const;
 
 		virtual bool intersectionPoint( const Imath::V3f &origin, const Imath::V3f &direction,
-			PrimitiveEvaluator::Result *result, float maxDistance = Imath::limits<float>::max() ) const;
+			const PrimitiveEvaluator::ResultPtr &result, float maxDistance = Imath::limits<float>::max() ) const;
 
 		virtual int intersectionPoints( const Imath::V3f &origin, const Imath::V3f &direction,
 			std::vector<PrimitiveEvaluator::ResultPtr> &results, float maxDistance = Imath::limits<float>::max() ) const;

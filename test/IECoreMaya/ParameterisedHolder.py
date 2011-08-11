@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -375,30 +375,6 @@ class TestParameterisedHolder( IECoreMaya.TestCase ) :
 		
 		op = fnPH.getParameterised()[0]
 		self.assertEqual( op["input"].getValue(), op["input"].defaultValue )
-	
-	def testMeshParameterIOProblem( self ) :
-	
-		fnOP = IECoreMaya.FnOpHolder.create( "merge", "meshMerge", 1 )
-		op = fnOP.getOp()
-		
-		mesh = IECore.MeshPrimitive.createBox( IECore.Box3f( IECore.V3f( -2, -2, -2 ), IECore.V3f( 2, 3, 4 ) ) )
-		op.parameters()["input"].setValue( mesh )
-		fnOP.setNodeValues()
-		
-		cmds.file( rename = os.getcwd() + "/test/IECoreMaya/meshParameterIO.ma" )
-		scene = cmds.file( force = True, type = "mayaAscii", save = True )
-
-		cmds.file( new = True, force = True )
-		cmds.file( scene, open = True )
-		
-		fnOP = IECoreMaya.FnOpHolder( "merge" )
-		fnOP.setParameterisedValues()
-		op = fnOP.getOp()
-		
-		mesh2 = op.parameters()["input"].getValue()
-		self.failUnless( mesh2.arePrimitiveVariablesValid() )
-		del mesh2["N"]
-		self.assertEqual( mesh2, mesh )
 	
 	def testOpHolder( self ) :
 	
@@ -1700,82 +1676,6 @@ class TestParameterisedHolder( IECoreMaya.TestCase ) :
 		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], maxExists=True, node=opNode ), True )
 		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], maximum=True, node=opNode )[0], 10 )
 	
-	def testNumericParameterRangeAdded( self ) :
-	
-		op = IECore.Op( "", IECore.IntParameter( "result", "", 0 ) )
-		op.parameters().addParameter(
-			IECore.IntParameter(
-				"i",
-				"d",
-				0
-			)
-		)
-	
-		opNode = cmds.createNode( "ieOpHolderNode" )
-		fnOH = IECoreMaya.FnOpHolder(  opNode )
-		fnOH.setParameterised( op )
-		
-		iPlugPath = fnOH.parameterPlugPath( op["i"] )
-		
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], minExists=True, node=opNode ), False )
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], maxExists=True, node=opNode ), False )
-		
-		op = IECore.Op( "", IECore.IntParameter( "result", "", 0 ) )
-		op.parameters().addParameter(
-			IECore.IntParameter(
-				"i",
-				"d",
-				0,
-				minValue = -2,
-				maxValue = 2,
-			)
-		)
-		
-		fnOH.setParameterised( op )
-
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], minExists=True, node=opNode ), True )
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], minimum=True, node=opNode )[0], -2 )
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], maxExists=True, node=opNode ), True )
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], maximum=True, node=opNode )[0], 2 )
-		
-	def testNumericParameterRangeRemoved( self ) :
-	
-		op = IECore.Op( "", IECore.IntParameter( "result", "", 0 ) )
-		op.parameters().addParameter(
-			IECore.IntParameter(
-				"i",
-				"d",
-				0,
-				minValue = -2,
-				maxValue = 2,
-			)
-		)
-		
-		opNode = cmds.createNode( "ieOpHolderNode" )
-		fnOH = IECoreMaya.FnOpHolder(  opNode )
-		fnOH.setParameterised( op )
-		
-		iPlugPath = fnOH.parameterPlugPath( op["i"] )
-		
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], minExists=True, node=opNode ), True )
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], minimum=True, node=opNode )[0], -2 )
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], maxExists=True, node=opNode ), True )
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], maximum=True, node=opNode )[0], 2 )	
-	
-		op = IECore.Op( "", IECore.IntParameter( "result", "", 0 ) )
-		op.parameters().addParameter(
-			IECore.IntParameter(
-				"i",
-				"d",
-				0
-			)
-		)
-		
-		fnOH.setParameterised( op )
-
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], minExists=True, node=opNode ), False )
-		self.assertEqual( cmds.attributeQuery( iPlugPath.rpartition( "." )[-1], maxExists=True, node=opNode ), False )
-			
 	def testParameterTypeChanges( self ) :
 	
 		"""Test maya attribute type with changing parameters types."""
@@ -1935,7 +1835,6 @@ class TestParameterisedHolder( IECoreMaya.TestCase ) :
 			"test/IECoreMaya/nonStorableObjectParameter.ma",
 			"test/IECoreMaya/connectedNodeReference.ma",
 			"test/IECoreMaya/connectedNodeReference2.ma",
-			"test/IECoreMaya/meshParameterIO.ma",
 		] :
 
 			if os.path.exists( f ) :

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -52,7 +52,6 @@ IE_CORE_FORWARDDECLARE( PrimitiveEvaluator );
 /// from a given UV coordinate, etc. Individual primitive types derive their own evaluators from this interface, and register
 /// them by creating static instances of PrimitiveEvaluator::Description. The evaluator takes an internal copy of the primitive,
 /// so subsequent changes to it will not be reflected in the evaluator's results.
-/// \ingroup geometryProcessingGroup
 class PrimitiveEvaluator : public RunTimeTyped
 {
 	public:
@@ -115,7 +114,7 @@ class PrimitiveEvaluator : public RunTimeTyped
 		virtual ConstPrimitivePtr primitive() const = 0;
 
 		//! @name Query Functions
-		/// The Result passed to each of the methods below must previously have been created
+		/// The ResultPtr passed to each of the methods below must previously have been created
 		/// by a call to the createResult() method on the same evaluator instance as is being called -
 		/// passing any other result will cause undefined behaviour.
 		/// \threading Query implementations should ensure that they may be called from multiple
@@ -142,15 +141,18 @@ class PrimitiveEvaluator : public RunTimeTyped
 
 		/// Find the closest point on the primitive to the given query point. Returns true on success.
 		/// \todo Extend this to pass a maximum distance past which results are no longer interesting.
-		virtual bool closestPoint( const Imath::V3f &p, Result *result ) const =0;
+		/// \todo: use a raw pointer rather than a reference to a smart pointer
+		virtual bool closestPoint( const Imath::V3f &p, const ResultPtr &result ) const =0;
 
 		/// Find the point on the primitive at the given query UV. Returns true on success
-		virtual bool pointAtUV( const Imath::V2f &uv, Result *result ) const =0;
+		/// \todo: use a raw pointer rather than a reference to a smart pointer
+		virtual bool pointAtUV( const Imath::V2f &uv, const ResultPtr &result ) const =0;
 
 		/// Finds the closest intersection point for the given ray. Optionally specify a maximum distance of interest.
 		/// Returns true if an intersection was found.
+		/// \todo: use a raw pointer rather than a reference to a smart pointer
 		virtual bool intersectionPoint( const Imath::V3f &origin, const Imath::V3f &direction,
-			Result *result, float maxDistance = Imath::limits<float>::max() ) const =0;
+			const ResultPtr &result, float maxDistance = Imath::limits<float>::max() ) const =0;
 
 		/// Finds all intersection points for the given ray. Optionally specify a maximum distance of interest.
 		/// Returns the number of interections found.
@@ -160,7 +162,8 @@ class PrimitiveEvaluator : public RunTimeTyped
 		//@}
 
 		/// Throws an exception if the passed result type is not compatible with the current evaluator
-		virtual void validateResult( Result *result ) const =0;
+		/// \todo: use a raw pointer rather than a reference to a smart pointer
+		virtual void validateResult( const ResultPtr &result ) const =0;
 
 		/// A class to allow registration of primitive evaluators with the system. Simply declare an instance
 		/// of Description< YourEvaluatorType, YourPrimitiveType >

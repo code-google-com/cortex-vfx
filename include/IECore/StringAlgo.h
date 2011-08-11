@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,16 +40,6 @@ namespace IECore
 
 template<class Iterator>
 typename std::iterator_traits<Iterator>::value_type join( Iterator begin, Iterator end, const typename std::iterator_traits<Iterator>::reference separator );
-
-/// Returns true if s has no lower case letters and at least one upper case
-/// letter - non alphabetic characters are ignored.
-template<class String>
-bool isUpperCase( const String &s );
-
-/// Returns true if s has no upper case letters and at least one lower case
-/// letter - non alphabetic characters are ignored.
-template<class String>
-bool isLowerCase( const String &s );
 
 } // namespace IECore
 

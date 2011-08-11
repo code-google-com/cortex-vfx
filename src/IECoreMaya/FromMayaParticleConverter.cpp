@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -54,7 +54,10 @@ using namespace Imath;
 
 IE_CORE_DEFINERUNTIMETYPED( FromMayaParticleConverter );
 
-IECoreMaya::FromMayaShapeConverter::Description<FromMayaParticleConverter> FromMayaParticleConverter::m_description( MFn::kParticle, IECore::PointsPrimitiveTypeId, true );
+static const MFn::Type fromTypes[] = { MFn::kParticle, MFn::kInvalid };
+static const IECore::TypeId toTypes[] = { IECore::BlindDataHolderTypeId, IECore::RenderableTypeId, IECore::VisibleRenderableTypeId, IECore::PrimitiveTypeId, IECore::PointsPrimitiveTypeId, IECore::InvalidTypeId };
+
+IECoreMaya::FromMayaShapeConverter::Description<FromMayaParticleConverter> FromMayaParticleConverter::m_description( fromTypes, toTypes );
 
 FromMayaParticleConverter::FromMayaParticleConverter( const MObject &object )
 	:	FromMayaShapeConverter( "Converts Maya particle shapes into IECore::PointsPrimitive objects.", object )

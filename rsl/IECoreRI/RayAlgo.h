@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,9 +47,9 @@ float ieRaySphereIntersection(
 {
 
 	float b = 2 * ((vector rayOrigin) . rayDirection);
-	float c = ((vector rayOrigin) . (vector rayOrigin)) - sphereRadius*sphereRadius;
-	float discrim = b*b - 4*c;
-	float solutions;
+    float c = ((vector rayOrigin) . (vector rayOrigin)) - sphereRadius*sphereRadius;
+    float discrim = b*b - 4*c;
+    float solutions;
 	if( discrim > 0 )
 	{
 		discrim = sqrt( discrim );
@@ -100,134 +100,4 @@ float ieRayPlaneIntersection(
 
 	return solutions;
 }
-
-
-/// Intersections between a ray and a cone on the negative Z axis, with its apex at the origin and the specified cone angle.
-float ieRayConeIntersection(
-	point rayOrigin;
-	vector rayDirection;
-	float coneAngle;
-	float epsilon;
-	output float t0;
-	output float t1;
-)
-{
-	
-	// multiply the z coordinate by this factor to get the desired cone angle:
-	float k = tan( coneAngle / 2 );
-	k = k * k;
-	
-	// ok - we're working out an intersection with the double cone defined by x^2 + y^2 - k^2 z^2 = 0
-	float c = rayOrigin[0] * rayOrigin[0] + rayOrigin[1] * rayOrigin[1] - k * rayOrigin[2] * rayOrigin[2];
-	float b = 2 * ( rayOrigin[0] * rayDirection[0] + rayOrigin[1] * rayDirection[1] - k * rayOrigin[2] * rayDirection[2] );
-	float a = rayDirection[0] * rayDirection[0] + rayDirection[1] * rayDirection[1] - k * rayDirection[2] * rayDirection[2];
-	
-	if( a == 0 )
-	{
-		// b t + c == 0
-		t0 = - c / b;
-		
-		if( t0 > epsilon )
-		{
-			return 1;
-		}
-		else
-		{
-			return 0;
-		}
-	}
-	
-	// a t * t + b t + c == 0
-    	float discrim = b * b - 4 * a * c;
-	
-	float solutions = 0;
-	
-	if( discrim < 0 )
-	{
-		return 0;
-	}
-	
-	discrim = sqrt( discrim );
-
-	t0 = (-discrim - b) / ( 2 * a );
-	t1 = ( discrim - b) / ( 2 * a );
-
-	if( a < 0 )
-	{
-		// This means k^2 dz^2 > dx^2 + d^2 - ie the ray's gonna hit the -z cone and the +z cone.
-
-		// Get the parameter value of the single valid cone hit - ie the one that hit the -z cone:
-		float t = ( rayOrigin[2] + t1 * rayDirection[2] > 0 ) ? t0 : t1;
-
-		if( c < 0  && rayOrigin[2] < 0 )
-		{
-			// x^2 + y^2 < k^2 z^2, and z > 0: ray origin is inside the -z cone:
-			if( t > epsilon )
-			{
-				// started inside the cone, the intersection is ahead of us:
-				t0 = t;
-				return 1;
-			}
-			else
-			{
-				// started inside the cone, the intersection is behind us, so we aint hit nuffink:
-				return 0;
-			}
-		}
-		else
-		{
-			// x^2 + y^2 > k^2 z^2, or z > 0: ray origin is outside the -z cone:
-			if( t > epsilon )
-			{
-				// started outside the cone, the intersection is ahead of us:
-				t0 = t;
-				return 1;
-			}
-			else
-			{
-				// started outside the cone, the intersection is behind us, so we aint hit nuffink:
-				return 0;
-			}
-		}
-
-		//return t1 > epsilon ? 2 : 0;
-
-	}
-	else
-	{
-		// this means k^2 dz^2 < dx^2 + d^2, so the two hits are both gonna be on the +z cone, or both on the -z cone:
-		if( rayOrigin[2] + t1 * rayDirection[2] > 0 )
-		{
-			// ok - we've hit the positive cone. Never mind then:
-			return 0;
-		}
-		else
-		{
-			// we've hit the negative cone! Probably.
-			if( t1 > epsilon )
-			{
-				// foremost hit is valid:
-				if( t0 > epsilon )
-				{
-					// other hit is valid too:
-					return 2;
-				}
-				else
-				{
-					// only the foremost hit is valid: 
-					t0 = t1;
-					return 1;
-				}
-			}
-			else
-			{
-				return 0;
-			}
-		}
-	}
-		
-	
-}
-
-
 #endif // IECORERI_RAYALGO_H

@@ -658,8 +658,9 @@ class FnParameterisedHolderTest( IECoreMaya.TestCase ) :
 	def testSetParameterValuesAndClassesUsingContext( self ) :
 	
 		fnOH = IECoreMaya.FnOpHolder.create( "node", "classParameterTest", 1 )
+		op = fnOH.getOp()
 		
-		with fnOH.parameterModificationContext() as op :
+		with fnOH.parameterModificationContext() :
 			op["cp"].setClass( "maths/multiply", 1, "IECORE_OP_PATHS" )
 			op["cp"]["a"].setNumericValue( 10101 )
 			
@@ -811,21 +812,6 @@ class FnParameterisedHolderTest( IECoreMaya.TestCase ) :
 		maya.cmds.file( testScene, f = True, o  = True )
 		self.assertEqual( maya.cmds.getAttr( node + ".parm_f" ), 50.5 )
 		self.assertEqual( maya.cmds.getAttr( node + ".result" ), 50.5 )
-	
-	def testParameterPlugForMissingPlug( self ) :
-	
-		## Make sure that null plugs are returned from the parameterPlug() method
-		# if no plug exists.
-	
-		node = maya.cmds.createNode( "ieOpHolderNode" )
-		fnPH = IECoreMaya.FnOpHolder( node )
-		fnPH.setOp( "floatParameter" )
-		
-		op = fnPH.getOp()
-		
-		plug = fnPH.parameterPlug( op.parameters() )
-		self.failUnless( isinstance( plug, maya.OpenMaya.MPlug ) )
-		self.failUnless( plug.isNull() )
 	
 	def tearDown( self ) :
 

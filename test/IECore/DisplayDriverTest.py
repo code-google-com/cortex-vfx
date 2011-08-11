@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -33,7 +33,6 @@
 ##########################################################################
 
 import unittest
-import os
 import gc
 import glob
 import sys
@@ -73,51 +72,40 @@ class TestImageDisplayDriver(unittest.TestCase):
 
 	def testFactory( self ):
 
-		idd = DisplayDriver.create( "ImageDisplayDriver", Box2i( V2i(0,0), V2i(100,100) ), Box2i( V2i(10,10), V2i(40,40) ), [ 'r', 'g', 'b' ], CompoundData() )
-		self.failUnless( isinstance( idd, ImageDisplayDriver ) )
+		class MyDisplayDriverCreator( DisplayDriver.DisplayDriverCreator ):
+
+			def create( self, displayWindow, dataWindow, channelNames, parameters ):
+				return ImageDisplayDriver( displayWindow, dataWindow, channelNames, parameters )
+
+		creator = MyDisplayDriverCreator()
+		self.assertEqual( DisplayDriver.registerFactory( creator ), True )
+		idd = DisplayDriver.create( Box2i( V2i(0,0), V2i(100,100) ), Box2i( V2i(10,10), V2i(40,40) ), [ 'r', 'g', 'b' ], CompoundData() )
 		self.assertEqual( idd.scanLineOrderOnly(), False )
 		self.assertEqual( idd.displayWindow(), Box2i( V2i(0,0), V2i(100,100) ) )
 		self.assertEqual( idd.dataWindow(), Box2i( V2i(10,10), V2i(40,40) ) )
 		self.assertEqual( idd.channelNames(), [ 'r', 'g', 'b' ] )
-
+		self.assertEqual( DisplayDriver.unregisterFactory( creator ), True )
+		self.assertEqual( DisplayDriver.unregisterFactory( creator ), False )
 		# test if all symbols are gone after the tests.
 		creator = None
 		idd = None
 		gc.collect()
 		RefCounted.collectGarbage()
 		self.assertEqual( RefCounted.numWrappedInstances(), 0 )
-		
-	def testImagePool( self ) :
-	
-		img = Reader.create( "test/IECore/data/tiff/bluegreen_noise.400x300.tif" )()
-		
-		idd = DisplayDriver.create(
-			"ImageDisplayDriver",
-			img.displayWindow,
-			img.dataWindow,
-			list( img.channelNames() ),
-			{
-				"handle" : StringData( "myHandle" )
-			}
-		)
-		
-		red = img['R'].data
-		green = img['G'].data
-		blue = img['B'].data
-		width = img.dataWindow.max.x - img.dataWindow.min.x + 1
-		buf = FloatVectorData( width * 3 )
-		for i in xrange( 0, img.dataWindow.max.y - img.dataWindow.min.y + 1 ):
-			self.__prepareBuf( buf, width, i*width, red, green, blue )
-			idd.imageData( Box2i( V2i( img.dataWindow.min.x, i + img.dataWindow.min.y ), V2i( img.dataWindow.max.x, i + img.dataWindow.min.y) ), buf )
 
-		idd.imageClose()
-
-		self.assertEqual( ImageDisplayDriver.storedImage( "myHandle" ), idd.image() )
-		self.assertEqual( ImageDisplayDriver.removeStoredImage( "myHandle" ), idd.image() )
-		self.assertEqual( ImageDisplayDriver.storedImage( "myHandle" ), None )
-		
-		
 class TestClientServerDisplayDriver(unittest.TestCase):
+
+	class MyDisplayDriverCreator( DisplayDriver.DisplayDriverCreator ):
+
+		def __init__( self, myTest ):
+			DisplayDriver.DisplayDriverCreator.__init__( self )
+			self.myTest = myTest
+
+		def create( self, displayWindow, dataWindow, channelNames, parameters ):
+			clientDisplayDriver = ImageDisplayDriver( displayWindow, dataWindow, channelNames, parameters )
+			self.myTest.clientDisplayDriver = clientDisplayDriver
+			self.myTest = None	# destroy circular reference
+			return clientDisplayDriver
 
 	def setUp( self ):
 
@@ -131,6 +119,8 @@ class TestClientServerDisplayDriver(unittest.TestCase):
 		initThreads()
 
 		self.server = DisplayDriverServer( 1559 )
+		self.creator = self.MyDisplayDriverCreator( self )
+		self.assertEqual( DisplayDriver.registerFactory( self.creator ), True )
 		time.sleep(2)
 
 	def __prepareBuf( self, buf, width, offset, red, green, blue ):
@@ -138,10 +128,6 @@ class TestClientServerDisplayDriver(unittest.TestCase):
 			buf[3*i] = blue[i+offset]
 			buf[3*i+1] = green[i+offset]
 			buf[3*i+2] = red[i+offset]
-
-	def testUsedPortException( self ):
-		
-		self.assertRaises( RuntimeError, lambda : DisplayDriverServer( 1559 ) ) 
 
 	def testTransfer( self ):
 
@@ -155,8 +141,6 @@ class TestClientServerDisplayDriver(unittest.TestCase):
 		params = CompoundData()
 		params['displayHost'] = StringData('localhost')
 		params['displayPort'] = StringData( '1559' )
-		params["remoteDisplayType"] = StringData( "ImageDisplayDriver" )
-		params["handle"] = StringData( "myHandle" )
 		idd = ClientDisplayDriver( img.displayWindow, img.dataWindow, list( img.channelNames() ), params )
 
 		buf = FloatVectorData( width * 3 )
@@ -164,9 +148,7 @@ class TestClientServerDisplayDriver(unittest.TestCase):
 			self.__prepareBuf( buf, width, i*width, red, green, blue )
 			idd.imageData( Box2i( V2i( img.dataWindow.min.x, i + img.dataWindow.min.y ), V2i( img.dataWindow.max.x, i + img.dataWindow.min.y) ), buf )
 		idd.imageClose()
-		
-		newImg = ImageDisplayDriver.removeStoredImage( "myHandle" )
-		params["clientPID"] = IntData( os.getpid() )
+		newImg = self.clientDisplayDriver.image()
 		self.assertEqual( newImg.blindData(), params )
 		# remove blindData for comparison
 		newImg.blindData().clear()
@@ -174,9 +156,9 @@ class TestClientServerDisplayDriver(unittest.TestCase):
 		self.assertEqual( newImg, img )
 
 	def tearDown( self ):
-		
+		self.assertEqual( DisplayDriver.unregisterFactory( self.creator ), True )
+		self.creator = None
 		self.server = None
-		
 		# test if all symbols are gone after the tests.
 		gc.collect()
 		RefCounted.collectGarbage()

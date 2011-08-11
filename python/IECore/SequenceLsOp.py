@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -78,12 +78,6 @@ class SequenceLsOp( Op ) :
 					name = "maxDepth",
 					description = "The maximum depth to recursion - this can be used to prevent accidental traversing of huge hierarchies.",
 					defaultValue = 1000,
-					minValue = 1,
-				),
-				IntParameter(
-					name = "minSequenceSize",
-					description = "The minimum number of files to be considered a sequence",
-					defaultValue = 2,
 					minValue = 1,
 				),
 				StringParameter(
@@ -164,12 +158,12 @@ class SequenceLsOp( Op ) :
 								# \todo Use a TimePeriodParameter here instead of seaprate start/end times
 								DateTimeParameter(
 									name = "startTime",
-									description = "The (local) start time at which to make modification time comparisons against",
+									description = "The start time at which to make modification time comparisons against",
 									defaultValue = datetime.datetime.now()
 								),
 								DateTimeParameter(
 									name = "endTime",
-									description = "The (local) end time at which to make modification time comparisons against",
+									description = "The end time at which to make modification time comparisons against",
 									defaultValue = datetime.datetime.now()
 								),
 
@@ -218,7 +212,7 @@ class SequenceLsOp( Op ) :
 		if baseDirectory != "/" and baseDirectory[-1] == '/' :
 			baseDirectory = baseDirectory[:-1]
 
-		sequences = ls( baseDirectory, operands["minSequenceSize"].value )
+		sequences = ls( baseDirectory )
 
 		# If we've passed in a directory which isn't the current one it is convenient to get that included in the returned sequence names
 		relDir = os.path.normpath( baseDirectory ) != "."
@@ -240,7 +234,7 @@ class SequenceLsOp( Op ) :
 					dirs[:] = []
 
 				for d in dirs :
-					ss = ls( os.path.join( root, d ), operands["minSequenceSize"].value )
+					ss = ls( os.path.join( root, d ) )
 					if ss :
 						for s in ss :
 
@@ -317,19 +311,19 @@ class SequenceLsOp( Op ) :
 
 			assert( matchFn )
 
-			def matchModificationTime( sequence ) :
+			def matchModifcationTime( sequence ) :
 
 				# If any file in the sequence matches, we have a match.
 				for sequenceFile in sequence.fileNames() :
 
 					st = os.stat( sequenceFile )
-					modifiedTime = datetime.datetime.fromtimestamp( st.st_mtime )
+					modifiedTime = datetime.datetime.utcfromtimestamp( st.st_mtime )
 					if matchFn( modifiedTime ) :
 						return True
 
 				return False
 
-			filters.append( matchModificationTime )
+			filters.append( matchModifcationTime )
 
 		def matchAllFilters( sequence ) :
 

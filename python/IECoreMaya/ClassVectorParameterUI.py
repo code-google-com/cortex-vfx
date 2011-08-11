@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -41,7 +41,7 @@ import IECoreMaya
 
 ## A ParameterUI for ClassVectorParameters. Supports the following Parameter userData entries :
 #
-#   BoolData ["UI"]["collapsible"]
+#   BoolData ["UI"]["collapsable"]
 #     Specifies if the UI may be collapsed or not - defaults to True. 
 #
 # The icon used for a child UI can be overridden by setting the icon name, minus extension in either
@@ -67,44 +67,47 @@ class ClassVectorParameterUI( IECoreMaya.ParameterUI ) :
 
 	def __init__( self, node, parameter, **kw ) :
 		
+		# we have to get the collapse state right at the point we create the frameLayout
+		# otherwise maya doesn't get the frame sizing right. we can then specify the rest
+		# of the frame state after calling the base class constructor.			
+		collapsable = True
+		with IECore.IgnoredExceptions( KeyError ) :
+			collapsable = parameter.userData()["UI"]["collapsable"].value
+
 		IECoreMaya.ParameterUI.__init__(
 			
 			self,
 			node,
 			parameter,
-			maya.cmds.frameLayout(
-				labelVisible = False,
-				collapsable = False,
-			),
+			maya.cmds.frameLayout( collapsable=collapsable, manage=False ),
 			**kw
 			
 		)
-		
-		# passing borderVisible=False to the constructor does bugger all so we do it here instead.
-		maya.cmds.frameLayout( self._topLevelUI(), edit=True, borderVisible=False )
 				
-		collapsible = self.__parameterIsCollapsible()
-		
 		self.__kw = kw.copy()
-		if collapsible :
+		if collapsable :
 			self.__kw["hierarchyDepth"] = self.__kw.get( "hierarchyDepth", -1 ) + 1
 		
-		collapsed = self._retrieveCollapsedState( collapsible )
+		collapsed = self._retrieveCollapsedState( collapsable )
 		
-		self.__collapsible = IECoreMaya.Collapsible(
+		maya.cmds.frameLayout(
 		
-			annotation = self.description(),
+			self._topLevelUI(),
+			edit = True,
 			label = self.label(),
-			labelFont = IECoreMaya.CompoundParameterUI._labelFont( self.__kw["hierarchyDepth"] ),
 			labelIndent = IECoreMaya.CompoundParameterUI._labelIndent( self.__kw["hierarchyDepth"] ),
-			labelVisible = collapsible,
-			collapsed = collapsed,
+			labelVisible = collapsable,
+			font = IECoreMaya.CompoundParameterUI._labelFont( self.__kw["hierarchyDepth"] ),
+			borderVisible = False,
 			expandCommand = self.__expand,
 			collapseCommand = self.__collapse,
-			
+			collapsable = collapsable,
+			collapse = collapsed,
+			manage = True,
+				
 		)
 					
-		self.__formLayout = maya.cmds.formLayout( parent=self.__collapsible.frameLayout() )
+		self.__formLayout = maya.cmds.formLayout( parent=self._topLevelUI() )
 	
 		self.__buttonRow = maya.cmds.rowLayout( nc=3, adj=3, cw3=( 25, 25, 40 ), parent=self.__formLayout )
 	
@@ -130,17 +133,23 @@ class ClassVectorParameterUI( IECoreMaya.ParameterUI ) :
 			nodeChanged = self.node() != node
 
 		IECoreMaya.ParameterUI.replace( self, node, parameter )
-				
-		if self.__parameterIsCollapsible() :
+		
+		collapsable = True
+		with IECore.IgnoredExceptions( KeyError ) :
+			collapsable = parameter.userData()["UI"]["collapsable"].value
+		
+		if collapsable :
 			collapsed = self._retrieveCollapsedState( self.getCollapsed() )
 			self.setCollapsed( collapsed, **self.__kw )
-					
+			
+		maya.cmds.frameLayout( self._topLevelUI(), edit=True, collapsable=collapsable )
+			
 		self.__updateChildUIs( startFromScratch=nodeChanged )
 			
 	## Gets the collapsed state for the frame holding the child parameter uis.
 	def getCollapsed( self ) :
 	
-		return self.__collapsible.getCollapsed()
+		return maya.cmds.frameLayout( self.layout(), query=True, collapse=True )
 		
 	## Sets the collapsed state for the frame holding the child parameter uis.
 	# In the case that this ui itself is not collapsible, it will still propagate
@@ -152,8 +161,8 @@ class ClassVectorParameterUI( IECoreMaya.ParameterUI ) :
 		if type(propagateToChildren) == bool :	
 			propagateToChildren = 999 if propagateToChildren else 0
 			
-		if self.__parameterIsCollapsible() :
-			self.__collapsible.setCollapsed( collapsed )
+		if maya.cmds.frameLayout( self.layout(), query=True, collapsable=True ) :
+			maya.cmds.frameLayout( self.layout(), edit=True, collapse = collapsed )
 			self._storeCollapsedState( collapsed )
 
 		if propagateToChildren > 0 :
@@ -422,16 +431,6 @@ class ClassVectorParameterUI( IECoreMaya.ParameterUI ) :
 		for ui in self.__childUIs.values() :
 			if hasattr( ui, "setCollapsed" ) :
 				ui.setCollapsed( collapsed, propagateDepth, **kw )
-	
-	def __parameterIsCollapsible( self ) :
-	
-		collapsible = True
-		with IECore.IgnoredExceptions( KeyError ) :
-			collapsible = self.parameter.userData()["UI"]["collapsible"].value
-		with IECore.IgnoredExceptions( KeyError ) :
-			collapsible = self.parameter.userData()["UI"]["collapsable"].value
-
-		return collapsible
 				
 	@staticmethod
 	def _classesSetCallback( fnPH, parameter ) :
@@ -479,8 +478,8 @@ class ChildUI( IECoreMaya.UIElement ) :
 		
 		IECoreMaya.UIElement.__init__( self, maya.cmds.columnLayout() )
 		
-		if not isinstance( self.__vectorParent(), ClassVectorParameterUI ) :
-			raise RuntimeError( "Parent must be a ClassVectorParameterUI" )
+		if not isinstance( self.parent(), ClassVectorParameterUI ) :
+			raise RunTimeError( "Parent must be a ClassVectorParameterUI" )
 		
 		self.__kw = kw.copy()
 		self.__kw["hierarchyDepth"] = self.__kw.get( "hierarchyDepth", -1 ) + 1
@@ -550,8 +549,15 @@ class ChildUI( IECoreMaya.UIElement ) :
 		# CompoundParameterUI to hold child parameters
 		
 		maya.cmds.setParent( self._topLevelUI() )
-				
-		self.__compoundParameterUI = IECoreMaya.CompoundParameterUI( self.__vectorParent().node(), parameter, labelVisible = False, **kw )
+			
+		self.__compoundParameterUI = IECoreMaya.CompoundParameterUI( self.parent().node(), parameter, **kw )
+		
+		maya.cmds.frameLayout(
+			self.__compoundParameterUI.layout(),
+			edit = True,
+			collapsable = True,
+			labelVisible = False,
+		)
 		
 		self.setCollapsed( self.getCollapsed(), False )
 		
@@ -578,7 +584,7 @@ class ChildUI( IECoreMaya.UIElement ) :
 		
 	def __class( self ) :
 	
-		classes = self.__vectorParent().parameter.getClasses( True )
+		classes = self.parent().parameter.getClasses( True )
 		for c in classes :
 			if c[1] == self.__parameter.name :
 				return c
@@ -597,7 +603,7 @@ class ChildUI( IECoreMaya.UIElement ) :
 		
 		iconName = "out_displayLayer"
 		with IECore.IgnoredExceptions( KeyError ) :
-			iconName = self.__vectorParent().parameter.userData()["UI"]["defaultChildIcon"].value
+			iconName = self.parent().parameter.userData()["UI"]["defaultChildIcon"].value
 		
 		sources = []
 		
@@ -622,7 +628,7 @@ class ChildUI( IECoreMaya.UIElement ) :
 		
 		# make a menu with just the versions in
 			
-		loader = IECore.ClassLoader.defaultLoader( self.__vectorParent().parameter.searchPathEnvVar() )
+		loader = IECore.ClassLoader.defaultLoader( self.parent().parameter.searchPathEnvVar() )
 		result = IECore.MenuDefinition()
 		for classVersion in loader.versions( c[2] ) :
 					
@@ -631,7 +637,7 @@ class ChildUI( IECoreMaya.UIElement ) :
 				"/%d" % classVersion, 
 
 				IECore.MenuItemDefinition(
-					command = IECore.curry( self.__vectorParent()._setClass, self.__parameter.name, c[2], classVersion ),
+					command = IECore.curry( self.parent()._setClass, self.__parameter.name, c[2], classVersion ),
 					active = c[3] != classVersion
 				)
 
@@ -665,7 +671,7 @@ class ChildUI( IECoreMaya.UIElement ) :
 	
 		result = IECore.MenuDefinition()
 		
-		layerNames = self.__vectorParent().parameter.keys()
+		layerNames = self.parent().parameter.keys()
 		layerIndex = layerNames.index( self.__parameter.name )
 		
 		result.append(
@@ -712,7 +718,7 @@ class ChildUI( IECoreMaya.UIElement ) :
 		result.append(
 			"/Remove",
 			IECore.MenuItemDefinition(
-				command = IECore.curry( maya.cmds.evalDeferred, IECore.curry( self.__vectorParent()._removeClass, self.__parameter.name ) )
+				command = IECore.curry( maya.cmds.evalDeferred, IECore.curry( self.parent()._removeClass, self.__parameter.name ) )
 			)
 		)
 		
@@ -731,20 +737,20 @@ class ChildUI( IECoreMaya.UIElement ) :
 		)
 		
 		for cb in ClassVectorParameterUI._classMenuCallbacks :
-			cb( result, self.__vectorParent().parameter, self.__parameter, self.__vectorParent().node() )
+			cb( result, self.parent().parameter, self.__parameter, self.parent().node() )
 		
 		return result
 		
 	def __moveLayer( self, oldIndex, newIndex ) :
 	
-		classes = [ c[1:] for c in self.__vectorParent().parameter.getClasses( True ) ]
+		classes = [ c[1:] for c in self.parent().parameter.getClasses( True ) ]
 		cl = classes[oldIndex]
 		del classes[oldIndex]
 		classes[newIndex:newIndex] = [ cl ]
 				
-		fnPH = IECoreMaya.FnParameterisedHolder( self.__vectorParent().node() )
+		fnPH = IECoreMaya.FnParameterisedHolder( self.parent().node() )
 		with fnPH.parameterModificationContext() :
-			self.__vectorParent().parameter.setClasses( classes )
+			self.parent().parameter.setClasses( classes )
 
 	def __buildOptionalPreHeaderUI( self, formLayout, attachForm, attachControl, lastControl ) :
 		
@@ -754,7 +760,7 @@ class ChildUI( IECoreMaya.UIElement ) :
 		
 		defaultLabel = ""
 		try :
-			parentUIUserData = self.__vectorParent().parameter.userData()["UI"]
+			parentUIUserData = self.parent().parameter.userData()["UI"]
 			defaultLabelStyle = parentUIUserData["defaultChildLabel"].value
 			
 			if 'classname' in defaultLabelStyle.lower() :
@@ -813,7 +819,7 @@ class ChildUI( IECoreMaya.UIElement ) :
 		
 	def __drawHeaderParameterControls( self, formLayout, attachForm, attachControl, lastControl, uiKey ) :
 	
-		fnPH = IECoreMaya.FnParameterisedHolder( self.__vectorParent().node() )
+		fnPH = IECoreMaya.FnParameterisedHolder( self.parent().node() )
 		for parameter in self.__parameter.values() :
 			
 			forHeader = False
@@ -867,7 +873,7 @@ class ChildUI( IECoreMaya.UIElement ) :
 			self.__presetUIs.append( control )
 			if self.__attributeChangedCallbackId is None :
 				self.__attributeChangedCallbackId = IECoreMaya.CallbackId(
-					maya.OpenMaya.MNodeMessage.addAttributeChangedCallback( self.__vectorParent().node(), self.__attributeChanged )
+					maya.OpenMaya.MNodeMessage.addAttributeChangedCallback( self.parent().node(), self.__attributeChanged )
 				)
 
 			self.__updatePresetLabel( len( self.__presetUIs ) - 1 )
@@ -929,7 +935,7 @@ class ChildUI( IECoreMaya.UIElement ) :
 	def __labelPlugPath( self ) :
 	
 		if "label" in self.__parameter :
-			fnPH = IECoreMaya.FnParameterisedHolder( self.__vectorParent().node() )
+			fnPH = IECoreMaya.FnParameterisedHolder( self.parent().node() )
 			return fnPH.parameterPlugPath( self.__parameter["label"] )
 			
 		return ""
@@ -967,14 +973,14 @@ class ChildUI( IECoreMaya.UIElement ) :
 	def __setPreset( self, parameter, name ) :
 	
 		parameter.setValue( name )
-		IECoreMaya.FnParameterisedHolder( self.__vectorParent().node() ).setNodeValue( parameter )
+		IECoreMaya.FnParameterisedHolder( self.parent().node() ).setNodeValue( parameter )
 
 	def __attributeChanged( self, changeType, plug, otherPlug, userData ) :
 				
 		if not ( changeType & maya.OpenMaya.MNodeMessage.kAttributeSet ) :
 			return
 		
-		fnPH = IECoreMaya.FnParameterisedHolder( self.__vectorParent().node() )
+		fnPH = IECoreMaya.FnParameterisedHolder( self.parent().node() )
 		for index, parameter in enumerate( self.__presetParameters ) :
 			
 			try :
@@ -994,11 +1000,6 @@ class ChildUI( IECoreMaya.UIElement ) :
 			edit = True,
 			label = self.__presetParameters[index].getCurrentPresetName()
 		)
-	
-	## Returns the ClassVectorParameterUI which this ChildUI is hosted in.
-	def __vectorParent( self ) :
-	
-		return self.parent().parent()
 									
 IECoreMaya.FnParameterisedHolder.addSetClassVectorParameterClassesCallback( ClassVectorParameterUI._classesSetCallback )
 					

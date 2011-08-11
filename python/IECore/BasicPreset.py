@@ -249,7 +249,7 @@ class BasicPreset( IECore.Preset ) :
 		f = open( fileName, "w" )
 		f.write(
 		
-"""import IECore
+"""import IECore.BasicPreset
 import os.path
 
 class %s( IECore.BasicPreset ):
@@ -257,10 +257,8 @@ class %s( IECore.BasicPreset ):
 	def __init__( self ):
 		dir = os.path.dirname( __file__ )
 		IECore.BasicPreset.__init__( self, dir+"/%s"	)
-
-IECore.registerRunTimeTyped( %s )
 		
-""" % (	className, cob, className )
+""" % (	className,	cob, )
 
 		)
 		
@@ -506,11 +504,17 @@ IECore.registerRunTimeTyped( %s )
 			)
 		
 	def _addClassToVector( self, parameter, parameterName, className, classVersion ) :
-			
+				
 		classes = parameter.getClasses( True )
 		parameterNames = [ c[1] for c in classes ]
+			
+		## \todo Currently this is in ClassVectorParameterUI, should there
+		## be some default name mechanism outside of the UI code for continuity?
 		if parameterName in parameterNames:
-			parameterName = parameter.newParameterName()
+			for i in range( 0, len( classes ) + 1 ) :
+				parameterName = "p%d" % i
+				if parameterName not in parameterNames :
+					break
 		
 		parameter.setClass( parameterName, className, classVersion )
 		return parameter.getClass( parameterName, True )

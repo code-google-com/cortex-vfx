@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,17 +38,18 @@
 #ifndef IE_CORE_CLIENTDISPLAYDRIVER
 #define IE_CORE_CLIENTDISPLAYDRIVER
 
+#include "boost/asio.hpp"
+
 #include "IECore/DisplayDriver.h"
+#include "IECore/DisplayDriverServer.h"
 
 namespace IECore
 {
 
-
-/// Connects to a DisplayDriverServer and forwards the image to the server using socket messages.
-/// This client class works synchronously.
-/// It forwards all parameters to the server and also includes one called "clientPID" to help grouping AOVs from the same render.
-/// You must set the parameter 'remoteDisplayType' with a registered display driver to be instantiated in the server side.
-/// \ingroup renderingGroup
+/*
+* Connects to a DisplayDriverServer and pass every call do DisplayDriver functions to it as socket messages.
+* The protocol is explained in DisplayDriverServer class. This client class works synchronously.
+*/
 class ClientDisplayDriver : public DisplayDriver
 {
 	public:
@@ -75,14 +76,14 @@ class ClientDisplayDriver : public DisplayDriver
 
 	private:
 
-		static const DisplayDriverDescription<ClientDisplayDriver> g_description;
+		void sendHeader( DisplayDriverServer::MessageType msg, size_t dataSize );
+		size_t receiveHeader( DisplayDriverServer::MessageType msg );
 
-		void sendHeader( int msg, size_t dataSize );
-		size_t receiveHeader( int msg );
-
-		class PrivateData;
-		IE_CORE_DECLAREPTR( PrivateData );
-		PrivateDataPtr m_data;
+		boost::asio::io_service m_service;
+		std::string m_host;
+		std::string m_port;
+		bool m_scanLineOrderOnly;
+		boost::asio::ip::tcp::socket m_socket;
 
 };
 

@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -47,7 +47,6 @@ from VectorParameterUI import VectorParameterUI
 from ColorParameterUI import ColorParameterUI
 from BoxParameterUI import BoxParameterUI
 from SplineParameterUI import SplineParameterUI
-from NoteParameterUI import NoteParameterUI
 from NodeParameter import NodeParameter
 from DAGPathParameter import DAGPathParameter
 from DAGPathVectorParameter import DAGPathVectorParameter
@@ -93,6 +92,3 @@ from StringVectorParameterUI import StringVectorParameterUI
 import ProceduralHolderUI
 from ManipulatorUI import *
 from TransformationMatrixParameterUI import TransformationMatrixParameterUI
-from LineSegmentParameterUI import LineSegmentParameterUI
-from Collapsible import Collapsible
-import Menus

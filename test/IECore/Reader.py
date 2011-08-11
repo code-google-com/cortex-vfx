@@ -50,8 +50,6 @@ class TestReader(unittest.TestCase):
 			expectedExtensions += [ "tif", "tiff" ]
 		if withJPEG() :
 			expectedExtensions += [ "jpg", "jpeg" ]
-		if withPNG() :
-			expectedExtensions += [ "png" ]
 
 		for ee in expectedExtensions :
 			self.assert_( ee in e )
@@ -64,8 +62,6 @@ class TestReader(unittest.TestCase):
 			expectedImageReaderExtensions += [ "tif", "tiff" ]
 		if withJPEG() :
 			expectedImageReaderExtensions += [ "jpg", "jpeg" ]
-		if withPNG() :
-			expectedImageReaderExtensions += [ "png" ]
 
 		self.assertEqual( set( expectedImageReaderExtensions ), set( e ) )
 

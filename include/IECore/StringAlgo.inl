@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -56,48 +56,6 @@ typename std::iterator_traits<Iterator>::value_type join( Iterator begin, Iterat
 	}
 	
 	return result;
-}
-
-template<class String>
-bool isUpperCase( const String &s )
-{
-	bool haveAlpha = false;
-	for( typename String::const_iterator it = s.begin(), end=s.end(); it != end; ++it )
-	{
-		if( isalpha( *it ) )
-		{
-			if( !isupper( *it ) )
-			{
-				return false;
-			}
-			else
-			{
-				haveAlpha = true;
-			}
-		}
-	}
-	return haveAlpha;
-}
-
-template<class String>
-bool isLowerCase( const String &s )
-{
-	bool haveAlpha = false;
-	for( typename String::const_iterator it = s.begin(), end=s.end(); it != end; ++it )
-	{
-		if( isalpha( *it ) )
-		{
-			if( !islower( *it ) )
-			{
-				return false;
-			}
-			else
-			{
-				haveAlpha = true;
-			}
-		}
-	}
-	return haveAlpha;
 }
 
 } // namespace IECore

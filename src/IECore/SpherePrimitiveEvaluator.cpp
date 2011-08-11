@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -230,9 +230,9 @@ PrimitiveEvaluator::ResultPtr SpherePrimitiveEvaluator::createResult() const
       return new Result();
 }
 
-void SpherePrimitiveEvaluator::validateResult( PrimitiveEvaluator::Result *result ) const
+void SpherePrimitiveEvaluator::validateResult( const PrimitiveEvaluator::ResultPtr &result ) const
 {
-	if (! dynamic_cast< SpherePrimitiveEvaluator::Result *>( result ) )
+	if (! dynamicPointerCast< SpherePrimitiveEvaluator::Result >( result ) )
 	{
 		throw InvalidArgumentException("SpherePrimitiveEvaluator: Invalid PrimitiveEvaulator result type");
 	}
@@ -243,22 +243,22 @@ ConstPrimitivePtr SpherePrimitiveEvaluator::primitive() const
 	return m_sphere;
 }
 
-bool SpherePrimitiveEvaluator::closestPoint( const V3f &p, PrimitiveEvaluator::Result *result ) const
+bool SpherePrimitiveEvaluator::closestPoint( const V3f &p, const PrimitiveEvaluator::ResultPtr &result ) const
 {
-	assert( dynamic_cast<Result *>( result ) );
+	assert( dynamicPointerCast< Result >( result ) );
 
-	Result *sr = static_cast<Result *>( result );
+	ResultPtr sr = staticPointerCast< Result >( result );
 
 	sr->m_p = p.normalized() * m_sphere->radius();
 
 	return true;
 }
 
-bool SpherePrimitiveEvaluator::pointAtUV( const Imath::V2f &uv, PrimitiveEvaluator::Result *result ) const
+bool SpherePrimitiveEvaluator::pointAtUV( const Imath::V2f &uv, const PrimitiveEvaluator::ResultPtr &result ) const
 {
-	assert( dynamic_cast<Result *>( result ) );
+	assert( dynamicPointerCast< Result >( result ) );
 
-	Result *sr = static_cast<Result *>( result );
+	ResultPtr sr = staticPointerCast< Result >( result );
 
 	/// \todo Once we support partial spheres we'll need to get these quantities from the primitive
 	const float zMin = -1.0f;
@@ -284,11 +284,11 @@ bool SpherePrimitiveEvaluator::pointAtUV( const Imath::V2f &uv, PrimitiveEvaluat
 /// Implementation derived from Wild Magic (Version 2) Software Library, available
 /// from http://www.geometrictools.com/Downloads/WildMagic2p5.zip under free license
 bool SpherePrimitiveEvaluator::intersectionPoint( const Imath::V3f &origin, const Imath::V3f &direction,
-	PrimitiveEvaluator::Result *result, float maxDistance ) const
+	const PrimitiveEvaluator::ResultPtr &result, float maxDistance ) const
 {
-	assert( dynamic_cast<Result *>( result ) );
+	assert( dynamicPointerCast< Result >( result ) );
 
-	Result *sr = static_cast<Result *>( result );
+	ResultPtr sr = staticPointerCast< Result >( result );
 
 	Imath::V3f dir = direction.normalized();
 	(void)direction;

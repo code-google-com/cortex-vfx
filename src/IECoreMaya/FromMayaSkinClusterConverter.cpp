@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 //  its affiliates and/or its licensors.
@@ -35,11 +35,13 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+
 #include "IECoreMaya/FromMayaSkinClusterConverter.h"
 #include "IECoreMaya/Convert.h"
 #include "IECore/Exception.h"
 #include "IECore/SmoothSkinningData.h"
 #include "IECore/CompoundParameter.h"
+
 
 #include "maya/MFnSkinCluster.h"
 #include "maya/MFnDagNode.h"
@@ -57,7 +59,10 @@ using namespace std;
 
 IE_CORE_DEFINERUNTIMETYPED( FromMayaSkinClusterConverter );
 
-FromMayaObjectConverter::FromMayaObjectConverterDescription<FromMayaSkinClusterConverter> FromMayaSkinClusterConverter::m_description( MFn::kSkinClusterFilter, IECore::SmoothSkinningData::staticTypeId(), true );
+static const MFn::Type fromTypes[] = { MFn::kSkinClusterFilter, MFn::kInvalid };
+static const IECore::TypeId toTypes[] = { IECore::SmoothSkinningData::staticTypeId(), IECore::InvalidTypeId };
+
+FromMayaObjectConverter::FromMayaObjectConverterDescription<FromMayaSkinClusterConverter> FromMayaSkinClusterConverter::m_description( fromTypes, toTypes );
 
 FromMayaSkinClusterConverter::FromMayaSkinClusterConverter( const MObject &object )
 	:	FromMayaObjectConverter( "Converts data on skinCluster nodes.into SmoothSkinningData", object )

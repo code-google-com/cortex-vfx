@@ -48,6 +48,7 @@ using namespace IECore;
 namespace IECorePython
 {
 
+/// \todo If this were inline, then IE_COREPYTHON_DEFPARAMETERWRAPPERFNS could be more readily used from extension modules
 boost::python::tuple valueValid2( const Parameter &that )
 {
 	std::string reason;

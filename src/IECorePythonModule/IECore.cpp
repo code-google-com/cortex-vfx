@@ -37,8 +37,6 @@
 
 #include "boost/python.hpp"
 
-#include "tbb/tbb_thread.h"
-
 #include "IECorePython/RefCountedBinding.h"
 #include "IECorePython/RunTimeTypedBinding.h"
 #include "IECorePython/ExceptionBinding.h"
@@ -290,13 +288,6 @@
 #include "IECorePython/EnvMapSHProjectorBinding.h"
 #include "IECorePython/LightBinding.h"
 #include "IECorePython/ContrastSmoothSkinningWeightsOpBinding.h"
-#include "IECorePython/CamelCaseBinding.h"
-#include "IECorePython/PointDistributionOpBinding.h"
-#include "IECorePython/LRUCacheBinding.h"
-#include "IECorePython/DataInterleaveOpBinding.h"
-#include "IECorePython/DataConvertOpBinding.h"
-#include "IECorePython/PNGImageReaderBinding.h"
-
 #include "IECore/IECore.h"
 
 using namespace IECorePython;
@@ -585,18 +576,7 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindCapturingRenderer();
 	bindLight();
 	bindContrastSmoothSkinningWeightsOp();
-	bindCamelCase();
-	bindPointDistributionOp();
-	bindLRUCache();
-	bindDataInterleaveOp();
-	bindDataConvertOp();
-	
-#ifdef IECORE_WITH_PNG
-
-	bindPNGImageReader();
-	
-#endif
-	
+		
 	def( "majorVersion", &IECore::majorVersion );
 	def( "minorVersion", &IECore::minorVersion );
 	def( "patchVersion", &IECore::patchVersion );
@@ -605,9 +585,7 @@ BOOST_PYTHON_MODULE(_IECore)
 	def( "withTIFF", &IECore::withTIFF );
 	def( "withJPEG", &IECore::withJPEG );
 	def( "withFreeType", &IECore::withFreeType );
-	def( "withPNG", &IECore::withPNG );
 	def( "initThreads", &PyEval_InitThreads );
-	def( "hardwareConcurrency", &tbb::tbb_thread::hardware_concurrency );
 
 }
 

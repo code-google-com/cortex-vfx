@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -274,9 +274,12 @@ class CapturingRenderer::Implementation
 				return;
 			}
 			
-			const BoolData *reentrant = IECore::runTimeCast<const BoolData>( getAttribute( "cp:procedural:reentrant" ) );
-			if ( reentrant ? reentrant->readable() : true )
+			if( 0 )
 			{
+				procedural->render( renderer );
+			}
+			else
+			{				
 				ContextPtr proceduralContext = new Context( context );
 				addChild( context->stack.back(), proceduralContext->stack.back().group );
 				
@@ -293,10 +296,6 @@ class CapturingRenderer::Implementation
 					tbb::task *proceduralTask = new( parentProceduralTask.allocate_additional_child_of( parentProceduralTask ) ) ProceduralTask( renderer, procedural, proceduralContext );
 					parentProceduralTask.spawn( *proceduralTask ); // the parent procedural will wait for this task in its execute() method
 				}				
-			}
-			else
-			{
-				procedural->render( renderer );
 			}
 		}
 	
