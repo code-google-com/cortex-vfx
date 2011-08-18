@@ -67,8 +67,7 @@ PointDistributionOp::PointDistributionOp()
 	m_densityParameter = new FloatParameter(
 		"density",
 		"The density of the distributed points.",
-		100.0,
-		0.0f
+		100.0
 	);
 	
 	m_offsetParameter = new V2fParameter(

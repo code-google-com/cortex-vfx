@@ -1,11 +1,3 @@
-Additions :
-
-* IECoreGL::Renderer class now supports the "gl:visibility:camera" attribute.
-
-Bug fixes :
-
-* PointDistributionOp density parameter no longer accepts negative values.
-
 Cortex 6.1.1
 ============
 

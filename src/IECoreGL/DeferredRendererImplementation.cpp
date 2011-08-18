@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -258,12 +258,6 @@ IECore::Data *DeferredRendererImplementation::getUserAttribute( const IECore::In
 
 void DeferredRendererImplementation::addPrimitive( PrimitivePtr primitive )
 {
-	bool visible = static_cast<CameraVisibilityStateComponent *>( getState( CameraVisibilityStateComponent::staticTypeId() ) )->value();
-	if( !visible )
-	{
-		return;
-	}
-
 	RenderContext *curContext = currentContext();
 
 	GroupPtr g = new Group;
@@ -279,12 +273,6 @@ void DeferredRendererImplementation::addPrimitive( PrimitivePtr primitive )
 
 void DeferredRendererImplementation::addInstance( GroupPtr grp )
 {
-	bool visible = static_cast<CameraVisibilityStateComponent *>( getState( CameraVisibilityStateComponent::staticTypeId() ) )->value();
-	if( !visible )
-	{
-		return;
-	}
-	
 	RenderContext *curContext = currentContext();
 
 	GroupPtr g = new Group;
@@ -413,13 +401,8 @@ class DeferredRendererImplementation::ProceduralTask : public tbb::task, private
 
 void DeferredRendererImplementation::addProcedural( IECore::Renderer::ProceduralPtr proc, IECore::RendererPtr renderer )
 {
-	bool visible = static_cast<CameraVisibilityStateComponent *>( getState( CameraVisibilityStateComponent::staticTypeId() ) )->value();
-	if( !visible )
-	{
-		return;
-	}
-	
 	bool withThreads = static_cast<ProceduralThreadingStateComponent *>( getState( ProceduralThreadingStateComponent::staticTypeId() ) )->value();
+	
 	if( withThreads )
 	{
 		bool mainProcedural = ( m_threadContextPool.size() == 0 );
