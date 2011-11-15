@@ -110,6 +110,6 @@ Deprecate IECoreMaya::PythonCmd? We don't need it now Maya has had python for fo
 
 Add python bindings for boost::signal.
 
-Fix OverSamplesCalculator and do todos in InterpolatedCache.
+Fix !OverSamplesCalculator and do todos in !InterpolatedCache.
 
-Fix IECore.ConfigLoader so we don't need to put all the import statements we need inside the functions we need them in.
+Fix IECore.!ConfigLoader so we don't need to put all the import statements we need inside the functions we need them in.
