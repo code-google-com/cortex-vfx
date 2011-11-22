@@ -50,10 +50,6 @@ Ok - this is probably even more premature (the first version is not even release
 == CMake (carsten.kolve) ==
 Switch to cmake to make the build process more transparent.
 
-== Maya 2011 Support ==
-
-We looked at this briefly for Cortex 5 and hit a few snags. We'll need to get this sorted for the next version.
-
 == Nuke Geometry (dan.bethell) ==
 
 I'd like to see geometry converters for Nuke and an OpHolder equivalent. This would allow us to use geometry reading/workflow Ops in Nuke's 3d workflow.
