@@ -7,6 +7,9 @@
      * [ExamplesDataCompoundObjects CompoundObjects]
      * [ExamplesCppCompoundObject CompoundObjects in C++]
    * Parameters and Ops
+     * [ExamplesParametersIntro Introducing Parameters]
+     * [ExamplesOpsIntro Introducing Ops]
+     * [ExamplesOpsMeshReader Loading a Mesh]
      * [ExamplesParameterUserData Parameter userData conventions]
    * Point Primitives
    * Mesh Primitives
