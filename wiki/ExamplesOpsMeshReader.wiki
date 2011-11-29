@@ -1,4 +1,5 @@
 #summary Simple Op to load a mesh
+#sidebar ExamplesTOC
 
 = Simple Op to Load a Mesh =
 
