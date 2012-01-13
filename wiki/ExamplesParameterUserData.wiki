@@ -31,6 +31,7 @@ Some userData is generic (although it may only be currently used in specific lib
 ["parser"]["flagless"] --> StringVectorData - flagless parameters are parsed in the order they are specified in the data element
 ["parser"]["serialise"] --> BoolData - Should the parameter be serialised by the parser?
 ["UI"]["visible"] --> BoolData - Should the parameter show up in the UI?
+["UI"]["locked"] --> BoolData - Should the parameter be changeable or not?
 ["UI"]["update"] --> BoolData - Should the UI update when the parameter value changes?
 ["UI"]["label"] --> StringData - The UI label for the parameter. Defaults to a UI-ified version of the parameter name
 ["UI"]["collapsable"] --> BoolData - Is the parameter UI collapsable?
