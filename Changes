@@ -1,49 +1,14 @@
-Additions :
+Improvements :
 
-* Added the MurmurHash class, which implements the Murmur Hash version 3
-algorithm.
+* IECoreMaya.ClassVectorParameterUI no longer allows classes with a non-collapsible root parameter to collapse.
+* IECoreMaya.ClassVectorParameterUI header labels accept ["UI"]["locked"] userData, in which case they don't have a "Change Me" context menu.
 
-* All Object derived classes now have a hash() method which can be used to
-generate a hash of their contents as an instance of the new MurmurHash class.
-
-* Stubs for the IECore procedurals are now installed in addition to the stubs for the IECore ops.
-
-* Added an ieDisplay nuke node, which accepts incoming renders from RenderMan or Nuke using the existing cortex display drivers.
+Cortex 6.4.4
+============
 
 Improvements :
 
-* IECore.loadConfig() now ignores files starting with ~. This avoids errors caused by certain popular text editors saving backup files next to the config file during editing.
-
-* The IECore.loadConfig() localsDict argument has been renamed to contextDict, and is now used as both the locals and globals for the execution of the config files. This works around python's annoying scoping whereby any modules would have to be imported within functions defined in the config files rather than
-at the file scope.
-
-* Added python bindings for the various Writer canWrite() methods.
-
-* The Renderer::coordinateSystem() call now creates coordinate systems which are
-scoped within attributeBegin()/attributeEnd() blocks. CoordinateSystem instances
-can now be given a transform to position them relative to their parent.
-
-* CompoundParameter presets behaviour can now be controlled explicitly using the
-adoptChildPresets argument to the constructor.
-
-* Reduced cross-inclusion of headers in TypedObjectParameter.h - this should improve recompilation times a little.
-
-* Added IECoreGL::NameStateComponent::glNameFromName() method to match the existing nameFromGLName() method.
-
-Bug Fixes :
-
-* Fixed a bug whereby EXRImageWriter::EXRImageWriter() didn't create parameters that EXRImageWriter::EXRImageWriter( image, fileName ) did.
-
-* The renderman python procedural is now built with the correct extension (.dylib) on OS X.
-
-* Fixed problem with using the ClientDisplayDriver on ipv6 enabled machines.
-
-* IECoreNuke and IECoreArnold now build successfully on OS X.
-
-* Fixed bugs in the arnold output driver which meant that exceptions in cortex display drivers went uncaught and became aborts when reaching arnold. Fixed further bugs where failure to create a cortex display driver would yield later
-segmentation faults rather than a graceful error report.
-
-* Fixed bug which made it impossible to output more than one display from IECoreArnold::Renderers.
+* Added "gl:depthMask" attribute state for IECoreGL::Renderer
 
 Cortex 6.4.3
 ============

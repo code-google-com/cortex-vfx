@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,20 +36,13 @@
 
 #include "IECore/DateTimeData.h"
 #include "IECore/TypedData.inl"
-#include "IECore/MurmurHash.h"
 
 namespace IECore
 {
 
-/// DateTimeData provides a good example for the implementation of a TypedData class
-/// wrapping a custom data type. Here we use a macro to quickly implement the required
-/// methods of the RunTimeTyped base class that our new class is a descendant of. See
-/// further comments for other important details.
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( DateTimeData, DateTimeDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( DateTimeData, DateTimeDataTypeId )
+IE_CORE_DEFINETYPEDDATANOBASESIZE( DateTimeData )
 
-/// Here we must make a specialisation of the TypedData::save() method, capable of storing
-/// our custom data type into an IndexedIOInterface container. You may store your data
-/// in whatever form is most appropriate, using any of the features of the IndexedIOInterface.
 template<>
 void DateTimeData::save( SaveContext *context ) const
 {
@@ -64,7 +57,6 @@ void DateTimeData::save( SaveContext *context ) const
 	container->write( "value", boost::posix_time::to_iso_string( readable() ) );
 }
 
-/// Here we specialise the TypedData::load() method to correctly load the data produced by save().
 template<>
 void DateTimeData::load( LoadContextPtr context )
 {
@@ -98,13 +90,6 @@ void DateTimeData::load( LoadContextPtr context )
 			throw;
 		}
 	}
-}
-
-/// Here we specialise the SimpleDataHolder::hash() method to appropriately add our internal data to the hash.
-template<>
-void SimpleDataHolder<boost::posix_time::ptime>::hash( MurmurHash &h ) const
-{
-	h.append( boost::posix_time::to_iso_string( readable() ) );
 }
 
 template class TypedData< boost::posix_time::ptime >;

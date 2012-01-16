@@ -1,11 +1,9 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 #
 #  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios), 
 #  its affiliates and/or its licensors.
-#
-#  Copyright (c) 2012, John Haddon. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -48,9 +46,9 @@ import subprocess
 EnsureSConsVersion( 0, 97 )
 SConsignFile()
 
-ieCoreMajorVersion=7
-ieCoreMinorVersion=0
-ieCorePatchVersion=0
+ieCoreMajorVersion=6
+ieCoreMinorVersion=4
+ieCorePatchVersion=4
 
 ###########################################################################################
 # Command line options
@@ -518,22 +516,6 @@ o.Add(
 )
 
 o.Add(
-	"INSTALL_RMANLIB_NAME",
-	"The name under which to install the RI libraries. This "
-	"can be used to build and install the library for multiple "
-	"PRMan/3delight versions.",
-	"$INSTALL_PREFIX/lib/$IECORE_NAME",
-)
-
-o.Add(
-	"INSTALL_ARNOLDLIB_NAME",
-	"The name under which to install the Arnold libraries. This "
-	"can be used to build and install the library for multiple "
-	"Arnold versions.",
-	"$INSTALL_PREFIX/lib/$IECORE_NAME",
-)
-
-o.Add(
 	"INSTALL_PYTHON_DIR",
 	"The directory in which to install python modules.",
 	"$INSTALL_PREFIX/lib/python$PYTHON_VERSION/site-packages",
@@ -706,21 +688,6 @@ o.Add(
 		( "IECore.SmoothSmoothSkinningWeightsOp", "rigging/smoothSkinning/smoothWeights" ),
 		( "IECore.ContrastSmoothSkinningWeightsOp", "rigging/smoothSkinning/contrastWeights" ),
 		( "IECore.LimitSmoothSkinningInfluencesOp", "rigging/smoothSkinning/limitInfluences" ),
-	]
-)
-
-o.Add(
-	"INSTALL_IECORE_PROCEDURAL_PATH",
-	"The directory in which to install the IECore procedural stubs.",
-	"$INSTALL_PREFIX/procedurals/$IECORE_NAME-1.py",
-)
-
-o.Add(
-	"INSTALL_IECORE_PROCEDURALS",
-	"The IECore procedurals to install via python stubs.",
-	[
-		( "IECore.ReadProcedural", "read" ), 
-		( "IECore.VisualiserProcedural", "visualiser" ), 
 	]
 )
 
@@ -899,10 +866,10 @@ env["IECORE_MAJORMINORPATCH_VERSION"] = "${IECORE_MAJOR_VERSION}.${IECORE_MINOR_
 
 env.Append(
 	CPPFLAGS = [
-		"-DIE_CORE_MAJORVERSION=$IECORE_MAJOR_VERSION",
-		"-DIE_CORE_MINORVERSION=$IECORE_MINOR_VERSION",
-		"-DIE_CORE_PATCHVERSION=$IECORE_PATCH_VERSION",
-		"-DBOOST_FILESYSTEM_VERSION=2",
+    	"-DIE_CORE_MAJORVERSION=$IECORE_MAJOR_VERSION",
+    	"-DIE_CORE_MINORVERSION=$IECORE_MINOR_VERSION",
+    	"-DIE_CORE_PATCHVERSION=$IECORE_PATCH_VERSION",
+	"-DBOOST_FILESYSTEM_VERSION=2",
 	]
 )
 
@@ -1318,12 +1285,6 @@ if doConfigure :
 		coreSources.remove( "src/IECore/OBJReader.cpp" )
 		corePythonSources.remove( "src/IECorePython/OBJReaderBinding.cpp" )
 	
-	if c.CheckLibWithHeader( coreEnv.subst( "boost_signals" + env["BOOST_LIB_SUFFIX"] ), "boost/signal.hpp", "CXX" ) :
-		for e in allCoreEnvs :
-			e.Append( CPPFLAGS = '-DIECORE_WITH_SIGNALS' )
-	else :
-		sys.stderr.write( "ERROR : unable to find boost signal library - some functionality will be disabled.\n" )
-						
 	if c.CheckCXXHeader( "boost/math/special_functions/factorials.hpp" ) :
 		for e in allCoreEnvs :
 			e.Append( CPPFLAGS = '-DIECORE_WITH_BOOSTFACTORIAL' )
@@ -1399,7 +1360,7 @@ coreEnv.Alias( "installCore", headerInstall )
 # python library
 corePythonEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
 corePythonLibrary = corePythonEnv.SharedLibrary( "lib/" + os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ), corePythonSources )
-corePythonLibraryInstall = corePythonEnv.Install( os.path.dirname( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ), corePythonLibrary )
+corePythonLibraryInstall = corePythonEnv.Install( os.path.dirname( corePythonEnv.subst( "$INSTALL_LIB_NAME" ) ), corePythonLibrary )
 corePythonEnv.NoCache( corePythonLibraryInstall )
 corePythonEnv.AddPostAction( corePythonLibraryInstall, lambda target, source, env : makeLibSymLinks( corePythonEnv, libNameVar="INSTALL_PYTHONLIB_NAME" ) )
 corePythonEnv.Alias( "install", [ corePythonLibraryInstall ] )
@@ -1422,15 +1383,14 @@ corePythonModuleEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECore", lambda target, 
 corePythonModuleEnv.Alias( "install", corePythonModuleInstall )
 corePythonModuleEnv.Alias( "installCore", corePythonModuleInstall )
 
-# stubs
-for classes, installPath in ( ( env["INSTALL_IECORE_OPS"], "$INSTALL_IECORE_OP_PATH" ), ( env["INSTALL_IECORE_PROCEDURALS"], "$INSTALL_IECORE_PROCEDURAL_PATH" ) ) :
-	for cls in classes :
-		stubName = os.path.basename( cls[1] )
-		stubEnv = corePythonModuleEnv.Clone( IECORE_NAME=os.path.join( cls[1], stubName ) )
-		stubInstall = stubEnv.Command( installPath, None, 'echo "from %s import %s as %s" > $TARGET' % ( cls[0].rpartition( "." )[0], cls[0].rpartition( "." )[-1], stubName ) )
-		stubEnv.AddPostAction( stubInstall, lambda target, source, env : makeSymLinks( env, installPath ) )
-		stubEnv.Alias( "install", stubInstall )
-		stubEnv.Alias( "installCore", stubInstall )
+# op stubs
+for op in env['INSTALL_IECORE_OPS'] :
+	stubName = os.path.basename( op[1] )
+	stubEnv = corePythonModuleEnv.Clone( IECORE_NAME=os.path.join( op[1], stubName ) )
+	stubInstall = stubEnv.Command( "$INSTALL_IECORE_OP_PATH", None, 'echo "from %s import %s as %s" > $TARGET' % ( op[0].rpartition( "." )[0], op[0].rpartition( "." )[-1], stubName ) )
+	stubEnv.AddPostAction( stubInstall, lambda target, source, env : makeSymLinks( env, env["INSTALL_IECORE_OP_PATH"] ) )
+	stubEnv.Alias( "install", stubInstall )
+	stubEnv.Alias( "installCore", stubInstall )
 
 Default( coreLibrary, corePythonLibrary, corePythonModule )
 
@@ -1477,11 +1437,10 @@ riPythonModuleEnv = pythonModuleEnv.Clone( IECORE_NAME = "IECoreRI" )
 riPythonModuleEnv.Append( CPPPATH = [ "$RMAN_ROOT/include" ] )
 riPythonModuleEnv.Append( LIBPATH = [ "$RMAN_ROOT/lib" ] )
 
-riPythonProceduralEnv = riPythonModuleEnv.Clone( IECORE_NAME = "iePython", SHLIBSUFFIX=env["SHLIBSUFFIX"] )
+riPythonProceduralEnv = riPythonModuleEnv.Clone( IECORE_NAME = "iePython" )
 
 riDisplayDriverEnv = riEnv.Clone( IECORE_NAME = "ie", SHLIBPREFIX="" )
 riDisplayDriverEnv.Append( LIBS = os.path.basename( riEnv.subst( "$INSTALL_LIB_NAME" ) ) )
-
 
 haveRI = False
 riLibs = []
@@ -1559,22 +1518,6 @@ if doConfigure :
 			
 				sys.stderr.write( "WARNING : Gx API not found - not building GXEvaluator. Use 3delight 9.0.39 or later.\n" )
 			
-		if c.CheckCXXHeader( "RixDeepTexture.h" ) :
-			
-			riEnv.Append( CPPFLAGS = "-DIECORERI_WITH_RIXDEEP" )
-			riPythonModuleEnv.Append( CPPFLAGS = "-DIECORERI_WITH_RIXDEEP" )
-			
-		else :
-		
-			riSources.remove( "src/IECoreRI/DTEXDeepImageReader.cpp" )
-			riSources.remove( "src/IECoreRI/DTEXDeepImageWriter.cpp" )
-			riPythonSources.remove( "src/IECoreRI/bindings/DTEXDeepImageReaderBinding.cpp" )
-			riPythonSources.remove( "src/IECoreRI/bindings/DTEXDeepImageWriterBinding.cpp" )
-			
-			if havePRMan :
-			
-				sys.stderr.write( "WARNING : RixDeepTexture API not found - not building IECoreRI::DTEXDeepTexture functionality. Use PRMan 16.1 or later.\n" )
-		
 		c.Finish()	
 
 		# we can't append this before configuring, as then it gets built as
@@ -1583,8 +1526,8 @@ if doConfigure :
 		riPythonModuleEnv.Append( LIBS = os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ) )
 	
 		# library
-		riLibrary = riEnv.SharedLibrary( "lib/" + os.path.basename( riEnv.subst( "$INSTALL_RMANLIB_NAME" ) ), riSources )
-		riLibraryInstall = riEnv.Install( os.path.dirname( riEnv.subst( "$INSTALL_RMANLIB_NAME" ) ), riLibrary )
+		riLibrary = riEnv.SharedLibrary( "lib/" + os.path.basename( riEnv.subst( "$INSTALL_LIB_NAME" ) ), riSources )
+		riLibraryInstall = riEnv.Install( os.path.dirname( riEnv.subst( "$INSTALL_LIB_NAME" ) ), riLibrary )
 		riEnv.NoCache( riLibraryInstall )
 		riEnv.AddPostAction( riLibraryInstall, lambda target, source, env : makeLibSymLinks( riEnv ) )
 		riEnv.Alias( "install", riLibraryInstall )
@@ -1604,7 +1547,7 @@ if doConfigure :
 		riPythonProceduralEnv.AddPostAction( riPythonProceduralInstall, lambda target, source, env : makeLibSymLinks( riPythonProceduralEnv, libNameVar="INSTALL_RMANPROCEDURAL_NAME" ) )
 		riPythonProceduralEnv.Alias( "install", riPythonProceduralInstall )
 		riPythonProceduralEnv.Alias( "installRI", riPythonProceduralInstall )
-		riPythonProceduralForTest = riPythonProceduralEnv.Command( "src/rmanProcedurals/python/python$SHLIBSUFFIX", riPythonProcedural, Copy( "$TARGET", "$SOURCE" ) )
+		riPythonProceduralForTest = riPythonProceduralEnv.Command( "src/rmanProcedurals/python/python.so", riPythonProcedural, Copy( "$TARGET", "$SOURCE" ) )
 		
 		# display driver
 		riDisplayDriver = riDisplayDriverEnv.SharedLibrary( "src/rmanDisplays/ieDisplay/" + os.path.basename( riDisplayDriverEnv.subst( "$INSTALL_RMANDISPLAY_NAME" ) ), "src/rmanDisplays/ieDisplay/IEDisplay.cpp" )
@@ -1642,7 +1585,7 @@ if doConfigure :
 			riPythonModuleEnv.Alias( "install", riPythonModuleInstall, "$INSTALL_CORERI_POST_COMMAND" ) 
 			riPythonModuleEnv.Alias( "installRI", riPythonModuleInstall, "$INSTALL_CORERI_POST_COMMAND" ) 
 
-		Default( [ riLibrary, riPythonModule, riPythonProcedural, riPythonProceduralForTest ] )
+		Default( [ riLibrary, riPythonModule, riPythonProcedural ] )
 		
 		# tests
 		riTestEnv = testEnv.Clone()
@@ -2043,16 +1986,9 @@ nukeEnvAppends = {
 
 }
 
-if env["PLATFORM"] == "darwin" :
-	# FN_OS_MAC is required to work around isnan errors in DDImage/Matrix4.h
-	nukeEnvAppends["CPPFLAGS"].append( "-DFN_OS_MAC" )
-
 nukeEnv = env.Clone( IECORE_NAME = "IECoreNuke" )
 nukeEnv.Append( **nukeEnvAppends )
-nukeEnv.Append( SHLINKFLAGS = pythonEnv["PYTHON_LINK_FLAGS"].split() )
-if env["PLATFORM"] == "darwin" :
-	nukeEnv.Append( FRAMEWORKS = [ "OpenGL" ] )
-	
+		
 nukePythonModuleEnv = pythonModuleEnv.Clone( IECORE_NAME = "IECoreNuke" )
 nukePythonModuleEnv.Append( **nukeEnvAppends )
 
@@ -2135,25 +2071,14 @@ if doConfigure :
 					]
 				)
 				
-				nukePythonModuleEnv.Append( LIBS = [
-					os.path.basename( nukeEnv.subst( "$INSTALL_LIB_NAME" ) ),
-					os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ),
-					os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ),
-				] )
+				nukePythonModuleEnv.Append( LIBS = os.path.basename( nukeEnv.subst( "$INSTALL_LIB_NAME" ) ) )
 				
 				nukeHeaders = glob.glob( "include/IECoreNuke/*.h" ) + glob.glob( "include/IECoreNuke/*.inl" )
 				nukeSources = sorted( glob.glob( "src/IECoreNuke/*.cpp" ) )
 				nukePythonSources = sorted( glob.glob( "src/IECoreNuke/bindings/*.cpp" ) )
 				nukePythonScripts = glob.glob( "python/IECoreNuke/*.py" )
 				nukePluginSources = sorted( glob.glob( "src/IECoreNuke/plugin/*.cpp" ) )
- 				nukeNodeNames = [ "ieProcedural", "ieObject", "ieOp", "ieDrawable", "ieDisplay" ]
- 
-				if "-DIECORE_WITH_ASIO" in coreEnv["CPPFLAGS"] and "-DIECORE_WITH_SIGNALS" in coreEnv["CPPFLAGS"] :
-					nukeEnv.Append( LIBS = [ "boost_signals" + env["BOOST_LIB_SUFFIX"] ] ),
-				else :
-					nukeSources.remove( "src/IECoreNuke/DisplayIop.cpp" )							
-					nukeNodeNames.remove( "ieDisplay" )
-					
+
 				# nuke library
 
 				nukeLibrary = nukeEnv.SharedLibrary( "lib/" + os.path.basename( nukeEnv.subst( "$INSTALL_NUKELIB_NAME" ) ), nukeSources )
@@ -2210,7 +2135,7 @@ if doConfigure :
 				# stubs for each of the nodes within the plugin
 				
 				nukeStubs = []
-				for nodeName in nukeNodeNames :
+				for nodeName in [ "ieProcedural", "ieObject", "ieOp", "ieDrawable" ] :
 				
 					nukeStubEnv = nukePluginEnv.Clone( IECORE_NAME=nodeName )
 					nukeStubName = "plugins/nuke/" + os.path.basename( nukeStubEnv.subst( "$INSTALL_NUKEPLUGIN_NAME" ) ) + ".tcl"
@@ -2282,7 +2207,7 @@ houdiniEnv = env.Clone( **houdiniEnvSets )
 houdiniEnv.Append( **houdiniEnvAppends )
 
 houdiniEnv.Append( SHLINKFLAGS = pythonEnv["PYTHON_LINK_FLAGS"].split() )
-houdiniEnv.Prepend( SHLINKFLAGS = "$HOUDINI_LINK_FLAGS" )
+houdiniEnv.Append( SHLINKFLAGS = "$HOUDINI_LINK_FLAGS" )
 
 houdiniPythonModuleEnv = pythonModuleEnv.Clone( **houdiniEnvSets )
 houdiniPythonModuleEnv.Append( **houdiniEnvAppends )
@@ -2593,7 +2518,6 @@ if doConfigure :
 		arnoldPythonModuleEnv.Append( LIBS = os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ) )
 		arnoldProceduralEnv.Append(
 			LIBS = [ 
-				"ai",
 				os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ),
 				os.path.basename( arnoldEnv.subst( "$INSTALL_LIB_NAME" ) ),
 				os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ),
@@ -2609,8 +2533,8 @@ if doConfigure :
 		)
 				
 		# library
-		arnoldLibrary = arnoldEnv.SharedLibrary( "lib/" + os.path.basename( arnoldEnv.subst( "$INSTALL_ARNOLDLIB_NAME" ) ), arnoldSources )
-		arnoldLibraryInstall = arnoldEnv.Install( os.path.dirname( arnoldEnv.subst( "$INSTALL_ARNOLDLIB_NAME" ) ), arnoldLibrary )
+		arnoldLibrary = arnoldEnv.SharedLibrary( "lib/" + os.path.basename( arnoldEnv.subst( "$INSTALL_LIB_NAME" ) ), arnoldSources )
+		arnoldLibraryInstall = arnoldEnv.Install( os.path.dirname( arnoldEnv.subst( "$INSTALL_LIB_NAME" ) ), arnoldLibrary )
 		arnoldEnv.NoCache( arnoldLibraryInstall )
 		arnoldEnv.AddPostAction( arnoldLibraryInstall, lambda target, source, env : makeLibSymLinks( arnoldEnv ) )
 		arnoldEnv.Alias( "install", arnoldLibraryInstall )
@@ -2656,7 +2580,7 @@ if doConfigure :
 		arnoldDriverEnv.Alias( "installArnold", arnoldDriverInstall )
 		arnoldDriverForTest = arnoldDriverEnv.Command( "contrib/IECoreArnold/test/IECoreArnold/plugins/ieOutputDriver.so", arnoldDriver, Copy( "$TARGET", "$SOURCE" ) )
 		
-		Default( [ arnoldLibrary, arnoldPythonModule, arnoldProcedural, arnoldProceduralForTest, arnoldDriver, arnoldDriverForTest ] )
+		Default( [ arnoldLibrary, arnoldPythonModule, arnoldProcedural, arnoldDriver ] )
 		
 		# tests
 		arnoldTestEnv = testEnv.Clone()

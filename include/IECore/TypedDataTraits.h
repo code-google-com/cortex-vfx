@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,14 +32,30 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECOREPYTHON_MURMURHASHBINDING_H
-#define IECOREPYTHON_MURMURHASHBINDING_H
+#ifndef IE_CORE_TYPEDDATATRAITS_H
+#define IE_CORE_TYPEDDATATRAITS_H
 
-namespace IECorePython
+#include "boost/type_traits/integral_constant.hpp"
+
+namespace IECore
 {
 
-void bindMurmurHash();
+/// Traits class for TypedData internal data structure
+/// This templated class was created so that it could define the base data type used
+/// in TypedData classes. That happens when the internal structure stored in
+/// the TypedData is made of only one data type, so that it could be addressed as an
+/// array of base data type values.
+/// Check TypedDataTraits.inl for utility macros that specializes TypedDataTraits.
+template <class T>
+class TypedDataTraits
+{
+	public:
+		typedef void BaseType;
+		typedef boost::false_type HasBase;
+};
 
-}
+} // namespace IECore
 
-#endif // IECOREPYTHON_MURMURHASHBINDING_H
+#include "IECore/TypedDataTraits.inl"
+
+#endif // IE_CORE_TYPEDDATATRAITS_H

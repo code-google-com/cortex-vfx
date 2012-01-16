@@ -1,7 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
 //  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
-//  Copyright (c) 2012, John Haddon. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +34,6 @@
 
 #include "IECore/CompoundParameter.h"
 #include "IECore/SimpleTypedData.h"
-#include "IECore/MessageHandler.h"
 
 #include "IECoreArnold/ToArnoldConverter.h"
 
@@ -106,7 +104,7 @@ void ToArnoldConverter::setParameter( AtNode *node, const AtParamEntry *paramete
 
 void ToArnoldConverter::setParameter( AtNode *node, const char *name, const IECore::Data *value )
 {
-	const AtParamEntry *parameter = AiNodeEntryLookUpParameter( AiNodeGetNodeEntry( node ), name );
+	const AtParamEntry *parameter = AiNodeEntryLookUpParameter( node->base_node, name );
 	if( parameter )
 	{
 		setParameter( node, parameter, value );
@@ -156,8 +154,6 @@ IECore::DataPtr ToArnoldConverter::getParameter( AtNode *node, const char *name,
 {
 	switch( parameterType )
 	{
-		case AI_TYPE_BOOLEAN :
-			return new BoolData( AiNodeGetBool( node, name ) );		
 		case AI_TYPE_INT :
 			return new IntData( AiNodeGetInt( node, name ) );
 		case AI_TYPE_FLOAT :
@@ -180,7 +176,7 @@ IECore::DataPtr ToArnoldConverter::getParameter( AtNode *node, const AtUserParam
 		
 IECore::DataPtr ToArnoldConverter::getParameter( AtNode *node, const char *name )
 {
-	const AtParamEntry *parameter = AiNodeEntryLookUpParameter( AiNodeGetNodeEntry( node ), name );
+	const AtParamEntry *parameter = AiNodeEntryLookUpParameter( node->base_node, name );
 	if( parameter )
 	{
 		return getParameter( node, parameter );
@@ -199,24 +195,12 @@ IECore::DataPtr ToArnoldConverter::getParameter( AtNode *node, const char *name 
 
 void ToArnoldConverter::getParameters( AtNode *node, IECore::CompoundDataMap &values )
 {
-	/// \todo Non-user parameters
+	/// \todo Error handling and non-user parameters
 
 	AtUserParamIterator *it = AiNodeGetUserParamIterator( node );  	
 	while( const AtUserParamEntry *param = AiUserParamIteratorGetNext( it ) )
 	{
-		DataPtr d = getParameter( node, param );
-		if( d )
-		{
-			values[AiUserParamGetName( param )] = d;
-		}
-		else
-		{
-			msg(
-				Msg::Warning,
-				"ToArnoldConverter::getParameters",
-				boost::format( "Unable to convert user parameter \"%s\"" ) % AiUserParamGetName( param )
-			);
-		}
+		values[AiUserParamGetName( param )] = getParameter( node, param );
 	}
 	AiUserParamIteratorDestroy( it );
 }

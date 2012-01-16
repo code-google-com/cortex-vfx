@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,6 +43,8 @@ using namespace IECore;
 
 LongVectorDataAlias::TypeDescription<IntVectorData> LongVectorDataAlias::m_typeDescription( LongVectorDataTypeId, "LongVectorData" );
 
+/// \todo Rewrite without using macros
+
 #define IE_CORE_DEFINEVECTORTYPEDDATAMEMUSAGESPECIALISATION( TNAME )										\
 	template<>																								\
 	void TNAME::memoryUsage( Object::MemoryAccumulator &accumulator ) const			\
@@ -50,7 +52,7 @@ LongVectorDataAlias::TypeDescription<IntVectorData> LongVectorDataAlias::m_typeD
 		Data::memoryUsage( accumulator );																	\
 		accumulator.accumulate( &readable(), sizeof( TNAME::ValueType ) + readable().capacity() * sizeof( TNAME::ValueType::value_type ) );	\
 	}																										\
-	
+
 #define IE_CORE_DEFINEVECTORTYPEDDATATRAITSSPECIALIZATION( TNAME )											\
 	template <>																									\
 	size_t TNAME::baseSize() const																		\
@@ -160,13 +162,13 @@ LongVectorDataAlias::TypeDescription<IntVectorData> LongVectorDataAlias::m_typeD
 	}
 
 #define IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( TNAME, TID )			\
-	IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( TNAME, TID )					\
+	IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( TNAME, TID )					\
 	IE_CORE_DEFINEVECTORTYPEDDATATRAITSSPECIALIZATION( TNAME )					\
 	IE_CORE_DEFINEVECTORTYPEDDATAMEMUSAGESPECIALISATION( TNAME )				\
 	IE_CORE_DEFINEBASEVECTORTYPEDDATAIOSPECIALISATION( TNAME, 1)				\
 
 #define IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( TNAME, TID, N )		\
-	IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( TNAME, TID )					\
+	IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( TNAME, TID )					\
 	IE_CORE_DEFINEVECTORTYPEDDATATRAITSSPECIALIZATION( TNAME )					\
 	IE_CORE_DEFINEVECTORTYPEDDATAMEMUSAGESPECIALISATION( TNAME )				\
 	IE_CORE_DEFINEBASEVECTORTYPEDDATAIOSPECIALISATION( TNAME, N )				\
@@ -208,7 +210,8 @@ IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( Color4dVectorData, Color4dVect
 
 // the string type needs it's own memoryUsage so we don't use the whole macro for it's specialisations
 
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( StringVectorData, StringVectorDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( StringVectorData, StringVectorDataTypeId )
+IE_CORE_DEFINETYPEDDATANOBASESIZE( StringVectorData )
 IE_CORE_DEFINENOBASEVECTORTYPEDDATAIOSPECIALISATION( StringVectorData )
 
 template<>
@@ -217,7 +220,7 @@ void StringVectorData::memoryUsage( Object::MemoryAccumulator &accumulator ) con
 	Data::memoryUsage( accumulator );
 
 	size_t count = 0;
-	const std::vector< std::string > &vector = readable();
+	const std::vector< std::string > &vector = m_data->data;
 	std::vector< std::string >::const_iterator iterV = vector.begin();
 	while (iterV != vector.end())
 	{
@@ -227,12 +230,13 @@ void StringVectorData::memoryUsage( Object::MemoryAccumulator &accumulator ) con
 	accumulator.accumulate( &readable(), sizeof(std::vector<string>) + count );
 }
 
-// the boolean type need it's own io, hash and memoryUsage so we don't use the whole macro for it's specialisations either
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( BoolVectorData, BoolVectorDataTypeId )
+// the boolean type need it's own io and memoryUsage so we don't use the whole macro for it's specialisations either
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( BoolVectorData, BoolVectorDataTypeId )
+IE_CORE_DEFINETYPEDDATANOBASESIZE( BoolVectorData )
 
 // short and unsigned short data types save/load themelves as int and unsigned int arrays, respectively.
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( ShortVectorData, ShortVectorDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( UShortVectorData, UShortVectorDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( ShortVectorData, ShortVectorDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( UShortVectorData, UShortVectorDataTypeId )
 
 
 template<>
@@ -240,29 +244,6 @@ void BoolVectorData::memoryUsage( Object::MemoryAccumulator &accumulator ) const
 {
 	Data::memoryUsage( accumulator );
 	accumulator.accumulate( &readable(), sizeof(std::vector<bool>) + readable().capacity() / 8 );
-}
-
-template<>
-MurmurHash SharedDataHolder<std::vector<bool> >::hash() const
-{
-	// we can't hash the raw data from inside the vector 'cos it's specialised
-	// to optimise for space, and that means the only access to the data is through
-	// a funny proxy class. so we repack the data into something we can deal with
-	// and hash that instead.
-	const std::vector<bool> &b = readable();
-	std::vector<unsigned char> p;
-	unsigned int s = b.size();
-	p.resize( s/8 + 1, 0 );
-	for( unsigned int i=0; i<b.size(); i++ )
-	{
-		if( b[i] )
-		{
-			p[i/8] |= 1 << (i % 8);
-		}
-	}
-	MurmurHash result;
-	result.append( &(p[0]), p.size() );
-	return result;
 }
 
 template<>
