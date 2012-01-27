@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -69,6 +69,10 @@ if hasattr( IECoreRI, "SXRenderer" ) :
 	
 if hasattr( IECoreRI, "GXEvaluator" ) :
 	from GXEvaluatorTest import GXEvaluatorTest
+
+if hasattr( IECoreRI, "SHWDeepImageReader" ) :
+	from SHWDeepImageReaderTest import TestSHWDeepImageReader
+	from SHWDeepImageWriterTest import TestSHWDeepImageWriter
 
 if IECore.withFreeType() :
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,40 +32,66 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <boost/python.hpp>
+#ifndef IECORERI_SHWDEEPIMAGEREADER_H
+#define IECORERI_SHWDEEPIMAGEREADER_H
 
-#include "IECoreRI/bindings/RendererBinding.h"
-#include "IECoreRI/bindings/SLOReaderBinding.h"
+#include "dtex.h"
 
-#include "IECoreRI/bindings/PTCParticleReaderBinding.h"
-#include "IECoreRI/bindings/PTCParticleWriterBinding.h"
-#include "IECoreRI/bindings/RIBWriterBinding.h"
-#include "IECoreRI/bindings/SXRendererBinding.h"
-#include "IECoreRI/bindings/GXEvaluatorBinding.h"
-#include "IECoreRI/bindings/SHWDeepImageReaderBinding.h"
-#include "IECoreRI/bindings/SHWDeepImageWriterBinding.h"
+#include "IECore/DeepImageReader.h"
 
-using namespace IECoreRI;
-using namespace boost::python;
+#include "IECoreRI/TypeIds.h"
 
-BOOST_PYTHON_MODULE( _IECoreRI )
+namespace IECoreRI
 {
-	bindRenderer();
-	bindSLOReader();
-#ifdef IECORERI_WITH_PTC
-	bindPTCParticleReader();
-	bindPTCParticleWriter();
-#endif // IECORERI_WITH_PTC
-	bindRIBWriter();
-#ifdef IECORERI_WITH_SX
-	bindSXRenderer();	
-#endif // IECORERI_WITH_SX
-#ifdef IECORERI_WITH_GX
-	bindGXEvaluator();	
-#endif // IECORERI_WITH_GX
-#ifdef IECORERI_WITH_DEEPSHW
-	bindSHWDeepImageReader();
-	bindSHWDeepImageWriter();
-#endif // IECORERI_WITH_DEEPSHW
 
-}
+/// The SHWDeepImageReader class reads 3delight deep shadow files. Note that this is an Alpha-only format.
+/// \ingroup deepCompositingGroup
+/// \ingroup ioGroup
+class SHWDeepImageReader : public IECore::DeepImageReader
+{
+	public :
+
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( SHWDeepImageReader, SHWDeepImageReaderTypeId, IECore::DeepImageReader );
+
+		SHWDeepImageReader();
+		SHWDeepImageReader( const std::string &filename );
+
+		virtual ~SHWDeepImageReader();
+
+		static bool canRead( const std::string &filename );
+
+		virtual void channelNames( std::vector<std::string> &names );
+		virtual bool isComplete();
+		virtual Imath::Box2i dataWindow();
+		virtual Imath::Box2i displayWindow();
+
+	protected :
+
+		virtual IECore::DeepPixelPtr doReadPixel( int x, int y );
+
+	private :
+
+		static const ReaderDescription<SHWDeepImageReader> g_readerDescription;
+
+		/// Tries to open the file, returning true on success and false on failure. On success,
+		/// all of the private members will be valid. If throwOnFailure is true then a descriptive
+		/// Exception is thrown rather than false being returned.
+		bool open( bool throwOnFailure = false );
+		void clean();
+		
+		DtexFile *m_inputFile;
+		DtexCache *m_dtexCache;
+		DtexImage *m_dtexImage;
+		DtexPixel *m_dtexPixel;
+		
+		Imath::Box2i m_dataWindow;
+		std::string m_inputFileName;
+		std::string m_channelNames;
+
+};
+
+IE_CORE_DECLAREPTR( SHWDeepImageReader );
+
+} // namespace IECoreRI
+
+#endif // IECORERI_SHWDEEPIMAGEREADER_H

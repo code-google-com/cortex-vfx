@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,40 +32,28 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <boost/python.hpp>
+#include "boost/python.hpp"
 
-#include "IECoreRI/bindings/RendererBinding.h"
-#include "IECoreRI/bindings/SLOReaderBinding.h"
+#include "IECorePython/RunTimeTypedBinding.h"
 
-#include "IECoreRI/bindings/PTCParticleReaderBinding.h"
-#include "IECoreRI/bindings/PTCParticleWriterBinding.h"
-#include "IECoreRI/bindings/RIBWriterBinding.h"
-#include "IECoreRI/bindings/SXRendererBinding.h"
-#include "IECoreRI/bindings/GXEvaluatorBinding.h"
-#include "IECoreRI/bindings/SHWDeepImageReaderBinding.h"
-#include "IECoreRI/bindings/SHWDeepImageWriterBinding.h"
+#include "IECoreRI/SHWDeepImageReader.h"
 
-using namespace IECoreRI;
 using namespace boost::python;
+using namespace IECorePython;
 
-BOOST_PYTHON_MODULE( _IECoreRI )
+namespace IECoreRI
 {
-	bindRenderer();
-	bindSLOReader();
-#ifdef IECORERI_WITH_PTC
-	bindPTCParticleReader();
-	bindPTCParticleWriter();
-#endif // IECORERI_WITH_PTC
-	bindRIBWriter();
-#ifdef IECORERI_WITH_SX
-	bindSXRenderer();	
-#endif // IECORERI_WITH_SX
-#ifdef IECORERI_WITH_GX
-	bindGXEvaluator();	
-#endif // IECORERI_WITH_GX
-#ifdef IECORERI_WITH_DEEPSHW
-	bindSHWDeepImageReader();
-	bindSHWDeepImageWriter();
-#endif // IECORERI_WITH_DEEPSHW
+
+void bindSHWDeepImageReader()
+{
+
+	RunTimeTypedClass<SHWDeepImageReader>()
+		.def( init<>() )
+		.def( init<const std::string &>() )
+		.def( "canRead", &SHWDeepImageReader::canRead ).staticmethod( "canRead" )
+	;
 
 }
+
+} // namespace IECoreRI
+
