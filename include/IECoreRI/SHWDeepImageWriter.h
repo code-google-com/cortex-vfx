@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,40 +32,61 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <boost/python.hpp>
+#ifndef IECORERI_SHWDEEPIMAGEWRITER_H
+#define IECORERI_SHWDEEPIMAGEWRITER_H
 
-#include "IECoreRI/bindings/RendererBinding.h"
-#include "IECoreRI/bindings/SLOReaderBinding.h"
+#include "dtex.h"
 
-#include "IECoreRI/bindings/PTCParticleReaderBinding.h"
-#include "IECoreRI/bindings/PTCParticleWriterBinding.h"
-#include "IECoreRI/bindings/RIBWriterBinding.h"
-#include "IECoreRI/bindings/SXRendererBinding.h"
-#include "IECoreRI/bindings/GXEvaluatorBinding.h"
-#include "IECoreRI/bindings/SHWDeepImageReaderBinding.h"
-#include "IECoreRI/bindings/SHWDeepImageWriterBinding.h"
+#include "IECore/DeepImageWriter.h"
 
-using namespace IECoreRI;
-using namespace boost::python;
+#include "IECoreRI/TypeIds.h"
 
-BOOST_PYTHON_MODULE( _IECoreRI )
+namespace IECoreRI
 {
-	bindRenderer();
-	bindSLOReader();
-#ifdef IECORERI_WITH_PTC
-	bindPTCParticleReader();
-	bindPTCParticleWriter();
-#endif // IECORERI_WITH_PTC
-	bindRIBWriter();
-#ifdef IECORERI_WITH_SX
-	bindSXRenderer();	
-#endif // IECORERI_WITH_SX
-#ifdef IECORERI_WITH_GX
-	bindGXEvaluator();	
-#endif // IECORERI_WITH_GX
-#ifdef IECORERI_WITH_DEEPSHW
-	bindSHWDeepImageReader();
-	bindSHWDeepImageWriter();
-#endif // IECORERI_WITH_DEEPSHW
 
-}
+/// The SHWDeepImageWriter class writes 3delight deep shadow files. As this is an Alpha-only format,
+/// only the A channel will be used and the rest will be ignored. If A does not exist, then the first
+/// channel will be used in its place, regardless of name.
+/// \ingroup deepCompositingGroup
+/// \ingroup ioGroup
+class SHWDeepImageWriter : public IECore::DeepImageWriter
+{
+	public :
+
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( SHWDeepImageWriter, SHWDeepImageWriterTypeId, IECore::DeepImageWriter );
+
+		SHWDeepImageWriter();
+		SHWDeepImageWriter( const std::string &filename );
+
+		virtual ~SHWDeepImageWriter();
+
+		static bool canWrite( const std::string &filename );
+
+	private :
+
+		static const DeepImageWriterDescription<SHWDeepImageWriter> g_writerDescription;
+
+		virtual void doWritePixel( int x, int y, const IECore::DeepPixel *pixel );
+
+		/// Tries to open the file for writing, throwing on failure. On success,
+		/// all of the private members will be valid.
+		void open();
+		void clean();
+		
+		IECore::V2iParameterPtr m_tileSizeParameter;
+		
+		DtexFile *m_outputFile;
+		DtexCache *m_dtexCache;
+		DtexImage *m_dtexImage;
+		DtexPixel *m_dtexPixel;
+		
+		std::string m_outputFileName;
+		int m_alphaOffset;
+
+};
+
+IE_CORE_DECLAREPTR( SHWDeepImageWriter );
+
+} // namespace IECoreRI
+
+#endif // IECORERI_SHWDEEPIMAGEWRITER_H
