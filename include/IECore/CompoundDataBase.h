@@ -48,9 +48,11 @@ typedef std::map< InternedString, DataPtr > CompoundDataMap;
 /// A subclass of Data which stores a map of other named Data
 /// objects - a CompoundDataMap. This is accessible as usual
 /// via the readable() and writable() member functions. Generally you
-/// wouldn't use the typedef directly, but instead use the CompoundData
+/// wouldn't use this typedef directly, but instead use the CompoundData
 /// derived class which provides several useful utility methods.
-IECORE_DECLARE_TYPEDDATA( CompoundDataBase, CompoundDataMap, void, SimpleDataHolder )
+typedef TypedData< CompoundDataMap > CompoundDataBase;
+
+IE_CORE_DECLAREPTR( CompoundDataBase );
 
 } // namespace IECore
 

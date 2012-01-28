@@ -1,7 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
 //  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
-//  Copyright (c) 2012, John Haddon. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -147,7 +146,7 @@ void IECoreArnold::RendererImplementation::setOption( const std::string &name, I
 	if( 0 == name.compare( 0, 3, "ai:" ) )
 	{
 		AtNode *options = AiUniverseGetOptions();
-		const AtParamEntry *parameter = AiNodeEntryLookUpParameter( AiNodeGetNodeEntry( options ), name.c_str() + 3 );
+		const AtParamEntry *parameter = AiNodeEntryLookUpParameter( options->base_node, name.c_str() + 3 );
 		if( parameter )
 		{
 			ToArnoldConverter::setParameter( options, name.c_str() + 3, value );
@@ -219,7 +218,7 @@ void IECoreArnold::RendererImplementation::display( const std::string &name, con
 	string nodeName = boost::str( boost::format( "ieCoreArnold:display%d" ) % m_outputDescriptions.size() );
 	AiNodeSetStr( driver, "name", nodeName.c_str() );
 	
-	const AtParamEntry *fileNameParameter = AiNodeEntryLookUpParameter( AiNodeGetNodeEntry( driver ), "filename" );
+	const AtParamEntry *fileNameParameter = AiNodeEntryLookUpParameter( driver->base_node, "filename" );
 	if( fileNameParameter )
 	{
 		AiNodeSetStr( driver, AiParamGetName( fileNameParameter ), name.c_str() );
@@ -271,7 +270,7 @@ void IECoreArnold::RendererImplementation::worldBegin()
 	AtArray *outputsArray = AiArrayAllocate( m_outputDescriptions.size(), 1, AI_TYPE_STRING );
 	for( int i = 0, e = m_outputDescriptions.size(); i < e; i++ )
 	{
-		AiArraySetStr( outputsArray, i, m_outputDescriptions[i].c_str() );
+		AiArraySetStr( outputsArray, 0, m_outputDescriptions[i].c_str() );
 	}
 	AiNodeSetArray( options, "outputs", outputsArray ); 
 

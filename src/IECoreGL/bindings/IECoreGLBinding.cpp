@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -66,7 +66,6 @@
 #include "IECoreGL/bindings/ToGLTextureConverterBinding.h"
 #include "IECoreGL/bindings/PrimitiveBinding.h"
 #include "IECoreGL/bindings/PointsPrimitiveBinding.h"
-#include "IECoreGL/bindings/SelectorBinding.h"
 
 
 using namespace IECoreGL;
@@ -104,7 +103,6 @@ BOOST_PYTHON_MODULE( _IECoreGL )
 	bindToGLTextureConverter();
 	bindPrimitive();
 	bindPointsPrimitive();
-	bindSelector();
 
 	def( "init", &IECoreGL::init );
 }

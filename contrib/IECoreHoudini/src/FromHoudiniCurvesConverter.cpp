@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -64,23 +64,22 @@ FromHoudiniCurvesConverter::~FromHoudiniCurvesConverter()
 
 FromHoudiniGeometryConverter::Convertability FromHoudiniCurvesConverter::canConvert( const GU_Detail *geo )
 {
-	const GA_PrimitiveList &primitives = geo->getPrimitiveList();
+	const GEO_PrimList &primitives = geo->primitives();
 	
-	size_t numPrims = geo->getNumPrimitives();
-	GA_Iterator firstPrim = geo->getPrimitiveRange().begin();
-	if ( !numPrims || !compatiblePrimitive( primitives.get( firstPrim.getOffset() )->getTypeId() ) )
+	size_t numPrims = primitives.entries();
+	if ( !numPrims || !( primitives[0]->getPrimitiveId() & GEOCURVE ) )
 	{
 		return Inapplicable;
 	}
 	
-	const GEO_Curve *firstCurve = (const GEO_Curve*)primitives.get( firstPrim.getOffset() );
+	const GEO_Curve *firstCurve = (const GEO_Curve*)primitives[0];
 	bool periodic = firstCurve->isClosed();
 	unsigned order = firstCurve->getOrder();
 	
-	for ( GA_Iterator it=firstPrim; !it.atEnd(); ++it )
+	for ( size_t i=0; i < numPrims; i++ )
 	{
-		const GA_Primitive *prim = primitives.get( it.getOffset() );
-		if ( !compatiblePrimitive( prim->getTypeId() ) )
+		const GEO_Primitive *prim = primitives( i );
+		if ( !( prim->getPrimitiveId() & GEOCURVE ) )
 		{
 			return Inapplicable;
 		}
@@ -97,9 +96,8 @@ FromHoudiniGeometryConverter::Convertability FromHoudiniCurvesConverter::canConv
 		}
 	}
 	
-	UT_PtrArray<const GA_ElementGroup*> primGroups;
-	geo->getElementGroupList( GA_ATTRIB_PRIMITIVE, primGroups );
-	if ( !primGroups.entries() || primGroups[0]->entries() == numPrims )
+	const GB_GroupList &primGroups = geo->primitiveGroups();
+	if ( !primGroups.length() || primGroups.head()->entries() == numPrims )
 	{
 		return Ideal;
 	}
@@ -109,18 +107,18 @@ FromHoudiniGeometryConverter::Convertability FromHoudiniCurvesConverter::canConv
 
 PrimitivePtr FromHoudiniCurvesConverter::doPrimitiveConversion( const GU_Detail *geo ) const
 {
-	const GA_PrimitiveList &primitives = geo->getPrimitiveList();
+	const GEO_PrimList &primitives = geo->primitives();
 	
 	CurvesPrimitivePtr result = new CurvesPrimitive();
 	
-	GA_Iterator firstPrim = geo->getPrimitiveRange().begin();
-	if ( !geo->getNumPrimitives() || !compatiblePrimitive( primitives.get( firstPrim.getOffset() )->getTypeId() ) )
+	size_t numPrims = primitives.entries();
+	if ( !numPrims || !( primitives[0]->getPrimitiveId() & GEOCURVE ) )
 	{
-		throw std::runtime_error( "FromHoudiniCurvesConverter: Geometry contains no curves or non-curve primitives" );
+		throw runtime_error( "FromHoudiniCurvesConverter: Geometry contains no curves or non-curve primitives" );
 	}
 	
 	// set periodic based on the first curve
-	const GEO_Curve *firstCurve = (const GEO_Curve*)primitives.get( firstPrim.getOffset() );
+	const GEO_Curve *firstCurve = (const GEO_Curve*)primitives[0];
 	bool periodic = firstCurve->isClosed();
 	
 	// set basis based on the first curve
@@ -140,23 +138,23 @@ PrimitivePtr FromHoudiniCurvesConverter::doPrimitiveConversion( const GU_Detail 
 	
 	std::vector<int> origVertsPerCurve;
 	std::vector<int> finalVertsPerCurve;
-	for ( GA_Iterator it=firstPrim; !it.atEnd(); ++it )
+	for ( size_t i=0; i < numPrims; i++ )
 	{
-		const GA_Primitive *prim = primitives.get( it.getOffset() );
-		if ( !compatiblePrimitive( prim->getTypeId() ) )
+		const GEO_Primitive *prim = primitives( i );
+		if ( !( prim->getPrimitiveId() & GEOCURVE ) )
 		{
-			throw std::runtime_error( "FromHoudiniCurvesConverter: Geometry contains non-curve primitives" );
+			throw runtime_error( "FromHoudiniCurvesConverter: Geometry contains non-curve primitives" );
 		}
 		
 		const GEO_Curve *curve = (const GEO_Curve*)prim;
 		if ( curve->getOrder() != order )
 		{
-			throw std::runtime_error( "FromHoudiniCurvesConverter: Geometry contains multiple curves with differing order. Set all curves to order 2 (linear) or 4 (cubic bSpline)" );
+			throw runtime_error( "FromHoudiniCurvesConverter: Geometry contains multiple curves with differing order. Set all curves to order 2 (linear) or 4 (cubic bSpline)" );
 		}
 		
 		if ( curve->isClosed() != periodic )
 		{
-			throw std::runtime_error( "FromHoudiniCurvesConverter: Geometry contains both open and closed curves" );
+			throw runtime_error( "FromHoudiniCurvesConverter: Geometry contains both open and closed curves" );
 		}
 		
 		int numPrimVerts = prim->getVertexCount();
@@ -173,7 +171,7 @@ PrimitivePtr FromHoudiniCurvesConverter::doPrimitiveConversion( const GU_Detail 
 	
 	if ( !origVertsPerCurve.size() )
 	{
-		throw std::runtime_error( "FromHoudiniCurvesConverter: Geometry does not contain curve vertices" );
+		throw runtime_error( "FromHoudiniCurvesConverter: Geometry does not contain curve vertices" );
 	}
 	
 	result->setTopology( new IntVectorData( origVertsPerCurve ), basis, periodic );
@@ -192,7 +190,7 @@ PrimitivePtr FromHoudiniCurvesConverter::doPrimitiveConversion( const GU_Detail 
 		// only duplicate point and vertex attrib end points
 		if ( it->second.interpolation == IECore::PrimitiveVariable::Vertex )
 		{
-			despatchTypedData<DuplicateEnds, TypeTraits::IsVectorAttribTypedData, DespatchTypedDataIgnoreError>( it->second.data, func );
+			despatchTypedData<DuplicateEnds, TypeTraits::IsVectorGbAttribTypedData, DespatchTypedDataIgnoreError>( it->second.data, func );
 		}
 	}
 	

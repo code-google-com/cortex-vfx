@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,11 +32,9 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/format.hpp"
-
 #include "IECore/Light.h"
 #include "IECore/Renderer.h"
-#include "IECore/MurmurHash.h"
+#include "boost/format.hpp"
 
 using namespace IECore;
 using namespace boost;
@@ -150,12 +148,3 @@ void Light::load( LoadContextPtr context )
 	container->read( "handle", m_handle );
 	m_parameters = context->load<CompoundData>( container, "parameters" );
 }
-
-void Light::hash( MurmurHash &h ) const
-{
-	StateRenderable::hash( h );
-	h.append( m_name );
-	h.append( m_handle );
-	m_parameters->hash( h );
-}
-

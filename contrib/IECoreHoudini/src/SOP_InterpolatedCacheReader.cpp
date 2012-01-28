@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -154,20 +154,28 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 	
 	duplicatePointSource( 0, context );
 	
-	for ( GA_GroupTable::iterator<GA_ElementGroup> it=gdp->pointGroups().beginTraverse(); !it.atEnd(); ++it )
+	GB_Group *group;
+	const GB_GroupList &pointGroups = gdp->pointGroups();
+	for ( group=pointGroups.head(); group; group = (GB_Group *)group->next() )
 	{
-		GA_PointGroup *group = (GA_PointGroup*)it.group();
-		if ( group->getInternal() || group->isEmpty() )
+		if ( !group->entries() )
 		{
 			continue;
 		}
 		
-		// match GA_PointGroup name to InterpolatedCache::ObjectHandle
+		// match GB_PointGroup name to InterpolatedCache::ObjectHandle
 		std::string searchName = objectPrefix + group->getName().toStdString() + objectSuffix;
 		std::vector<InterpolatedCache::ObjectHandle>::iterator oIt = find( objects.begin(), objects.end(), searchName );
 		if ( oIt == objects.end() )
 		{
 			continue;
+		}
+
+		// gather the points for this group
+		GEO_PointList points;
+		for ( GEO_Point *p = gdp->points().head( *(GB_PointGroup*)group ); p; p = gdp->points().next( p, *(GB_PointGroup*)group ) )
+		{
+			points.append( p );
 		}
 		
 		CompoundObjectPtr attributes = 0;
@@ -186,9 +194,7 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 		
 		const CompoundObject::ObjectMap &attributeMap = attributes->members();
 		
-		GA_Range pointRange = gdp->getPointRange( group );
-		
-		// transfer the InterpolatedCache::Attributes onto the GA_PointGroup
+		// transfer the InterpolatedCache::Attributes onto the GB_PointGroup
 		/// \todo: this does not account for detail, prim, or vertex attribs...
 		for ( CompoundObject::ObjectMap::const_iterator aIt=attributeMap.begin(); aIt != attributeMap.end(); aIt++ )
 		{
@@ -204,7 +210,7 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
  				continue;
  			}
 			
-			// strip the prefix/suffix from the GA_Attribute name
+			// strip the prefix/suffix from the GB_Attribute name
 			std::string attrName = aIt->first.value();
 			size_t prefixLength = attributePrefix.length();
 			if ( prefixLength && ( search( attrName.begin(), attrName.begin()+prefixLength, attributePrefix.begin(), attributePrefix.end() ) == attrName.begin() ) )
@@ -223,11 +229,12 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 				const V3fVectorData *positions = IECore::runTimeCast<const V3fVectorData>( data );
 				if ( !positions )
 				{
+					converter->convert( attrName, gdp, &points );
 					continue;
 				}
 				
 				size_t index = 0;
-				size_t entries = pointRange.getEntries();
+				size_t entries = points.entries();
 				const std::vector<Imath::V3f> &pos = positions->readable();
 				
 				// Attempting to account for the vertex difference between an IECore::CurvesPrimitive and Houdini curves.
@@ -243,16 +250,15 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 					addWarning( SOP_ATTRIBUTE_INVALID, ( boost::format( "Geometry/Cache mismatch: %s contains %d points, while cache expects %d." ) % group->getName().toStdString() % entries % pos.size() ).str().c_str() );
 					continue;
 				}
-
-				for ( GA_Iterator it=pointRange.begin(); !it.atEnd(); ++it, ++index )
+				
+				for ( size_t i=0; i < entries; i++, index++ )
 				{
-					gdp->setPos3( it.getOffset(), IECore::convert<UT_Vector3>( pos[index] ) );
+					points[i]->setPos( IECore::convert<UT_Vector3>( pos[index] ) );
 				}
-
 			}
 			else
 			{
-				converter->convert( attrName, gdp, pointRange );
+				converter->convert( attrName, gdp, &points );
 			}
 		}
 	}

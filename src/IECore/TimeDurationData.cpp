@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,7 +40,8 @@
 namespace IECore
 {
 
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( TimeDurationData, TimeDurationDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( TimeDurationData, TimeDurationDataTypeId )
+IE_CORE_DEFINETYPEDDATANOBASESIZE( TimeDurationData )
 
 template<>
 void TimeDurationData::save( SaveContext *context ) const
@@ -89,12 +90,6 @@ void TimeDurationData::load( LoadContextPtr context )
 			throw;
 		}
 	}
-}
-
-template<>
-void SimpleDataHolder<boost::posix_time::time_duration>::hash( MurmurHash &h ) const
-{
-	h.append( boost::posix_time::to_simple_string( readable() ) );
 }
 
 template class TypedData< boost::posix_time::time_duration >;

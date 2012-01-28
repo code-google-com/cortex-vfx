@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,7 +44,7 @@ namespace IECoreHoudini
 {
 
 /// This template class can convert from various numeric IECore VectorTypeData types
-/// to a Houdini GA_Attribute on the provided GU_Detail.
+/// to a Houdini GB_Attribute on the provided GU_Detail.
 template<typename T>
 class ToHoudiniNumericVectorAttribConverter : public ToHoudiniAttribConverter
 {
@@ -59,8 +59,13 @@ class ToHoudiniNumericVectorAttribConverter : public ToHoudiniAttribConverter
 		
 	protected :
 		
-		virtual GA_RWAttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo ) const;
-		virtual GA_RWAttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo, const GA_Range &range ) const;
+		virtual GB_AttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo ) const;
+		virtual GB_AttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo, GEO_PointList *points ) const;
+		virtual GB_AttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo, GEO_PrimList *primitives ) const;
+		virtual GB_AttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo, VertexList *vertices ) const;
+		
+		template<typename Container>
+		GB_AttributeRef doVectorConversion( const IECore::Data *data, std::string name, GU_Detail *geo, Container *container, GEO_AttributeOwner owner ) const;
 		
 	private :
 			
@@ -69,7 +74,7 @@ class ToHoudiniNumericVectorAttribConverter : public ToHoudiniAttribConverter
 };
 
 /// This template class can convert from various numeric IECore SimpleTypedData types
-/// to a Houdini GA_Attribute on the provided GU_Detail.
+/// to a Houdini GB_Attribute on the provided GU_Detail.
 template<typename T>
 class ToHoudiniNumericDetailAttribConverter : public ToHoudiniAttribConverter
 {
@@ -84,8 +89,10 @@ class ToHoudiniNumericDetailAttribConverter : public ToHoudiniAttribConverter
 		
 	protected :
 		
-		virtual GA_RWAttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo ) const;
-		virtual GA_RWAttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo, const GA_Range &range ) const;
+		virtual GB_AttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo ) const;
+		virtual GB_AttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo, GEO_PointList *points ) const;
+		virtual GB_AttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo, GEO_PrimList *primitives ) const;
+		virtual GB_AttributeRef doConversion( const IECore::Data *data, std::string name, GU_Detail *geo, VertexList *vertices ) const;
 
 	private :
 				

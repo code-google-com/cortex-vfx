@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,10 +43,15 @@ using namespace IECore;
 namespace IECore
 {
 
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( SplineffData, SplineffDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( SplineddData, SplineddDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( SplinefColor3fData, SplinefColor3fDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( SplinefColor4fData, SplinefColor4fDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( SplineffData, SplineffDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( SplineddData, SplineddDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( SplinefColor3fData, SplinefColor3fDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( SplinefColor4fData, SplinefColor4fDataTypeId )
+
+IE_CORE_DEFINETYPEDDATANOBASESIZE( SplineffData )
+IE_CORE_DEFINETYPEDDATANOBASESIZE( SplineddData )
+IE_CORE_DEFINETYPEDDATANOBASESIZE( SplinefColor3fData )
+IE_CORE_DEFINETYPEDDATANOBASESIZE( SplinefColor4fData )
 
 #define SPECIALISE( TNAME, YBASETYPE, YBASESIZE )												\
 																								\
@@ -111,22 +116,6 @@ IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( SplinefColor4fData, SplinefCol
 		m += sizeof( ValueType );																\
 		accumulator.accumulate( m );															\
 	}																							\
-\
-	template<>\
-	MurmurHash SharedDataHolder<TNAME::ValueType>::hash() const\
-	{\
-		MurmurHash result;\
-		const TNAME::ValueType &s = readable();\
-		result.append( s.basis.matrix );\
-		result.append( s.basis.step );\
-		TNAME::ValueType::PointContainer::const_iterator it;\
-		for( it=s.points.begin(); it!=s.points.end(); it++ )\
-		{\
-			result.append( it->first );\
-			result.append( it->second );\
-		}\
-		return result;\
-	}\
 
 SPECIALISE( SplineffData, float, 1 )
 SPECIALISE( SplineddData, double, 1 )

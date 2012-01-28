@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -49,14 +49,24 @@ ToHoudiniAttribConverter::~ToHoudiniAttribConverter()
 {
 }
 
-GA_RWAttributeRef ToHoudiniAttribConverter::convert( std::string name, GU_Detail *geo ) const
+GB_AttributeRef ToHoudiniAttribConverter::convert( std::string name, GU_Detail *geo ) const
 {
 	return doConversion( (const IECore::Data *)srcParameter()->getValidatedValue(), name, geo );
 }
 
-GA_RWAttributeRef ToHoudiniAttribConverter::convert( std::string name, GU_Detail *geo, const GA_Range &range ) const
+GB_AttributeRef ToHoudiniAttribConverter::convert( std::string name, GU_Detail *geo, GEO_PointList *points ) const
 {
-	return doConversion( (const IECore::Data *)srcParameter()->getValidatedValue(), name, geo, range );
+	return doConversion( (const IECore::Data *)srcParameter()->getValidatedValue(), name, geo, points );
+}
+
+GB_AttributeRef ToHoudiniAttribConverter::convert( std::string name, GU_Detail *geo, GEO_PrimList *primitives ) const
+{
+	return doConversion( (const IECore::Data *)srcParameter()->getValidatedValue(), name, geo, primitives );
+}
+
+GB_AttributeRef ToHoudiniAttribConverter::convert( std::string name, GU_Detail *geo, VertexList *vertices ) const
+{
+	return doConversion( (const IECore::Data *)srcParameter()->getValidatedValue(), name, geo, vertices );
 }
 
 /////////////////////////////////////////////////////////////////////////////////

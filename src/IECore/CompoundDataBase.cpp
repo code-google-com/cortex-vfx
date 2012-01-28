@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,15 +36,13 @@
 #include "IECore/TypedData.inl"
 
 #include <iostream>
-#include <algorithm>
-
 using namespace std;
 using namespace IECore;
 
 namespace IECore
 {
 
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CompoundDataBase, CompoundDataBaseTypeId )
+IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CompoundDataBase, CompoundDataBaseTypeId );
 
 template<>
 void CompoundDataBase::memoryUsage( Object::MemoryAccumulator &accumulator ) const
@@ -152,39 +150,9 @@ void CompoundDataBase::load( LoadContextPtr context )
 	container->chdir( ".." );
 }
 
-static inline bool comp( CompoundDataMap::const_iterator a, CompoundDataMap::const_iterator b )
-{
-	return a->first.value() < b->first.value();
+IE_CORE_DEFINETYPEDDATANOBASESIZE( CompoundDataBase )
+
 }
-
-template<>
-void SimpleDataHolder<CompoundDataMap>::hash( MurmurHash &h ) const
-{	
-	// the CompoundDataMap is sorted by InternedString::operator <,
-	// which just compares addresses of the underlying interned object.
-	// this isn't stable between multiple processes.
-	const CompoundDataMap &m = readable();
-	std::vector<CompoundDataMap::const_iterator> iterators;
-	iterators.reserve( m.size() );	
-	for( CompoundDataMap::const_iterator it=m.begin(); it!=m.end(); it++ )
-	{
-		iterators.push_back( it );
-	}
-
-	// so we have to sort again based on the string values
-	// themselves.
-	sort( iterators.begin(), iterators.end(), comp );
-	
-	// and then hash everything in the stable order.
-	std::vector<CompoundDataMap::const_iterator>::const_iterator it;
-	for( it=iterators.begin(); it!=iterators.end(); it++ )
-	{
-		h.append( (*it)->first.value() );
-		(*it)->second->hash( h );
-	}
-}
-
-} // namespace IECore
 
 // Instantiate that bad boy.
 template class TypedData<CompoundDataMap>;

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,8 +43,11 @@ using namespace IECore;
 namespace IECore
 {
 
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CubeColorLookupfData, CubeColorLookupfDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CubeColorLookupdData, CubeColorLookupdDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( CubeColorLookupfData, CubeColorLookupfDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( CubeColorLookupdData, CubeColorLookupdDataTypeId )
+
+IE_CORE_DEFINETYPEDDATANOBASESIZE( CubeColorLookupfData )
+IE_CORE_DEFINETYPEDDATANOBASESIZE( CubeColorLookupdData )
 
 #define SPECIALISE( TNAME )\
 \
@@ -106,18 +109,6 @@ IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CubeColorLookupdData, CubeColo
 		const ValueType &s = readable();\
 		size_t m = s.m_data.size() * sizeof( ValueType::DataType::value_type ); \
 		accumulator.accumulate( m );\
-	}\
-\
-	template<>\
-	MurmurHash SharedDataHolder<TNAME::ValueType>::hash() const\
-	{\
-		const TNAME::ValueType &s = readable();\
-		MurmurHash result;\
-		result.append( s.dimension() );\
-		result.append( s.domain() );\
-		result.append( (int)s.getInterpolation() );\
-		result.append( &(s.data()[0]), s.data().size() );\
-		return result;\
 	}\
 
 SPECIALISE( CubeColorLookupfData )
