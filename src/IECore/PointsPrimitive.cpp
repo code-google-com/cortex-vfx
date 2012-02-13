@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,6 @@
 #include "IECore/PointsPrimitive.h"
 #include "IECore/MessageHandler.h"
 #include "IECore/Renderer.h"
-#include "IECore/MurmurHash.h"
 
 using namespace IECore;
 
@@ -104,12 +103,6 @@ void PointsPrimitive::memoryUsage( Object::MemoryAccumulator &a ) const
 {
 	Primitive::memoryUsage( a );
 	a.accumulate( sizeof( m_numPoints ) );
-}
-
-void PointsPrimitive::hash( MurmurHash &h ) const
-{
-	Primitive::hash( h );
-	h.append( (uint64_t)m_numPoints );
 }
 
 size_t PointsPrimitive::getNumPoints() const

@@ -201,8 +201,7 @@ class Renderer : public RunTimeTyped
 		virtual Imath::M44f getTransform( const std::string &coordinateSystem ) const = 0;
 		/// Concatenates the specified transform onto the current transform.
 		virtual void concatTransform( const Imath::M44f &m ) = 0;
-		/// Creates a named coordinate system from the current transform. Coordinate systems
-		/// are scoped by attributeBegin/attributeEnd blocks.
+		/// Creates a named coordinate system from the current transform.
 		virtual void coordinateSystem( const std::string &name ) = 0;
 		//@}
 

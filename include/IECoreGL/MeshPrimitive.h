@@ -71,8 +71,8 @@ class MeshPrimitive : public Primitive
 		IECore::ConstIntVectorDataPtr m_vertIds;
 		Imath::Box3f m_bound;
 
-		/// So Font can use the render( state, style ) method.
-		friend class Font;
+		/// So TextPrimitive can use the render( state, style ) method.
+		friend class TextPrimitive;
 
 };
 

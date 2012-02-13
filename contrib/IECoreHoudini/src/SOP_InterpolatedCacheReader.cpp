@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,6 @@
 #include "PRM/PRM_Template.h"
 
 #include "IECore/CompoundObject.h"
-#include "IECore/TransformationMatrixData.h"
 #include "IECore/VectorTypedData.h"
 
 #include "Convert.h"
@@ -53,7 +52,6 @@ static PRM_Name parameterNames[] = {
 	PRM_Name( "cacheSequence", "Cache Sequence" ),
 	PRM_Name( "objectFixes", "Object Prefix/Suffix" ),
 	PRM_Name( "attributeFixes", "Attribute Prefix/Suffix" ),
-	PRM_Name( "transformAttribute", "Transform Attribute" ),
 	PRM_Name( "frameMultiplier", "Frame Multiplier" ),
 };
 
@@ -63,8 +61,7 @@ PRM_Template SOP_InterpolatedCacheReader::parameters[] = {
 	PRM_Template( PRM_FILE, 1, &parameterNames[0] ),
 	PRM_Template( PRM_STRING, 2, &parameterNames[1] ),
 	PRM_Template( PRM_STRING, 2, &parameterNames[2] ),
-	PRM_Template( PRM_STRING, 1, &parameterNames[3] ),
-	PRM_Template( PRM_INT, 1, &parameterNames[4], &frameMultiplierDefault ),
+	PRM_Template( PRM_INT, 1, &parameterNames[3], &frameMultiplierDefault ),
 	PRM_Template(),
 };
 
@@ -112,9 +109,6 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 	evalString( paramVal, "attributeFixes", 1, time );
 	std::string attributeSuffix = paramVal.toStdString();
 	
-	evalString( paramVal, "transformAttribute", 0, time );
-	std::string transformAttribute = paramVal.toStdString();
-	
 	int frameMultiplier = evalInt( "frameMultiplier", 0, time );
 	
 	// create the InterpolatedCache
@@ -160,20 +154,28 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 	
 	duplicatePointSource( 0, context );
 	
-	for ( GA_GroupTable::iterator<GA_ElementGroup> it=gdp->pointGroups().beginTraverse(); !it.atEnd(); ++it )
+	GB_Group *group;
+	const GB_GroupList &pointGroups = gdp->pointGroups();
+	for ( group=pointGroups.head(); group; group = (GB_Group *)group->next() )
 	{
-		GA_PointGroup *group = (GA_PointGroup*)it.group();
-		if ( group->getInternal() || group->isEmpty() )
+		if ( !group->entries() )
 		{
 			continue;
 		}
 		
-		// match GA_PointGroup name to InterpolatedCache::ObjectHandle
+		// match GB_PointGroup name to InterpolatedCache::ObjectHandle
 		std::string searchName = objectPrefix + group->getName().toStdString() + objectSuffix;
 		std::vector<InterpolatedCache::ObjectHandle>::iterator oIt = find( objects.begin(), objects.end(), searchName );
 		if ( oIt == objects.end() )
 		{
 			continue;
+		}
+
+		// gather the points for this group
+		GEO_PointList points;
+		for ( GEO_Point *p = gdp->points().head( *(GB_PointGroup*)group ); p; p = gdp->points().next( p, *(GB_PointGroup*)group ) )
+		{
+			points.append( p );
 		}
 		
 		CompoundObjectPtr attributes = 0;
@@ -192,9 +194,7 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 		
 		const CompoundObject::ObjectMap &attributeMap = attributes->members();
 		
-		GA_Range pointRange = gdp->getPointRange( group );
-		
-		// transfer the InterpolatedCache::Attributes onto the GA_PointGroup
+		// transfer the InterpolatedCache::Attributes onto the GB_PointGroup
 		/// \todo: this does not account for detail, prim, or vertex attribs...
 		for ( CompoundObject::ObjectMap::const_iterator aIt=attributeMap.begin(); aIt != attributeMap.end(); aIt++ )
 		{
@@ -203,14 +203,14 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 			{
 				continue;
 			}
-			
+
 			ToHoudiniAttribConverterPtr converter = ToHoudiniAttribConverter::create( data );
 			if ( !converter )
  			{
  				continue;
  			}
 			
-			// strip the prefix/suffix from the GA_Attribute name
+			// strip the prefix/suffix from the GB_Attribute name
 			std::string attrName = aIt->first.value();
 			size_t prefixLength = attributePrefix.length();
 			if ( prefixLength && ( search( attrName.begin(), attrName.begin()+prefixLength, attributePrefix.begin(), attributePrefix.end() ) == attrName.begin() ) )
@@ -229,11 +229,12 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 				const V3fVectorData *positions = IECore::runTimeCast<const V3fVectorData>( data );
 				if ( !positions )
 				{
+					converter->convert( attrName, gdp, &points );
 					continue;
 				}
 				
 				size_t index = 0;
-				size_t entries = pointRange.getEntries();
+				size_t entries = points.entries();
 				const std::vector<Imath::V3f> &pos = positions->readable();
 				
 				// Attempting to account for the vertex difference between an IECore::CurvesPrimitive and Houdini curves.
@@ -249,52 +250,19 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 					addWarning( SOP_ATTRIBUTE_INVALID, ( boost::format( "Geometry/Cache mismatch: %s contains %d points, while cache expects %d." ) % group->getName().toStdString() % entries % pos.size() ).str().c_str() );
 					continue;
 				}
-
-				for ( GA_Iterator it=pointRange.begin(); !it.atEnd(); ++it, ++index )
+				
+				for ( size_t i=0; i < entries; i++, index++ )
 				{
-					gdp->setPos3( it.getOffset(), IECore::convert<UT_Vector3>( pos[index] ) );
+					points[i]->setPos( IECore::convert<UT_Vector3>( pos[index] ) );
 				}
-
 			}
 			else
 			{
-				converter->convert( attrName, gdp, pointRange );
-			}
-		}
-		
-		// if transformAttribute is specified, use to to transform the points
-		if ( transformAttribute != "" )
-		{
-			const TransformationMatrixdData *transform = attributes->member<TransformationMatrixdData>( transformAttribute );
-			if ( transform )
-			{
-				transformPoints<double>( transform->readable(), pointRange );
-			}
-			else
-			{
-				const TransformationMatrixfData *transform = attributes->member<TransformationMatrixfData>( transformAttribute );
-				if ( transform )
-				{
-					transformPoints<float>( transform->readable(), pointRange );
-				}
+				converter->convert( attrName, gdp, &points );
 			}
 		}
 	}
 	
 	unlockInputs();
 	return error();
-}
-
-template<typename T>
-void SOP_InterpolatedCacheReader::transformPoints( const IECore::TransformationMatrix<T> &transform, const GA_Range &range )
-{
-	UT_Matrix4T<T> matrix = IECore::convert<UT_Matrix4T<T> >( transform.transform() );
-	
-	for ( GA_Iterator it=range.begin(); !it.atEnd(); ++it )
-	{
-		UT_Vector3 pos = gdp->getPos3( it.getOffset() );
-		pos *= matrix;
-		gdp->setPos3( it.getOffset(), pos );
-	}
-
 }

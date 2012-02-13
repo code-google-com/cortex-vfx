@@ -1,77 +1,27 @@
-Additions :
-
-* Added the MurmurHash class, which implements the Murmur Hash version 3
-algorithm.
-
-* All Object derived classes now have a hash() method which can be used to
-generate a hash of their contents as an instance of the new MurmurHash class.
-
-* Stubs for the IECore procedurals are now installed in addition to the stubs for the IECore ops.
-
-* Added an ieDisplay nuke node, which accepts incoming renders from RenderMan or Nuke using the existing cortex display drivers.
-
-* Added SHWDeepImageReader and SHWDeepImageWriter which read/write 3delight deep shadows. Note that this is an alpha only format.
+Cortex 6.5.0
+============
 
 Improvements :
 
 * IECore.RelativePreset accepts now a compare filter that is a callback for ignoring some of the parameters when doing the diff.
 
-* IECore.loadConfig() now ignores files starting with ~. This avoids errors caused by certain popular text editors saving backup files next to the config file during editing.
+Cortex 6.4.5
+============
 
-* The IECore.loadConfig() localsDict argument has been renamed to contextDict, and is now used as both the locals and globals for the execution of the config files. This works around python's annoying scoping whereby any modules would have to be imported within functions defined in the config files rather than
-at the file scope.
+Improvements :
 
-* Added python bindings for the various Writer canWrite() methods.
-
-* The Renderer::coordinateSystem() call now creates coordinate systems which are
-scoped within attributeBegin()/attributeEnd() blocks. CoordinateSystem instances
-can now be given a transform to position them relative to their parent.
-
-* CompoundParameter presets behaviour can now be controlled explicitly using the
-adoptChildPresets argument to the constructor.
-
-* Reduced cross-inclusion of headers in TypedObjectParameter.h - this should improve recompilation times a little.
-
-* Added IECoreGL::NameStateComponent::glNameFromName() method to match the existing nameFromGLName() method.
-
-* Added glColor() functions to IECoreGL/GL.h.
-
-* Factored out much of the IECoreGL::Scene::select() functionality into a new IECoreGL::Selector class, which allows selection to be performed easily even without a Scene.
-
-* IECoreGL::Scene::select() now fills a vector<HitRecord> rather than a list<HitRecord>, as vector is better suited to this purpose.
-
-* Added missing binding for IECoreGL::State::bindBaseState() method.
-
-* The default constructors for TypedData<Imath::Vec> and TypedData<Imath::Color> now initialise all components to zero. The default constructors for TypedData<LineSegment> now initialise a unit length line in the positive X axis. Before the data was uninitialised, which could cause test failures in TestObject.testCopy() if the data happened to contain NaNs. Please note that the underlying Imath::Vec and IECore::LineSegment constructors remain unchanged and will not initialise the data - this is for performance reasons.
-
-* The IECoreGL::TextureLoader class can now load greyscale as well as colour textures. It now uses the ToGLTextureConverter class internally so supports all types supported by that class.
-
-* Added python bindings for IECoreGL::Font and IECoreGL::FontLoader.
-
-* Added Font::renderSprites() and Font::renderMeshes() methods, which make it possible to render text without constructing an IECoreGL::TextPrimitive.
-
-* IECore.Enum values can be instantiated from the appropriate string as well as the int.
-
-* IECore.Enum has a classmethod values() which returns a tuple of the available values.
-
-* SOP_InterpolatedCacheReader has a new transformAttribute parm which can be used to transform the points based on a TransformationMatrix in the cache.
+* IECoreMaya.ClassVectorParameterUI no longer allows classes with a non-collapsible root parameter to collapse.
+* IECoreMaya.ClassVectorParameterUI header labels accept ["UI"]["locked"] userData, in which case they don't have a "Change Me" context menu.
 
 Bug Fixes :
+* Fixed bug in IECoreMaya.SplineParameterUI where you could only open the edit window one spline parameter on a given node
 
-* ClassParameter.setClass() method was not taking advantage of a matching already loaded class if the searchPathEnvVar was None.
+Cortex 6.4.4
+============
 
-* Fixed a bug whereby EXRImageWriter::EXRImageWriter() didn't create parameters that EXRImageWriter::EXRImageWriter( image, fileName ) did.
+Improvements :
 
-* The renderman python procedural is now built with the correct extension (.dylib) on OS X.
-
-* Fixed problem with using the ClientDisplayDriver on ipv6 enabled machines.
-
-* IECoreNuke and IECoreArnold now build successfully on OS X.
-
-* Fixed bugs in the arnold output driver which meant that exceptions in cortex display drivers went uncaught and became aborts when reaching arnold. Fixed further bugs where failure to create a cortex display driver would yield later
-segmentation faults rather than a graceful error report.
-
-* Fixed bug which made it impossible to output more than one display from IECoreArnold::Renderers.
+* Added "gl:depthMask" attribute state for IECoreGL::Renderer
 
 Cortex 6.4.3
 ============

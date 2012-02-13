@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2008-2012, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -79,38 +79,6 @@ class CubeColorLookupDataTest( unittest.TestCase ) :
 		ObjectWriter( d3, "test/IECore/CubeColorLookupData.cob" ).write()
 		self.assertEqual( d3, ObjectReader( "test/IECore/CubeColorLookupData.cob" ).read() )
 
-	def testHasBase( self ) :
-	
-		self.failIf( CubeColorLookupfData.hasBase() )
-
-	def testHash( self ) :
-	
-		d = Color3fVectorData( [
-			Color3f( 1, 1, 1 ),
-			Color3f( 2, 2, 2 ),
-			Color3f( 3, 3, 3 ),
-			Color3f( 4, 4, 4 ),
-			Color3f( 5, 5, 5 ),
-			Color3f( 6, 6, 6 ),
-			Color3f( 7, 7, 7 ),
-			Color3f( 8, 8, 8 ),
-		] )
-		
-		cd = CubeColorLookupfData( CubeColorLookupf(
-			V3i( 2 ), d, Box3f( V3f( -1 ), V3f( 1 ) ), CubeColorLookupf.Interpolation.NoInterpolation,
-		) )
-		h = cd.hash()
-		self.assertEqual( cd.hash(), h )
-		
-		cd = CubeColorLookupfData( CubeColorLookupf(
-			V3i( 2 ), d, Box3f( V3f( -2 ), V3f( 2 ) ), CubeColorLookupf.Interpolation.NoInterpolation,
-		) )
-		self.assertNotEqual( h, cd.hash() )
-
-		cd = CubeColorLookupfData( CubeColorLookupf(
-			V3i( 2 ), d, Box3f( V3f( -1 ), V3f( 1 ) ), CubeColorLookupf.Interpolation.Linear,
-		) )
-		self.assertNotEqual( h, cd.hash() )
 
 	def setUp(self):
 

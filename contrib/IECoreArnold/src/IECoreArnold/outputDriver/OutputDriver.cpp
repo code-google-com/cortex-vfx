@@ -1,7 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
 //  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
-//  Copyright (c) 2012, John Haddon. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,7 +37,6 @@
 #include "IECore/DisplayDriver.h"
 #include "IECore/BoxAlgo.h"
 #include "IECore/SimpleTypedData.h"
-#include "IECore/MessageHandler.h"
 
 #include "IECoreArnold/ToArnoldConverter.h"
 
@@ -60,7 +58,7 @@ static AtVoid driverUpdate( AtNode *node, AtParamValue *parameters )
 {
 }
 
-static bool driverSupportsPixelType( const AtNode *node, AtByte pixelType )
+static AtBoolean driverSupportsPixelType( AtNode *node, AtInt pixelType )
 {
 	switch( pixelType )
 	{
@@ -124,16 +122,7 @@ static AtVoid driverOpen( AtNode *node, struct AtOutputIterator *iterator, AtBBo
 	const char *driverType = AiNodeGetStr( node, "driverType" );
 	
 	DisplayDriverPtr *driver = (DisplayDriverPtr *)AiDriverGetLocalData( node );
-	try
-	{
-		*driver = IECore::DisplayDriver::create( driverType, cortexDisplayWindow, cortexDataWindow, channelNames, parameters );
-	}
-	catch( const std::exception &e )
-	{
-		// we have to catch and report exceptions because letting them out into pure c land
-		// just causes aborts.
-		msg( Msg::Error, "ieOutputDriver:driverOpen", e.what() );
-	}
+	*driver = IECore::DisplayDriver::create( driverType, cortexDisplayWindow, cortexDataWindow, channelNames, parameters );
 }
 
 static AtVoid driverPrepareBucket( AtNode *node, AtInt x, AtInt y, AtInt sx, AtInt sy, AtInt tId )
@@ -143,11 +132,7 @@ static AtVoid driverPrepareBucket( AtNode *node, AtInt x, AtInt y, AtInt sx, AtI
 static AtVoid driverWriteBucket( AtNode *node, struct AtOutputIterator *iterator, struct AtAOVSampleIterator *sampleIterator, AtInt x, AtInt y, AtInt sx, AtInt sy ) 
 {
 	DisplayDriverPtr *driver = (DisplayDriverPtr *)AiDriverGetLocalData( node );
-	if( !*driver )
-	{
-		return;
-	}
-	
+
 	const int numOutputChannels = (*driver)->channelNames().size();
 
 	std::vector<float> interleavedData;
@@ -195,34 +180,13 @@ static AtVoid driverWriteBucket( AtNode *node, struct AtOutputIterator *iterator
 		V2i( x + sx - 1, y + sy - 1 )
 	);
 
-	try
-	{
-		(*driver)->imageData( bucketBox, &(interleavedData[0]), interleavedData.size() );
-	}
-	catch( const std::exception &e )
-	{
-		// we have to catch and report exceptions because letting them out into pure c land
-		// just causes aborts.
-		msg( Msg::Error, "ieOutputDriver:driverWriteBucket", e.what() );
-	}
+	(*driver)->imageData( bucketBox, &(interleavedData[0]), interleavedData.size() );
 }
 
 static AtVoid driverClose( AtNode *node, struct AtOutputIterator *iterator )
 {
 	DisplayDriverPtr *driver = (DisplayDriverPtr *)AiDriverGetLocalData( node );
-	if( *driver )
-	{
-		try
-		{
-			(*driver)->imageClose(); 
-		}
-		catch( const std::exception &e )
-		{
-			// we have to catch and report exceptions because letting them out into pure c land
-			// just causes aborts.
-			msg( Msg::Error, "ieOutputDriver:driverClose", e.what() );
-		}
-	}
+	(*driver)->imageClose();  
 }
 
 static AtVoid driverFinish( AtNode *node )

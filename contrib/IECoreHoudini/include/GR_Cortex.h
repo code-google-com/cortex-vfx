@@ -3,8 +3,6 @@
 //  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 //  its affiliates and/or its licensors.
 //
-//  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
-//
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
 //  met:
@@ -35,61 +33,79 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECOREHOUDINI_GRCORTEX_H
-#define IECOREHOUDINI_GRCORTEX_H
+#ifndef GR_CORTEX_H_
+#define GR_CORTEX_H_
 
-#include "GR/GR_Detail.h"
-#include "GR/GR_DisplayOption.h"
-#include "GR/GR_RenderHook.h"
+// Houdini
+#include <GR/GR_Detail.h>
+#include <GR/GR_RenderHook.h>
+#include <GR/GR_DisplayOption.h>
 
-#include "IECoreGL/GL.h"
-#include "IECoreGL/IECoreGL.h"
-#include "IECoreGL/Renderer.h"
+// Cortex
+#include <IECoreGL/IECoreGL.h>
+#include <IECoreGL/GL.h>
+#include <IECoreGL/Renderer.h>
 
 namespace IECoreHoudini
 {
+	/// Custom GL render hook for Houdini.
+	/// This class is responsible for rendering in OpenGL our
+	/// Cortex primitives and GL scenes.
+	class GR_Cortex : public GR_RenderHook
+    {
+        public:
+			/// ctor
+			GR_Cortex();
+			/// dtor
+            virtual ~GR_Cortex();
 
-/// Custom GL render hook for Houdini. This class is responsible for
-/// OpenGL rendering of our Cortex primitives and GL scenes.
-class GR_Cortex : public GR_RenderHook
-{
+            /// Tell Houdini if a particular detail should be
+            /// rendered using this render hook.
+            virtual int getWireMask( GU_Detail *gdp,
+            		const GR_DisplayOption *dopt
+            		) const;
 
-	public :
+            /// Tell Houdini if a particular detail should be
+            /// rendered using this render hook.
+            virtual int getShadedMask( GU_Detail *gdp,
+            		const GR_DisplayOption *dopt
+            		) const;
 
-		GR_Cortex();
-		virtual ~GR_Cortex();
+            /// Renders the ParameterisedProcedural in wireframe
+            virtual void renderWire( GU_Detail *gdp,
+                    RE_Render &ren,
+                    const GR_AttribOffset &ptinfo,
+                    const GR_DisplayOption *dopt,
+                    float lod,
+                    const GU_PrimGroupClosure *hidden_geometry );
 
-		/// Tell Houdini if a particular detail should be rendered using this render hook.
-		virtual GA_PrimCompat::TypeMask getWireMask( GU_Detail *gdp, const GR_DisplayOption *dopt ) const;
+            /// Renders the ParameterisedProcedural in shaded
+            virtual void renderShaded( GU_Detail *gdp,
+                    RE_Render &ren,
+                    const GR_AttribOffset &ptinfo,
+                    const GR_DisplayOption *dopt,
+                    float lod,
+                    const GU_PrimGroupClosure *hidden_geometry );
 
-		/// Tell Houdini if a particular detail should be rendered using this render hook.
-		virtual GA_PrimCompat::TypeMask getShadedMask( GU_Detail *gdp, const GR_DisplayOption *dopt ) const;
+            /// Methods to render stuff in openGL
+            void render( GU_Detail *gdp, IECoreGL::ConstStatePtr displayState );
+            void renderObject( const IECore::Object *object, IECoreGL::ConstStatePtr displayState );
+            void renderScene( IECoreGL::ConstScenePtr scene, IECoreGL::ConstStatePtr displayState );
 
-		/// Renders the ParameterisedProcedural in wireframe
-		virtual void renderWire( GU_Detail *gdp, RE_Render &ren, const GR_AttribOffset &ptinfo, const GR_DisplayOption *dopt, float lod, const GU_PrimGroupClosure *hidden_geometry );
+            /// Tells Houdini what our render hook is called.
+            virtual const char *getName() const
+            {
+            	return "IECoreHoudini::GR_Cortex";
+            }
 
-		/// Renders the ParameterisedProcedural in shaded
-		virtual void renderShaded( GU_Detail *gdp, RE_Render &ren, const GR_AttribOffset &ptinfo, const GR_DisplayOption *dopt, float lod, const GU_PrimGroupClosure *hidden_geometry );
-
-		/// Methods to render stuff in openGL
-		void render( GU_Detail *gdp, IECoreGL::ConstStatePtr displayState );
-		void renderObject( const IECore::Object *object, IECoreGL::ConstStatePtr displayState );
-		void renderScene( IECoreGL::ConstScenePtr scene, IECoreGL::ConstStatePtr displayState );
-
-		/// Tells Houdini what our render hook is called.
-		virtual const char *getName() const
-		{
-			return "IECoreHoudini::GR_Cortex";
-		}
-
-	private :
-
-		/// Utility method used to create a valid GL state, based
-		/// on the display options (wireframe/shaded) etc.
-		IECoreGL::ConstStatePtr getDisplayState( const GR_DisplayOption *dopt, bool wireframe=false );
-
-};
+        private:
+            /// Utility method used to create a valid GL state, based
+            /// on the display options (wireframe/shaded) etc.
+            IECoreGL::ConstStatePtr getDisplayState(
+            		const GR_DisplayOption *dopt,
+            		bool wireframe=false );
+    };
 
 } // namespace IECoreHoudini
 
-#endif // IECOREHOUDINI_GRCORTEX_H
+#endif /* GR_CORTEX_H_ */

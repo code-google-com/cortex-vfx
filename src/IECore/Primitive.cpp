@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,7 +38,6 @@
 #include "IECore/VectorTypedData.h"
 #include "IECore/TypeTraits.h"
 #include "IECore/DespatchTypedData.h"
-#include "IECore/MurmurHash.h"
 
 using namespace IECore;
 using namespace boost;
@@ -157,17 +156,6 @@ void Primitive::memoryUsage( Object::MemoryAccumulator &a ) const
 	for( PrimitiveVariableMap::const_iterator it=variables.begin(); it!=variables.end(); it++ )
 	{
 		a.accumulate( it->second.data );
-	}
-}
-
-void Primitive::hash( MurmurHash &h ) const
-{
-	VisibleRenderable::hash( h );
-	for( PrimitiveVariableMap::const_iterator it=variables.begin(); it!=variables.end(); it++ )
-	{
-		h.append( it->first );
-		h.append( it->second.interpolation );
-		it->second.data->hash( h );
 	}
 }
 

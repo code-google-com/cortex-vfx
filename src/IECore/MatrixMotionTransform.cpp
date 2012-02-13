@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,13 +32,12 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "boost/format.hpp"
+#include "IECore/MatrixMotionTransform.h"
+#include "IECore/Renderer.h"
 
 #include "OpenEXR/ImathFun.h"
 
-#include "IECore/MatrixMotionTransform.h"
-#include "IECore/Renderer.h"
-#include "IECore/MurmurHash.h"
+#include "boost/format.hpp"
 
 using namespace IECore;
 using namespace boost;
@@ -176,14 +175,4 @@ void MatrixMotionTransform::memoryUsage( Object::MemoryAccumulator &a ) const
 	Transform::memoryUsage( a );
 	a.accumulate( sizeof( M44f ) * m_snapshots.size() );
 	a.accumulate( sizeof( float ) * m_snapshots.size() );
-}
-
-void MatrixMotionTransform::hash( MurmurHash &h ) const
-{
-	Transform::hash( h );
-	for( SnapshotMap::const_iterator it=m_snapshots.begin(); it!=m_snapshots.end(); it++ )
-	{
-		h.append( it->first );
-		h.append( it->second );
-	}
 }

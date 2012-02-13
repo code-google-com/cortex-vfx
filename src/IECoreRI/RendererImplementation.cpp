@@ -550,7 +550,7 @@ void IECoreRI::RendererImplementation::concatTransform( const Imath::M44f &m )
 void IECoreRI::RendererImplementation::coordinateSystem( const std::string &name )
 {
 	ScopedContext scopedContext( m_context );
-	RiScopedCoordinateSystem( (char *)name.c_str() );
+	RiCoordinateSystem( (char *)name.c_str() );
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
