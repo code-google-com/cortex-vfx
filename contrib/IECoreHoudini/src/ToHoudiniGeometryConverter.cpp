@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -34,7 +34,6 @@
 
 #include "IECore/CompoundData.h"
 #include "IECore/CompoundParameter.h"
-#include "IECore/MessageHandler.h"
 
 #include "Convert.h"
 #include "ToHoudiniAttribConverter.h"
@@ -76,59 +75,60 @@ bool ToHoudiniGeometryConverter::convert( GU_DetailHandle handle ) const
 	return doConversion( renderable, geo );
 }
 
-GA_Range ToHoudiniGeometryConverter::appendPoints( GA_Detail *geo, const IECore::V3fVectorData *positions ) const
+GEO_PointList ToHoudiniGeometryConverter::appendPoints( GU_Detail *geo, const IECore::V3fVectorData *positions ) const
 {
 	if ( !positions )
 	{
-		return GA_Range();
+		return GEO_PointList();
 	}
 	
+	GEO_PointList points;
 	const std::vector<Imath::V3f> &pos = positions->readable();
-	GA_OffsetList offsets;
-	offsets.reserve( pos.size() );
-	
 	for ( size_t i=0; i < pos.size(); i++ )
 	{
-		GA_Offset offset = geo->appendPoint();
-		geo->setPos3( offset, IECore::convert<UT_Vector3>( pos[i] ) );
-		offsets.append( offset );
+		GEO_Point *p = geo->appendPoint();
+		p->setPos( IECore::convert<UT_Vector3>( pos[i] ) );
+		points.append( p );
 	}
 	
-	return GA_Range( geo->getPointMap(), offsets );
+	return points;
 }
 
 void ToHoudiniGeometryConverter::transferAttribs(
 	const Primitive *primitive, GU_Detail *geo,
-	const GA_Range &newPoints, const GA_Range &newPrims,
+	GEO_PointList *newPoints, GEO_PrimList *newPrims,
 	PrimitiveVariable::Interpolation vertexInterpolation,
 	PrimitiveVariable::Interpolation primitiveInterpolation,
 	PrimitiveVariable::Interpolation pointInterpolation,
 	PrimitiveVariable::Interpolation detailInterpolation
 ) const
 {
-	GA_OffsetList offsets;
-	if ( newPrims.isValid() )
+	// gather the vertices
+	size_t numVerts = 0;
+	size_t numPrims = newPrims ? newPrims->entries() : 0;
+	for ( size_t i=0; i < numPrims; i++ )
 	{
-		const GA_PrimitiveList &primitives = geo->getPrimitiveList();
-		for ( GA_Iterator it=newPrims.begin(); !it.atEnd(); ++it )
+		numVerts += (*newPrims)[i]->getVertexCount();
+	}
+	
+	size_t vertCount = 0;
+	ToHoudiniAttribConverter::VertexList vertices( numVerts );
+	for ( size_t i=0; i < numPrims; i++ )
+	{
+		GEO_Primitive *prim = (*newPrims)[i];
+		size_t numPrimVerts = prim->getVertexCount();
+		for ( size_t v=0; v < numPrimVerts; v++, vertCount++ )
 		{
-			const GA_Primitive *prim = primitives.get( it.getOffset() );
-			size_t numPrimVerts = prim->getVertexCount();
-			for ( size_t v=0; v < numPrimVerts; v++ )
+			if ( prim->getPrimitiveId() & GEOPRIMPOLY )
 			{
-				if ( prim->getTypeId() == GEO_PRIMPOLY )
-				{
-					offsets.append( prim->getVertexOffset( numPrimVerts - 1 - v ) );
-				}
-				else
-				{
-					offsets.append( prim->getVertexOffset( v ) );
-				}
+				vertices[vertCount] = &prim->getVertex( numPrimVerts - 1 - v );
+			}
+			else
+			{
+				vertices[vertCount] = &prim->getVertex( v );
 			}
 		}
 	}
-
-	GA_Range vertRange( geo->getVertexMap(), offsets );
 	
 	// P should already have been added as points
 	std::vector<std::string> variablesToIgnore;
@@ -139,13 +139,6 @@ void ToHoudiniGeometryConverter::transferAttribs(
 	PrimitiveVariableMap stringsToIndices;
 	for ( PrimitiveVariableMap::const_iterator it=primitive->variables.begin() ; it != primitive->variables.end(); it++ )
 	{
-		if ( !primitive->isPrimitiveVariableValid( it->second ) )
-		{
-			IECore::msg( IECore::MessageHandler::Warning, "ToHoudiniGeometryConverter", "PrimitiveVariable " + it->first + " is invalid. Ignoring." );
-			variablesToIgnore.push_back( it->first );
-			continue;
-		}
-
 		ToHoudiniAttribConverterPtr converter = ToHoudiniAttribConverter::create( it->second.data );
 		if ( !converter )
 		{
@@ -156,15 +149,13 @@ void ToHoudiniGeometryConverter::transferAttribs(
 		{
 			std::string indicesVariableName = it->first + "Indices";
 			PrimitiveVariableMap::const_iterator indices = primitive->variables.find( indicesVariableName );
-			if ( indices != primitive->variables.end() && indices->second.data->isInstanceOf( IntVectorDataTypeId ) && primitive->isPrimitiveVariableValid( indices->second ) )
+			if ( indices != primitive->variables.end() && indices->second.data->isInstanceOf( IntVectorDataTypeId ) )
 			{
 				stringsToIndices[it->first] = indices->second;
 				variablesToIgnore.push_back( indicesVariableName );
 			}
 		}
 	}
-	
-	/// \todo: should we convert s and t to uv automatically?
 	
  	// add the primitive variables to the various GEO_AttribDicts based on interpolation type
 	for ( PrimitiveVariableMap::const_iterator it=primitive->variables.begin() ; it != primitive->variables.end(); it++ )
@@ -211,36 +202,7 @@ void ToHoudiniGeometryConverter::transferAttribs(
 		else if ( interpolation == vertexInterpolation )
 		{
 			// add vertex attribs
-			converter->convert( it->first, geo, vertRange );
-		}
-	}
-	
-	// add the groups based on blindData
-	const StringData *nameData = primitive->blindData()->member<StringData>( "name" );
-	if ( nameData )
-	{
-		const char *name = nameData->readable().c_str();
-		
-		if ( newPoints.isValid() )
-		{
-			GA_ElementGroup *group = geo->findPointGroup( name );
-			if ( !group || group->classType() != GA_GROUP_POINT )
-			{
-				group = geo->createElementGroup( GA_ATTRIB_POINT, name );
-			}
-			
-			group->addRange( newPoints );
-		}
-		
-		if ( newPrims.isValid() )
-		{
-			GA_ElementGroup *group = geo->findPrimitiveGroup( name );
-			if ( !group || group->classType() != GA_GROUP_PRIMITIVE )
-			{
-				group = geo->createElementGroup( GA_ATTRIB_PRIMITIVE, name );
-			}
-			
-			group->addRange( newPrims );
+			converter->convert( it->first, geo, &vertices );
 		}
 	}
 }

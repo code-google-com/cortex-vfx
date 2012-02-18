@@ -3,7 +3,7 @@
 //  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 //  its affiliates and/or its licensors.
 //
-//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-11, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,7 +38,6 @@
 #include "boost/python.hpp"
 #include "boost/format.hpp"
 
-#include "GA/GA_AIFBlindData.h"
 #include "CH/CH_LocalVariable.h"
 #include "PRM/PRM_Include.h"
 #include "PRM/PRM_Parm.h"
@@ -110,7 +109,7 @@ SOP_ParameterisedHolder::~SOP_ParameterisedHolder()
 {
 }
 
-void SOP_ParameterisedHolder::buildClassCategoryMenu( void *data, PRM_Name *menu, int maxSize, const PRM_SpareData *, const PRM_Parm * )
+void SOP_ParameterisedHolder::buildClassCategoryMenu( void *data, PRM_Name *menu, int maxSize, const PRM_SpareData *, PRM_Parm * )
 {
 	SOP_ParameterisedHolder *holder = reinterpret_cast<SOP_ParameterisedHolder*>( data );
 	if ( !holder )
@@ -153,7 +152,7 @@ void SOP_ParameterisedHolder::buildClassCategoryMenu( void *data, PRM_Name *menu
 	menu[pos].setToken( 0 );
 }
 
-void SOP_ParameterisedHolder::buildClassNameMenu( void *data, PRM_Name *menu, int maxSize, const PRM_SpareData *, const PRM_Parm * )
+void SOP_ParameterisedHolder::buildClassNameMenu( void *data, PRM_Name *menu, int maxSize, const PRM_SpareData *, PRM_Parm * )
 {
 	SOP_ParameterisedHolder *holder = reinterpret_cast<SOP_ParameterisedHolder*>( data );
 	if ( !holder )
@@ -194,7 +193,7 @@ void SOP_ParameterisedHolder::buildClassNameMenu( void *data, PRM_Name *menu, in
 	menu[pos].setToken( 0 );
 }
 
-void SOP_ParameterisedHolder::buildVersionMenu( void *data, PRM_Name *menu, int maxSize, const PRM_SpareData *, const PRM_Parm * )
+void SOP_ParameterisedHolder::buildVersionMenu( void *data, PRM_Name *menu, int maxSize, const PRM_SpareData *, PRM_Parm * )
 {
 	SOP_ParameterisedHolder *holder = reinterpret_cast<SOP_ParameterisedHolder*>( data );
 	if ( !holder )
@@ -396,7 +395,7 @@ void SOP_ParameterisedHolder::refreshInputConnections()
 	}
 
 	// remake the connections to inputs that still exist
-	numInputs = std::min( inputNodes.size(), m_inputParameters.size() );
+	numInputs = min( inputNodes.size(), m_inputParameters.size() );
 	for ( unsigned i=0; i < numInputs; i++ )
 	{
 		setInput( i, inputNodes[i] );
@@ -414,7 +413,6 @@ void SOP_ParameterisedHolder::setInputParameterValues()
 		useInputSource( i, m_dirty, false );
 		
 		IECore::ParameterPtr inputParameter = m_inputParameters[i];
-		
 		GU_DetailHandle inputHandle = inputGeoHandle( i );
 		GU_DetailHandleAutoReadLock readHandle( inputHandle );
 		const GU_Detail *inputGdp = readHandle.getGdp();
@@ -422,25 +420,24 @@ void SOP_ParameterisedHolder::setInputParameterValues()
 		{
 			continue;
 		}
-		
-		const GA_ROAttributeRef attrRef = inputGdp->findAttribute( GA_ATTRIB_DETAIL, GA_SCOPE_PRIVATE, "IECoreHoudiniNodePassData" );
-		if ( attrRef.isValid() )
+
+		if ( inputGdp->attribs().find( "IECoreHoudini::NodePassData", GB_ATTRIB_MIXED ) )
 		{
 			// looks like data passed from another ParameterisedHolder
-			const GA_Attribute *attr = attrRef.getAttribute();
-			const GA_AIFBlindData *blindData = attr->getAIFBlindData();
-			const NodePassData passData = blindData->getValue<NodePassData>( attr, 0 );
-			SOP_ParameterisedHolder *sop = dynamic_cast<SOP_ParameterisedHolder*>( const_cast<OP_Node*>( passData.nodePtr() ) );
+			GB_AttributeRef attrOffset = inputGdp->attribs().getOffset( "IECoreHoudini::NodePassData", GB_ATTRIB_MIXED );
+			const NodePassData *passData = inputGdp->attribs().castAttribData<NodePassData>( attrOffset );
+			SOP_ParameterisedHolder *sop = dynamic_cast<SOP_ParameterisedHolder*>( const_cast<OP_Node*>( passData->nodePtr() ) );
 			
 			IECore::ConstObjectPtr result = 0;
-			if ( passData.type() == IECoreHoudini::NodePassData::CORTEX_OPHOLDER )
+			if ( passData->type() == IECoreHoudini::NodePassData::CORTEX_OPHOLDER )
 			{
 				IECore::OpPtr op = IECore::runTimeCast<IECore::Op>( sop->getParameterised() );
 				result = op->resultParameter()->getValue();
 			}
-			else if ( passData.type() == IECoreHoudini::NodePassData::CORTEX_PROCEDURALHOLDER )
+			else if ( passData->type() == IECoreHoudini::NodePassData::CORTEX_PROCEDURALHOLDER )
 			{
 				IECore::ParameterisedProcedural *procedural = IECore::runTimeCast<IECore::ParameterisedProcedural>( sop->getParameterised() );
+				
 				IECore::CapturingRendererPtr renderer = new IECore::CapturingRenderer();
 				// We are acquiring and releasing the GIL here to ensure that it is released when we render. This has
 				// to be done because a procedural might jump between c++ and python a few times (i.e. if it spawns
@@ -545,7 +542,7 @@ IECore::RunTimeTypedPtr SOP_ParameterisedHolder::loadParameterised( const std::s
 {
 	IECorePython::ScopedGILLock gilLock;
 
-	std::string pythonCmd = boost::str( format( "IECore.ClassLoader.defaultLoader( \"%s\" ).load( \"%s\", %d )()\n" ) % searchPathEnvVar % className % classVersion );
+	string pythonCmd = boost::str( format( "IECore.ClassLoader.defaultLoader( \"%s\" ).load( \"%s\", %d )()\n" ) % searchPathEnvVar % className % classVersion );
 
 	try
 	{

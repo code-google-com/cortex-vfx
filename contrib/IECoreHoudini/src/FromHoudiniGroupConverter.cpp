@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -61,30 +61,28 @@ FromHoudiniGroupConverter::~FromHoudiniGroupConverter()
 
 FromHoudiniGeometryConverter::Convertability FromHoudiniGroupConverter::canConvert( const GU_Detail *geo )
 {
-	const GA_PrimitiveList &primitives = geo->getPrimitiveList();
+	const GEO_PrimList &primitives = geo->primitives();
 	
 	// are there multiple primitives?
-	size_t numPrims = geo->getNumPrimitives();
+	size_t numPrims = primitives.entries();
 	if ( numPrims < 2 )
 	{
 		return Admissible;
 	}
 	
 	// are there mixed primitive types?
-	GA_Iterator firstPrim = geo->getPrimitiveRange().begin();
-	GA_PrimitiveTypeId firstPrimId = primitives.get( firstPrim.getOffset() )->getTypeId();
-	for ( GA_Iterator it=firstPrim; !it.atEnd(); ++it )
+	unsigned firstPrimId = primitives( 0 )->getPrimitiveId();
+	for ( size_t i=1; i < numPrims; i++ )
 	{
-		if ( primitives.get( it.getOffset() )->getTypeId() != firstPrimId )
+		if ( primitives( i )->getPrimitiveId() != firstPrimId )
 		{
 			return Ideal;
 		}
 	}
 	
 	// are the primitives split into groups?
-	UT_PtrArray<const GA_ElementGroup*> primGroups;
-	geo->getElementGroupList( GA_ATTRIB_PRIMITIVE, primGroups );
-	if ( primGroups.isEmpty() || primGroups[0]->entries() == numPrims )
+	const GB_GroupList &primGroups = geo->primitiveGroups();
+	if ( !primGroups.length() || primGroups.head()->entries() == numPrims )
 	{
 		return Admissible;
 	}
@@ -102,25 +100,26 @@ ObjectPtr FromHoudiniGroupConverter::doConversion( ConstCompoundObjectPtr operan
 	}
 	
 	size_t numResultPrims = 0;
-	size_t numOrigPrims = geo->getNumPrimitives();
+	size_t numOrigPrims = geo->primitives().entries();
 	
 	GroupPtr result = new Group();
 	
-	for ( GA_GroupTable::iterator<GA_ElementGroup> it=geo->primitiveGroups().beginTraverse(); !it.atEnd(); ++it )
+	const GB_GroupList &primGroups = geo->primitiveGroups();
+	for ( GB_Group *group=primGroups.head(); group; group = group->next() )
 	{
-		GA_PrimitiveGroup *group = static_cast<GA_PrimitiveGroup*>( it.group() );
 		if ( group->getInternal() || group->isEmpty() )
 		{
 			continue;
 		}
 		
 		VisibleRenderablePtr renderable = 0;
-		numResultPrims += doGroupConversion( geo, group, renderable );
+		numResultPrims += doGroupConversion( geo, (GB_PrimitiveGroup*)group, renderable );
 		if( !renderable )
 		{
 			continue;
 		}
 		
+		renderable->blindData()->writable()["name"] = new StringData( group->getName().toStdString() );
 		result->addChild( renderable );
 	}
 	
@@ -130,13 +129,19 @@ ObjectPtr FromHoudiniGroupConverter::doConversion( ConstCompoundObjectPtr operan
 	}
 	
 	GU_Detail ungroupedGeo( (GU_Detail*)geo );
-	GA_PrimitiveGroup *ungrouped = static_cast<GA_PrimitiveGroup*>( ungroupedGeo.createInternalElementGroup( GA_ATTRIB_PRIMITIVE, "FromHoudiniGroupConverter__ungroupedPrimitives" ) );
-	for ( GA_GroupTable::iterator<GA_ElementGroup> it=geo->primitiveGroups().beginTraverse(); !it.atEnd(); ++it )
-	{
-		*ungrouped |= *static_cast<GA_PrimitiveGroup*>( it.group() );
+	GB_PrimitiveGroup *ungrouped = ungroupedGeo.newPrimitiveGroup( "FromHoudiniGroupConverter__ungroupedPrimitives" );
+
+	const GEO_PrimList &primitives = ungroupedGeo.primitives();
+	size_t numPrims = primitives.entries();
+	for ( size_t i=0; i < numPrims; i++ )
+ 	{
+		GEO_Primitive *prim = (GEO_Primitive*)primitives( i );
+		if ( !prim->memberOfAnyGroup() )
+		{
+			ungrouped->add( prim );
+		}
 	}
-	ungrouped->toggleRange( ungroupedGeo.getPrimitiveRange() );
-	
+
 	if ( ungrouped->isEmpty() )
 	{
 		return result;
@@ -152,45 +157,36 @@ ObjectPtr FromHoudiniGroupConverter::doConversion( ConstCompoundObjectPtr operan
 	return result;
 }
 
-size_t FromHoudiniGroupConverter::doGroupConversion( const GU_Detail *geo, GA_PrimitiveGroup *group, VisibleRenderablePtr &result ) const
+size_t FromHoudiniGroupConverter::doGroupConversion( const GU_Detail *geo, GB_PrimitiveGroup *group, VisibleRenderablePtr &result ) const
 {
 	GU_Detail groupGeo( (GU_Detail*)geo, group );
-	if ( !groupGeo.getNumPoints() )
+	if ( !groupGeo.points().entries() )
 	{
 		return 0;
 	}
 	
-	size_t numPrims = groupGeo.getNumPrimitives();
-	if ( numPrims < 2 )
+	if ( groupGeo.primitives().entries() < 2 )
 	{
 		result = doPrimitiveConversion( &groupGeo );
-		return numPrims;
+		return groupGeo.primitives().entries();
 	}
 	
 	PrimIdGroupMap groupMap;
-	groupGeo.destroyEmptyGroups( GA_ATTRIB_PRIMITIVE );
+	groupGeo.removeUnusedPrimGroups();
 	size_t numNewGroups = regroup( &groupGeo, groupMap );
 	
 	if ( numNewGroups < 2 )
 	{
 		result = doPrimitiveConversion( &groupGeo );
-		return numPrims;
+		return groupGeo.primitives().entries();
 	}
 
 	GroupPtr groupResult = new Group();
-	if ( !group->getInternal() )
-	{
-		groupResult->blindData()->member<StringData>( "name", false, true )->writable() = group->getName().toStdString();
-	}
 	
 	for ( PrimIdGroupMapIterator it = groupMap.begin(); it != groupMap.end(); it++ )
 	{
 		VisibleRenderablePtr renderable = 0;
 		GU_Detail childGeo( &groupGeo, it->second );
-		for ( GA_GroupTable::iterator<GA_ElementGroup> it=childGeo.primitiveGroups().beginTraverse(); !it.atEnd(); ++it )
-		{
-			childGeo.destroyGroup( it.group() );
-		}
 		PrimitivePtr child = doPrimitiveConversion( &childGeo );
 		if ( child )
 		{
@@ -199,21 +195,22 @@ size_t FromHoudiniGroupConverter::doGroupConversion( const GU_Detail *geo, GA_Pr
 	}
 
 	result = groupResult;
-	return numPrims;
+	return groupGeo.primitives().entries();
 }
 
 size_t FromHoudiniGroupConverter::regroup( GU_Detail *geo, PrimIdGroupMap &groupMap ) const
 {
 	PrimIdGroupMapIterator it;
-	const GA_PrimitiveList &primitives = geo->getPrimitiveList();
-	for ( GA_Iterator pIt=geo->getPrimitiveRange().begin(); !pIt.atEnd(); ++pIt )
-	{
-		GA_Primitive *prim = primitives.get( pIt.getOffset() );
-		unsigned primType = prim->getTypeId().get();
+	const GEO_PrimList &primitives = geo->primitives();
+	size_t numPrims = primitives.entries();
+	for ( size_t i=0; i < numPrims; i++ )
+ 	{
+		GEO_Primitive *prim = (GEO_Primitive*)primitives( i );
+		unsigned primType = prim->getPrimitiveId();
 		it = groupMap.find( primType );
 		if ( it == groupMap.end() )
 		{
-			PrimIdGroupPair pair( primType, static_cast<GA_PrimitiveGroup*>( geo->createInternalElementGroup( GA_ATTRIB_PRIMITIVE, ( boost::format( "FromHoudiniGroupConverter__typedPrimitives%d" ) % primType ).str().c_str() ) ) );
+			PrimIdGroupPair pair( primType, geo->newPrimitiveGroup( ( boost::format( "FromHoudiniGroupConverter__typedPrimitives%d" ) % primType ).str().c_str() ) );
 			it = groupMap.insert( pair ).first;
 		}
 		

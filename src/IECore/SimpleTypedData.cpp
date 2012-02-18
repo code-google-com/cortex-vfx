@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -42,58 +42,30 @@ namespace IECore
 
 LongDataAlias::TypeDescription<IntData> LongDataAlias::m_typeDescription( LongDataTypeId, "LongData" );
 
-#define IE_CORE_DEFINEIMATHTYPEDDATASPECIALISATION( TNAME, TID, N )	\
-	IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( TNAME, TID ) \
-	\
-	template<> \
-	void TNAME::save( SaveContext *context ) const \
-	{ \
-		Data::save( context ); \
-		assert( baseSize() == N ); \
-		IndexedIOInterfacePtr container = context->rawContainer(); \
-		container->write( "value", TNAME::baseReadable(), TNAME::baseSize() ); \
-	} \
-	\
-	template<> \
-	void TNAME::load( LoadContextPtr context ) \
-	{ \
-		Data::load( context ); \
-		assert( ( sizeof( TNAME::ValueType ) / sizeof( TNAME::BaseType ) ) == N ); \
-		IndexedIOInterfacePtr container; \
-		TNAME::BaseType *p = TNAME::baseWritable(); \
-		try \
-		{ \
-			container = context->rawContainer(); \
-			container->read( "value", p, N ); \
-		} \
-		catch( ... ) \
-		{ \
-			unsigned int v = 0;	\
-			container = context->container( staticTypeName(), v ); \
-			container->read( "value", p, N ); \
-		} \
-	}
+#define IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( TNAME, TID )			\
+	IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( TNAME, TID )			\
 
-#define IECORE_DEFINE_ZERO_INITIALISED_CONSTRUCTOR( TNAME ) \
-	template<> \
-	TNAME::TypedData() \
-		:	m_data( ValueType( 0 ) ) \
-	{ \
-	}
-	
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( BoolData, BoolDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( FloatData, FloatDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( DoubleData, DoubleDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( IntData, IntDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( UIntData, UIntDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CharData, CharDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( UCharData, UCharDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( HalfData, HalfDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( ShortData, ShortDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( UShortData, UShortDataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( Int64Data, Int64DataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( UInt64Data, UInt64DataTypeId )
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( StringData, StringDataTypeId )
+#define IE_CORE_DEFINEIMATHTYPEDDATASPECIALISATION( TNAME, TID, N )		\
+	IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( TNAME, TID )			\
+	IE_CORE_DEFINEBASETYPEDDATAIOSPECIALISATION( TNAME, N )				\
+
+
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( BoolData, BoolDataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( FloatData, FloatDataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( DoubleData, DoubleDataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( IntData, IntDataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( UIntData, UIntDataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( CharData, CharDataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( UCharData, UCharDataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( HalfData, HalfDataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( ShortData, ShortDataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( UShortData, UShortDataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( Int64Data, Int64DataTypeId )
+IE_CORE_DEFINEBASETYPEDDATASPECIALISATION( UInt64Data, UInt64DataTypeId )
+
+
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( StringData, StringDataTypeId )
+IE_CORE_DEFINETYPEDDATANOBASESIZE( StringData )
 
 IE_CORE_DEFINEIMATHTYPEDDATASPECIALISATION( V2iData, V2iDataTypeId, 2 )
 IE_CORE_DEFINEIMATHTYPEDDATASPECIALISATION( V3iData, V3iDataTypeId, 3 )
@@ -119,17 +91,6 @@ IE_CORE_DEFINEIMATHTYPEDDATASPECIALISATION( QuatfData, QuatfDataTypeId, 4 )
 IE_CORE_DEFINEIMATHTYPEDDATASPECIALISATION( QuatdData, QuatdDataTypeId, 4 )
 IE_CORE_DEFINEIMATHTYPEDDATASPECIALISATION( LineSegment3fData, LineSegment3fDataTypeId, 6 )
 IE_CORE_DEFINEIMATHTYPEDDATASPECIALISATION( LineSegment3dData, LineSegment3dDataTypeId, 6 )
-
-IECORE_DEFINE_ZERO_INITIALISED_CONSTRUCTOR( V2iData )
-IECORE_DEFINE_ZERO_INITIALISED_CONSTRUCTOR( V3iData )
-IECORE_DEFINE_ZERO_INITIALISED_CONSTRUCTOR( V2fData )
-IECORE_DEFINE_ZERO_INITIALISED_CONSTRUCTOR( V3fData )
-IECORE_DEFINE_ZERO_INITIALISED_CONSTRUCTOR( V2dData )
-IECORE_DEFINE_ZERO_INITIALISED_CONSTRUCTOR( V3dData )
-IECORE_DEFINE_ZERO_INITIALISED_CONSTRUCTOR( Color3fData )
-IECORE_DEFINE_ZERO_INITIALISED_CONSTRUCTOR( Color4fData )
-IECORE_DEFINE_ZERO_INITIALISED_CONSTRUCTOR( Color3dData )
-IECORE_DEFINE_ZERO_INITIALISED_CONSTRUCTOR( Color4dData )
 
 template<>
 void StringData::memoryUsage( Object::MemoryAccumulator &accumulator ) const
@@ -231,31 +192,6 @@ void TypedData<unsigned short>::load( LoadContextPtr context )
 	writable() = static_cast<unsigned short>( c );
 }
 
-template<>
-TypedData<LineSegment3f>::TypedData()
-	:	m_data( LineSegment3f( Imath::V3f( 0 ), Imath::V3f( 1, 0, 0 ) ) )
-{
-}
-
-template<>
-TypedData<LineSegment3d>::TypedData()
-	:	m_data( LineSegment3d( Imath::V3d( 0 ), Imath::V3d( 1, 0, 0 ) ) )
-{
-}
-
-template<>
-void SimpleDataHolder<LineSegment3f>::hash( MurmurHash &h ) const
-{
-	h.append( readable().p0 );
-	h.append( readable().p1 );
-}
-
-template<>
-void SimpleDataHolder<LineSegment3d>::hash( MurmurHash &h ) const
-{
-	h.append( readable().p0 );
-	h.append( readable().p1 );
-}
 
 template class TypedData<bool>;
 template class TypedData<float>;

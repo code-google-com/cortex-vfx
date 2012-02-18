@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,12 +37,12 @@
 #include "IECore/TimePeriodData.h"
 #include "IECore/TypedData.inl"
 #include "IECore/DateTimeData.h"
-#include "IECore/MurmurHash.h"
 
 namespace IECore
 {
 
-IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( TimePeriodData, TimePeriodDataTypeId )
+IE_CORE_DEFINECOMMONTYPEDDATASPECIALISATION( TimePeriodData, TimePeriodDataTypeId )
+IE_CORE_DEFINETYPEDDATANOBASESIZE( TimePeriodData )
 
 template<>
 void TypedData< TimePeriod >::save( SaveContext *context ) const
@@ -120,13 +120,6 @@ void TypedData< TimePeriod >::load( LoadContextPtr context )
 	}
 
 	writable() = boost::posix_time::time_period( begin, end );
-}
-
-template<>
-void SimpleDataHolder<TimePeriod>::hash( MurmurHash &h ) const
-{
-	h.append( boost::posix_time::to_iso_string( readable().begin() ) );
-	h.append( boost::posix_time::to_iso_string( readable().end() ) );
 }
 
 template class TypedData< TimePeriod >;

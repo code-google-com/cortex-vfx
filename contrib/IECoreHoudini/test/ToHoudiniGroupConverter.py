@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -245,66 +245,63 @@ class TestToHoudiniGroupConverter( IECoreHoudini.TestCase ) :
 		null = self.emptySop()
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( self.buildScene() ).convert( null ) )
 		primGroups = null.geometry().primGroups()
-		primGroupMap = {}
-		for x in primGroups :
-			primGroupMap[x.name()] = x
 		
-		self.assertEqual( len(primGroups), 3 )
-		self.failUnless( "meshGroupA" in primGroupMap )
-		self.assertEqual( len(primGroupMap["meshGroupA"].prims()), 6 )
-		self.failUnless( "meshGroupB" in primGroupMap )
-		self.assertEqual( len(primGroupMap["meshGroupB"].prims()), 6 )
-		self.failUnless( "curveBoxGroup" in primGroupMap )
-		self.assertEqual( len(primGroupMap["curveBoxGroup"].prims()), 12 )
+		self.assertEqual( len(primGroups), 4 )
+		self.assertEqual( primGroups[0].name(), "pointsGroup" )
+		self.assertEqual( len(primGroups[0].prims()), 0 )
+		self.assertEqual( primGroups[1].name(), "meshGroupA" )
+		self.assertEqual( len(primGroups[1].prims()), 6 )
+		self.assertEqual( primGroups[2].name(), "meshGroupB" )
+		self.assertEqual( len(primGroups[2].prims()), 6 )
+		self.assertEqual( primGroups[3].name(), "curveBoxGroup" )
+		self.assertEqual( len(primGroups[3].prims()), 12 )
 		
 		result = IECoreHoudini.FromHoudiniGroupConverter( null ).convert()
 		children = result.children()
 		for i in range ( 0, len(children) ) :
-			name = children[i].blindData()['name'].value
-			self.failUnless( name in primGroupMap )
-			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len(primGroupMap[name].prims()) )
+			self.assertEqual( children[i].blindData()['name'].value, primGroups[i+1].name() )
+			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len(primGroups[i+1].prims()) )
 		
 	def testAppending( self ) :
 		null = self.emptySop()
 		scene = self.buildScene()
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( scene ).convert( null ) )
 		primGroups = null.geometry().primGroups()
-		primGroupMap = {}
-		for x in primGroups :
-			primGroupMap[x.name()] = x
 		
-		self.assertEqual( len(primGroups), 3 )
-		self.failUnless( "meshGroupA" in primGroupMap )
-		self.assertEqual( len(primGroupMap["meshGroupA"].prims()), 6 )
-		self.failUnless( "meshGroupB" in primGroupMap )
-		self.assertEqual( len(primGroupMap["meshGroupB"].prims()), 6 )
-		self.failUnless( "curveBoxGroup" in primGroupMap )
-		self.assertEqual( len(primGroupMap["curveBoxGroup"].prims()), 12 )
+		self.assertEqual( len(primGroups), 4 )
+		self.assertEqual( primGroups[0].name(), "pointsGroup" )
+		self.assertEqual( len(primGroups[0].prims()), 0 )
+		self.assertEqual( primGroups[1].name(), "meshGroupA" )
+		self.assertEqual( len(primGroups[1].prims()), 6 )
+		self.assertEqual( primGroups[2].name(), "meshGroupB" )
+		self.assertEqual( len(primGroups[2].prims()), 6 )
+		self.assertEqual( primGroups[3].name(), "curveBoxGroup" )
+		self.assertEqual( len(primGroups[3].prims()), 12 )
 		
 		result = IECoreHoudini.FromHoudiniGroupConverter( null ).convert()
 		children = result.children()
 		for i in range ( 0, len(children) ) :
-			name = children[i].blindData()['name'].value
-			self.failUnless( name in primGroupMap )
-			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len(primGroupMap[name].prims()) )
+			self.assertEqual( children[i].blindData()['name'].value, primGroups[i+1].name() )
+			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len(primGroups[i+1].prims()) )
 			
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( scene ).convert( null, append=True ) )
 		primGroups = null.geometry().primGroups()
 		
-		self.assertEqual( len(primGroups), 3 )
-		self.failUnless( "meshGroupA" in primGroupMap )
-		self.assertEqual( len(primGroupMap["meshGroupA"].prims()), 12 )
-		self.failUnless( "meshGroupB" in primGroupMap )
-		self.assertEqual( len(primGroupMap["meshGroupB"].prims()), 12 )
-		self.failUnless( "curveBoxGroup" in primGroupMap )
-		self.assertEqual( len(primGroupMap["curveBoxGroup"].prims()), 24 )
+		self.assertEqual( len(primGroups), 4 )
+		self.assertEqual( primGroups[0].name(), "pointsGroup" )
+		self.assertEqual( len(primGroups[0].prims()), 0 )
+		self.assertEqual( primGroups[1].name(), "meshGroupA" )
+		self.assertEqual( len(primGroups[1].prims()), 12 )
+		self.assertEqual( primGroups[2].name(), "meshGroupB" )
+		self.assertEqual( len(primGroups[2].prims()), 12 )
+		self.assertEqual( primGroups[3].name(), "curveBoxGroup" )
+		self.assertEqual( len(primGroups[3].prims()), 24 )
 		
 		result = IECoreHoudini.FromHoudiniGroupConverter( null ).convert()
 		children = result.children()
 		for i in range ( 0, len(children) ) :
-			name = children[i].blindData()['name'].value
-			self.failUnless( name in primGroupMap )
-			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len(primGroupMap[name].prims()) )
+			self.assertEqual( children[i].blindData()['name'].value, primGroups[i+1].name() )
+			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len(primGroups[i+1].prims()) )
 		
 	def testConvertGroupedPoints( self ) :
 		null = self.emptySop()
@@ -313,7 +310,9 @@ class TestToHoudiniGroupConverter( IECoreHoudini.TestCase ) :
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( group ).convert( null ) )
 		primGroups = null.geometry().primGroups()
 
-		self.assertEqual( len(primGroups), 0 )
+		self.assertEqual( len(primGroups), 1 )
+		self.assertEqual( primGroups[0].name(), "pointsGroup" )
+		self.assertEqual( len(primGroups[0].prims()), 0 )
 	
 	def testConvertGroupedMesh( self ) :
 		null = self.emptySop()
@@ -341,12 +340,12 @@ class TestToHoudiniGroupConverter( IECoreHoudini.TestCase ) :
 		null = self.emptySop()
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( self.pointTwoBox() ).convert( null ) )
 		primGroups = null.geometry().primGroups()
-		primGroupMap = {}
-		for x in primGroups :
-			primGroupMap[x.name()] = x
-		self.assertEqual( len(primGroups), 1 )
-		self.failUnless( "curveBoxGroup"in primGroupMap )
-		self.assertEqual( len(primGroupMap["curveBoxGroup"].prims()), 12 )
+		
+		self.assertEqual( len(primGroups), 2 )
+		self.assertEqual( primGroups[0].name(), "pointsGroup" )
+		self.assertEqual( len(primGroups[0].prims()), 0 )
+		self.assertEqual( primGroups[1].name(), "curveBoxGroup" )
+		self.assertEqual( len(primGroups[1].prims()), 12 )
 		
 	def testAdjustedStringVectorIndices( self ) :
 		null = self.emptySop()
@@ -365,7 +364,7 @@ class TestToHoudiniGroupConverter( IECoreHoudini.TestCase ) :
 		for i in range( 0, len(primGroups) ) :
 			self.assertEqual( len(primGroups[i].prims()), 6 )
 			for prim in primGroups[i].prims() :
-				self.assertEqual( prim.stringListAttribValue( "commonString" ), tuple( [ expected[i] ] ) )
+				self.assertEqual( prim.stringListAttribValue( "commonString" ), tuple( [ "", expected[i] ] ) )
 				self.assertEqual( prim.attribValue( "commonString" ), expected[i] )
 	
 	def testTransforms( self ) :

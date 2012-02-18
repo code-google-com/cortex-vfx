@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -47,8 +47,6 @@ namespace IECore
 
 IE_CORE_FORWARDDECLARE( Object );
 
-class MurmurHash;
-
 #define IE_CORE_DECLAREOBJECTTYPEDESCRIPTION( TYPENAME )																\
 	private :																											\
 		static const IECore::Object::TypeDescription<TYPENAME> m_typeDescription;										\
@@ -62,8 +60,7 @@ class MurmurHash;
 #define IE_CORE_DECLAREOBJECTMEMBERFNS( TYPENAME )																		\
 	public :																											\
 		TYPENAME::Ptr copy() const { return IECore::staticPointerCast<TYPENAME>( IECore::Object::copy() ); }			\
-		virtual bool isEqualTo( const IECore::Object *other ) const;													\
-		virtual void hash( IECore::MurmurHash &h ) const;																		\
+		bool isEqualTo( const IECore::Object *other ) const;															\
 	protected :																											\
 		virtual void copyFrom( const IECore::Object *other, IECore::Object::CopyContext *context );						\
 		virtual void save( IECore::Object::SaveContext *context ) const;								 				\
@@ -147,14 +144,6 @@ class Object : public RunTimeTyped
 		bool operator!=( const Object &other ) const;
 		/// Returns the number of bytes this instance occupies in memory.
 		size_t memoryUsage() const;
-		/// Returns a hash computed from all the member data of this object.
-		/// This convenience function simply creates a MurmurHash object, appends
-		/// to it using the virtual function below and then returns it.
-		MurmurHash hash() const;
-		/// Must be implemented by subclasses to append all member data into the
-		/// given hash. Implementations must first call the base class implementation
-		/// before appending their own data.
-		virtual void hash( MurmurHash &h ) const = 0;
 		//@}
 
 		//! @name Object factory

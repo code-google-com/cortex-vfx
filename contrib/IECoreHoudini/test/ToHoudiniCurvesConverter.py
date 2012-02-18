@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -254,9 +254,9 @@ class TestToHoudiniCurvesConverter( IECoreHoudini.TestCase ) :
 		result = IECoreHoudini.FromHoudiniCurvesConverter( sop ).convert()
 		self.assertEqual( result.verticesPerCurve(), prim.verticesPerCurve() )
 		self.assertEqual( result.keys(), prim.keys() )
-		for key in prim.keys() :
+		## \todo: remove this logic if we ever get Color3fData supported by the FromHoudiniGeometryConverter
+		for key in [ x for x in prim.keys() if x not in [ "color3fDetail", "color3fPoint", "color3fPrim" ] ] :
 			self.assertEqual( result[key], prim[key] )
-		self.assertEqual( result, prim )
 		
 	def compareOpenSplinePrimAndSop( self, prim, sop ) :
 		geo = sop.geometry()
@@ -317,10 +317,10 @@ class TestToHoudiniCurvesConverter( IECoreHoudini.TestCase ) :
 		result = IECoreHoudini.FromHoudiniCurvesConverter( sop ).convert()
 		self.assertEqual( result.verticesPerCurve(), prim.verticesPerCurve() )
 		self.assertEqual( result.keys(), prim.keys() )
-		for key in prim.keys() :
+		## \todo: remove this logic if we ever get Color3fData supported by the FromHoudiniGeometryConverter
+		for key in [ x for x in prim.keys() if x not in [ "color3fDetail", "color3fPoint", "color3fPrim" ] ] :
 			self.assertEqual( result[key], prim[key] )
-		self.assertEqual( result, prim )
-			
+		
 	def comparePrimAndAppendedSop( self, prim, sop, origSopPrim, multipleConversions=False ) :
 		geo = sop.geometry()
 		for key in [ "floatDetail", "intDetail", "stringDetail" ] :
@@ -745,21 +745,21 @@ class TestToHoudiniCurvesConverter( IECoreHoudini.TestCase ) :
 	def testConvertingOverExistingAttribs( self ) :
 		curves = self.curves()
 		sop = self.emptySop()
-		detailAttr = sop.createOutputNode( "attribcreate", exact_type_name=True )
+		detailAttr = sop.createOutputNode( "attribcreate" )
 		detailAttr.parm( "name" ).set( "floatDetail" )
 		detailAttr.parm( "class" ).set( 0 ) # detail
 		detailAttr.parm( "type" ).set( 0 ) # float
 		detailAttr.parm( "size" ).set( 1 ) # 1 element
 		detailAttr.parm( "value1" ).set( 123.456 )
 		
-		pointAttr = detailAttr.createOutputNode( "attribcreate", exact_type_name=True )
+		pointAttr = detailAttr.createOutputNode( "attribcreate" )
 		pointAttr.parm( "name" ).set( "floatPoint" )
 		pointAttr.parm( "class" ).set( 2 ) # point
 		pointAttr.parm( "type" ).set( 0 ) # float
 		pointAttr.parm( "size" ).set( 1 ) # 1 element
 		pointAttr.parm( "value1" ).set( 123.456 )
 		
-		primAttr = pointAttr.createOutputNode( "attribcreate", exact_type_name=True )
+		primAttr = pointAttr.createOutputNode( "attribcreate" )
 		primAttr.parm( "name" ).set( "floatPrim" )
 		primAttr.parm( "class" ).set( 1 ) # prim
 		primAttr.parm( "type" ).set( 0 ) # float
@@ -772,7 +772,7 @@ class TestToHoudiniCurvesConverter( IECoreHoudini.TestCase ) :
 	def testConvertingOverExistingAttribsWithDifferentTypes( self ) :
 		curves = self.curves()
 		sop = self.emptySop()
-		detailAttr = sop.createOutputNode( "attribcreate", exact_type_name=True )
+		detailAttr = sop.createOutputNode( "attribcreate" )
 		detailAttr.parm( "name" ).set( "floatDetail" )
 		detailAttr.parm( "class" ).set( 0 ) # detail
 		detailAttr.parm( "type" ).set( 1 ) # int
@@ -781,7 +781,7 @@ class TestToHoudiniCurvesConverter( IECoreHoudini.TestCase ) :
 		detailAttr.parm( "value2" ).set( 11 )
 		detailAttr.parm( "value3" ).set( 12 )
 		
-		pointAttr = detailAttr.createOutputNode( "attribcreate", exact_type_name=True )
+		pointAttr = detailAttr.createOutputNode( "attribcreate" )
 		pointAttr.parm( "name" ).set( "floatPoint" )
 		pointAttr.parm( "class" ).set( 1 ) # point
 		pointAttr.parm( "type" ).set( 1 ) # int
@@ -790,7 +790,7 @@ class TestToHoudiniCurvesConverter( IECoreHoudini.TestCase ) :
 		pointAttr.parm( "value2" ).set( 11 )
 		pointAttr.parm( "value3" ).set( 12 )
 		
-		primAttr = pointAttr.createOutputNode( "attribcreate", exact_type_name=True )
+		primAttr = pointAttr.createOutputNode( "attribcreate" )
 		primAttr.parm( "name" ).set( "floatPrim" )
 		primAttr.parm( "class" ).set( 1 ) # point
 		primAttr.parm( "type" ).set( 1 ) # int
@@ -826,21 +826,6 @@ class TestToHoudiniCurvesConverter( IECoreHoudini.TestCase ) :
 		
 		sop = self.emptySop()
 		self.assertFalse( IECoreHoudini.ToHoudiniCurvesConverter( curves ).convert( sop ) )
-	
-	def testGroupName( self ) :
-		
-		sop = self.emptySop()
-		curves = self.curves()
-		curves.blindData()["name"] = IECore.StringData( "testGroup" )
-		self.assert_( IECoreHoudini.ToHoudiniCurvesConverter( curves ).convert( sop ) )
-		primGroups = sop.geometry().primGroups()
-		self.assertEqual( len(primGroups), 1 )
-		self.assertEqual( primGroups[0].name(), "testGroup" )
-		self.assertEqual( len(primGroups[0].prims()), curves.variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ) )
-		pointGroups = sop.geometry().pointGroups()
-		self.assertEqual( len(pointGroups), 1 )
-		self.assertEqual( pointGroups[0].name(), "testGroup" )
-		self.assertEqual( len(pointGroups[0].points()), curves.variableSize( IECore.PrimitiveVariable.Interpolation.Vertex ) )
 	
 	def tearDown( self ) :
 		

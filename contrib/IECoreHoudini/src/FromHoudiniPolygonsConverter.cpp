@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -59,20 +59,20 @@ FromHoudiniPolygonsConverter::~FromHoudiniPolygonsConverter()
 
 FromHoudiniGeometryConverter::Convertability FromHoudiniPolygonsConverter::canConvert( const GU_Detail *geo )
 {
-	const GA_PrimitiveList &primitives = geo->getPrimitiveList();
+	const GEO_PrimList &primitives = geo->primitives();
 	
-	for ( GA_Iterator it=geo->getPrimitiveRange().begin(); !it.atEnd(); ++it )
+	size_t numPrims = primitives.entries();
+	for ( size_t i=0; i < numPrims; i++ )
 	{
-		const GA_Primitive *prim = primitives.get( it.getOffset() );
-		if ( prim->getTypeId() != GEO_PRIMPOLY )
+		const GEO_Primitive *prim = primitives( i );
+		if ( !( prim->getPrimitiveId() & GEOPRIMPOLY ) )
 		{
 			return Inapplicable;
 		}
 	}
 	
-	UT_PtrArray<const GA_ElementGroup*> primGroups;
-	geo->getElementGroupList( GA_ATTRIB_PRIMITIVE, primGroups );
-	if ( !primGroups.entries() || primGroups[0]->entries() == geo->getNumPrimitives() )
+	const GB_GroupList &primGroups = geo->primitiveGroups();
+	if ( !primGroups.length() || primGroups.head()->entries() == numPrims )
 	{
 		return Ideal;
 	}
@@ -82,38 +82,42 @@ FromHoudiniGeometryConverter::Convertability FromHoudiniPolygonsConverter::canCo
 
 PrimitivePtr FromHoudiniPolygonsConverter::doPrimitiveConversion( const GU_Detail *geo ) const
 {
-	const GA_PrimitiveList &primitives = geo->getPrimitiveList();
+	const GEO_PrimList &primitives = geo->primitives();
 	
 	MeshPrimitivePtr result = new MeshPrimitive();
 	
-	GA_Iterator firstPrim = geo->getPrimitiveRange().begin();
-	for ( GA_Iterator it=firstPrim; !it.atEnd(); ++it )
+	size_t numVerts = 0;
+	size_t numPrims = primitives.entries();
+	for ( size_t i=0; i < numPrims; i++ )
 	{
-		const GA_Primitive *prim = primitives.get( it.getOffset() );
-		if ( prim->getTypeId() != GEO_PRIMPOLY )
+		const GEO_Primitive *prim = primitives( i );
+		if ( !( prim->getPrimitiveId() & GEOPRIMPOLY ) )
 		{
-			throw std::runtime_error( "FromHoudiniPolygonsConverter: Geometry contains non-polygon primitives" );
+			throw runtime_error( "FromHoudiniPolygonsConverter: Geometry contains non-polygon primitives" );
 		}
+		
+		numVerts += prim->getVertexCount();
 	}
 	
 	// loop over primitives gathering mesh data
 	std::vector<int> vertIds;
 	std::vector<int> vertsPerFace;
-	for ( GA_Iterator it=firstPrim; !it.atEnd(); ++it )
+	for ( size_t i=0; i < numPrims; i++ )
 	{
-		const GA_Primitive *prim = primitives.get( it.getOffset() );
+		const GEO_Primitive *prim = primitives( i );
 		size_t numPrimVerts = prim->getVertexCount();
 		vertsPerFace.push_back( numPrimVerts );
 		std::vector<int> ids( numPrimVerts );
 		for ( size_t j=0; j < numPrimVerts; j++ )
 		{
-			vertIds.push_back( geo->pointIndex( prim->getPointOffset( numPrimVerts - 1 - j ) ) );
+			const GEO_Vertex &vert = prim->getVertex( numPrimVerts - 1 - j );
+			vertIds.push_back( vert.getPt()->getNum() );
 		}
 	}
 	
 	result->setTopology( new IntVectorData( vertsPerFace ), new IntVectorData( vertIds ) );
 	
-	if ( geo->getNumVertices() )
+	if ( numVerts )
 	{
 		transferAttribs( geo, result );
 	}

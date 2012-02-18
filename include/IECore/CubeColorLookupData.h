@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,8 +41,13 @@
 namespace IECore
 {
 
-IECORE_DECLARE_TYPEDDATA( CubeColorLookupfData, CubeColorLookupf, void, SharedDataHolder )
-IECORE_DECLARE_TYPEDDATA( CubeColorLookupdData, CubeColorLookupd, void, SharedDataHolder )
+// CubeColorLookup data types.
+typedef TypedData<CubeColorLookupf> CubeColorLookupfData;
+typedef TypedData<CubeColorLookupd> CubeColorLookupdData;
+
+// pointer declarations
+IE_CORE_DECLAREPTR( CubeColorLookupfData );
+IE_CORE_DECLAREPTR( CubeColorLookupdData );
 
 }
 
