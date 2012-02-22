@@ -1,3 +1,10 @@
+Cortex 6.5.2
+============
+
+Bug Fixes :
+
+* Fixed threading problem in IECore.ClassLoader()
+
 Cortex 6.5.1
 ============
 
