@@ -65,19 +65,19 @@ Run the unit tests from the *IECoreHoudini* root using Houdini's _hython_ comman
 
 By default, when a *Cortex Procedural* is dropped it has no parameterised procedural associated with it. 
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_operror-e1274145048691.jpg
+http://www.pawfal.org/dan/blog/wp-content/uploads/2010/05/cortexHoudini_operror-e1274145048691.jpg
 
 ^A procedural holder SOP in error because it doesn't have a parameterised procedural associated with it.^
 
 You can pick a procedural from the drop-down on the 'Class' parameter tab to associate it with this node.
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/06/IECoreHoudini_pamInterface-e1277430114264.jpg
+http://www.pawfal.org/dan/blog/wp-content/uploads/2010/06/IECoreHoudini_pamInterface-e1277430114264.jpg
 
 ^Picking a procedural/version from the interface.^
 
 When a parameterised procedural is associated with the SOP it will be rendered in the OpenGL viewport and it's parameters will appear on the *Parameters* pane allowing you to interface with the procedural. 
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_grab1-e1274144990789.jpg
+http://www.pawfal.org/dan/blog/wp-content/uploads/2010/05/cortexHoudini_grab1-e1274144990789.jpg
 
 ^A parameterised procedural with parameters, previewed in the Houdini viewport.^
 
@@ -102,7 +102,7 @@ IECoreHoudini.FnProceduralHolder.create("cortex_sphere", "sphereProcedural", 1 )
 
 You can interact with the procedural geometry in exactly the same way you would a normal Houdini object.
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_interactive-e1274145129841.jpg
+http://www.pawfal.org/dan/blog/wp-content/uploads/2010/05/cortexHoudini_interactive-e1274145129841.jpg
 
 ^These are not your everyday spheres - each of them is a separate geometry object containing a ieProceduralHolder node which is rendering the example sphereProcedural - but you can pick and transform them as usual.^
 
@@ -110,7 +110,7 @@ OpenGL shading and lighting works as expected.
 
 *NOTE:* there is a known limitation currently, that the material is only applied to the first render primitive rendered by a procedural. 
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_material-e1274145409795.jpg
+http://www.pawfal.org/dan/blog/wp-content/uploads/2010/05/cortexHoudini_material-e1274145409795.jpg
 
 ^A Cortex procedural (half-dome) with a Decal material applied and a point light.^
 
@@ -130,7 +130,7 @@ The dynamic parameter interface is created when a procedural is set on the holde
  * `Box2i`, `Box2f`, `Box2d`
  * `Box3i`, `Box3f`, `Box3d`
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/06/IECoreHoudini_parameterPane-e1277430168351.jpg
+http://www.pawfal.org/dan/blog/wp-content/uploads/2010/06/IECoreHoudini_parameterPane-e1277430168351.jpg
 
 Currently unsupported parameter types are:
  * `VectorParameter` types
@@ -164,7 +164,7 @@ The `IECoreHoudini.FromHoudiniSopConverter()` class can convert native Houdini S
 
 This example takes a Scatter SOP (_/obj/geo1/scatter_) and using the converter creates a Cortex `IECore.PointsPrimitive` object.
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_converter-e1274145524449.jpg
+http://www.pawfal.org/dan/blog/wp-content/uploads/2010/05/cortexHoudini_converter-e1274145524449.jpg
 
 {{{
 import IECoreHoudini
@@ -180,9 +180,9 @@ There are a couple of digital assets included with *IECoreHoudini* to make life 
 == Cortex Rman Inject ==
 This is a geometry SHOP for injecting a Cortex Procedural into a render via Soho's RIB generation. It wraps up the native Renderman Delayed Load geometry SHOP and adds some extra controls for specifying alternative bounds and adding extra procedural arguments.
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_render-e1274145571327.jpg
+http://www.pawfal.org/dan/blog/wp-content/uploads/2010/05/cortexHoudini_render-e1274145571327.jpg
 
 == Cortex Writer ==
 This is a SOP geometry writer ROP which converts SOP geometry and writes out FIO or COB files. Behind the scenes it just uses a regular geometryROP and an instance of `IECoreHoudini.FromHoudiniSopConverter()` that calls `convert()` per frame before writing the output. Feel free to dive in and have a look!
 
-http://www.pawfal.org/dan/wp-content/uploads/2010/05/cortexHoudini_writer-e1274145550854.jpg
+http://www.pawfal.org/dan/blog/wp-content/uploads/2010/05/cortexHoudini_writer-e1274145550854.jpg
