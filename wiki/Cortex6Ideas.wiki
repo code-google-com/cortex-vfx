@@ -2,7 +2,7 @@
 
 == !SeExpr support ==
 
-It would be great to be have a simple SeExpr wrapper in cortex, making it super easy to apply SeExpr to VectorData. I wonder if it might be even better to have generic python bindings for SeExpr, and make VectorData support a buffer protocol that allows it to work with it? That way cortex doesn't get yet another dependency, and we get to use the buffer protocol stuff with other things.
+It would be great to be have a simple !SeExpr wrapper in cortex, making it super easy to apply !SeExpr to !VectorData. I wonder if it might be even better to have generic python bindings for !SeExpr, and make !VectorData support a buffer protocol that allows it to work with it? That way cortex doesn't get yet another dependency, and we get to use the buffer protocol stuff with other things.
 
 == IO improvements ==
 
