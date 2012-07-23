@@ -115,3 +115,5 @@ Fix !OverSamplesCalculator and do todos in !InterpolatedCache.
 Fix IECore.!ConfigLoader so we don't need to put all the import statements we need inside the functions we need them in.
 
 Make Renderer::coordinateSystem() be scoped by Renderer::attributeBegin() and Renderer::attributeEnd(). Consider adjusting Group::render to keep it useful for coordinate systems, or adding a setTransform() method to the CoordinateSystem class.
+
+Replace DataTraits.py where possible by making embedded typedefs on the Data classes. See GafferBindings::TypedObjectPlugBinding for an example of such a binding.
