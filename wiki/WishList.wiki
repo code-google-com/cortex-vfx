@@ -10,8 +10,6 @@ FileIndexedIO has less than ideal performance when opening very large files, as 
 
 == Data improvements ==
 
-Currently all Data subclasses share the same lazy-copy-on-write behaviour implemented in !TypedData.h. This is likely counterproductive for the very small datatypes like those typedefed in !SimpleTypedData.h - there's a whole extra !RefCounted object behind the scenes when we might be storing something as simple as a char. It might be good to replace the single !TypedData class with a !SimpleTypedData class (with direct storage in the Data instance) and a !ComplexTypedData (or !VectorTypedData?) class with the existing lazy-copy-on write implementation. The interface of both these classes would be identical so we probably don't need to change any other code.
-
 We might like to introduce some sort of native support for !IndexedData.
 
 It might also be interesting to provide simple methods for getting threadsafe access to !TypedData::readable() and !TypedData::writable(). These could allow multiple concurrent readers but only a single writer.
