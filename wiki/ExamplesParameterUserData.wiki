@@ -73,6 +73,7 @@ Manipulators
 ["UI"]["manipTypeHint"] --> StringData - Sets the manipulatorTypeHint
 ["UI"]["manipLabel"] --> StringData - Draws this label underneath the constraint switch
 ["UI"]["box3ManipSpace"] --> StringData - Defines the space of the Box manipulator. Valid values are "world" or "object"
+["UI"]["manipulatorBox"] --> Box3fData - A box to be drawn by the TransformationMatrixParameter manipulator.
 ["UI"]["disableManip"] --> BoolData - Should ManipulatorContext skip this parameter?
 }}}
 
