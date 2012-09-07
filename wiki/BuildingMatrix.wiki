@@ -30,4 +30,4 @@ The 'odd ones out' are in *bold*.
 
 Notes:
  * Maya and Houdini use different TBB  versions than 2.2, but all claim compatibility - so far no adverse affects have been noticed using Cortex linked against TBB 2.2 with and Maya or Houdini Version
- * Houdini12.0 uses OpenExr 1.7.1 and we have only tested with 1.6.1. There is a known issue that using the EXRImageReader will crash Houdini in this scenario. If you're able to match OpenExr versions with Houdini, that would be preferable.
+ * Houdini12.0 uses OpenEXR 1.7.1 and we have only tested with 1.6.1. There is a known issue that using the EXRImageReader will crash Houdini in this scenario. If you're able to match OpenEXR versions with Houdini, that would be preferable.
