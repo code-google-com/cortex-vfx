@@ -9,7 +9,7 @@ The below build matrix shows a number of configuration that are successfully bei
 
 The 'odd ones out' are in *bold*.
 
-|| Configuration Name / Library || *Base* || *Maya2010* || *Maya2011* || *Maya2012 * || *Houdini11.0* || *Houdini12.0* || *Nuke6.0v3* || *Nuke6.3v7* || *Arnold 4.0.8.0 ||
+|| Configuration Name / Library || *Base* || *Maya2010* || *Maya2011* || *Maya2012 * || *Houdini11.0* || *Houdini12.0* || *Nuke6.0v3* || *Nuke6.3v7* || *Arnold 4.0.8.0* ||
 || *gcc* || 4.1.2 || 4.1.2 || 4.1.2 || 4.1.2 || 4.1.2 || 4.1.2 || *3.4.6* || 4.1.2 || 4.1.2 ||
 || *Python* || 2.6 || 2.6 || 2.6 || 2.6 || *2.5* || 2.6 || *2.5* || 2.6 || 2.6 ||
 || *Boost* || 1.46.1 || 1.42.0 || 1.42.0 || 1.46.1 || *1.37.0* || 1.46.1 || *1.38.0* || 1.46.1 || *1.43* ||
