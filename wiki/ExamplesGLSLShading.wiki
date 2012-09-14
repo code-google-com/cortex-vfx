@@ -150,4 +150,4 @@ IECore.registerRunTimeTyped( glslExample )
 
 In Maya, the lighting context in which the GLSL is run is built from the Maya lights, so the GLSL shader can do per-pixel lighting.
 
-[http://cortex-vfx.googlecode.com/svn/wiki/images/Cookbook_glslExample.jpg]
+[http://cortex-vfx.googlecode.com/svn/wiki/images/Cookbook_glsl.jpg]
