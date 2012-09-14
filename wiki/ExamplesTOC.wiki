@@ -31,6 +31,7 @@
    * [ExamplesProceduralsLevelOfDetail Level of Detail]
    * [ExamplesProceduralsAnimatedMesh Rendering animated meshes]
    * [ExamplesProceduralsHairShader Hair with GPU Marschner shading]
+   * [ExamplesGLSLShading Shading with GLSL]
  * Cortex & Python
    * [ExamplesPythonGeneral Using Cortex in Python]
  * Cortex & Maya
