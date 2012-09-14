@@ -113,8 +113,6 @@ class DomeBuilder( IECore.Op ) :
                 # run the sampling op. this is implemented in C++ within IECore and generates a set of directions and colors for each light.
                 lights = IECore.EnvMapSampler()( image=image, subdivisionDepth=args["lights"].value )
 
-                print lights.keys()
-
                 # create the lights in maya using the information we got from the EnvMapSampler
                 lightParentNames = []
                 for i in range( 0, len( lights["directions"] ) ) :
