@@ -1,4 +1,5 @@
 #summary Applying GLSL shaders to a procedural
+#sidebar ExamplesTOC
 
 = Introduction =
 
