@@ -1,6 +1,6 @@
 #summary useful snippets!
 
-= MeshPrimitive: find connected faces in a merged mesh =
+= IECore.MeshPrimitive: find connected faces in a merged mesh =
 
 {{{
 import maya.cmds as m
