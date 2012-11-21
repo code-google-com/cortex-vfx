@@ -20,6 +20,8 @@ We might like to introduce specialized !PointVectorData, !NormalVectorData, and 
 
 It'd be very useful to have a standard way of knowing when a Parameter value has changed. We currently do this manually using the slightly ugly updateCount mechanism which is only implemented in IECoreMaya. It might be great to have a Parameter::hash() method which gives a (kindof) unique hash for the current value. How we would quickly come up with reasonable hashes for very large Objects like !MeshPrimitives could be a tricky question however. Perhaps there might be a good case for it being the responsibility of the host to compute the hash?
 
+We could do with being able to serialise parameters in python using repr().
+
 == Op improvements ==
 
 It'd be great to be able to pass arguments to Op::operate() (and similar methods elsewhere), so that a single Op instance could easily be used with multiple sets of arguments, each in a different thread. This is motivated by the todo in IECore/!CachedReader.cpp, and also earlier questions about the overhead of instantiating multiple identical ops in the same process. 
