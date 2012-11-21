@@ -52,7 +52,7 @@ for each in all:
     faces = getFaces( each )
     meshes = getMeshes(faces)
     print "merged mesh:", each
-    for m in range(len(meshes)):
-        print "sub-mesh %d:" % m, "faces: %s" % str(meshes[m])
+    for submesh in range(len(meshes)):
+        print "sub-mesh %d:" % submesh, "faces: %s" % str(meshes[submesh])
         
 }}}  
