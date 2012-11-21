@@ -2,6 +2,10 @@
 
 = IECore.MeshPrimitive: find connected faces in a merged mesh =
 
+I had this problem were I had to assign per-vertex primitive variable to different meshes that have being merged into one big mesh. 
+
+So I've wrote this snippet to identify all the meshes in a merged mesh by splitting the  faces of the mesh in groups were the faces share the same vertices. 
+
 {{{
 import maya.cmds as m
 import IECore
@@ -46,5 +50,9 @@ all = m.ls(sl=True, dag=True, ni=True, type='mesh')
 baseUVs = {}
 for each in all:
     faces = getFaces( each )
-    print len(getMeshes(faces))
+    meshes = getMeshes(faces)
+    print "merged mesh:", each
+    for m in range(len(meshes)):
+        print "sub-mesh %d:" % m, "faces: %s" % str(meshes[m])
+        
 }}}  
