@@ -45,6 +45,6 @@ def getMeshes(faces):
 all = m.ls(sl=True, dag=True, ni=True, type='mesh')
 baseUVs = {}
 for each in all:
-    faces = getFaces( " )
+    faces = getFaces( each )
     print len(getMeshes(faces))
 }}}  
