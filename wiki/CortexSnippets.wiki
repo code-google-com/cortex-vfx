@@ -1,0 +1,50 @@
+#summary useful snippets!
+
+= MeshPrimitive: find connected faces in a merged mesh =
+
+{{{
+import maya.cmds as m
+import IECore
+import IECoreMaya
+
+def getFaces( meshName ):
+    cortexMesh = IECoreMaya.FromMayaMeshConverter( meshName ).convert()
+    vcount = 0
+    faces=[]
+    for f in range(len(cortexMesh.verticesPerFace)):
+        faces.append([])
+        for each in range(cortexMesh.verticesPerFace[f]):
+            faces[f].append(cortexMesh.vertexIds[vcount])
+            vcount += 1
+    return faces
+
+def mesh(faceID, faces, r=[]):
+    r.append(faceID)
+    for v in faces[faceID]:
+        for fid in range(len(faces)):
+            if v in faces[fid]:
+                if fid not in r:
+                    r = mesh( fid, faces, r)
+    return r
+
+def getMeshes(faces):
+    res=[]
+    for faceID in range(len(faces)):
+        m = mesh(faceID, faces, [])
+        found = False
+        for fid in m:
+            for r in res:
+                if fid in r:
+                     found = True
+                     break
+        if not found:
+            res.append(m)
+    return res
+        
+
+all = m.ls(sl=True, dag=True, ni=True, type='mesh')
+baseUVs = {}
+for each in all:
+    faces = getFaces( " )
+    print len(getMeshes(faces))
+}}}  
