@@ -108,6 +108,8 @@ Deprecate/remove classes which have been unused for a long time. The slow point 
 
 Deprecate IECoreMaya::PythonCmd? We don't need it now Maya has had python for forever.
 
+Thread safety for !MessageHandler. Push/pop per thread using RAII. Default global handler settable at app startup.
+
 Add python bindings for boost::signal.
 
 Fix !OverSamplesCalculator and do todos in !InterpolatedCache.
