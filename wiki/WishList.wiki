@@ -110,6 +110,8 @@ Deprecate IECoreMaya::PythonCmd? We don't need it now Maya has had python for fo
 
 Thread safety for !MessageHandler. Push/pop per thread using RAII. Default global handler settable at app startup.
 
+Turn the unit tests into python modules which can be installed along with the others.
+
 Add python bindings for boost::signal.
 
 Fix !OverSamplesCalculator and do todos in !InterpolatedCache.
