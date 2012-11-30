@@ -123,3 +123,5 @@ Make Renderer::coordinateSystem() be scoped by Renderer::attributeBegin() and Re
 Replace DataTraits.py where possible by making embedded typedefs on the Data classes. See GafferBindings::TypedObjectPlugBinding for an example of such a binding.
 
 Can we remove the plugin loader for maya? Isn't there a way of having a .sog file now instead?
+
+More use of raw pointers rather than smart pointers where appropriate - TypedDataDespatch for one.
