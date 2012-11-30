@@ -125,3 +125,5 @@ Replace DataTraits.py where possible by making embedded typedefs on the Data cla
 Can we remove the plugin loader for maya? Isn't there a way of having a .sog file now instead?
 
 More use of raw pointers rather than smart pointers where appropriate - TypedDataDespatch for one.
+
+Consider patches that still aren't committed. Faster python registry lookups for RunTimeTyped. Auto instancing for IECoreRI.
