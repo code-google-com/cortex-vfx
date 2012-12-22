@@ -127,3 +127,5 @@ Can we remove the plugin loader for maya? Isn't there a way of having a .sog fil
 More use of raw pointers rather than smart pointers where appropriate - TypedDataDespatch for one.
 
 Consider patches that still aren't committed. Faster python registry lookups for RunTimeTyped. Auto instancing for IECoreRI.
+
+Name the renderman and arnold display drivers the same, so you don't need to know which renderer you're using to specify a socket display.
