@@ -2,7 +2,7 @@
 
 = Introduction =
 
-This example uses ImageConvolveOp to build an irradiance environment map from a given environment map image. It convolves image channels using Spherical Harmonics with any given number of bands. Using 3 bands you get diffuse irradiance environment maps. Using more bands you get sharper maps ( for specular convolution ).
+This example uses ImageConvolveOp to build an irradiance environment map from a given environment map image. It convolves image channels using Spherical Harmonics with any given number of bands. Using 3 bands if probably enough but you can use more to get more precise results ( make sure you also add more samples ).
 
 Based on _"An efficient representation for irradiance environment maps."_ by Ramamoorthi, Ravi and Hanrahan, Pat - 2001.
 
