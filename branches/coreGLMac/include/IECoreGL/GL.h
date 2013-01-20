@@ -39,41 +39,11 @@
 #ifndef IECOREGL_GL_H
 #define IECOREGL_GL_H
 
-// now we're using glew we can just include that instead
-// and it'll do all the cross platform worrying for us
-#include "glew.h"
-
-#include "OpenEXR/ImathVec.h"
-#include "OpenEXR/ImathColor.h"
-
-namespace IECoreGL
-{
-
-inline void glColor( const Imath::V3f &c );
-inline void glColor( const Imath::Color4f &c );
-inline void glVertex( const Imath::V3f &v );
-inline void glNormal( const Imath::V3f &n );
-inline void glTranslate( const Imath::V2f &t );
-inline void glTranslate( const Imath::V3f &t );
-
-class PushAttrib
-{
-	public :
-	
-		PushAttrib( GLbitfield mask )
-		{
-			glPushAttrib( mask );
-		}
-
-		~PushAttrib()
-		{
-			glPopAttrib();
-		}
-		
-};
-
-} // namespace IECoreGL
-
-#include "IECoreGL/GL.inl"
+#ifdef __APPLE__
+#include <OpenGL/gl3.h>
+#include <OpenGL/OpenGL.h>
+#else
+#include <GL/gl.h>
+#endif
 
 #endif // IECOREGL_GL_H

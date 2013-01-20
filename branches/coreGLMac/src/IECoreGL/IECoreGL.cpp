@@ -38,8 +38,6 @@
 #include "IECoreGL/GL.h"
 #include "IECoreGL/IECoreGL.h"
 
-#include <OpenGL/OpenGL.h>
-
 #include "IECore/MessageHandler.h"
 
 void IECoreGL::init( bool glAlreadyInitialised )
@@ -48,7 +46,7 @@ void IECoreGL::init( bool glAlreadyInitialised )
 	if( !init )
 	{
 		if( !glAlreadyInitialised )
-		{				
+		{			
 			
 			CGLPixelFormatAttribute attributes[4] = {
 				kCGLPFAAccelerated,   // no software rendering
@@ -69,11 +67,6 @@ void IECoreGL::init( bool glAlreadyInitialised )
 		
 		}
 		
-		GLenum initStatus = glewInit();
-		if( initStatus!=GLEW_OK )
-		{
-			IECore::msg( IECore::Msg::Error, "IECoreGL::init", boost::format( "GLEW initialisation failed (%s)." ) % glewGetErrorString( initStatus ) );
-		}
 		init = true;
 	}
 }
