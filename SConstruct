@@ -315,37 +315,6 @@ o.Add(
 	"/usr/fl/truelight"
 )
 
-# OpenGL options
-
-try :
-	o.Add(
-		BoolVariable( "WITH_GL", "Set this to build the IECoreGL library.", False ),
-	)
-except NameError :
-	# fallback for old scons versions
-	o.Add(
-		BoolOption( "WITH_GL", "Set this to build the IECoreGL library.", False ),
-	)
-
-o.Add(
-	"GLEW_INCLUDE_PATH",
-	"The path to the directory with glew.h in it.",
-	"/usr/local/include/GL",
-)
-
-o.Add(
-	"GLEW_LIB_PATH",
-	"The path to the directory with libGLEW in it.",
-	"/usr/local/lib",
-)
-
-o.Add(
-	"GLEW_LIB_SUFFIX",
-	"The suffix appended to the names of the GLEW library. You can modify this "
-	"to link against libraries installed with non-defalt names.",
-	"",
-)
-
 # Maya options
 
 o.Add(
@@ -1781,134 +1750,100 @@ if doConfigure :
 		riTestEnv.Alias( "testRI", riTest )
 
 ###########################################################################################
-# Build, install and test the optional CoreGL library and bindings
+# Build, install and test the CoreGL library and bindings
 ###########################################################################################
 
-if env["WITH_GL"] and doConfigure :
+glEnvSets = {
+	"IECORE_NAME" : "IECoreGL",
+}
+	
+glEnv = coreEnv.Clone( **glEnvSets )
+glEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
 
-	glEnvSets = {
-		"IECORE_NAME" : "IECoreGL",
-	}
+if env["PLATFORM"]=="darwin" :
+	glEnv.Append(
+		FRAMEWORKS = [
+			"OpenGL",
+		]
+	)
+else :
+	glEnv.Append(
+		LIBS = [
+			"GL",
+			"GLU",
+		]
+	)
 
-	glEnvPrepends = {
-		"CPPPATH" : [
-		],
-	}
-	glEnvAppends = {
-		
-		"CPPPATH" : [
-			"$GLEW_INCLUDE_PATH",
-		],
-		"LIBPATH" : [
-			"$GLEW_LIB_PATH",
-		],
-	}
-	
-	glEnv = coreEnv.Clone( **glEnvSets )
-
-	glEnv.Append( **glEnvAppends )
-	glEnv.Prepend( **glEnvPrepends )
-	
-	c = Configure( glEnv )
-	
-	if not c.CheckLibWithHeader( env.subst( "GLEW$GLEW_LIB_SUFFIX" ), "glew.h", "CXX" ) :
-	
-		sys.stderr.write( "WARNING : GLEW library not found, not building IECoreGL - check GLEW_INCLUDE_PATH and GLEW_LIB_PATH.\n" )
-		c.Finish()
+glSources = sorted( glob.glob( "src/IECoreGL/*.cpp" ) )
+glPythonSources = sorted( glob.glob( "src/IECoreGL/bindings/*.cpp" ) )
+if not "-DIECORE_WITH_FREETYPE" in glEnv["CPPFLAGS"] :
+	glSources.remove( "src/IECoreGL/Font.cpp" )
+	glSources.remove( "src/IECoreGL/FontLoader.cpp" )
+	glSources.remove( "src/IECoreGL/TextPrimitive.cpp" )
+	glPythonSources.remove( "src/IECoreGL/bindings/FontBinding.cpp" )
+	glPythonSources.remove( "src/IECoreGL/bindings/FontLoaderBinding.cpp" )			
 			
-	else :
-	
-		c.Finish()
+glLibrary = glEnv.SharedLibrary( "lib/" + os.path.basename( glEnv.subst( "$INSTALL_LIB_NAME" ) ), glSources )
+glLibraryInstall = glEnv.Install( os.path.dirname( glEnv.subst( "$INSTALL_LIB_NAME" ) ), glLibrary )
+glEnv.NoCache( glLibraryInstall )
+glEnv.AddPostAction( glLibraryInstall, lambda target, source, env : makeLibSymLinks( glEnv ) )
+glEnv.Alias( "install", glLibraryInstall )
+glEnv.Alias( "installGL", glLibraryInstall )
+glEnv.Alias( "installLib", [ glLibraryInstall ] )
 
-		# we can't add this earlier as then it's built during the configure stage, and that's no good
-		glEnv.Append( LIBS = os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ) )
-	
-		if env["PLATFORM"]=="darwin" :
-			glEnv.Append(
-				FRAMEWORKS = [
-					"OpenGL",
-				]
-			)
-		else :
-			glEnv.Append(
-				LIBS = [
-					"GL",
-					"GLU",
-				]
-			)
+glHeaders = glob.glob( "include/IECoreGL/*.h" ) + glob.glob( "include/IECoreGL/*.inl" )
+glHeaderInstall = glEnv.Install( "$INSTALL_HEADER_DIR/IECoreGL", glHeaders )
+glEnv.AddPostAction( "$INSTALL_HEADER_DIR/IECoreGL", lambda target, source, env : makeSymLinks( glEnv, glEnv["INSTALL_HEADER_DIR"] ) )
+glEnv.Alias( "install", glHeaderInstall )
+glEnv.Alias( "installGL", glHeaderInstall )
 
-		glSources = sorted( glob.glob( "src/IECoreGL/*.cpp" ) )
-		glPythonSources = sorted( glob.glob( "src/IECoreGL/bindings/*.cpp" ) )
-		if not "-DIECORE_WITH_FREETYPE" in glEnv["CPPFLAGS"] :
-			glSources.remove( "src/IECoreGL/Font.cpp" )
-			glSources.remove( "src/IECoreGL/FontLoader.cpp" )
-			glSources.remove( "src/IECoreGL/TextPrimitive.cpp" )
-			glPythonSources.remove( "src/IECoreGL/bindings/FontBinding.cpp" )
-			glPythonSources.remove( "src/IECoreGL/bindings/FontLoaderBinding.cpp" )			
-					
-		glLibrary = glEnv.SharedLibrary( "lib/" + os.path.basename( glEnv.subst( "$INSTALL_LIB_NAME" ) ), glSources )
-		glLibraryInstall = glEnv.Install( os.path.dirname( glEnv.subst( "$INSTALL_LIB_NAME" ) ), glLibrary )
-		glEnv.NoCache( glLibraryInstall )
-		glEnv.AddPostAction( glLibraryInstall, lambda target, source, env : makeLibSymLinks( glEnv ) )
-		glEnv.Alias( "install", glLibraryInstall )
-		glEnv.Alias( "installGL", glLibraryInstall )
-		glEnv.Alias( "installLib", [ glLibraryInstall ] )
-
-		glHeaders = glob.glob( "include/IECoreGL/*.h" ) + glob.glob( "include/IECoreGL/*.inl" )
-		glHeaderInstall = glEnv.Install( "$INSTALL_HEADER_DIR/IECoreGL", glHeaders )
-		glEnv.AddPostAction( "$INSTALL_HEADER_DIR/IECoreGL", lambda target, source, env : makeSymLinks( glEnv, glEnv["INSTALL_HEADER_DIR"] ) )
-		glEnv.Alias( "install", glHeaderInstall )
-		glEnv.Alias( "installGL", glHeaderInstall )
+glslHeaders = glob.glob( "glsl/IECoreGL/*.h" )
+glslHeaderInstall = glEnv.Install( "$INSTALL_GLSL_HEADER_DIR/IECoreGL", glslHeaders )
+glEnv.AddPostAction( "$INSTALL_GLSL_HEADER_DIR/IECoreGL", lambda target, source, env : makeSymLinks( glEnv, glEnv["INSTALL_GLSL_HEADER_DIR"] ) )
+glEnv.Alias( "install", glslHeaderInstall )
+glEnv.Alias( "installGL", glslHeaderInstall )
 		
-		glslHeaders = glob.glob( "glsl/IECoreGL/*.h" )
-		glslHeaderInstall = glEnv.Install( "$INSTALL_GLSL_HEADER_DIR/IECoreGL", glslHeaders )
-		glEnv.AddPostAction( "$INSTALL_GLSL_HEADER_DIR/IECoreGL", lambda target, source, env : makeSymLinks( glEnv, glEnv["INSTALL_GLSL_HEADER_DIR"] ) )
-		glEnv.Alias( "install", glslHeaderInstall )
-		glEnv.Alias( "installGL", glslHeaderInstall )
-				
-		glslShaderFiles = glob.glob( "glsl/*.frag" ) + glob.glob( "glsl/*.vert" )		
-		glslShaderInstall = glEnv.Install( "$INSTALL_GLSL_SHADER_DIR", glslShaderFiles )
-		glEnv.AddPostAction( "$INSTALL_GLSL_SHADER_DIR", lambda target, source, env : makeSymLinks( glEnv, glEnv["INSTALL_GLSL_SHADER_DIR"] ) )
-		glEnv.Alias( "install", glslShaderInstall )
-		glEnv.Alias( "installGL", glslShaderInstall )		
+glslShaderFiles = glob.glob( "glsl/*.frag" ) + glob.glob( "glsl/*.vert" )		
+glslShaderInstall = glEnv.Install( "$INSTALL_GLSL_SHADER_DIR", glslShaderFiles )
+glEnv.AddPostAction( "$INSTALL_GLSL_SHADER_DIR", lambda target, source, env : makeSymLinks( glEnv, glEnv["INSTALL_GLSL_SHADER_DIR"] ) )
+glEnv.Alias( "install", glslShaderInstall )
+glEnv.Alias( "installGL", glslShaderInstall )		
 
-		glPythonModuleEnv = corePythonModuleEnv.Clone( **glEnvSets )
-		glPythonModuleEnv.Append( **glEnvAppends )
-		glPythonModuleEnv.Prepend( **glEnvPrepends )
-		glPythonModuleEnv.Append(
-			LIBS = [
-				os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ),
-				os.path.basename( glEnv.subst( "$INSTALL_LIB_NAME" ) ),
-				os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ),
-			]
-		)
-		glPythonModule = glPythonModuleEnv.SharedLibrary( "python/IECoreGL/_IECoreGL", glPythonSources )
-		glPythonModuleEnv.Depends( glPythonModule, glLibrary )
+glPythonModuleEnv = corePythonModuleEnv.Clone( **glEnvSets )
+glPythonModuleEnv.Append(
+	LIBS = [
+		os.path.basename( coreEnv.subst( "$INSTALL_LIB_NAME" ) ),
+		os.path.basename( glEnv.subst( "$INSTALL_LIB_NAME" ) ),
+		os.path.basename( corePythonEnv.subst( "$INSTALL_PYTHONLIB_NAME" ) ),
+	]
+)
+glPythonModule = glPythonModuleEnv.SharedLibrary( "python/IECoreGL/_IECoreGL", glPythonSources )
+glPythonModuleEnv.Depends( glPythonModule, glLibrary )
 
-		glPythonScripts = glob.glob( "python/IECoreGL/*.py" )
-		glPythonModuleInstall = glPythonModuleEnv.Install( "$INSTALL_PYTHON_DIR/IECoreGL", glPythonScripts + glPythonModule )		
-		glPythonModuleEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreGL", lambda target, source, env : makeSymLinks( glPythonModuleEnv, glPythonModuleEnv["INSTALL_PYTHON_DIR"] ) )
-		glPythonModuleEnv.Alias( "install", glPythonModuleInstall )
-		glPythonModuleEnv.Alias( "installGL", glPythonModuleInstall )
+glPythonScripts = glob.glob( "python/IECoreGL/*.py" )
+glPythonModuleInstall = glPythonModuleEnv.Install( "$INSTALL_PYTHON_DIR/IECoreGL", glPythonScripts + glPythonModule )		
+glPythonModuleEnv.AddPostAction( "$INSTALL_PYTHON_DIR/IECoreGL", lambda target, source, env : makeSymLinks( glPythonModuleEnv, glPythonModuleEnv["INSTALL_PYTHON_DIR"] ) )
+glPythonModuleEnv.Alias( "install", glPythonModuleInstall )
+glPythonModuleEnv.Alias( "installGL", glPythonModuleInstall )
 
-		if coreEnv["INSTALL_COREGL_POST_COMMAND"]!="" :
-			# this is the only way we could find to get a post action to run for an alias
-			glPythonModuleEnv.Alias( "install", glPythonModuleInstall, "$INSTALL_COREGL_POST_COMMAND" ) 
-			glPythonModuleEnv.Alias( "installGL", glPythonModuleInstall, "$INSTALL_COREGL_POST_COMMAND" ) 
+if coreEnv["INSTALL_COREGL_POST_COMMAND"]!="" :
+	# this is the only way we could find to get a post action to run for an alias
+	glPythonModuleEnv.Alias( "install", glPythonModuleInstall, "$INSTALL_COREGL_POST_COMMAND" ) 
+	glPythonModuleEnv.Alias( "installGL", glPythonModuleInstall, "$INSTALL_COREGL_POST_COMMAND" ) 
 
-		Default( [ glLibrary, glPythonModule ] )
+Default( [ glLibrary, glPythonModule ] )
 
-		glTestEnv = testEnv.Clone()
-		glTestEnv["ENV"]["PYTHONPATH"] = glTestEnv["ENV"]["PYTHONPATH"] + ":python"
-		for e in ["DISPLAY", "XAUTHORITY"] :
-			if e in os.environ :
-				glTestEnv["ENV"][e] = os.environ[e]
-		
-		glTest = glTestEnv.Command( "test/IECoreGL/results.txt", glPythonModule, pythonExecutable + " $TEST_GL_SCRIPT --verbose" )
-		NoCache( glTest )
-		glTestEnv.Depends( glTest, corePythonModule )
-		glTestEnv.Depends( glTest, glob.glob( "test/IECoreGL/*.py" ) )
-		glTestEnv.Alias( "testGL", glTest )
+glTestEnv = testEnv.Clone()
+glTestEnv["ENV"]["PYTHONPATH"] = glTestEnv["ENV"]["PYTHONPATH"] + ":python"
+for e in ["DISPLAY", "XAUTHORITY"] :
+	if e in os.environ :
+		glTestEnv["ENV"][e] = os.environ[e]
+
+glTest = glTestEnv.Command( "test/IECoreGL/results.txt", glPythonModule, pythonExecutable + " $TEST_GL_SCRIPT --verbose" )
+NoCache( glTest )
+glTestEnv.Depends( glTest, corePythonModule )
+glTestEnv.Depends( glTest, glob.glob( "test/IECoreGL/*.py" ) )
+glTestEnv.Alias( "testGL", glTest )
 		
 ###########################################################################################
 # Build, install and test the coreMaya library and bindings
@@ -1919,9 +1854,6 @@ mayaEnvSets = {
 }
 
 mayaEnvAppends = {
-	"CPPPATH" : [
-		"$GLEW_INCLUDE_PATH",
-	],
 	"LIBS" : [
 		"OpenMaya",
 		"OpenMayaUI",
@@ -1939,13 +1871,13 @@ mayaEnvAppends = {
 if env["PLATFORM"]=="posix" :
 	mayaEnvAppends["CPPFLAGS"] += ["-DLINUX"]
 	mayaEnvAppends["LIBPATH"] = ["$MAYA_ROOT/lib"]
-	mayaEnvAppends["CPPPATH"] += ["$MAYA_ROOT/include"]
+	mayaEnvAppends["CPPPATH"] = ["$MAYA_ROOT/include"]
 	mayaEnvAppends["LIBS"]  += ["OpenMayalib"]
 
 elif env["PLATFORM"]=="darwin" :
 	mayaEnvAppends["CPPFLAGS"]  += ["-DOSMac_","-DOSMac_MachO_"]
 	mayaEnvAppends["LIBPATH"] = ["$MAYA_ROOT/MacOS"]
-	mayaEnvAppends["CPPPATH"] += ["$MAYA_ROOT/../../devkit/include"]
+	mayaEnvAppends["CPPPATH"] = ["$MAYA_ROOT/../../devkit/include"]
 	mayaEnvAppends["LIBS"] += ["Foundation", "OpenMayaRender"]
 	mayaEnvAppends["FRAMEWORKS"] = ["AGL", "OpenGL"]
 
@@ -2130,8 +2062,7 @@ if doConfigure :
 		mayaPythonTestEnv.Depends( mayaPythonTest, glob.glob( "python/IECoreMaya/*.py" ) )
 		if env["WITH_MAYA_PLUGIN_LOADER"] :
 			mayaPythonTestEnv.Depends( mayaPythonTest, mayaPluginLoader )
-		if env["WITH_GL"] :
-			mayaPythonTestEnv.Depends( mayaPythonTest, [ glLibrary, glPythonModule ] )
+		mayaPythonTestEnv.Depends( mayaPythonTest, [ glLibrary, glPythonModule ] )
 		mayaPythonTestEnv.Alias( "testMaya", mayaPythonTest )			
 		mayaPythonTestEnv.Alias( "testMayaPython", mayaPythonTest )			
 
@@ -2143,7 +2074,6 @@ nukeEnvAppends = {
 
 	"CPPPATH" : [
 		"$NUKE_ROOT/include",
-		"$GLEW_INCLUDE_PATH",
 	],
 	
 	"CPPFLAGS" : [
@@ -2153,10 +2083,6 @@ nukeEnvAppends = {
 	"LIBPATH" : [
 		"$NUKE_ROOT",
 	],
-
-	"LIBS" : [
-		"GLEW$GLEW_LIB_SUFFIX",
-	]
 
 }
 
@@ -2361,7 +2287,6 @@ houdiniEnvSets = {
 
 houdiniEnvAppends = {
 	"CPPPATH" : [
-		"$GLEW_INCLUDE_PATH",
 		"$HOUDINI_INCLUDE_PATH",
 		"contrib/IECoreMantra/include",
 	],
@@ -2370,7 +2295,6 @@ houdiniEnvAppends = {
 	],
 	"LIBPATH" : [
 		"$HOUDINI_LIB_PATH",
-		"$GLEW_LIB_PATH",
 	],
 	"LIBS" : [
 		"HoudiniUI",
@@ -2384,7 +2308,6 @@ houdiniEnvAppends = {
 		"HoudiniUT",
 		"HoudiniRAY",
 		"boost_python" + env["BOOST_LIB_SUFFIX"],
-		"GLEW$GLEW_LIB_SUFFIX"
 	]
 }
 
@@ -2635,8 +2558,7 @@ if doConfigure :
 			mantraTestEnv.Depends( mantraPythonTest, [ mantraLib, mantraProcedural, mantraWorld, mantraPythonModule, mantraOtlCommand, mantraVrayForTest ] )
 			mantraTestEnv.Depends( mantraPythonTest, glob.glob( "contrib/IECoreMantra/test/IECoreMantra/*.py" ) )
 			mantraTestEnv.Depends( mantraPythonTest, glob.glob( "contrib/IECoreMantra/python/IECoreMantra/*.py" ) )
-			if env["WITH_GL"] :
-				mantraTestEnv.Depends( mantraPythonTest, [ glLibrary, glPythonModule ] )
+			mantraTestEnv.Depends( mantraPythonTest, [ glLibrary, glPythonModule ] )
 			mantraTestEnv.Alias( "testMantra", mantraPythonTest )
 			mantraTestEnv.Alias( "testMantraPython", mantraPythonTest )
 
@@ -2698,12 +2620,10 @@ if doConfigure :
 		houdiniTestEnv.Depends( houdiniPythonTest, [ houdiniLib, houdiniPlugin, houdiniPythonModule, otlCommand ] )
 		houdiniTestEnv.Depends( houdiniPythonTest, glob.glob( "test/IECoreHoudini/*.py" ) )
 		houdiniTestEnv.Depends( houdiniPythonTest, glob.glob( "python/IECoreHoudini/*.py" ) )
-		if env["WITH_GL"] :
-			houdiniTestEnv.Depends( houdiniPythonTest, [ glLibrary, glPythonModule ] )
+		houdiniTestEnv.Depends( houdiniPythonTest, [ glLibrary, glPythonModule ] )
 		houdiniTestEnv.Alias( "testHoudini", houdiniPythonTest )
 		houdiniTestEnv.Alias( "testHoudiniPython", houdiniPythonTest )
 		
-
 ###########################################################################################
 # Build and install the coreTruelight library and headers
 ###########################################################################################
