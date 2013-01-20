@@ -346,18 +346,6 @@ o.Add(
 	"",
 )
 
-o.Add(
-	"GLUT_INCLUDE_PATH",
-	"The path to the directory with glut.h in it.",
-	"$GLEW_INCLUDE_PATH",
-)
-
-o.Add(
-	"GLUT_LIB_PATH",
-	"The path to the directory with libGLUT in it.",
-	"$GLEW_LIB_PATH",
-)
-
 # Maya options
 
 o.Add(
@@ -1810,11 +1798,9 @@ if env["WITH_GL"] and doConfigure :
 		
 		"CPPPATH" : [
 			"$GLEW_INCLUDE_PATH",
-			"$GLUT_INCLUDE_PATH",
 		],
 		"LIBPATH" : [
 			"$GLEW_LIB_PATH",
-			"$GLUT_LIB_PATH",
 		],
 	}
 	
@@ -1825,7 +1811,6 @@ if env["WITH_GL"] and doConfigure :
 	
 	c = Configure( glEnv )
 	
-	## \todo We need to check for GLUT here too
 	if not c.CheckLibWithHeader( env.subst( "GLEW$GLEW_LIB_SUFFIX" ), "glew.h", "CXX" ) :
 	
 		sys.stderr.write( "WARNING : GLEW library not found, not building IECoreGL - check GLEW_INCLUDE_PATH and GLEW_LIB_PATH.\n" )
@@ -1842,7 +1827,6 @@ if env["WITH_GL"] and doConfigure :
 			glEnv.Append(
 				FRAMEWORKS = [
 					"OpenGL",
-					"GLUT",
 				]
 			)
 		else :
@@ -1850,7 +1834,6 @@ if env["WITH_GL"] and doConfigure :
 				LIBS = [
 					"GL",
 					"GLU",
-					"glut",
 				]
 			)
 
