@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,8 +40,6 @@
 namespace IECoreGL
 {
 
-IE_CORE_FORWARDDECLARE( Buffer )
-
 class QuadPrimitive : public Primitive
 {
 
@@ -52,18 +50,27 @@ class QuadPrimitive : public Primitive
 		QuadPrimitive( float width = 1, float height = 1 );
 		virtual ~QuadPrimitive();
 
-		virtual void addPrimitiveVariable( const std::string &name, const IECore::PrimitiveVariable &primVar );
-		virtual Imath::Box3f bound() const;
+		void setWidth( float width );
+		float getWidth() const;
 
-		virtual void renderInstances( size_t numInstances ) const;
+		void setHeight( float height );
+		float getHeight() const;
+
+		virtual Imath::Box3f bound() const;
+		virtual void addPrimitiveVariable( const std::string &name, const IECore::PrimitiveVariable &primVar );
+
+	protected :
+
+		virtual void render( const State *state, IECore::TypeId style ) const;
 
 	private :
 
 		float m_width;
 		float m_height;
-		IECore::UIntVectorDataPtr m_vertIds;
-		mutable IECoreGL::ConstBufferPtr m_vertIdsBuffer;
 
+		// So PointsPrimitive can use the protected render() method to
+		// render particle quads.
+		friend class PointsPrimitive;
 };
 
 IE_CORE_DECLAREPTR( QuadPrimitive );

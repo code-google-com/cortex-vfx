@@ -57,9 +57,9 @@ class AttributeCache : public RefCounted
 {
 	public:
 
-		typedef IndexedIO::EntryID ObjectHandle;
-		typedef IndexedIO::EntryID HeaderHandle;
-		typedef IndexedIO::EntryID AttributeHandle;
+		typedef std::string ObjectHandle;
+		typedef std::string HeaderHandle;
+		typedef std::string AttributeHandle;
 
 		IE_CORE_DECLAREMEMBERPTR( AttributeCache )
 
@@ -120,13 +120,9 @@ class AttributeCache : public RefCounted
 
 	protected:
 
-		IndexedIOPtr m_objectsIO;
-		IndexedIOPtr m_headersIO;
+		IndexedIOInterfacePtr m_io;
 
-		IndexedIOPtr writableHeadersIO();
-		IndexedIOPtr writableObjectsIO();
-		ConstIndexedIOPtr readableHeadersIO();
-		ConstIndexedIOPtr readableObjectsIO();
+		static void checkName( const std::string &name );
 };
 
 IE_CORE_DECLAREPTR( AttributeCache );

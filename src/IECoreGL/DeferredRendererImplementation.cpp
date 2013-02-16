@@ -231,14 +231,14 @@ StateComponent *DeferredRendererImplementation::getState( IECore::TypeId type )
 			return c;
 		}
 	}
-	return const_cast<StateComponent *>( State::defaultState()->get( type ) );
+	return IECore::constPointerCast<StateComponent>( State::defaultState()->get( type ) );
 }
 
 void DeferredRendererImplementation::addUserAttribute( const IECore::InternedString &name, IECore::DataPtr value )
 {
 	RenderContext *curContext = currentContext();
 
-	(*(curContext->stateStack).rbegin())->userAttributes()->writable()[ name ] = value;
+	(*(curContext->stateStack).rbegin())->userAttributes()[ name ] = value;
 }
 
 IECore::Data *DeferredRendererImplementation::getUserAttribute( const IECore::InternedString &name )
@@ -247,9 +247,8 @@ IECore::Data *DeferredRendererImplementation::getUserAttribute( const IECore::In
 
 	for( StateStack::reverse_iterator it=curContext->stateStack.rbegin(); it!=curContext->stateStack.rend(); it++ )
 	{
-		IECore::CompoundDataMap &attrs = (*it)->userAttributes()->writable();
-		IECore::CompoundDataMap::iterator attrIt = attrs.find( name );
-		if( attrIt != attrs.end() )
+		State::UserAttributesMap::iterator attrIt = (*it)->userAttributes().find( name );
+		if( attrIt != (*it)->userAttributes().end() )
 		{
 			return attrIt->second;
 		}

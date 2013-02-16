@@ -38,6 +38,7 @@
 #ifndef IECOREHOUDINI_FNPARAMETERISEDHOLDER_H
 #define IECOREHOUDINI_FNPARAMETERISEDHOLDER_H
 
+#include "OP/OP_Director.h"
 #include "SOP/SOP_Node.h"
 
 #include "IECoreHoudini/NodeHandle.h"

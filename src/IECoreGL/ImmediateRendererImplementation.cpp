@@ -85,10 +85,11 @@ void ImmediateRendererImplementation::worldBegin()
 		m_frameBuffer->setDepth( new DepthTexture( width, height ) );
 		Exception::throwIfError();
 		m_frameBuffer->validate();
-		m_frameBufferBinding = new FrameBuffer::ScopedBinding( *m_frameBuffer );
+		m_frameBuffer->bind();
 	}
 	catch( const std::exception &e )
 	{
+		/// \todo how about a fallback?
 		IECore::msg( IECore::Msg::Error, "Renderer::worldBegin", boost::format( "Unable to make framebuffer (%s)." ) % e.what() );
 	}
 
@@ -117,9 +118,6 @@ void ImmediateRendererImplementation::worldEnd()
 			m_displays[i]->display( m_frameBuffer );
 		}
 	}
-	
-	delete m_frameBufferBinding;
-	m_frameBufferBinding = 0;
 }
 
 void ImmediateRendererImplementation::transformBegin()
@@ -180,15 +178,14 @@ StateComponent *ImmediateRendererImplementation::getState( IECore::TypeId type )
 
 void ImmediateRendererImplementation::addUserAttribute( const IECore::InternedString &name, IECore::DataPtr value )
 {
-	m_stateStack.top()->userAttributes()->writable()[ name ] = value;
+	m_stateStack.top()->userAttributes()[ name ] = value;
 }
 
 IECore::Data *ImmediateRendererImplementation::getUserAttribute( const IECore::InternedString &name )
 {
 	State *curState = m_stateStack.top();
-	IECore::CompoundDataMap &attrs = curState->userAttributes()->writable();
-	IECore::CompoundDataMap::iterator attrIt = attrs.find( name );
-	if( attrIt != attrs.end() )
+	State::UserAttributesMap::iterator attrIt = curState->userAttributes().find( name );
+	if( attrIt != curState->userAttributes().end() )
 	{
 		return attrIt->second;
 	}

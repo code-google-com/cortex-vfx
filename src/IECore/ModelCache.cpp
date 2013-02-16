@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2012-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -49,21 +49,14 @@ using namespace Imath;
 // Register FileIndexedIO as the handler for .mdc files so that people
 // can use the filename constructor as a convenience over the IndexedIO
 // constructor.
-static IndexedIO::Description<FileIndexedIO> extensionDescription( ".mdc" );
-
-static InternedString headerEntry("header");
-static InternedString rootEntry("root");
-static InternedString boundEntry("bound");
-static InternedString transformEntry("transform");
-static InternedString objectEntry("object");
-static InternedString childrenEntry("children");
+static IndexedIOInterface::Description<FileIndexedIO> extensionDescription( ".mdc" );
 
 class ModelCache::Implementation : public RefCounted
 {
 
 	public :
 	
-		Implementation( IndexedIOPtr indexedIO )
+		Implementation( IndexedIOInterfacePtr indexedIO )
 			:	m_indexedIO( indexedIO ), m_path( "/" ), m_explicitBound( false )
 		{
 			if( m_indexedIO->openMode() & IndexedIO::Append )
@@ -74,10 +67,11 @@ class ModelCache::Implementation : public RefCounted
 			if( m_indexedIO->openMode() & IndexedIO::Write )
 			{
 				ObjectPtr header = HeaderGenerator::header();
-				header->save( m_indexedIO, headerEntry );
-				m_indexedIO->subdirectory( rootEntry, IndexedIO::CreateIfMissing )->removeAll();
+				header->save( m_indexedIO, "header" );
+				m_indexedIO->mkdir( "root" );
 			}
-			m_indexedIO = m_indexedIO->subdirectory( rootEntry );
+			m_indexedIO->chdir( "root" );
+			m_indexedIO = m_indexedIO->resetRoot();
 		}
 		
 		virtual ~Implementation()
@@ -85,7 +79,7 @@ class ModelCache::Implementation : public RefCounted
 			// write out the bound if necessary.
 			if( m_indexedIO->openMode() & ( IndexedIO::Write | IndexedIO::Append ) )
 			{
-				m_indexedIO->write( boundEntry, m_bound.min.getValue(), 6 );			
+				m_indexedIO->write( "bound", m_bound.min.getValue(), 6 );			
 				// propagate the bound to our parent.
 				if( m_parent && !m_parent->m_explicitBound )
 				{
@@ -95,22 +89,17 @@ class ModelCache::Implementation : public RefCounted
 			}
 			
 		}
-		
+	
 		const std::string &path() const
 		{
 			return m_path;
-		}
-		
-		const std::string &name() const
-		{
-			return m_indexedIO->currentEntryId();
 		}
 		
 		Imath::Box3d readBound() const
 		{
 			Box3d result;
 			double *resultAddress = result.min.getValue();
-			m_indexedIO->read( boundEntry, resultAddress, 6 );
+			m_indexedIO->read( "bound", resultAddress, 6 );
 			return result;
 		}
 		
@@ -123,10 +112,15 @@ class ModelCache::Implementation : public RefCounted
 		Imath::M44d readTransform() const
 		{
 			M44d result;
-			if ( m_indexedIO->hasEntry( transformEntry ) )
+			double *resultAddress = result.getValue();
+			try
 			{
-				double *resultAddress = result.getValue();
-				m_indexedIO->read( transformEntry, resultAddress, 16 );
+				m_indexedIO->read( "transform", resultAddress, 16 );
+			}
+			catch( const IOException &e )
+			{
+				// we only write non-identity transforms, so it's fine
+				// if we don't find one.
 			}
 			return result;
 		}
@@ -136,18 +130,28 @@ class ModelCache::Implementation : public RefCounted
 			m_transform = transform;
 			if( transform != M44d() )
 			{
-				m_indexedIO->write( transformEntry, transform.getValue(), 16 );
+				m_indexedIO->write( "transform", transform.getValue(), 16 );
 			}
 		}
 		
 		ObjectPtr readObject() const
 		{
-			return ( hasObject() ) ? Object::load( m_indexedIO, objectEntry ) : 0;
+			ObjectPtr result = 0;
+			try
+			{
+				result = Object::load( m_indexedIO, "object" );
+			}
+			catch( const IOException &e )
+			{
+				// we only write non-null objects, so it's fine
+				// if we don't find one.
+			}
+			return result;
 		}
 		
 		void writeObject( const IECore::Object *object )
 		{
-			object->save( m_indexedIO, objectEntry );
+			object->save( m_indexedIO, "object" );
 			const VisibleRenderable *renderable = runTimeCast<const VisibleRenderable>( object );
 			if( renderable && !m_explicitBound )
 			{
@@ -159,21 +163,27 @@ class ModelCache::Implementation : public RefCounted
 				m_bound.extendBy( bd );
 			}
 		}
-		
-		bool hasObject() const
+	
+		void childNames( std::vector<std::string> &childNames ) const
 		{
-			return m_indexedIO->hasEntry( objectEntry );
-		}
-		
-		void childNames( IndexedIO::EntryIDList &childNames ) const
-		{
-			ConstIndexedIOPtr children = m_indexedIO->subdirectory( childrenEntry, IndexedIO::NullIfMissing );
-			if ( !children )
+			try
+			{
+				m_indexedIO->chdir( "children" );
+			}
+			catch( const IOException &e  )
 			{
 				// it's ok for an entry to not have children
 				return;
 			}
-			children->entryIds( childNames, IndexedIO::Directory );
+			
+			IndexedIO::EntryList entries;
+			entries = m_indexedIO->ls();
+			m_indexedIO->chdir( ".." );
+			
+			for( IndexedIO::EntryList::const_iterator it = entries.begin(); it!=entries.end(); it++ )
+			{
+				childNames.push_back( it->id() );
+			}
 		}
 		
 		ModelCachePtr writableChild( const std::string &childName )
@@ -185,16 +195,18 @@ class ModelCache::Implementation : public RefCounted
 			}
 			childPath += childName;
 			
-			IndexedIOPtr child = m_indexedIO->subdirectory( childrenEntry, IndexedIO::CreateIfMissing );
-			child = child->subdirectory( childName, IndexedIO::CreateIfMissing );
-			
+			std::string dirName = "children/" + childName;
+			m_indexedIO->mkdir( dirName );
+			m_indexedIO->chdir( dirName );
 			ModelCachePtr result = new ModelCache(
 				new Implementation(
-					child,
+					m_indexedIO->resetRoot(),
 					childPath,
 					this
 				)
 			);
+			m_indexedIO->chdir( "../.." );
+		
 			return result;
 		}
 		
@@ -206,28 +218,29 @@ class ModelCache::Implementation : public RefCounted
 				childPath += "/";
 			}
 			childPath += childName;
-
-			IndexedIOPtr child = m_indexedIO->subdirectory( childrenEntry );
-			child = child->subdirectory( childName );
-
+			
+			std::string dirName = "children/" + childName;
+			m_indexedIO->chdir( dirName );
 			ModelCachePtr result = new ModelCache(
 				new Implementation(
-					child,
+					m_indexedIO->resetRoot(),
 					childPath,
 					0 // read only so no need for parent for bounds propagation
 				)
 			);
+			m_indexedIO->chdir( "../.." );
+		
 			return result;
 		}
 
 	private :
 	
-		Implementation( IndexedIOPtr indexedIO, const std::string &path, ImplementationPtr parent )
+		Implementation( IndexedIOInterfacePtr indexedIO, const std::string &path, ImplementationPtr parent )
 			:	m_indexedIO( indexedIO ), m_path( path ), m_explicitBound( false ), m_parent( parent )
 		{
 		}
 	
-		IndexedIOPtr m_indexedIO;
+		IndexedIOInterfacePtr m_indexedIO;
 		std::string m_path;
 		// accumulated into during writing, and written out in the destructor
 		Box3d m_bound;
@@ -244,11 +257,11 @@ class ModelCache::Implementation : public RefCounted
 
 ModelCache::ModelCache( const std::string &fileName, IndexedIO::OpenMode mode )
 {
-	IndexedIOPtr indexedIO = IndexedIO::create( fileName, IndexedIO::rootPath, mode );
+	IndexedIOInterfacePtr indexedIO = IndexedIOInterface::create( fileName, "/", mode );
 	m_implementation = new Implementation( indexedIO );
 }
 
-ModelCache::ModelCache( IECore::IndexedIOPtr indexedIO )
+ModelCache::ModelCache( IECore::IndexedIOInterfacePtr indexedIO )
 {
 	m_implementation = new Implementation( indexedIO );
 }
@@ -265,11 +278,6 @@ ModelCache::~ModelCache()
 const std::string &ModelCache::path() const
 {
 	return m_implementation->path();
-}
-
-const std::string &ModelCache::name() const
-{
-	return m_implementation->name();
 }
 
 Imath::Box3d ModelCache::readBound() const
@@ -302,22 +310,17 @@ void ModelCache::writeObject( const IECore::Object *object )
 	m_implementation->writeObject( object );
 }
 
-bool ModelCache::hasObject() const
-{
-	return m_implementation->hasObject();
-}
-
-void ModelCache::childNames( IndexedIO::EntryIDList &childNames ) const
+void ModelCache::childNames( std::vector<std::string> &childNames ) const
 {
 	m_implementation->childNames( childNames );
 }
 
-ModelCachePtr ModelCache::writableChild( const IndexedIO::EntryID &childName )
+ModelCachePtr ModelCache::writableChild( const std::string &childName )
 {
 	return m_implementation->writableChild( childName );
 }
 
-ConstModelCachePtr ModelCache::readableChild( const IndexedIO::EntryID &childName ) const
+ConstModelCachePtr ModelCache::readableChild( const std::string &childName ) const
 {
 	return m_implementation->readableChild( childName );
 }

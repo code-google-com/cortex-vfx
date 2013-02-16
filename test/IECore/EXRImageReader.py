@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -31,8 +31,6 @@
 #  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 ##########################################################################
-
-from __future__ import with_statement
 
 import unittest
 import sys
@@ -300,10 +298,11 @@ class TestEXRReader(unittest.TestCase):
 
 	def testReadIncompleteImage( self ) :
 
-		with CapturingMessageHandler() as m :
+		m = CapturingMessageHandler()
+		s = ScopedMessageHandler( m )
 
-			r = EXRImageReader( "test/IECore/data/exrFiles/incomplete.exr" )
-			i = r.read()
+		r = EXRImageReader( "test/IECore/data/exrFiles/incomplete.exr" )
+		i = r.read()
 
 		# check image is valid even if not all data is present
 		self.assertEqual( len( i ), 3 )

@@ -35,7 +35,6 @@
 #ifndef IECOREMANTRA_RENDERERIMPLEMENTATION_H
 #define IECOREMANTRA_RENDERERIMPLEMENTATION_H
 
-#include <list>
 #include <stack>
 
 #include "IECore/Camera.h"

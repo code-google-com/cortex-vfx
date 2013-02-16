@@ -35,7 +35,7 @@
 #include "IECore/ValidatedStringParameter.h"
 #include "IECore/CompoundObject.h"
 
-#include "boost/regex.hpp"
+#include "boost/regex.h"
 
 using namespace boost;
 using namespace std;

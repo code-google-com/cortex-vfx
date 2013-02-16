@@ -38,19 +38,11 @@ import IECore
 Implement new methods to the Op class.
 """
 
-def __opSmartOperator( self, *cargs, **args ):
+def __opSmartOperator( self, **args ):
 	"""
 	Smart version of Op.operator function. It accepts python values, simple structures and Data objects
-	as values for the Op parameters. It also accepts a single IECore.CompoundObject parameter that is
-	forwarded to the operate method as the values for all the Op parameters.
+	as values for the Op parameters.
 	"""
-
-	if len(cargs) == 1 and not args and isinstance( cargs[0], IECore.CompoundObject ) :
-		return self.operate( cargs[0] )
-
-	if len(cargs) :
-		raise Exception, "Attempt to call an Op with invalid parameter values!"
-
 	for (paramName, paramValue) in args.items():
 		if isinstance(paramValue, IECore.Object):
 			self[ paramName ].setValue( paramValue )

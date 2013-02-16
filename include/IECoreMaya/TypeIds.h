@@ -115,8 +115,7 @@ enum TypeId
 	ToMayaGroupConverterTypeId = 109068,
 	ToMayaParticleConverterTypeId = 109069,
 	V3ManipulatorTypeId = 109070,
-	ToMayaCameraConverterTypeId = 109071,
-	MayaSceneTypeId = 109072,
+	ToMayaCameraConverterTypeId = 109070,
 	// Remember to update TypeIdBinding.cpp
 	LastTypeId = 109999
 };

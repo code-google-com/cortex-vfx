@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -94,8 +94,7 @@ static ParameterPtr compoundParameterGetItem( CompoundParameter &o, const char *
 
 static bool compoundParameterContains( const CompoundParameter &o, const std::string &n )
 {
-	const CompoundParameter::ParameterMap &map = o.parameters();
-	return map.find( n ) != map.end();
+	return o.parameter<const Parameter>( n );
 }
 
 static boost::python::list compoundParameterKeys( const CompoundParameter &o )
@@ -133,14 +132,9 @@ static boost::python::list compoundParameterItems( const CompoundParameter &o )
 
 static void compoundParameterAddParameters( CompoundParameter &o, const boost::python::list &p )
 {
-	int listLen = boost::python::len(p);
-
-	for( int i=0; i<listLen; i++ )
-	{
-		object m = p[i];
-		Parameter &p = extract<Parameter &>( m );
-		o.addParameter( &p );
-	}
+	std::vector<ParameterPtr> pp;
+	boost::python::container_utils::extend_container( pp, p );
+	o.addParameters( pp.begin(), pp.end() );
 }
 
 static ParameterPtr parameter( CompoundParameter &o, const char *name )

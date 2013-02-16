@@ -42,155 +42,156 @@
 
 namespace IECore
 {
-
+namespace IndexedIO
+{
 
 template<>
-struct IndexedIO::DataTypeTraits<float>
+struct DataTypeTraits<float>
 {
 	static IndexedIO::DataType type() { return IndexedIO::Float; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<float*>
+struct DataTypeTraits<float*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::FloatArray; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<double>
+struct DataTypeTraits<double>
 {
 	static IndexedIO::DataType type() { return IndexedIO::Double; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<double*>
+struct DataTypeTraits<double*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::DoubleArray; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<half>
+struct DataTypeTraits<half>
 {
 	static IndexedIO::DataType type() { return IndexedIO::Half; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<half*>
+struct DataTypeTraits<half*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::HalfArray; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<int>
+struct DataTypeTraits<int>
 {
 	static IndexedIO::DataType type() { return IndexedIO::Int; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<int*>
+struct DataTypeTraits<int*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::IntArray; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<int64_t>
+struct DataTypeTraits<int64_t>
 {
 	static IndexedIO::DataType type() { return IndexedIO::Int64; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<int64_t*>
+struct DataTypeTraits<int64_t*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::Int64Array; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<std::string>
+struct DataTypeTraits<std::string>
 {
 	static IndexedIO::DataType type() { return IndexedIO::String; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<std::string*>
+struct DataTypeTraits<std::string*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::StringArray; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<unsigned int>
+struct DataTypeTraits<unsigned int>
 {
 	static IndexedIO::DataType type() { return IndexedIO::UInt; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<unsigned int*>
+struct DataTypeTraits<unsigned int*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::UIntArray; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<uint64_t>
+struct DataTypeTraits<uint64_t>
 {
 	static IndexedIO::DataType type() { return IndexedIO::UInt64; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<uint64_t*>
+struct DataTypeTraits<uint64_t*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::UInt64Array; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<char>
+struct DataTypeTraits<char>
 {
 	static IndexedIO::DataType type() { return IndexedIO::Char; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<char*>
+struct DataTypeTraits<char*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::CharArray; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<unsigned char>
+struct DataTypeTraits<unsigned char>
 {
 	static IndexedIO::DataType type() { return IndexedIO::UChar; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<unsigned char*>
+struct DataTypeTraits<unsigned char*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::UCharArray; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<short>
+struct DataTypeTraits<short>
 {
 	static IndexedIO::DataType type() { return IndexedIO::Short; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<short*>
+struct DataTypeTraits<short*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::ShortArray; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<unsigned short>
+struct DataTypeTraits<unsigned short>
 {
 	static IndexedIO::DataType type() { return IndexedIO::UShort; }
 };
 
 template<>
-struct IndexedIO::DataTypeTraits<unsigned short*>
+struct DataTypeTraits<unsigned short*>
 {
 	static IndexedIO::DataType type() { return IndexedIO::UShortArray; }
 };
 
 
 template<typename T>
-struct IndexedIO::DataTypeTraits
+struct DataTypeTraits
 {
 	static IndexedIO::DataType type()
 	{
@@ -199,7 +200,7 @@ struct IndexedIO::DataTypeTraits
 	}
 };
 
-namespace IndexedIODetail
+namespace Detail
 {
 
 // Classes which crudely mimic a regular iostream, but read/write from/to a memory buffer.
@@ -394,21 +395,21 @@ struct Reader<S, T, uint64_t>
 	}
 };
 
-} // namespace IndexedIODetail
+} // namespace Detail
 
 /// Size
 
 template<typename T>
-struct IndexedIO::DataSizeTraits<T*>
+struct DataSizeTraits<T*>
 {
 	static unsigned long size(const T *&x, unsigned long arrayLength)
 	{
-		return arrayLength * IndexedIODetail::size<T>();
+		return arrayLength * Detail::size<T>();
 	}
 };
 
 template<>
-struct IndexedIO::DataSizeTraits<std::string>
+struct DataSizeTraits<std::string>
 {
 	static unsigned long size(const std::string& x)
 	{
@@ -417,12 +418,12 @@ struct IndexedIO::DataSizeTraits<std::string>
 };
 
 template<>
-struct IndexedIO::DataSizeTraits<std::string*>
+struct DataSizeTraits<std::string*>
 {
 	static unsigned long size(const std::string *&x, unsigned long arrayLength)
 	{
 		// String lengths are stored as unsigned longs
-		unsigned long s = arrayLength * IndexedIODetail::size<unsigned long>();
+		unsigned long s = arrayLength * Detail::size<unsigned long>();
 
 		for (unsigned i = 0; i < arrayLength; i++)
 		{
@@ -433,45 +434,58 @@ struct IndexedIO::DataSizeTraits<std::string*>
 };
 
 template<typename T>
-struct IndexedIO::DataSizeTraits
+struct DataSizeTraits
 {
 	static unsigned long size(const T& x)
 	{
-		return IndexedIODetail::size<T>();
+		return Detail::size<T>();
 	}
 };
 
 // Flatten
 template<typename T>
-struct IndexedIO::DataFlattenTraits
+struct DataFlattenTraits
 {
-	static void flatten(const T& x, char *dst)
+	static const char* flatten(const T& x)
 	{
-		IndexedIODetail::OutputMemoryStream mstream(dst);
-		IndexedIODetail::Writer<IndexedIODetail::MemoryStreamIO, IndexedIODetail::OutputMemoryStream, T>::write(mstream, x);
+		unsigned long size = IndexedIO::DataSizeTraits<T>::size(x);
+
+		Detail::OutputMemoryStream mstream(new char[size]);
+		Detail::Writer<Detail::MemoryStreamIO, Detail::OutputMemoryStream, T>::write(mstream, x);
+
+		return mstream.head();
 	}
 
 	static void unflatten(const char *src, T &dst)
 	{
 		assert(src);
-		IndexedIODetail::InputMemoryStream mstream(src);
-		IndexedIODetail::Reader<IndexedIODetail::MemoryStreamIO, IndexedIODetail::InputMemoryStream, T>::read( mstream, dst );
+		Detail::InputMemoryStream mstream(src);
+		Detail::Reader<Detail::MemoryStreamIO, Detail::InputMemoryStream, T>::read( mstream, dst );
 	}
 
+	static void free(const char *x)
+	{
+		assert(x);
+		delete[] x;
+	}
 };
 
 
 template<typename T>
-struct IndexedIO::DataFlattenTraits<T*>
+struct DataFlattenTraits<T*>
 {
-	static void flatten(const T* &x, unsigned long arrayLength, char *dst )
+	static const char* flatten(const T* &x, unsigned long arrayLength)
 	{
-		IndexedIODetail::OutputMemoryStream mstream(dst);
+		unsigned long size = IndexedIO::DataSizeTraits<T*>::size(x, arrayLength);
+
+		Detail::OutputMemoryStream mstream(new char[size]);
 
 		for (unsigned long i = 0; i < arrayLength; i++)
 		{
-			IndexedIODetail::Writer<IndexedIODetail::MemoryStreamIO, IndexedIODetail::OutputMemoryStream, T>::write (mstream, x[i]);
+			Detail::Writer<Detail::MemoryStreamIO, Detail::OutputMemoryStream, T>::write (mstream, x[i]);
 		}
+
+		return mstream.head();
 	}
 
 	static void unflatten(const char *src, T *&dst, unsigned long arrayLength)
@@ -481,21 +495,29 @@ struct IndexedIO::DataFlattenTraits<T*>
 			dst = new T[arrayLength];
 		}
 
-		IndexedIODetail::InputMemoryStream mstream(src);
+		Detail::InputMemoryStream mstream(src);
 
 		for (unsigned long i = 0; i < arrayLength; i++)
 		{
-			IndexedIODetail::Reader<IndexedIODetail::MemoryStreamIO, IndexedIODetail::InputMemoryStream, T>::read( mstream, dst[i] );
+			Detail::Reader<Detail::MemoryStreamIO, Detail::InputMemoryStream, T>::read( mstream, dst[i] );
+		}
+	}
+
+	static void free(const char *x)
+	{
+		if (x)
+		{
+			delete[] x;
 		}
 	}
 };
 
 template<>
-struct IndexedIO::DataFlattenTraits<std::string>
+struct DataFlattenTraits<std::string>
 {
-	static void flatten(const std::string &x, char *dst)
+	static const char* flatten(const std::string &x)
 	{
-		strcpy( dst, x.c_str() );
+		return x.c_str();
 	}
 
 	static void unflatten(const char *x, std::string &dst)
@@ -504,25 +526,33 @@ struct IndexedIO::DataFlattenTraits<std::string>
 		dst = std::string(x);
 	}
 
+	static void free(const char *x)
+	{
+		// Nothing to free
+	}
 };
 
 template<>
-struct IndexedIO::DataFlattenTraits<std::string*>
+struct DataFlattenTraits<std::string*>
 {
-	static void flatten(const std::string *&x, unsigned long arrayLength, char *dst)
+	static const char* flatten(const std::string *&x, unsigned long arrayLength)
 	{
-		IndexedIODetail::OutputMemoryStream mstream(dst);
+		unsigned long size = IndexedIO::DataSizeTraits<std::string*>::size(x, arrayLength);
+
+		Detail::OutputMemoryStream mstream(new char[size]);
 
 		for (unsigned i = 0; i < arrayLength; i++)
 		{
 			unsigned long stringLength = x[i].size();
 
-			IndexedIODetail::Writer<IndexedIODetail::MemoryStreamIO, IndexedIODetail::OutputMemoryStream, unsigned long>::write (mstream, stringLength);
+			Detail::Writer<Detail::MemoryStreamIO, Detail::OutputMemoryStream, unsigned long>::write (mstream, stringLength);
 
 			memcpy( mstream.next(), x[i].c_str(), stringLength );
 
 			mstream.skip(stringLength);
 		}
+
+		return mstream.head();
 	}
 
 	static void unflatten(const char *src, std::string* &dst, unsigned long arrayLength)
@@ -532,12 +562,12 @@ struct IndexedIO::DataFlattenTraits<std::string*>
 			dst = new std::string[arrayLength];
 		}
 
-		IndexedIODetail::InputMemoryStream mstream(src);
+		Detail::InputMemoryStream mstream(src);
 
 		for (unsigned long i = 0; i < arrayLength; i++)
 		{
 			unsigned long stringLength = 0;
-			IndexedIODetail::Reader<IndexedIODetail::MemoryStreamIO, IndexedIODetail::InputMemoryStream, unsigned long>::read (mstream, stringLength);
+			Detail::Reader<Detail::MemoryStreamIO, Detail::InputMemoryStream, unsigned long>::read (mstream, stringLength);
 
 			dst[i] = std::string(mstream.next(), stringLength);
 			assert(dst[i].size() == stringLength);
@@ -545,6 +575,16 @@ struct IndexedIO::DataFlattenTraits<std::string*>
 			mstream.skip(stringLength);
 		}
 	}
+
+	static void free(const char *x)
+	{
+		if (x)
+		{
+			// Delete the data we allocated in ::flatten
+			delete[] x;
+		}
+	}
 };
 
+} // namespace IndexedIO
 } // namespace IECore

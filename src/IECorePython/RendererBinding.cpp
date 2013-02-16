@@ -126,8 +126,7 @@ static void fillCompoundDataMap( CompoundDataMap &m, const dict &d )
 	boost::python::list keys = d.keys();
 	for( unsigned i=0; i<keys.attr( "__len__" )(); i++ )
 	{
-		const char *c = extract<const char *>( keys[i] );
-		m[c] = extract<DataPtr>( d[keys[i]] );
+		m[extract<const char *>( keys[i] )] = extract<DataPtr>( d[keys[i]] );
 	}
 }
 

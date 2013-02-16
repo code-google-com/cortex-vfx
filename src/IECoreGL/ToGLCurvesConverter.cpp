@@ -36,12 +36,10 @@
 #include "IECore/Exception.h"
 #include "IECore/SimpleTypedData.h"
 #include "IECore/MessageHandler.h"
-#include "IECore/DespatchTypedData.h"
 
 #include "IECoreGL/ToGLCurvesConverter.h"
 #include "IECoreGL/CurvesPrimitive.h"
 
-using namespace std;
 using namespace IECoreGL;
 
 IE_CORE_DEFINERUNTIMETYPED( ToGLCurvesConverter );
@@ -57,49 +55,6 @@ ToGLCurvesConverter::ToGLCurvesConverter( IECore::ConstCurvesPrimitivePtr toConv
 ToGLCurvesConverter::~ToGLCurvesConverter()
 {
 }
-
-/// \todo Maybe this same functionality should be wrapped up in an Op in IECore?
-class ToGLCurvesConverter::ToVertexConverter
-{
-
-	public :
-
-		typedef IECore::DataPtr ReturnType;
-		
-		ToVertexConverter( const vector<int> &vertsPerCurve, size_t numVertices, size_t step )
-			:	m_vertsPerCurve( vertsPerCurve ), m_numVertices( numVertices ), m_step( step )
-		{
-		}
-		
-		template<typename T>
-		IECore::DataPtr operator()( typename T::Ptr inData )
-		{
-			const typename T::Ptr outData = new T();
-			typename T::ValueType &out = outData->writable();
-			out.resize( m_numVertices );
-			
-			size_t inIndex = 0;
-			size_t outIndex = 0;
-			const typename T::ValueType &in = inData->readable();
-			for( vector<int>::const_iterator it = m_vertsPerCurve.begin(), eIt = m_vertsPerCurve.end(); it != eIt; it++ )
-			{
-				for( int i=0; i<*it; i++ )
-				{
-					out[outIndex++] = in[inIndex];
-				}
-				inIndex += m_step;
-			}
-			
-			return outData;
-		}
-		
-	private :
-	
-		const vector<int> &m_vertsPerCurve;
-		size_t m_numVertices;
-		size_t m_step;
-
-};
 
 IECore::RunTimeTypedPtr ToGLCurvesConverter::doConversion( IECore::ConstObjectPtr src, IECore::ConstCompoundObjectPtr operands ) const
 {
@@ -127,24 +82,13 @@ IECore::RunTimeTypedPtr ToGLCurvesConverter::doConversion( IECore::ConstObjectPt
 
 	for ( IECore::PrimitiveVariableMap::const_iterator pIt = curves->variables.begin(); pIt != curves->variables.end(); ++pIt )
 	{
-		if( !pIt->second.data )
-		{
-			IECore::msg( IECore::Msg::Warning, "ToGLCurvesConverter", boost::format( "No data given for primvar \"%s\"" ) % pIt->first );
-			continue;
-		}
-		
-		if( pIt->second.interpolation == IECore::PrimitiveVariable::Vertex || pIt->second.interpolation == IECore::PrimitiveVariable::Constant )
+		if ( pIt->second.data )
 		{
 			result->addPrimitiveVariable( pIt->first, pIt->second );
 		}
-		else if( pIt->second.interpolation == IECore::PrimitiveVariable::Uniform )
+		else
 		{
-			ToVertexConverter converter( curves->verticesPerCurve()->readable(), curves->variableSize( IECore::PrimitiveVariable::Vertex ), 1 );	
-			IECore::DataPtr newData = IECore::despatchTypedData<ToVertexConverter, IECore::TypeTraits::IsVectorTypedData>( pIt->second.data, converter );
-			if( newData )
-			{
-				result->addPrimitiveVariable( pIt->first, IECore::PrimitiveVariable( IECore::PrimitiveVariable::Vertex, newData ) );
-			}
+			IECore::msg( IECore::Msg::Warning, "ToGLCurvesConverter", boost::format( "No data given for primvar \"%s\"" ) % pIt->first );
 		}
 	}
 

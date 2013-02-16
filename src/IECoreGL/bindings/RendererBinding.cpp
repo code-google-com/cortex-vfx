@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,14 +35,10 @@
 #include <boost/python.hpp>
 
 #include "IECore/SimpleTypedData.h"
-
-#include "IECorePython/RunTimeTypedBinding.h"
-
 #include "IECoreGL/Renderer.h"
 #include "IECoreGL/Scene.h"
-#include "IECoreGL/ShaderLoader.h"
-#include "IECoreGL/TextureLoader.h"
 #include "IECoreGL/bindings/RendererBinding.h"
+#include "IECorePython/RunTimeTypedBinding.h"
 
 using namespace boost::python;
 using namespace IECore;
@@ -50,9 +46,9 @@ using namespace IECore;
 namespace IECoreGL
 {
 
-static ShaderLoaderPtr shaderLoader( Renderer &r )
+static ShaderManagerPtr shaderManager( Renderer &r )
 {
-	return r.shaderLoader();
+	return r.shaderManager();
 }
 
 static TextureLoaderPtr textureLoader( Renderer &r )
@@ -78,9 +74,9 @@ void bindRenderer()
 {
 	IECorePython::RunTimeTypedClass<Renderer>()
 		.def( init<>() )
-		.def( "worldBegin", &worldBegin )
+		.def("worldBegin", &worldBegin )
 		.def( "scene", &Renderer::scene )
-		.def( "shaderLoader", &shaderLoader )
+		.def( "shaderManager", &shaderManager )
 		.def( "textureLoader", &textureLoader )
 	;
 }

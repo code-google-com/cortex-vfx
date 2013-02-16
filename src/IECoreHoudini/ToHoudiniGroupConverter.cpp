@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -91,7 +91,7 @@ bool ToHoudiniGroupConverter::doConversion( const VisibleRenderable *renderable,
 	M44fDataPtr transformData = new M44fData( transform );
 	transformOp->matrixParameter()->setValue( transformData );
 	
-	const StringData *groupName = group->blindData()->member<StringData>( "name" );
+	StringDataPtr groupName = group->blindData()->member<StringData>( "name" );
 	
 	const Group::ChildContainer &children = group->children();
 	for ( Group::ChildContainer::const_iterator it=children.begin(); it != children.end(); it++ )
@@ -105,13 +105,10 @@ bool ToHoudiniGroupConverter::doConversion( const VisibleRenderable *renderable,
 			child = staticPointerCast<VisibleRenderable>( transformOp->operate() );
 		}
 		
-		ConstStringDataPtr childName = child->blindData()->member<StringData>( "name" );
+		StringDataPtr childName = child->blindData()->member<StringData>( "name" );
 		if ( !childName && groupName )
 		{
-			// We have to duplicate the object in order to modify it and not affect the input object.
-			VisibleRenderablePtr modifiedChild = child->copy();
-			modifiedChild->blindData()->member<StringData>( "name", false, true )->writable() = groupName->readable();
-			child = modifiedChild;
+			child->blindData()->member<StringData>( "name", false, true )->writable() = groupName->readable();
 		}
 		
 		ToHoudiniGeometryConverterPtr converter = ToHoudiniGeometryConverter::create( child );

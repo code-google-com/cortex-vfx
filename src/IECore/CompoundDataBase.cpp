@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,8 +43,6 @@ using namespace IECore;
 
 namespace IECore
 {
-
-static IndexedIO::EntryID g_membersEntry("members");
 
 IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CompoundDataBase, CompoundDataBaseTypeId )
 
@@ -113,14 +111,16 @@ template<>
 void CompoundDataBase::save( SaveContext *context ) const
 {
 	Data::save( context );
-	IndexedIOPtr container = context->container( staticTypeName(), 0 );
-	container = container->subdirectory( g_membersEntry, IndexedIO::CreateIfMissing );
-	const CompoundDataMap &m = readable();
-	CompoundDataMap::const_iterator it;
-	for( it=m.begin(); it!=m.end(); it++ )
-	{
-		context->save( it->second, container, it->first );
-	}
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), 0 );
+	container->mkdir( "members" );
+	container->chdir( "members" );
+		const CompoundDataMap &m = readable();
+		CompoundDataMap::const_iterator it;
+		for( it=m.begin(); it!=m.end(); it++ )
+		{
+			context->save( it->second, container, it->first );
+		}
+	container->chdir( ".." );
 }
 
 template<>
@@ -128,8 +128,7 @@ void CompoundDataBase::load( LoadContextPtr context )
 {
 	Data::load( context );
 	unsigned int v = 0;
-	ConstIndexedIOPtr container = 0;
-
+	IndexedIOInterfacePtr container = 0;
 	try
 	{
 		container = context->container( staticTypeName(), v );
@@ -143,15 +142,14 @@ void CompoundDataBase::load( LoadContextPtr context )
 	
 	CompoundDataMap &m = writable();
 	m.clear();
-	container = container->subdirectory( g_membersEntry );
-
-	IndexedIO::EntryIDList memberNames;
-	container->entryIds( memberNames );
-	IndexedIO::EntryIDList::const_iterator it;
-	for( it=memberNames.begin(); it!=memberNames.end(); it++ )
-	{
-		m[*it] = context->load<Data>( container, *it );
-	}
+	container->chdir( "members" );
+		IndexedIO::EntryList members = container->ls();
+		IndexedIO::EntryList::const_iterator it;
+		for( it=members.begin(); it!=members.end(); it++ )
+		{
+			m[it->id()] = context->load<Data>( container, it->id() );
+		}
+	container->chdir( ".." );
 }
 
 static inline bool comp( CompoundDataMap::const_iterator a, CompoundDataMap::const_iterator b )

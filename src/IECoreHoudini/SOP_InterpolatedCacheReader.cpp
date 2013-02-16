@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,7 +37,6 @@
 #include "OP/OP_Director.h" 
 #include "PRM/PRM_ChoiceList.h"
 #include "PRM/PRM_Default.h"
-#include "PRM/PRM_Range.h"
 #include "PRM/PRM_Template.h"
 
 #include "IECore/CompoundObject.h"
@@ -57,29 +56,18 @@ static PRM_Name parameterNames[] = {
 	PRM_Name( "objectFixes", "Object Prefix/Suffix" ),
 	PRM_Name( "attributeFixes", "Attribute Prefix/Suffix" ),
 	PRM_Name( "transformAttribute", "Transform Attribute" ),
-	PRM_Name( "samplesPerFrame", "Samples Per Frame" ),
-	PRM_Name( "interpolation", "Interpolation" ),
+	PRM_Name( "frameMultiplier", "Frame Multiplier" ),
 	PRM_Name( "groupingMode", "Grouping Mode" ),
 };
 
-static PRM_Default samplesPerFrameDefault( 1 );
-static PRM_Default interpolationDefault( InterpolatedCache::Linear );
+static PRM_Default frameMultiplierDefault( 1 );
 static PRM_Default groupingModeDefault( SOP_InterpolatedCacheReader::PointGroup );
-
-static PRM_Range samplesPerFrameRange( PRM_RANGE_RESTRICTED, 1, PRM_RANGE_FREE, 20 );
 
 static PRM_Name groupingModeNames[] = {
 	PRM_Name( "0", "PrimitiveGroup" ),
 	PRM_Name( "1", "PointGroup" ),
 };
 
-static PRM_Name interpolationNames[] = {
-	PRM_Name( "0", "None" ),
-	PRM_Name( "1", "Linear" ),
-	PRM_Name( "2", "Cubic" ),
-};
-
-PRM_ChoiceList SOP_InterpolatedCacheReader::interpolationList( PRM_CHOICELIST_SINGLE, &interpolationNames[0] );
 PRM_ChoiceList SOP_InterpolatedCacheReader::groupingModeList( PRM_CHOICELIST_SINGLE, &groupingModeNames[0] );
 
 PRM_Template SOP_InterpolatedCacheReader::parameters[] = {
@@ -87,14 +75,13 @@ PRM_Template SOP_InterpolatedCacheReader::parameters[] = {
 	PRM_Template( PRM_STRING, 2, &parameterNames[1] ),
 	PRM_Template( PRM_STRING, 2, &parameterNames[2] ),
 	PRM_Template( PRM_STRING, 1, &parameterNames[3] ),
-	PRM_Template( PRM_INT, 1, &parameterNames[4], &samplesPerFrameDefault, 0, &samplesPerFrameRange ),
-	PRM_Template( PRM_INT, 1, &parameterNames[5], &interpolationDefault, &interpolationList ),
-	PRM_Template( PRM_INT, 1, &parameterNames[6], &groupingModeDefault, &groupingModeList ),
+	PRM_Template( PRM_INT, 1, &parameterNames[4], &frameMultiplierDefault ),
+	PRM_Template( PRM_INT, 1, &parameterNames[5], &groupingModeDefault, &groupingModeList ),
 	PRM_Template(),
 };
 
 SOP_InterpolatedCacheReader::SOP_InterpolatedCacheReader( OP_Network *net, const char *name, OP_Operator *op )
-	: SOP_Node( net, name, op ), m_cache( 0 ), m_interpolation( InterpolatedCache::Linear ), m_samplesPerFrame( 1 ), m_cacheFileName()
+	: SOP_Node( net, name, op ), m_cache( 0 ), m_cacheFileName(), m_frameMultiplier( -1 )
 {
 	flags().setTimeDep( true );
 }
@@ -140,18 +127,19 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 	evalString( paramVal, "transformAttribute", 0, time );
 	std::string transformAttribute = paramVal.toStdString();
 	
-	int samplesPerFrame = evalInt( "samplesPerFrame", 0, time );
-	InterpolatedCache::Interpolation interpolation = (InterpolatedCache::Interpolation)evalInt( "interpolation", 0, time );
+	int frameMultiplier = evalInt( "frameMultiplier", 0, time );
 	GroupingMode groupingMode = (GroupingMode)evalInt( "groupingMode", 0, time );
 	
 	// create the InterpolatedCache
-	if ( cacheFileName.compare( m_cacheFileName ) != 0 || samplesPerFrame != m_samplesPerFrame || interpolation != m_interpolation )
+	if ( cacheFileName.compare( m_cacheFileName ) != 0 || frameMultiplier != m_frameMultiplier )
 	{
 		try
 		{
 			float fps = OPgetDirector()->getChannelManager()->getSamplesPerSec();
-			OversamplesCalculator calc( fps, samplesPerFrame );
-			m_cache = new InterpolatedCache( cacheFileName, interpolation, calc );
+			/// \todo: expose samplesPerFrame as a parameter
+			OversamplesCalculator calc( fps, 1, (int)fps * frameMultiplier );
+			/// \todo: expose interpolation type as a parameter
+			m_cache = new InterpolatedCache( cacheFileName, InterpolatedCache::Linear, calc );
 		}
 		catch ( IECore::InvalidArgumentException e )
 		{
@@ -161,8 +149,7 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 		}
 		
 		m_cacheFileName = cacheFileName;
-		m_samplesPerFrame = samplesPerFrame;
-		m_interpolation = interpolation;
+		m_frameMultiplier = frameMultiplier;
 	}
 	
 	if ( !m_cache )
@@ -338,7 +325,7 @@ OP_ERROR SOP_InterpolatedCacheReader::cookMySop( OP_Context &context )
 			else if ( groupingMode == PrimitiveGroup )
 			{
 				GA_Range currentRange;
-				unsigned size = despatchTypedData<TypedDataSize, TypeTraits::IsVectorTypedData, DespatchTypedDataIgnoreError>( data );
+				size_t size = despatchTypedData<TypedDataSize, TypeTraits::IsVectorTypedData, DespatchTypedDataIgnoreError>( data );
 				
 				// check for existing attributes
 				if ( gdp->findPrimitiveAttribute( attrName.c_str() ).isValid() && size == primRange.getEntries() )

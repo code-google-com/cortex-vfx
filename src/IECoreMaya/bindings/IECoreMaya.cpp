@@ -90,7 +90,6 @@
 #include "IECoreMaya/bindings/FromMayaImageConverterBinding.h"
 #include "IECoreMaya/bindings/FromMayaStringPlugConverterBinding.h"
 #include "IECoreMaya/bindings/ToMayaCameraConverterBinding.h"
-#include "IECoreMaya/bindings/MayaSceneBinding.h"
 
 using namespace IECore;
 using namespace IECoreMaya;
@@ -154,5 +153,4 @@ BOOST_PYTHON_MODULE(_IECoreMaya)
 	bindFromMayaImageConverter();
 	bindFromMayaStringPlugConverter();
 	bindToMayaCameraConverter();
-	bindMayaScene();
 }

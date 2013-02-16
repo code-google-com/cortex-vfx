@@ -103,12 +103,6 @@ CH_LocalVariable SOP_ParameterisedHolder::variables[] = {
 
 SOP_ParameterisedHolder::SOP_ParameterisedHolder( OP_Network *net, const char *name, OP_Operator *op ) : SOP_Node( net, name, op )
 {
-	IECoreHoudini::MessageHandler::HandlerFn errorFn = boost::bind( &SOP_ParameterisedHolder::addError, this, SOP_MESSAGE, _1 );
-	IECoreHoudini::MessageHandler::HandlerFn warningFn = boost::bind( &SOP_ParameterisedHolder::addWarning, this, SOP_MESSAGE, _1 );
-	IECoreHoudini::MessageHandler::HandlerFn infoFn = boost::bind( &SOP_ParameterisedHolder::addMessage, this, SOP_MESSAGE, _1 );
-	IECore::MessageHandlerPtr h = new IECoreHoudini::MessageHandler( errorFn, warningFn, infoFn, infoFn );
-	m_messageHandler = new IECore::LevelFilteredMessageHandler( h, IECore::LevelFilteredMessageHandler::defaultLevel() );
-	
 	CoreHoudini::initPython();
 	
 	getParm( "__evaluateParameters" ).setExpression( 0, "val = 0\nreturn val", CH_PYTHON, 0 );
@@ -422,6 +416,11 @@ void SOP_ParameterisedHolder::refreshInputConnections()
 	/// \todo: Is this really the only we can get the gui to update the input connections?
 	setXY( getX()+.0001, getY()+.0001 );
 	setXY( getX()-.0001, getY()-.0001 );
+}
+
+void SOP_ParameterisedHolder::setInputParameterValues()
+{
+	setInputParameterValues( 0 );
 }
 
 void SOP_ParameterisedHolder::setInputParameterValues( float now )
@@ -1008,9 +1007,13 @@ void SOP_ParameterisedHolder::updateParameter( ParameterPtr parm, float now, std
 	}
 }
 
-IECore::MessageHandler *SOP_ParameterisedHolder::messageHandler()
+IECore::MessageHandlerPtr SOP_ParameterisedHolder::messageHandler()
 {
-	return m_messageHandler.get();
+	IECoreHoudini::MessageHandler::HandlerFn errorFn = boost::bind( &SOP_ParameterisedHolder::addError, this, SOP_MESSAGE, _1 );
+	IECoreHoudini::MessageHandler::HandlerFn warningFn = boost::bind( &SOP_ParameterisedHolder::addWarning, this, SOP_MESSAGE, _1 );
+	IECoreHoudini::MessageHandler::HandlerFn infoFn = boost::bind( &SOP_ParameterisedHolder::addMessage, this, SOP_MESSAGE, _1 );
+	IECore::MessageHandlerPtr h = new IECoreHoudini::MessageHandler( errorFn, warningFn, infoFn, infoFn );
+	return new IECore::LevelFilteredMessageHandler( h, IECore::LevelFilteredMessageHandler::defaultLevel() );
 }
 
 void SOP_ParameterisedHolder::classNames( const std::string searchPathEnvVar, const std::string &matchString, std::vector<std::string> &names )

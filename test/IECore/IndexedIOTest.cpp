@@ -34,6 +34,7 @@
 
 #include <iostream>
 
+#include "IECore/IndexedIOInterface.h"
 #include "IECore/FileIndexedIO.h"
 
 #include "IndexedIOTest.h"

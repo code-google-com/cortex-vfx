@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,31 +35,30 @@
 #ifndef IECOREGL_FRAMEBUFFER_H
 #define IECOREGL_FRAMEBUFFER_H
 
-#include <vector>
-
-#include "IECore/RunTimeTyped.h"
-
 #include "IECoreGL/GL.h"
-#include "IECoreGL/TypeIds.h"
+#include "IECoreGL/Bindable.h"
+
+#include <vector>
 
 namespace IECoreGL
 {
 
-IE_CORE_FORWARDDECLARE( Texture );
+IE_CORE_FORWARDDECLARE( ColorTexture );
 IE_CORE_FORWARDDECLARE( DepthTexture );
 
 /// The FrameBuffer object provides a nice reference counted wrapper
 /// around the OpenGL framebuffer object extension. It uses the Texture
 /// classes to set the components of the framebuffer.
-class FrameBuffer : public IECore::RunTimeTyped
+class FrameBuffer : public Bindable
 {
 	public :
 
-		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::FrameBuffer, FrameBufferTypeId, IECore::RunTimeTyped );
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( IECoreGL::FrameBuffer, FrameBufferTypeId, Bindable );
 
 		/// Makes a new framebuffer. At this point the buffer is empty - you must use
 		/// the set*() functions below to provide locations to draw to before using
-		/// it.
+		/// it. Throws an Exception if framebuffers are not supported by the OpenGL
+		/// implementation.
 		FrameBuffer();
 		virtual ~FrameBuffer();
 
@@ -68,13 +67,13 @@ class FrameBuffer : public IECore::RunTimeTyped
 		static unsigned int maxColors();
 		/// Sets the texture to render colour output to. Multiple color outputs
 		/// may be specified by specifying several indices
-		void setColor( TexturePtr texture, unsigned int index = 0 );
+		void setColor( ColorTexturePtr texture, unsigned int index = 0 );
 		/// Returns the texture being used for the specified color channel, or
 		/// 0 if no such texture has been specified.
-		TexturePtr getColor( unsigned int index = 0 );
+		ColorTexturePtr getColor( unsigned int index = 0 );
 		/// Returns the texture being used for the specified color channel, or
 		/// 0 if no such texture has been specified.
-		ConstTexturePtr getColor( unsigned int index = 0 ) const;
+		ConstColorTexturePtr getColor( unsigned int index = 0 ) const;
 		/// Sets the texture to be used as the depth buffer.
 		void setDepth( DepthTexturePtr depthTexture );
 		/// Returns the texture being used for the depth buffer, or 0 if
@@ -88,32 +87,18 @@ class FrameBuffer : public IECore::RunTimeTyped
 		/// framebuffer.
 		void validate() const;
 
-		/// The ScopedBinding class allows the FrameBuffer to be bound to a target
-		/// for a specific duration, without worrying about remembering to
-		/// unbind it.
-		class ScopedBinding
-		{
-			
-			public :
-			
-				/// Binds the specified FrameBuffer to the specified target.
-				ScopedBinding( const FrameBuffer &frameBuffer, GLenum target = GL_FRAMEBUFFER  );
-				/// Rebinds the previously bound FrameBuffer.
-				~ScopedBinding();
-				
-			private :
-			
-				GLenum m_target;
-				GLint m_prevDrawBuffer;
-				GLint m_prevReadBuffer;
-			
-		};
+		/// Binds the framebuffer as the current GL buffer.
+		virtual void bind() const;
 
 	private :
 
 		GLuint m_frameBuffer;
-		std::vector<TexturePtr> m_colorAttachments;
+		std::vector<ColorTexturePtr> m_colorAttachments;
 		DepthTexturePtr m_depthAttachment;
+
+		void saveAndBind() const;
+		void restore() const;
+		mutable GLint m_savedFrameBuffer;
 
 };
 

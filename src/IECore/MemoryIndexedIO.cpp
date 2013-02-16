@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,66 +38,53 @@
 
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPEDDESCRIPTION( MemoryIndexedIO )
-
-///////////////////////////////////////////////
-//
-// FileIndexedIO::StreamFile (begin)
-//
-///////////////////////////////////////////////
-
-class MemoryIndexedIO::StreamFile : public StreamIndexedIO::StreamFile
-{
-	public:
-		StreamFile( const char *buf, size_t size, IndexedIO::OpenMode mode );
-
-		CharVectorDataPtr buffer();
-
-		virtual ~StreamFile();
-};
-
-MemoryIndexedIO::StreamFile::StreamFile( const char *buf, size_t size, IndexedIO::OpenMode mode ) : StreamIndexedIO::StreamFile(mode)
+MemoryIndexedIO::MemoryIndexedIO( ConstCharVectorDataPtr buf, const IndexedIO::EntryID &root, IndexedIO::OpenMode mode)
+: FileIndexedIO()
 {
 	if (mode & IndexedIO::Write)
 	{
 		std::stringstream *f = new std::stringstream( std::ios::trunc | std::ios::binary | std::ios::in | std::ios::out );
-		setStream( f, true );
+
+		open( f, root, mode, true );
 	}
 	else if (mode & IndexedIO::Append)
 	{
-		if ( !buf || !size )
+		if ( !buf || ! buf->readable().size() )
 		{
 			/// Create new file
 			std::stringstream *f = new std::stringstream(  std::ios::trunc | std::ios::binary | std::ios::in | std::ios::out );
-			setStream( f, true );
+
+			open( f, root, mode, true );
 		}
 		else
 		{
-			/// Read existing file
 			assert( buf );
 
 			/// Read existing file
-			std::stringstream *f = new std::stringstream( std::string(buf, size), std::ios::binary | std::ios::in | std::ios::out );
-			setStream( f, false );
+			std::stringstream *f = new std::stringstream( std::string( &buf->readable()[0], buf->readable().size() ), std::ios::binary | std::ios::in | std::ios::out );
+
+			open( f, root, mode );
 		}
 	}
 	else
 	{
 		assert( buf );
 		assert( mode & IndexedIO::Read );
-		std::stringstream *f = new std::stringstream( std::string(buf, size), std::ios::binary | std::ios::in | std::ios::out );
-		setStream( f, false );
+		std::stringstream *f = new std::stringstream( std::string( &buf->readable()[0], buf->readable().size() ), std::ios::binary | std::ios::in | std::ios::out );
+
+		open( f, root, mode );
 	}
-	assert( m_stream );
-	assert( m_stream->is_complete() );
-	assert( m_index );
 }
 
-CharVectorDataPtr MemoryIndexedIO::StreamFile::buffer()
+MemoryIndexedIO::~MemoryIndexedIO()
+{
+}
+
+ConstCharVectorDataPtr MemoryIndexedIO::buffer()
 {
 	boost::optional<Imf::Int64> indexEnd = flush();
 
-	std::stringstream *s = static_cast< std::stringstream *>( m_stream );
+	std::stringstream *s = dynamic_cast< std::stringstream *>( device() ) ;
 	assert( s );
 
 	CharVectorData::ValueType d;
@@ -115,50 +102,4 @@ CharVectorDataPtr MemoryIndexedIO::StreamFile::buffer()
 	}
 
 	return new CharVectorData( d );
-}
-
-MemoryIndexedIO::StreamFile::~StreamFile()
-{
-}
-
-///////////////////////////////////////////////
-//
-// MemoryIndexedIO::StreamFile (end)
-//
-///////////////////////////////////////////////
-
-
-MemoryIndexedIO::MemoryIndexedIO( ConstCharVectorDataPtr buf, const IndexedIO::EntryIDList &root, IndexedIO::OpenMode mode)
-{
-	const char *bufPtr = 0;
-	size_t size = 0;
-	if ( buf )
-	{
-		bufPtr = &(buf->readable()[0]);
-		size = buf->readable().size();
-	}
-	open( new StreamFile( bufPtr, size, mode ), root, mode );
-}
-
-MemoryIndexedIO::MemoryIndexedIO( const MemoryIndexedIO *other ) : StreamIndexedIO( other )
-{
-}
-
-MemoryIndexedIO::~MemoryIndexedIO()
-{
-}
-
-CharVectorDataPtr MemoryIndexedIO::buffer()
-{
-	StreamFile *stream = static_cast<StreamFile*>( m_streamFile.get() );
-	return stream->buffer();
-}
-
-IndexedIO * MemoryIndexedIO::duplicate(Node *rootNode) const
-{
-	// duplicate the IO interface changing the current node
-	MemoryIndexedIO *other = new MemoryIndexedIO( this );
-	assert( rootNode );
-	other->m_node = rootNode;
-	return other;
 }

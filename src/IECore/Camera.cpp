@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,9 +44,6 @@ using namespace std;
 
 IE_CORE_DEFINEOBJECTTYPEDESCRIPTION(Camera);
 
-static IndexedIO::EntryID g_nameEntry("name");
-static IndexedIO::EntryID g_transformEntry("transform");
-static IndexedIO::EntryID g_parametersEntry("parameters");
 const unsigned int Camera::m_ioVersion = 0;
 
 Camera::Camera( const std::string &name, TransformPtr transform, CompoundDataPtr parameters )
@@ -77,31 +74,31 @@ void Camera::copyFrom( const Object *other, CopyContext *context )
 void Camera::save( SaveContext *context ) const
 {
 	PreWorldRenderable::save( context );
-	IndexedIOPtr container = context->container( staticTypeName(), m_ioVersion );
-	container->write( g_nameEntry, m_name );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), m_ioVersion );
+	container->write( "name", m_name );
 	if( m_transform )
 	{
-		context->save( m_transform, container, g_transformEntry );
+		context->save( m_transform, container, "transform" );
 	}
-	context->save( m_parameters, container, g_parametersEntry );
+	context->save( m_parameters, container, "parameters" );
 }
 
 void Camera::load( LoadContextPtr context )
 {
 	PreWorldRenderable::load( context );
 	unsigned int v = m_ioVersion;
-	ConstIndexedIOPtr container = context->container( staticTypeName(), v );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 
-	container->read( g_nameEntry, m_name );
+	container->read( "name", m_name );
 	m_transform = 0;
 	try
 	{
-		m_transform = context->load<Transform>( container, g_transformEntry );
+		m_transform = context->load<Transform>( container, "transform" );
 	}
 	catch( ... )
 	{
 	}
-	m_parameters = context->load<CompoundData>( container, g_parametersEntry );
+	m_parameters = context->load<CompoundData>( container, "parameters" );
 }
 
 bool Camera::isEqualTo( const Object *other ) const

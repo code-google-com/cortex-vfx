@@ -68,8 +68,6 @@ class ToGLCurvesConverter : public ToGLConverter
 
 	private :
 	
-		class ToVertexConverter;
-	
 		static ConverterDescription<ToGLCurvesConverter> g_description;
 
 };
