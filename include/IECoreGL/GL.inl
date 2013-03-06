@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,48 +32,42 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-/// \file GL.h
-/// Include this file to include the system OpenGL headers. It's better this way as the
-/// right way of including OpenGL varies from system to system.
-
-#ifndef IECOREGL_GL_H
-#define IECOREGL_GL_H
-
-// now we're using glew we can just include that instead
-// and it'll do all the cross platform worrying for us
-#include "glew.h"
-
-#include "OpenEXR/ImathVec.h"
-#include "OpenEXR/ImathColor.h"
+#ifndef IECOREGL_GL_INL
+#define IECOREGL_GL_INL
 
 namespace IECoreGL
 {
 
-inline void glColor( const Imath::V3f &c );
-inline void glColor( const Imath::Color4f &c );
-inline void glVertex( const Imath::V3f &v );
-inline void glNormal( const Imath::V3f &n );
-inline void glTranslate( const Imath::V2f &t );
-inline void glTranslate( const Imath::V3f &t );
-
-class PushAttrib
+inline void glColor( const Imath::V3f &c )
 {
-	public :
-	
-		PushAttrib( GLbitfield mask )
-		{
-			glPushAttrib( mask );
-		}
+	glColor3fv( c.getValue() );
+}
 
-		~PushAttrib()
-		{
-			glPopAttrib();
-		}
-		
-};
+inline void glColor( const Imath::Color4f &c )
+{
+	glColor4fv( c.getValue() );
+}
+
+inline void glVertex( const Imath::V3f &v )
+{
+	glVertex3f( v.x, v.y, v.z );
+}
+
+inline void glNormal( const Imath::V3f &n )
+{
+	glNormal3f( n.x, n.y, n.z );
+}
+
+inline void glTranslate( const Imath::V2f &t )
+{
+	glTranslatef( t.x, t.y, 0 );
+}
+
+inline void glTranslate( const Imath::V3f &t )
+{
+	glTranslatef( t.x, t.y, t.z );
+}
 
 } // namespace IECoreGL
 
-#include "IECoreGL/GL.inl"
-
-#endif // IECOREGL_GL_H
+#endif // IECOREGL_GL_INL
