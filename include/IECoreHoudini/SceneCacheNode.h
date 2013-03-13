@@ -93,26 +93,19 @@ class SceneCacheNode : public BaseType
 		void setPath( const IECore::SceneInterface *scene );
 		Space getSpace();
 		void setSpace( Space space );
-		
-		/// Access point to the cache of existing files.
-		/// \todo: replace with the central IECore version once it is finalized.
+	
+		/// Access point to the actual SceneCache. All derived classes should only access the cache
+		/// using this method, and must hold onto an EntryPtr retrieved from this utility while
+		/// reading the SceneCache.
 		static SceneCacheUtil::Cache &cache();
 	
 	protected :
-		
-		/// Access point to the actual SceneCache. All derived classes should only access the cache
-		/// using this method, in order to avoid re-opening existing files.
-		IECore::ConstSceneInterfacePtr scene( const std::string &fileName, const std::string &path );
-		
-		/// Computes the worldTransform for the specified path
-		Imath::M44d worldTransform( const std::string &fileName, const std::string &path, double time );
 		
 		/// Called from setFile, setPath, and when either the file or path parameters are changed.
 		/// The default implementation does nothing. Derived nodes may override this if convenient.
 		virtual void sceneChanged();
 		/// get the file and ensure it is a valid SCC
 		bool ensureFile( std::string &file );
-		
 		/// get a breadth first list of all descendant paths
 		void descendantNames( const IECore::SceneInterface *scene, std::vector<std::string> &descendants );
 		/// get a depth first list of all object names
@@ -124,7 +117,7 @@ class SceneCacheNode : public BaseType
 
 namespace SceneCacheUtil
 {
-/// \todo: remove once the central IECore version is finalized.
+/// \todo: much of this is copied from GafferScene::SceneReader. Can we put it somewhere common instead?
 class Cache
 {
 	
@@ -136,15 +129,46 @@ class Cache
 	
 		Cache();
 		
-		IECore::ConstSceneInterfacePtr get( const std::string &fileName );
+		/// This class provides access to a particular location within the SceneCache,
+		/// and ensures that access is threadsafe by holding a mutex on the file.
+		class Entry : public IECore::RefCounted
+		{
+		
+			public :
+			
+				const IECore::SceneInterface *sceneCache();
+			
+			private :
+			
+				Entry( FileAndMutexPtr fileAndMutex );
+				
+				FileAndMutexPtr m_fileAndMutex;
+				IECore::ConstSceneInterfacePtr m_entry;
+				
+				friend class Cache;
+		
+		};
+		
+		IE_CORE_DECLAREPTR( Entry )
+		
+		EntryPtr entry( const std::string &fileName, const std::string &path );
+		Imath::M44d worldTransform( const std::string &fileName, const std::string &path, double time );
 		void erase( const std::string &fileName );
 		void clear();
 	
 	private :
 	
-		static IECore::ConstSceneInterfacePtr fileCacheGetter( const std::string &fileName, size_t &cost );
+		class FileAndMutex : public IECore::RefCounted
+		{
+			public :
+				
+				IECore::SceneInterfacePtr file;
+				
+		};
+				
+		static FileAndMutexPtr fileCacheGetter( const std::string &fileName, size_t &cost );
 		
-		typedef IECore::LRUCache<std::string, IECore::ConstSceneInterfacePtr> FileCache;
+		typedef IECore::LRUCache<std::string, FileAndMutexPtr> FileCache;
 		FileCache m_fileCache;
 
 };

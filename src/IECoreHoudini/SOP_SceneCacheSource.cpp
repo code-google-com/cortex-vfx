@@ -130,7 +130,9 @@ void SOP_SceneCacheSource::buildShapeFilterMenu( void *data, PRM_Name *menu, int
 		return;
 	}
 	
-	ConstSceneInterfacePtr scene = node->scene( file, node->getPath() );
+	std::vector<std::string> objects;
+	SceneCacheUtil::Cache::EntryPtr entry = cache().entry( file, node->getPath() );
+	const SceneInterface *scene = entry->sceneCache();
 	if ( !scene )
 	{
 		// mark the end of our menu
@@ -138,7 +140,6 @@ void SOP_SceneCacheSource::buildShapeFilterMenu( void *data, PRM_Name *menu, int
 		return;
 	}
 	
-	std::vector<std::string> objects;
 	node->objectNames( scene, objects );
 	node->createMenu( menu, objects );
 }
@@ -173,16 +174,17 @@ OP_ERROR SOP_SceneCacheSource::cookMySop( OP_Context &context )
 	}
 	attributeFilter.compile( value );
 	
-	ConstSceneInterfacePtr scene = this->scene( file, path );
+	Space space = getSpace();
+	Imath::M44d transform = ( space == World ) ? cache().worldTransform( file, path, context.getTime() ) : Imath::M44d();
+	
+	SceneCacheUtil::Cache::EntryPtr entry = cache().entry( file, path );
+	const SceneInterface *scene = entry->sceneCache();
 	if ( !scene )
 	{
 		addError( SOP_ATTRIBUTE_INVALID, ( path + " is not a valid location in " + file ).c_str() );
 		gdp->destroyStashed();
 		return error();
 	}
-	
-	Space space = getSpace();
-	Imath::M44d transform = ( space == World ) ? worldTransform( file, path, context.getTime() ) : Imath::M44d();
 	
 	loadObjects( scene, transform, context.getTime(), space, shapeFilter, attributeFilter );
 	
@@ -215,11 +217,18 @@ void SOP_SceneCacheSource::loadObjects( const IECore::SceneInterface *scene, Ima
 		
 		transformObject( object, currentTransform );
 		
-		if ( !convertObject( object, fullName ) )
+		VisibleRenderable *renderable = IECore::runTimeCast<VisibleRenderable>( object );
+		if ( renderable )
 		{
-			addError( SOP_LOAD_UNKNOWN_BINARY_FLAG, ( "Could not convert " + fullName + " to houdini" ).c_str() );
+			ToHoudiniGeometryConverterPtr converter = ToHoudiniGeometryConverter::create( renderable );
+			if ( !converter || !converter->convert( myGdpHandle ) )
+			{
+				addError( SOP_LOAD_UNKNOWN_BINARY_FLAG, ( "Could not convert " + fullName + " to houdini" ).c_str() );
+			}
 		}
 	}
+	
+	/// \todo: don't recurse to children if shapeFilter is a single item matching scene->name()
 	
 	SceneInterface::NameList children;
 	scene->childNames( children );
@@ -290,23 +299,6 @@ IECore::ObjectPtr SOP_SceneCacheSource::transformObject( IECore::Object *object,
 	}
 	
 	return object;
-}
-
-bool SOP_SceneCacheSource::convertObject( IECore::Object *object, std::string &name )
-{
-	VisibleRenderable *renderable = IECore::runTimeCast<VisibleRenderable>( object );
-	if ( !renderable )
-	{
-		return false;
-	}
-	
-	ToHoudiniGeometryConverterPtr converter = ToHoudiniGeometryConverter::create( renderable );
-	if ( !converter || !converter->convert( myGdpHandle ) )
-	{
-		return false;
-	}
-	
-	return true;
 }
 
 MatrixTransformPtr SOP_SceneCacheSource::matrixTransform( Imath::M44d t )

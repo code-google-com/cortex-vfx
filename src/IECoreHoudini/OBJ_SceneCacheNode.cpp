@@ -124,8 +124,10 @@ int OBJ_SceneCacheNode<BaseType>::buildButtonCallback( void *data, int index, fl
 		return 0;
 	}
 	
+	SceneCacheUtil::Cache::EntryPtr entry = node->cache().entry( file, node->getPath() );
+	
 	node->cleanHierarchy();
-	node->buildHierarchy( node->scene( file, node->getPath() ) );
+	node->buildHierarchy( entry->sceneCache() );
 	
 	return 1;
 }
@@ -156,15 +158,15 @@ void OBJ_SceneCacheNode<BaseType>::sceneChanged()
 	
 	std::string path = this->getPath();
 	
-	ConstSceneInterfacePtr scene = this->scene( file, path );
-	const SampledSceneInterface *sampledScene = IECore::runTimeCast<const SampledSceneInterface>( scene );
-	if ( !sampledScene )
+	SceneCacheUtil::Cache::EntryPtr entry = SceneCacheNode<BaseType>::cache().entry( file, path );
+	const SampledSceneInterface *scene = IECore::runTimeCast<const SampledSceneInterface>( entry->sceneCache() );
+	if ( !scene )
 	{
 		m_static = false;
 		return;
 	}
 	
-	m_static = ( sampledScene->numTransformSamples() < 2 );
+	m_static = ( scene->numTransformSamples() < 2 );
 }
 
 template<typename BaseType>
@@ -194,7 +196,7 @@ bool OBJ_SceneCacheNode<BaseType>::getParmTransform( OP_Context &context, UT_DMa
 	}
 	
 	std::string path = this->getPath();
-	ConstSceneInterfacePtr scene = this->scene( file, path );
+	const SceneInterface *scene = SceneCacheNode<BaseType>::cache().entry( file, path )->sceneCache();
 	if ( !scene )
 	{
 		SceneCacheNode<BaseType>::addError( OBJ_ERR_CANT_FIND_OBJ, ( path + " is not a valid location in " + file ).c_str() );
@@ -204,11 +206,11 @@ bool OBJ_SceneCacheNode<BaseType>::getParmTransform( OP_Context &context, UT_DMa
 	Imath::M44d transform;
 	if ( space == SceneCacheNode<OP_Node>::World )
 	{
-		transform = SceneCacheNode<BaseType>::worldTransform( file, path, context.getTime() );
+		transform = SceneCacheNode<BaseType>::cache().worldTransform( file, path, context.getTime() );
 	}
 	else if ( space == SceneCacheNode<OP_Node>::Local )
 	{
-		transform = scene->readTransformAsMatrix( context.getTime() );
+		transform = SceneCacheNode<BaseType>::cache().entry( file, path )->sceneCache()->readTransformAsMatrix( context.getTime() );
 	}
 	
 	xform = IECore::convert<UT_Matrix4D>( transform );
