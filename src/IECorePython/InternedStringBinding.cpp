@@ -78,6 +78,30 @@ struct InternedStringFromPython
 	}
 };
 
+static string repr( const InternedString &str )
+{
+	stringstream s;
+	s << "IECore.InternedString(\"" << str.value() << "\")";
+	return s.str();
+}
+
+static size_t hash( const InternedString &str )
+{
+	union {
+		const char *p;
+		size_t hashComponents[ sizeof(char*)/sizeof(size_t) ];
+	} v;
+
+	v.p = str.c_str();
+
+	size_t result = v.hashComponents[0];
+	for ( unsigned int i = 1; i < sizeof(char*)/sizeof(unsigned int); i++ )
+	{
+		result ^= v.hashComponents[i];
+	}
+	return result;
+}
+
 void bindInternedString()
 {
 
@@ -89,6 +113,8 @@ void bindInternedString()
 		.def( self == self )
 		.def( self != self )
 		.def( "numUniqueStrings", &InternedString::numUniqueStrings ).staticmethod( "numUniqueStrings" )
+		.def( "__repr__", &repr )
+		.def( "__hash__", &hash )
 	;
 	implicitly_convertible<InternedString, string>();
 

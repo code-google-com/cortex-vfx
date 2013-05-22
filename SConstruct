@@ -1009,7 +1009,7 @@ env.Append(
 		"-DIE_CORE_MAJORVERSION=$IECORE_MAJOR_VERSION",
 		"-DIE_CORE_MINORVERSION=$IECORE_MINOR_VERSION",
 		"-DIE_CORE_PATCHVERSION=$IECORE_PATCH_VERSION",
-		"-DBOOST_FILESYSTEM_VERSION=2",
+		"-DBOOST_FILESYSTEM_VERSION=3",
 	]
 )
 
@@ -1656,6 +1656,10 @@ if doConfigure :
 		if c.CheckFunc( "RiObjectBeginV" ) :
 			
 			riEnv.Append( CPPFLAGS = [ "-DIECORERI_WITH_OBJECTBEGINV" ] )
+			
+		if c.CheckFunc( "RiProceduralV" ) :
+			
+			riEnv.Append( CPPFLAGS = [ "-DIECORERI_WITH_PROCEDURALV" ] )
 		
 		if haveDelight and c.CheckCXXHeader( "sx.h" ) and c.CheckFunc( "SxGetParameter" ) :
 		

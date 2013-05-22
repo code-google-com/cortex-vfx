@@ -1,5 +1,6 @@
 Additions :
 
+* Added Maya converters for IECore.CoordinateSystem to/from Maya Locators.
 * Added the LensModel and StandardRadialLensModel classes to provide a framework for applying or removing lens distortion.
 * Added the LensDistortOp which distorts or undistorts an image using a parametric lens model.
 * Added the ieLensDistort node to IECoreNuke. The node can apply or remove lens distortion using any of the lens models registered to Cortex.
@@ -52,9 +53,11 @@ Improvements :
 * IECoreHoudini To/FromHoudiniGeometryConverters automatically convert standard attributes between Cortex and Houdini (Pref->rest ; Cs->Cd ; s,t->uv, etc and vice versa). This behaviour can be disabled with a parameter, but is on by default (and hence is used by the file sop and other reader nodes).
 * CameraController::dolly() behaviour now produces smoother movement.
 * IECoreMaya::ToMayaMeshConverter now using compressed UV arrays matching uv indices to set uv values in addUVSet.
+* IECoreMaya::ToMayaMeshConverter and IECoreMaya::FromMayaMeshConverter now supports a custom attribute 'ieMeshInterpolation' on meshes that translate to the interpolation type in the IECore::MeshPrimitive. 
 * Added DisplayDriver::acceptsRepeatedData(), enabling the ImageDisplayDriver to support progressive rendering and rerendering when used via IECoreRI.
 * IECoreRI::ParameterList now accepts V2iData, converting it to RenderMan "integer[2]".
 * Added Renderer option "editable", along with editBegin() and editEnd() methods, to allow interactive rerendering functionality to be implemented. These are currently only implemented by IECoreRI::Renderer.
+* Switched to Boost Filesystem version 3
 
 Bug Fixes :
 
@@ -64,6 +67,10 @@ Bug Fixes :
 * IECore ImageReader and ImageWriter not doing transformation on alpha anymore, A gets filtered out from the channel names given to ColorSpaceTransformOp.
 * IECore ColorSpaceTransformOp applies unpremult before channelOp conversion then premult after, as channelOp doesn't deal with unpremultiplication of the colour channels.
 * Removed rounding hack in OversamplesCalculator.
+* Maya intField created to display IntParameter now has step size set to 1 ( if min or max are set ).  This prevents a warning when creating fields for parameters with max - min less than the default step of 10.
+* Preventing segfaults when CompoundData and CompoundObject have items with NULL pointers.
+* Preventing segfaults when Parameter's default values are initialized with NULL pointers (or the Python None object).
+* ieFilteredAbs corrected to return positive values, ieTurbulence monochrome variant now filtered
 
 7.10.2 :
 

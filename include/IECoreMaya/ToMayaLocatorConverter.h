@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2013 Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,33 +32,38 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IECORERI_DYNAMICLOADPROCEDURAL_H
-#define IECORERI_DYNAMICLOADPROCEDURAL_H
+#ifndef IECOREMAYA_TOMAYALOCATORCONVERTER_H
+#define IECOREMAYA_TOMAYALOCATORCONVERTER_H
 
-#include "IECore/Renderer.h"
+#include "IECoreMaya/ToMayaObjectConverter.h"
 
-namespace IECoreRI
+namespace IECoreMaya
 {
 
-class DynamicLoadProcedural : public IECore::Renderer::Procedural
+/// Converts an IECore::CoordinateSystem to a Maya locator.
+/// Converting to an existing locator or parent of a locator will alter
+/// the locator without renaming the locator. Converting to a transform
+/// that doesn't contain a locator will create a new locator parented
+/// under that transform and named according to coordinateSystem->getName()
+/// \ingroup conversionGroup
+class ToMayaLocatorConverter : public ToMayaObjectConverter
 {
+	public:
 
-	public :
+		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( ToMayaLocatorConverter, ToMayaLocatorConverterTypeId, ToMayaObjectConverter );
 
-		DynamicLoadProcedural( const Imath::Box3f &bound, const std::string &dsoName, const std::string &dsoData );
-		virtual ~DynamicLoadProcedural();
+		ToMayaLocatorConverter( IECore::ConstObjectPtr object );
 
-		virtual Imath::Box3f bound();
-		virtual void render( IECore::RendererPtr renderer );
+	protected:
 
-	private :
+		virtual bool doConversion( IECore::ConstObjectPtr from, MObject &to, IECore::ConstCompoundObjectPtr operands ) const;
 
-		Imath::Box3f m_bound;
-		std::string m_dsoName;
-		std::string m_dsoData;
+	private:
 
+		typedef ToMayaObjectConverterDescription<ToMayaLocatorConverter> Description;
+		static Description g_description;
 };
 
-} // namespace IECoreRI
+} // namespace IECoreMaya
 
-#endif // IECORERI_DYNAMICLOADPROCEDURAL_H
+#endif // IECOREMAYA_TOMAYALOCATORCONVERTER_H

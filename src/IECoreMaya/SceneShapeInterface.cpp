@@ -34,7 +34,8 @@
 
 #include "IECoreMaya/SceneShapeInterface.h"
 
-#include <boost/python.hpp>
+#include "boost/python.hpp"
+#include "boost/tokenizer.hpp"
 
 #include "OpenEXR/ImathMatrixAlgo.h"
 #include "OpenEXR/ImathBoxAlgo.h"
@@ -66,6 +67,8 @@
 #include "IECore/SampledSceneInterface.h"
 #include "IECore/CurvesPrimitive.h"
 #include "IECore/TransformOp.h"
+#include "IECore/CoordinateSystem.h"
+#include "IECore/Transform.h"
 
 #include "maya/MFnNumericAttribute.h"
 #include "maya/MFnEnumAttribute.h"
@@ -95,6 +98,7 @@ MObject SceneShapeInterface::aObjectOnly;
 MObject SceneShapeInterface::aDrawGeometry;
 MObject SceneShapeInterface::aDrawRootBound;
 MObject SceneShapeInterface::aDrawChildBounds;
+MObject SceneShapeInterface::aDrawTagsFilter;
 MObject SceneShapeInterface::aQuerySpace;
 MObject SceneShapeInterface::aTime;
 MObject SceneShapeInterface::aSceneQueries;
@@ -200,7 +204,12 @@ MStatus SceneShapeInterface::initialize()
 	nAttr.setChannelBox( true );
 
 	s = addAttribute( aDrawChildBounds );
-	
+
+	aDrawTagsFilter = tAttr.create( "drawTagsFilter", "dtf", MFnData::kString, MFnStringData().create( "" ), &s );
+	assert( s );
+	s = addAttribute( aDrawTagsFilter );
+	assert( s );
+
 	aQuerySpace = eAttr.create( "querySpace", "qsp", 0);
 	eAttr.addField( "World", World );
 	eAttr.addField( "Local", Local );
@@ -245,6 +254,7 @@ MStatus SceneShapeInterface::initialize()
 	aOutputObjects = gAttr.create( "outObjects", "oob", &s );
 	gAttr.addDataAccept( MFnMeshData::kMesh );
 	gAttr.addDataAccept( MFnNurbsCurveData::kNurbsCurve );
+	gAttr.addNumericDataAccept( MFnNumericData::k3Double );
 	gAttr.setReadable( true );
 	gAttr.setWritable( false );
 	gAttr.setStorable( false );
@@ -555,7 +565,7 @@ MStatus SceneShapeInterface::setDependentsDirty( const MPlug &plug, MPlugArray &
 			}
 		}
 	}
-	else if( plug == aDrawGeometry || plug == aDrawChildBounds || plug == aObjectOnly )
+	else if( plug == aDrawGeometry || plug == aDrawChildBounds || plug == aObjectOnly || plug == aDrawTagsFilter )
 	{
 		// Preview plug values have changed, GL Scene is dirty
 		m_previewSceneDirty = true;
@@ -671,7 +681,7 @@ MStatus SceneShapeInterface::compute( const MPlug &plug, MDataBlock &dataBlock )
 			MArrayDataBuilder outputBuilder = outputDataHandle.builder();
 
 			ObjectPtr object = scene->readObject( time.as( MTime::kSeconds ) );
-			
+
 			if( querySpace == World )
 			{
 				// If world space, need to transform the object using the concatenated matrix from the sceneInterface path to the query path
@@ -685,35 +695,55 @@ MStatus SceneShapeInterface::compute( const MPlug &plug, MDataBlock &dataBlock )
 				object = transformer->operate();
 			}
 
-			ToMayaObjectConverterPtr converter = ToMayaObjectConverter::create( object );
-
-			if( converter )
+			IECore::TypeId type = object->typeId();
+			if( type == CoordinateSystemTypeId )
 			{
-				MObject data;
-				// Check the type for now, because a dag node is created if you pass an empty MObject to the converter
-				// Won't be needed anymore when the related todo is addressed in the converter
-				IECore::TypeId type = object->typeId();
-				if( type == MeshPrimitiveTypeId )
+				IECore::ConstCoordinateSystemPtr coordSys = IECore::runTimeCast<const CoordinateSystem>( object );
+				Imath::M44f m = coordSys->getTransform()->transform();
+				Imath::V3f s,h,r,t;
+				Imath::extractSHRT(m, s, h, r, t);
+
+				MFnNumericData fnData;
+				MObject data = fnData.create( MFnNumericData::k3Double );
+				fnData.setData( (double)t[0], (double)t[1], (double)t[2] );
+
+				MDataHandle handle = outputBuilder.addElement( index );
+				handle.set( data );
+			}
+			else
+			{
+				ToMayaObjectConverterPtr converter = ToMayaObjectConverter::create( object );
+
+				if( converter )
 				{
-					MFnMeshData fnData;
-					data = fnData.create();
-				}
-				else if( type == CurvesPrimitiveTypeId )
-				{
-					MFnNurbsCurveData fnData;
-					data = fnData.create();
-				}
-				
-				if( !data.isNull() )
-				{
-					bool conversionSuccess = converter->convert( data );
-					if ( conversionSuccess )
+					MObject data;
+					// Check the type for now, because a dag node is created if you pass an empty MObject to the converter
+					// Won't be needed anymore when the related todo is addressed in the converter
+					
+					if( type == MeshPrimitiveTypeId )
 					{
-						MDataHandle h = outputBuilder.addElement( index, &s );
-						s = h.set( data );
+						MFnMeshData fnData;
+						data = fnData.create();
+					}
+					else if( type == CurvesPrimitiveTypeId )
+					{
+						MFnNurbsCurveData fnData;
+						data = fnData.create();
+					}
+
+					if( !data.isNull() )
+					{
+						bool conversionSuccess = converter->convert( data );
+						if ( conversionSuccess )
+						{
+							MDataHandle h = outputBuilder.addElement( index, &s );
+							s = h.set( data );
+						}
 					}
 				}
 			}
+
+			
 
 		}
 		else if( topLevelPlug == aBound )
@@ -911,12 +941,58 @@ void SceneShapeInterface::buildScene( IECoreGL::RendererPtr renderer, ConstScene
 	bool objectOnly;
 	pObjectOnly.getValue( objectOnly );
 
+	MPlug pDrawTagsFilter( thisMObject(), aDrawTagsFilter );
+	MString drawTagsFilter;
+	pDrawTagsFilter.getValue( drawTagsFilter );
+
+	typedef boost::tokenizer<boost::char_separator<char> > Tokenizer;
+	std::string txt(drawTagsFilter.asChar());
+	Tokenizer tokens( txt, boost::char_separator<char>(" "));
+	Tokenizer::iterator t = tokens.begin();
+	SceneInterface::NameList drawTags;
+	for ( ; t != tokens.end(); t++ )
+	{
+		if ( t->size() )
+		{
+			/// test if the scene has the tag to start with..
+			if ( subSceneInterface->hasTag( *t ) )
+			{
+				drawTags.push_back( *t );
+			}
+			else
+			{
+				msg( Msg::Warning, name().asChar(), std::string("Tag '") + *t + "'does not exist in scene. Ignoring it for filtering.");
+			}
+		}
+	}
+
+	recurseBuildScene( renderer.get(), subSceneInterface.get(), time.as( MTime::kSeconds ), drawBounds, drawGeometry, objectOnly, drawTags );
+}
+
+void SceneShapeInterface::recurseBuildScene( IECoreGL::Renderer * renderer, const SceneInterface *subSceneInterface, double time, bool drawBounds, bool drawGeometry, bool objectOnly, const SceneInterface::NameList &drawTags )
+{
+	if ( drawTags.size() )
+	{
+		SceneInterface::NameList::const_iterator it;
+		for ( it = drawTags.begin(); it != drawTags.end(); it++ )
+		{
+			if ( subSceneInterface->hasTag( *it ) )
+			{
+				break;
+			}
+		}
+		/// stop drawing if the current scene location does not have the required tags.
+		if ( it == drawTags.end() )
+		{
+			return;
+		}
+	}
+
 	AttributeBlock a(renderer);
 	SceneInterface::Path pathName;
 	subSceneInterface->path( pathName );
 	std::string pathStr = relativePathName( pathName );
 	renderer->setAttribute( "name", new StringData( pathStr ) );
-	
 	// Need to add this attribute block to get a parent group with that name that includes the object and/or bound
 	AttributeBlock aNew(renderer);
 
@@ -924,23 +1000,23 @@ void SceneShapeInterface::buildScene( IECoreGL::RendererPtr renderer, ConstScene
 	if(pathStr != "/")
 	{
 		// Path space
-		transformd = worldTransform( subSceneInterface, time.as( MTime::kSeconds ) );
+		transformd = worldTransform( subSceneInterface, time );
 	}
 
 	M44f transform;
 	transform.setValue( transformd );
 	renderer->setTransform( transform );
-	
+
 	if( drawGeometry && subSceneInterface->hasObject() )
 	{
-		ObjectPtr object = subSceneInterface->readObject( time.as( MTime::kSeconds ) );
-		VisibleRenderablePtr vis = runTimeCast< VisibleRenderable >(object);
-		if( vis )
+		ObjectPtr object = subSceneInterface->readObject( time );
+		Renderable *o = runTimeCast< Renderable >(object.get());
+		if( o )
 		{
-			vis->render(renderer);
+			o->render(renderer);
 		}
 	}
-	
+
 	if( drawBounds && pathStr != "/" )
 	{
 		AttributeBlock aBox(renderer);
@@ -948,7 +1024,7 @@ void SceneShapeInterface::buildScene( IECoreGL::RendererPtr renderer, ConstScene
 		renderer->setAttribute( "gl:primitive:solid", new BoolData( false ) );
 		renderer->setAttribute( "gl:curvesPrimitive:useGLLines", new BoolData( true ) );
 
-		Box3d b = subSceneInterface->readBound( time.as( MTime::kSeconds ) );
+		Box3d b = subSceneInterface->readBound( time );
 		Box3f bbox( b.min, b.max );
 		if( !bbox.isEmpty() )
 		{
@@ -963,9 +1039,8 @@ void SceneShapeInterface::buildScene( IECoreGL::RendererPtr renderer, ConstScene
 		subSceneInterface->childNames( childNames );
 		for ( SceneInterface::NameList::const_iterator it = childNames.begin(); it != childNames.end(); ++it )
 		{
-			SceneInterface::Name name = *it;
-			ConstSceneInterfacePtr childScene = subSceneInterface->child( name );
-			buildScene( renderer, childScene );
+			ConstSceneInterfacePtr childScene = subSceneInterface->child( *it );
+			recurseBuildScene( renderer, childScene.get(), time, drawBounds, drawGeometry, objectOnly, drawTags );
 		}
 	}
 }
@@ -983,9 +1058,11 @@ IECoreGL::ConstScenePtr SceneShapeInterface::glScene()
 	{
 		SceneInterface::NameList childNames;
 		sceneInterface->childNames( childNames );
-		
+
 		IECoreGL::RendererPtr renderer = new IECoreGL::Renderer();
 		renderer->setOption( "gl:mode", new StringData( "deferred" ) );
+		// Always draw locators. They can be hidden by using tags.
+		renderer->setOption( "gl:drawCoordinateSystems", new BoolData( true ) );
 		
 		renderer->worldBegin();
 		{
@@ -1049,7 +1126,7 @@ void SceneShapeInterface::setDirty()
 	m_previewSceneDirty = true;
 }
 
-IECoreGL::GroupPtr SceneShapeInterface::glGroup( std::string name )
+IECoreGL::GroupPtr SceneShapeInterface::glGroup( const IECore::InternedString &name )
 {
 	NameToGroupMap::const_iterator elementIt = m_nameToGroupMap.find( name );
 	if( elementIt != m_nameToGroupMap.end() )
@@ -1062,7 +1139,7 @@ IECoreGL::GroupPtr SceneShapeInterface::glGroup( std::string name )
 	}
 }
 
-int SceneShapeInterface::selectionIndex( std::string name )
+int SceneShapeInterface::selectionIndex( const IECore::InternedString &name )
 {
 	NameToGroupMap::const_iterator elementIt = m_nameToGroupMap.find( name );
 	if( elementIt != m_nameToGroupMap.end() )
@@ -1075,12 +1152,12 @@ int SceneShapeInterface::selectionIndex( std::string name )
 	}
 }
 
-std::string SceneShapeInterface::selectionName( int index )
+IECore::InternedString SceneShapeInterface::selectionName( int index )
 {
 	return m_indexToNameMap[index];
 }
 
-const std::vector< InternedString > & SceneShapeInterface::childrenNames() const
+const std::vector< InternedString > & SceneShapeInterface::componentNames() const
 {
 	return m_indexToNameMap;
 }

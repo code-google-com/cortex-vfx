@@ -33,12 +33,16 @@
 ##########################################################################
 
 import maya.cmds
+import maya.OpenMaya as OpenMaya
 
 import IECore
 import IECoreMaya
 
 class MayaSceneTest( IECoreMaya.TestCase ) :
 	
+	def setUp( self ) :
+
+		maya.cmds.file( new=True, f=True )
 	
 	def testFileName( self ) :
 
@@ -341,6 +345,9 @@ class MayaSceneTest( IECoreMaya.TestCase ) :
 		self.assertEqual( vertList.count( IECore.V3f( -0.5, -0.5, -0.5 ) ), 1 )
 		self.assertEqual( vertList.count( IECore.V3f( 0.5, -0.5, -0.5 ) ), 1 )
 
+		# check read primvars
+		self.assertEqual( mesh["P"], cube.readObjectPrimitiveVariables( [ "P" ], 0 )["P"] )
+
 	def testAnimatedMesh( self ) :
 		
 		cube = maya.cmds.polyCube( name = "pCube1" )
@@ -513,7 +520,6 @@ class MayaSceneTest( IECoreMaya.TestCase ) :
 		
 	def testSceneShapeCustomReaders( self ):
 		
-		maya.cmds.file( new=True, f=True )
 		# make sure we are at time 0
 		maya.cmds.currentTime( "0sec" )
 		scene = IECoreMaya.MayaScene()
@@ -544,7 +550,7 @@ class MayaSceneTest( IECoreMaya.TestCase ) :
 
 		# expand the scene
 		fnSpheres = IECoreMaya.FnSceneShape( spheresShape )
-		fnSpheres.expandAllChildren()
+		fnSpheres.expandAll()
 
 		self.assertFalse( spheresScene.hasAttribute( IECore.LinkedScene.linkAttribute ) )
 		leafScene = spheresScene.child("A").child("a")
@@ -553,7 +559,7 @@ class MayaSceneTest( IECoreMaya.TestCase ) :
 		self.assertFalse( leafScene.hasObject() )
 
 		# expand scene to meshes
-		fnSpheres.convertToGeometry()
+		fnSpheres.convertAllToGeometry()
 		self.assertFalse( leafScene.hasAttribute( IECore.LinkedScene.linkAttribute ) )
 		self.assertTrue( leafScene.hasObject() )
 		self.assertTrue( isinstance( leafScene.readObject(0), IECore.MeshPrimitive) )
@@ -578,6 +584,31 @@ class MayaSceneTest( IECoreMaya.TestCase ) :
 		# tests a bug where calling attributeNames at the root raised an exception
 		scene.attributeNames()
 	
+	def testCustomTags( self ) :
+
+		t = maya.cmds.createNode( "transform" )
+		maya.cmds.select( clear = True )
+		sphere = maya.cmds.polySphere( name="pSphere" )
+
+		def renderableTag( node ):
+			dagPath = IECoreMaya.StringUtil.dagPathFromString(node)
+			try:
+				dagPath.extendToShapeDirectlyBelow(0)
+			except:
+				return False
+			return dagPath.fullPathName().endswith("Shape")
+
+		IECoreMaya.MayaScene.registerCustomTag( "renderable", renderableTag )
+
+		scene = IECoreMaya.MayaScene()
+		transformScene = scene.child(str(t))
+		sphereScene = scene.child('pSphere')
+		self.assertFalse( scene.hasTag( 'renderable' ) )
+		self.assertEqual( scene.readTags(), [] )
+		self.assertFalse( transformScene.hasTag( 'renderable' ) )
+		self.assertEqual( transformScene.readTags(), [] )
+		self.assertEqual( sphereScene.readTags(), [ IECore.InternedString('renderable') ] )
+		self.assertTrue( sphereScene.hasTag( 'renderable' ) )
 		
 if __name__ == "__main__":
 	IECoreMaya.TestProgram( plugins = [ "ieCore" ] )

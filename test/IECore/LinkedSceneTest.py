@@ -141,6 +141,7 @@ class LinkedSceneTest( unittest.TestCase ) :
 		i2.writeLink( A )
 		i2.writeTransform( IECore.M44dData( IECore.M44d.createTranslated( IECore.V3d( 2, 0, 0 ) ) ), 0.0 )
 		self.assertRaises( RuntimeError, i2.createChild, "cannotHaveChildrenAtLinks" )
+		self.assertRaises( RuntimeError, i2.writeTags, ["cannotHaveTagsAtLinks"] )
 		self.assertRaises( RuntimeError, i2.writeObject, IECore.SpherePrimitive( 1 ), 0.0 )  # cannot save objects at link locations.
 		b1 = l.createChild("branch1")
 		b1.writeObject( IECore.SpherePrimitive( 1 ), 0.0 )
@@ -156,11 +157,12 @@ class LinkedSceneTest( unittest.TestCase ) :
 		self.assertEqual( set(l.childNames()), set(['instance0','instance1','instance2','branch1','branch2']) )
 		i0 = l.child("instance0")
 		self.assertEqual( i0.numBoundSamples(), 4 )
-		self.assertEqual( i0.readBoundAtSample(0), IECore.Box3d( IECore.V3d( -1,-1,-1 ), IECore.V3d( 2,2,1 ) ) )
-		self.assertEqual( i0.readBoundAtSample(1), IECore.Box3d( IECore.V3d( -1,-1,-1 ), IECore.V3d( 3,3,1 ) ) )
-		self.assertEqual( i0.readBoundAtSample(2), IECore.Box3d( IECore.V3d( -2,-1,-2 ), IECore.V3d( 4,5,2 ) ) )
-		self.assertEqual( i0.readBoundAtSample(3), IECore.Box3d( IECore.V3d( -3,-1,-3 ), IECore.V3d( 4,6,3 ) ) )
-		self.assertEqual( i0.readBound(0), IECore.Box3d( IECore.V3d( -1,-1,-1 ), IECore.V3d( 2,2,1 ) ) )
+		self.failUnless( LinkedSceneTest.compareBBox( i0.readBoundAtSample(0), IECore.Box3d( IECore.V3d( -1,-1,-1 ), IECore.V3d( 2,2,1 ) ) ) )
+		self.failUnless( LinkedSceneTest.compareBBox( i0.readBoundAtSample(1), IECore.Box3d( IECore.V3d( -1,-1,-1 ), IECore.V3d( 3,3,1 ) ) ) )
+		self.failUnless( LinkedSceneTest.compareBBox( i0.readBoundAtSample(2), IECore.Box3d( IECore.V3d( -2,-1,-2 ), IECore.V3d( 4,5,2 ) ) ) )
+		self.failUnless( LinkedSceneTest.compareBBox( i0.readBoundAtSample(3), IECore.Box3d( IECore.V3d( -3,-1,-3 ), IECore.V3d( 4,6,3 ) ) ) )
+		self.failUnless( LinkedSceneTest.compareBBox( i0.readBound(0), IECore.Box3d( IECore.V3d( -1,-1,-1 ), IECore.V3d( 2,2,1 ) ) ) )
+
 		A = i0.child("A")
 		self.failUnless( LinkedSceneTest.compareBBox( A.readBoundAtSample(0), IECore.Box3d(IECore.V3d( -1,-1,-1 ), IECore.V3d( 1,1,1 ) ) ) )
 		self.failUnless( LinkedSceneTest.compareBBox( A.readBoundAtSample(1), IECore.Box3d(IECore.V3d( -1,-1,-1 ), IECore.V3d( 1,1,1 ) ) ) )
@@ -169,10 +171,10 @@ class LinkedSceneTest( unittest.TestCase ) :
 
 		i1 = l.child("instance1")
 		self.assertEqual( i1.numBoundSamples(), 4 )
-		self.assertEqual( i1.readBoundAtSample(0), IECore.Box3d( IECore.V3d( -1,-1,-1 ), IECore.V3d( 2,2,1 ) ) )
-		self.assertEqual( i1.readBoundAtSample(2), IECore.Box3d( IECore.V3d( -2,-1,-2 ), IECore.V3d( 4,5,2 ) ) )
-		self.assertEqual( i1.readBoundAtSample(3), IECore.Box3d( IECore.V3d( -3,-1,-3 ), IECore.V3d( 4,6,3 ) ) )
-		self.assertEqual( i1.readBound(0), IECore.Box3d( IECore.V3d( -1,-1,-1 ), IECore.V3d( 2,2,1 ) ) )
+		self.failUnless( LinkedSceneTest.compareBBox( i1.readBoundAtSample(0), IECore.Box3d( IECore.V3d( -1,-1,-1 ), IECore.V3d( 2,2,1 ) ) ) )
+		self.failUnless( LinkedSceneTest.compareBBox( i1.readBoundAtSample(2), IECore.Box3d( IECore.V3d( -2,-1,-2 ), IECore.V3d( 4,5,2 ) ) ) )
+		self.failUnless( LinkedSceneTest.compareBBox( i1.readBoundAtSample(3), IECore.Box3d( IECore.V3d( -3,-1,-3 ), IECore.V3d( 4,6,3 ) ) ) )
+		self.failUnless( LinkedSceneTest.compareBBox( i1.readBound(0), IECore.Box3d( IECore.V3d( -1,-1,-1 ), IECore.V3d( 2,2,1 ) ) ) )
 		self.assertEqual( i1.readTransform( 0 ), IECore.M44dData( IECore.M44d.createTranslated( IECore.V3d( 1, 0, 0 ) ) ) )
 		self.assertEqual( i1.readAttribute( "testAttr", 0 ), IECore.StringData("test") )
 		
@@ -323,6 +325,71 @@ class LinkedSceneTest( unittest.TestCase ) :
 
 		recurseCompare( test1.path(), env.scene( [ 'base', 'test1' ] ), l )
 		recurseCompare( test1.path(), env.scene( [ 'base' ] ).child( 'test1' ), l )
+
+	def testTags( self ) :
+
+		def testSet( values ):
+			return set( map( lambda s: IECore.InternedString(s), values ) )
+
+		# create a base scene
+		l = IECore.LinkedScene( "/tmp/test.lscc", IECore.IndexedIO.OpenMode.Write )
+		a = l.createChild('a')
+		a.writeTags( [ "test" ] )
+		l.writeTags( [ "tags" ] )
+		del a, l
+
+		# now create a linked scene that should inherit the tags from the base one, plus add other ones
+		l = IECore.LinkedScene( "/tmp/test.lscc", IECore.IndexedIO.OpenMode.Read )
+		a = l.child('a')
+
+		self.assertEqual( set(l.readTags()), testSet(["test","tags"]) )
+		self.assertEqual( set(l.readTags(includeChildren=False)), testSet(["tags"]) )
+		self.assertEqual( set(a.readTags()), testSet(["test"]) )
+		self.assertEqual( set(a.readTags(includeChildren=False)), testSet(["test"]) )
+
+		l2 = IECore.LinkedScene( "/tmp/test2.lscc", IECore.IndexedIO.OpenMode.Write )
+
+		A = l2.createChild('A')
+		A.writeLink( l )
+		self.assertRaises( RuntimeError, A.writeTags, ['cantCreateAtLinks'] )
+
+		B = l2.createChild('B')
+		B.writeLink( a )
+
+		C = l2.createChild('C')
+		c = C.createChild('c')
+		c.writeLink( l )
+		C.writeTags( [ 'C' ] )
+
+		D = l2.createChild('D')
+		D.writeTags( [ 'D' ] )
+		self.assertRaises( RuntimeError, D.writeLink, a )	# should not allow creating links to scene locations that have tags assigned.
+
+		del l, a, l2, A, B, C, c, D
+
+		l2 = IECore.LinkedScene( "/tmp/test2.lscc", IECore.IndexedIO.OpenMode.Read )
+		A = l2.child("A")
+		Aa = A.child("a")
+		B = l2.child("B")
+		C = l2.child("C")
+		c = C.child("c")
+		ca = c.child("a")
+		D = l2.child("D")
+
+		self.assertEqual( set(l2.readTags()), testSet(["test","tags","C", "D"]) )
+		self.assertEqual( set(l2.readTags(includeChildren=False)), testSet([]) )
+		self.assertEqual( set(A.readTags()), testSet(["test","tags"]) )
+		self.assertEqual( set(A.readTags(includeChildren=False)), testSet(["tags"]) )
+		self.assertEqual( set(Aa.readTags()), testSet(["test"]) )
+		self.assertEqual( set(Aa.readTags(includeChildren=False)), testSet(["test"]) )
+		self.assertEqual( set(B.readTags()), testSet(["test"]) )
+		self.assertEqual( set(C.readTags()), testSet(["test","tags","C"]) )
+		self.assertEqual( set(C.readTags(includeChildren=False)), testSet(["C"]) )
+		self.assertEqual( set(c.readTags()), testSet(["test","tags"]) )
+		self.assertEqual( set(c.readTags(includeChildren=False)), testSet(["tags"]) )
+		self.assertEqual( set(ca.readTags()), testSet(["test"]) )
+		self.assertEqual( set(C.readTags(includeChildren=False)), testSet(["C"]) )
+		self.assertEqual( set(D.readTags()), testSet(["D"]) )
 
 if __name__ == "__main__":
 	unittest.main()
