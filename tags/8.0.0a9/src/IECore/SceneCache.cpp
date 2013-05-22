@@ -69,6 +69,7 @@ static InternedString objectEntry("object");
 static InternedString attributesEntry("attributes");
 static InternedString childrenEntry("children");
 static InternedString sampleTimesEntry("sampleTimes");
+static InternedString tagsEntry("tags");
 
 const SceneInterface::Name &SceneCache::animatedObjectTopologyAttribute = InternedString( "sceneInterface:animatedObjectTopology" );
 const SceneInterface::Name &SceneCache::animatedObjectPrimVarsAttribute = InternedString( "sceneInterface:animatedObjectPrimVars" );
@@ -116,6 +117,37 @@ class SceneCache::Implementation : public RefCounted
 				return;
 			}
 			attributes->entryIds( attrsNames, IndexedIO::Directory );
+		}
+
+		bool hasTag( const Name &name ) const
+		{
+			ConstIndexedIOPtr tagsIO = m_indexedIO->subdirectory( tagsEntry, IndexedIO::NullIfMissing );
+			if ( !tagsIO )
+			{
+				return false;
+			}
+			return tagsIO->hasEntry( name );
+		}
+
+		void readTags( NameList &tags, bool includeChildren ) const
+		{
+			ConstIndexedIOPtr tagsIO = m_indexedIO->subdirectory( tagsEntry, IndexedIO::NullIfMissing );
+			if ( tagsIO )
+			{
+				if ( includeChildren )
+				{
+					tagsIO->entryIds( tags );
+				}
+				else
+				{
+					// if we just want the local tags, then the list is filtered by Files
+					tagsIO->entryIds( tags, IndexedIO::File );
+				}
+			} 
+			else
+			{
+				tags.clear();
+			}
 		}
 
 		void childNames( NameList &childNames ) const
@@ -531,6 +563,35 @@ class SceneCache::ReaderImplementation : public SceneCache::Implementation
 			return object;
 		}
 
+		PrimitiveVariableMap readObjectPrimitiveVariables( const std::vector<InternedString> &primVarNames, double time ) const
+		{
+			size_t sample1, sample2;
+			double x = objectSampleInterval( time, sample1, sample2 );
+			IndexedIOPtr objectIO = m_indexedIO->subdirectory( objectEntry );
+			if ( x == 0 )
+			{
+				return Primitive::loadPrimitiveVariables( objectIO, sampleEntry(sample1), primVarNames );
+			}
+			if ( x == 1 )
+			{
+				return Primitive::loadPrimitiveVariables( objectIO, sampleEntry(sample2), primVarNames );
+			}
+
+			PrimitiveVariableMap map1 = Primitive::loadPrimitiveVariables( objectIO, sampleEntry(sample1), primVarNames );
+			PrimitiveVariableMap map2 = Primitive::loadPrimitiveVariables( objectIO, sampleEntry(sample2), primVarNames );
+
+			for ( PrimitiveVariableMap::iterator it1 = map1.begin(); it1 != map1.end(); it1++ )
+			{
+				PrimitiveVariableMap::const_iterator it2 = map2.find( it1->first );
+				if ( it2 == map2.end() )
+				{
+					continue;
+				}
+				it1->second.data = staticPointerCast< Data >( linearObjectInterpolation( it1->second.data, it2->second.data, x ) );
+			}
+			return map1;
+		}
+
 		ReaderImplementationPtr child( const Name &name, MissingBehaviour missingBehaviour )
 		{
 			IndexedIOPtr children = m_indexedIO->subdirectory( childrenEntry, (IndexedIO::MissingBehaviour)missingBehaviour );
@@ -808,6 +869,42 @@ class SceneCache::WriterImplementation : public SceneCache::Implementation
 			attribute->save( io, sampleEntry(sampleIndex) );
 		}
 
+		void writeTag( const char *tag )
+		{
+			writable();
+			IndexedIOPtr io = m_indexedIO->subdirectory( tagsEntry, IndexedIO::CreateIfMissing );
+			// we represent local tags as a IndexedIO::File of bool type
+			const char localTag = 1;
+			io->write( tag, localTag );
+		}
+
+		void writeTags( const NameList &tags, bool fromChildren = false )
+		{
+			if ( !tags.size() )
+			{
+				return;
+			}
+			writable();
+			IndexedIOPtr io = m_indexedIO->subdirectory( tagsEntry, IndexedIO::CreateIfMissing );
+			for ( NameList::const_iterator tIt = tags.begin(); tIt != tags.end(); tIt++ )
+			{
+				// we represent inherited tags as empty directories and local tags as a IndexedIO::File of bool type, so
+				// we can easily filter them when reading by entry type.
+				if ( fromChildren )
+				{
+					if ( !io->hasEntry( *tIt ) )
+					{
+						io->subdirectory( *tIt, IndexedIO::CreateIfMissing );
+					}
+				}
+				else
+				{
+					const char localTag = 1;
+					io->write( *tIt, localTag );
+				}
+			}
+		}
+
 		void writeObject( const Object *object, double time )
 		{
 			writable();
@@ -889,6 +986,15 @@ class SceneCache::WriterImplementation : public SceneCache::Implementation
 				{
 					throw Exception( "Either all object samples must have bounds (VisibleRenderable) or none of them!" );
 				}
+			}
+
+			if ( sampleIndex == 0 )
+			{
+				// save the type of object as a tag
+				char objectTypeTag[128];
+				strcpy( objectTypeTag, "ObjectType:");
+				strcpy( &objectTypeTag[11], object->typeName() );
+				writeTag( objectTypeTag );
 			}
 		}
 
@@ -1384,6 +1490,19 @@ class SceneCache::WriterImplementation : public SceneCache::Implementation
 				}
 			}
 
+			if ( m_parent )
+			{
+				IndexedIOPtr tagsIO = m_indexedIO->subdirectory( tagsEntry, IndexedIO::NullIfMissing );
+
+				if ( tagsIO )
+				{
+					// propagate tags to parent
+					NameList tags;
+					readTags( tags, true );
+					m_parent->writeTags( tags, true );
+				}
+			}
+
 			// deallocate children since we now computed everything from them anyways...
 			m_children.clear();
 
@@ -1796,6 +1915,27 @@ void SceneCache::writeAttribute( const Name &name, const Object *attribute, doub
 	writer->writeAttribute( name, attribute, time );
 }
 
+bool SceneCache::hasTag( const Name &name ) const
+{
+	return m_implementation->hasTag(name);
+}
+
+void SceneCache::readTags( NameList &tags, bool includeChildren ) const
+{
+	if ( includeChildren )
+	{
+		/// include children is only supported in read mode.
+		ReaderImplementation::reader( m_implementation.get() );		
+	}
+	return m_implementation->readTags(tags, includeChildren);
+}
+
+void SceneCache::writeTags( const NameList &tags )
+{
+	WriterImplementation *writer = WriterImplementation::writer( m_implementation.get() );
+	writer->writeTags( tags );
+}
+
 bool SceneCache::hasObject() const
 {
 	return m_implementation->hasObject();
@@ -1829,6 +1969,12 @@ ObjectPtr SceneCache::readObject( double time ) const
 {
 	ReaderImplementation *reader = ReaderImplementation::reader( m_implementation.get() );
 	return reader->readObject( time );
+}
+
+PrimitiveVariableMap SceneCache::readObjectPrimitiveVariables( const std::vector<InternedString> &primVarNames, double time ) const
+{
+	ReaderImplementation *reader = ReaderImplementation::reader( m_implementation.get() );
+	return reader->readObjectPrimitiveVariables( primVarNames, time );
 }
 
 void SceneCache::writeObject( const Object *object, double time )

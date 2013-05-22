@@ -110,12 +110,17 @@ class SceneCache : public SampledSceneInterface
 		virtual ObjectPtr readAttribute( const Name &name, double time ) const;
 		virtual void writeAttribute( const Name &name, const Object *attribute, double time );
 
+		virtual bool hasTag( const Name &name ) const;
+		virtual void readTags( NameList &tags, bool includeChildren = true ) const;
+		virtual void writeTags( const NameList &tags );
+
 		virtual bool hasObject() const;
 		virtual size_t numObjectSamples() const;
 		virtual double objectSampleTime( size_t sampleIndex ) const;
 		virtual double objectSampleInterval( double time, size_t &floorIndex, size_t &ceilIndex ) const;
 		virtual ObjectPtr readObjectAtSample( size_t sampleIndex ) const;
 		virtual ObjectPtr readObject( double time ) const;
+		virtual PrimitiveVariableMap readObjectPrimitiveVariables( const std::vector<InternedString> &primVarNames, double time ) const;
 		virtual void writeObject( const Object *object, double time );
 
 		virtual bool hasChild( const Name &name ) const;

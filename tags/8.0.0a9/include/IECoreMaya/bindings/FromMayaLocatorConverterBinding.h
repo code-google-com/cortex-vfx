@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2013, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,50 +32,14 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef IE_COREMAYA_TOMAYAMESHCONVERTER_H
-#define IE_COREMAYA_TOMAYAMESHCONVERTER_H
-
-#include "maya/MFnMesh.h"
-
-#include "IECore/MeshPrimitive.h"
-
-#include "IECoreMaya/ToMayaObjectConverter.h"
+#ifndef IE_COREMAYA_FROMMAYALOCATORCONVERTERBINDING_H
+#define IE_COREMAYA_FROMMAYALOCATORCONVERTERBINDING_H
 
 namespace IECoreMaya
 {
 
-class ToMayaMeshConverter;
-IE_CORE_DECLAREPTR( ToMayaMeshConverter );
-
-/// This class converts IECore::MeshPrimitives to maya mesh objects.
-/// \ingroup conversionGroup
-class ToMayaMeshConverter : public ToMayaObjectConverter
-{
-	public:
-
-		IE_CORE_DECLARERUNTIMETYPEDEXTENSION( ToMayaMeshConverter, ToMayaMeshConverterTypeId, ToMayaObjectConverter );
-
-		ToMayaMeshConverter( IECore::ConstObjectPtr object );
-
-		/// creates the standard attribute ieMeshInterpolation plug in the given Mesh object (it expects to be a MFnMesh bindable object).
-		/// \param defaultInterpolation - only accept values listed in the presets (keys or values) of FromMayaMeshConverter.interpolationParameter().
-		static bool setMeshInterpolationAttribute( MObject &object, std::string interpolation = "linear" );
-
-	protected:
-
-		virtual bool doConversion( IECore::ConstObjectPtr from, MObject &to, IECore::ConstCompoundObjectPtr operands ) const;
-
-		typedef ToMayaObjectConverterDescription<ToMayaMeshConverter> Description;
-		static Description g_meshDataDescription;
-		static Description g_meshDescription;
-
-	private:
-		
-		void assignDefaultShadingGroup( MObject &shape ) const;
-		void addUVSet( MFnMesh &fnMesh, const MIntArray &polygonCounts, IECore::ConstMeshPrimitivePtr mesh, const std::string &sPrimVarName, const std::string &tPrimVarName, const std::string &stIdPrimVarName, MString *uvSetName = 0 ) const;
-
-};
+void bindFromMayaLocatorConverter();
 
 }
 
-#endif // IE_COREMAYA_TOMAYAMESHCONVERTER_H
+#endif //  IE_COREMAYA_FROMMAYALOCATORCONVERTERBINDING_H

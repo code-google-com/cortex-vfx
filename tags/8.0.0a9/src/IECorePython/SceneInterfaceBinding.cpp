@@ -78,24 +78,29 @@ static std::string pathAsString( const SceneInterface &m )
 	return str;
 }
 
-static void listToPath( list l, SceneInterface::Path &p )
+static void listToNameList( list l, SceneInterface::NameList &p )
 {
 	int listLen = IECorePython::len( l );
 	for (int i = 0; i < listLen; i++ )
 	{
-		extract< std::string > ex( l[i] );
-		if ( !ex.check() )
+		extract< InternedString > inStr( l[i] );
+		if ( !inStr.check() )
 		{
-			throw InvalidArgumentException( std::string( "Invalid path! Should be a list of strings!" ) );
+			extract< std::string > ex( l[i] );
+			if ( !ex.check() )
+			{
+				throw InvalidArgumentException( std::string( "Invalid value! Expecting a list of strings." ) );
+			}
+			p.push_back( ex() );
 		}
-		p.push_back( ex() );	
+		p.push_back( inStr() );	
 	}
 }
 
 static SceneInterfacePtr nonConstScene( SceneInterface &m, list l, SceneInterface::MissingBehaviour b )
 {
 	SceneInterface::Path p;
-	listToPath( l, p );
+	listToNameList( l, p );
 	return m.scene( p, b );
 }
 
@@ -109,7 +114,7 @@ static list attributeNames( const SceneInterface &m )
 static std::string pathToString( list l )
 {
 	SceneInterface::Path p;
-	listToPath( l, p );
+	listToNameList( l, p );
 	std::string str;
 	SceneInterface::pathToString( p, str );
 	return str;
@@ -131,6 +136,39 @@ static list supportedExtensions( IndexedIO::OpenMode modes )
 		result.append( e[i] );
 	}
 	return result;
+}
+
+static dict readObjectPrimitiveVariables( const SceneInterface &m, list varNameList, double time )
+{
+	SceneInterface::NameList v;
+	listToNameList( varNameList, v );
+
+	PrimitiveVariableMap varMap = m.readObjectPrimitiveVariables( v, time );
+	dict result;
+	for ( PrimitiveVariableMap::const_iterator it = varMap.begin(); it != varMap.end(); it++ )
+	{
+		result[ it->first ] = it->second;
+	}
+	return result;
+}
+
+list readTags( const SceneInterface &m, bool includeChildren )
+{
+	SceneInterface::NameList tags;
+	m.readTags( tags, includeChildren );
+	list result;
+	for ( SceneInterface::NameList::const_iterator it = tags.begin(); it != tags.end(); it++ )
+	{
+		result.append( *it );
+	}
+	return result;
+}
+
+void writeTags( SceneInterface &m, list tagList )
+{
+	SceneInterface::NameList v;
+	listToNameList( tagList, v );
+	m.writeTags(v);	
 }
 
 void bindSceneInterface()
@@ -169,7 +207,11 @@ void bindSceneInterface()
 		.def( "attributeNames", attributeNames )
 		.def( "readAttribute", &SceneInterface::readAttribute )
 		.def( "writeAttribute", &SceneInterface::writeAttribute )
+		.def( "hasTag", &SceneInterface::hasTag )
+		.def( "readTags", readTags, ( arg( "includeChildren" ) = true ) )
+		.def( "writeTags", writeTags )
 		.def( "readObject", &SceneInterface::readObject )
+		.def( "readObjectPrimitiveVariables", &readObjectPrimitiveVariables )
 		.def( "writeObject", &SceneInterface::writeObject )
 		.def( "hasObject", &SceneInterface::hasObject )
 		.def( "hasChild", &SceneInterface::hasChild )

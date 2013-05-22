@@ -94,6 +94,7 @@ class SceneShapeInterface: public MPxComponentShape
 		static MObject aDrawGeometry;
 		static MObject aDrawRootBound;
 		static MObject aDrawChildBounds;
+		static MObject aDrawTagsFilter;
 		
 		/*
 		 * Custom
@@ -102,17 +103,17 @@ class SceneShapeInterface: public MPxComponentShape
 		/// Returns the sceneInterface for this node. Needs to be implemented by derived classes.
 		virtual IECore::ConstSceneInterfacePtr getSceneInterface();
 		
-		/// Returns the GL Scene representing the sceneInterface for the preview plug values ( objectOnly, drawGeometry, drawChildBounds )
+		/// Returns the GL Scene representing the sceneInterface for the preview plug values ( objectOnly, drawGeometry, drawLocators, drawChildBounds )
 		IECoreGL::ConstScenePtr glScene();
 		
 		/// Returns GL Group matching the given path name.
-		IECoreGL::GroupPtr glGroup( std::string name );
+		IECoreGL::GroupPtr glGroup( const IECore::InternedString &name );
 		/// Returns the internal index stored for the given path
-		int selectionIndex( std::string name );
+		int selectionIndex( const IECore::InternedString &name );
 		/// Returns the path name for the given index
-		std::string selectionName( int index );
+		IECore::InternedString selectionName( int index );
 		/// Returns all component names currently existing in the shape
-		const std::vector< IECore::InternedString > & childrenNames() const;
+		const std::vector< IECore::InternedString > & componentNames() const;
 
 	protected :
 		
@@ -172,8 +173,12 @@ class SceneShapeInterface: public MPxComponentShape
 
 		IECoreGL::ScenePtr m_scene;
 		
-		/// Recursively parses the sceneInterface hierarchy to build a GL Scene matching the preview plug values
+		/// Uses the sceneInterface hierarchy to build a GL Scene matching the preview plug values
 		void buildScene( IECoreGL::RendererPtr renderer, IECore::ConstSceneInterfacePtr subSceneInterface );
+
+		/// Recursively parses the sceneInterface hierarchy to build a GL Scene matching the preview plug values
+		void recurseBuildScene( IECoreGL::Renderer * renderer, const IECore::SceneInterface *subSceneInterface, double time, bool drawBounds, bool drawGeometry, bool objectOnly, const IECore::SceneInterface::NameList &drawTags );
+
 		/// Recursively parses glScene to store GL Groups matching path names
 		void buildGroups( IECoreGL::ConstNameStateComponentPtr nameState, IECoreGL::GroupPtr subScene );
 		

@@ -75,8 +75,13 @@ class HoudiniScene : public IECore::SceneInterface
 		virtual IECore::ObjectPtr readAttribute( const Name &name, double time ) const;
 		virtual void writeAttribute( const Name &name, const IECore::Object *attribute, double time );
 
+		virtual bool hasTag( const Name &name ) const;
+		virtual void readTags( NameList &tags, bool includeChildren = true ) const;
+		virtual void writeTags( const NameList &tags );
+
 		virtual bool hasObject() const;
 		virtual IECore::ObjectPtr readObject( double time ) const;
+		virtual IECore::PrimitiveVariableMap readObjectPrimitiveVariables( const std::vector<IECore::InternedString> &primVarNames, double time ) const;
 		virtual void writeObject( const IECore::Object *object, double time );
 
 		virtual void childNames( NameList &childNames ) const;

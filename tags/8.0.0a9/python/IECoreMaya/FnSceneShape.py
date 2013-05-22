@@ -67,6 +67,12 @@ class FnSceneShape( maya.OpenMaya.MFnDependencyNode ) :
 			# The parent name is supposed to be the children names in a sceneInterface, they could be numbers, maya doesn't like that. Use a prefix.
 			parentNode = maya.cmds.createNode( "transform", name="sceneShape_"+parentName, skipSelect=True )
 				
+		return FnSceneShape.createShape( parentNode )
+	
+	## Create a scene shape under the given node. Returns a function set instance operating on this shape.
+	@staticmethod
+	def createShape( parentNode ) :
+
 		parentShort = parentNode.rpartition( "|" )[-1]
 		numbersMatch = re.search( "[0-9]+$", parentShort )
 		if numbersMatch is not None :
@@ -92,7 +98,7 @@ class FnSceneShape( maya.OpenMaya.MFnDependencyNode ) :
 		s = maya.OpenMaya.MSelectionList()
 		maya.OpenMaya.MGlobal.getActiveSelectionList( s )
 		
-		allChildren = self.childrenNames()
+		allComponents = self.componentNames()
 
 		fullPathName = self.fullPathName()
 		for i in range( 0, s.length() ) :
@@ -111,7 +117,7 @@ class FnSceneShape( maya.OpenMaya.MFnDependencyNode ) :
 
 					for j in range( 0, a.length() ) :
 
-						result.add( allChildren[ a[j] ] )
+						result.add( allComponents[ a[j] ] )
 
 			except :
 				pass
@@ -126,7 +132,7 @@ class FnSceneShape( maya.OpenMaya.MFnDependencyNode ) :
 			componentNames = set( componentNames )
 
 		fullPathName = self.fullPathName()
-		allnames = self.childrenNames()
+		allnames = self.componentNames()
 		for i, name in enumerate( allNames ):
 			if name in componentNames:
 				toSelect.append( fullPathName + ".f[" + str( i ) + "]" )
@@ -152,26 +158,55 @@ class FnSceneShape( maya.OpenMaya.MFnDependencyNode ) :
 
 		return _IECoreMaya._sceneShapeSceneInterface( self )
 		
-	def childrenNames( self ) :
+	def componentNames( self ) :
 
-		return _IECoreMaya._sceneShapeChildrenNames( self )
+		return _IECoreMaya._sceneShapeComponentNames( self )
 	
+	## Returns True if the scene shape can be expanded.
+	# We assume that if the objectOnly flag is on, it means the scene shape has already been expanded so return False.
+	# Can only be expanded if the scene interface for the scene shape has children.	
 	def canBeExpanded( self ) :
-		
+
 		# An already expanded scene should have objectOnly on
 		if not maya.cmds.getAttr( self.fullPathName()+".objectOnly" ):
 			# Check if you have any children to expand to
-			if len( self.childrenNames() ) > 1:
+			if self.sceneInterface().childNames():
 				return True
 		return False
 
+	## Returns True if the scene shape can be collapsed.
+	# We assume that if the objectOnly flag is off, the scene shape is already collapsed.
 	def canBeCollapsed( self ) :
-		
+
 		# if already collapsed, objectOnly is off
 		return maya.cmds.getAttr( self.fullPathName()+".objectOnly" )
 
+	## Returns the index in the queryPaths which matches the given path.
+	# If the path isn't already in the queries, add it and return the new index.
+	def __queryIndexForPath( self, path ):
 
-	def expandScene( self ) :
+		node = self.fullPathName()
+		index = None
+		validIndices = maya.cmds.getAttr( node+".queryPaths", mi=True )
+		if not validIndices:
+			index = 0
+		else:
+			for id in validIndices:
+				# Check if we can reuse a query path
+				if maya.cmds.getAttr( node+".queryPaths["+str(id)+"]" ) == path:
+					index = id
+					break
+			if index is None:
+				# Didn't find path, get the next available index
+				index = max( i for i in validIndices ) +1
+				
+		maya.cmds.setAttr( node+".queryPaths["+str(index)+"]", path, type="string" )
+		return index
+
+	## Expands the scene shape one level down if possible.
+	# Returns a list of function sets for the child scene shapes.
+	# Missing child transforms and shapes will be created, missing connections and attribute values will be reset.
+	def expandOnce( self ) :
 
 		node = self.fullPathName()
 		transform = maya.cmds.listRelatives( node, parent=True, f=True )[0]
@@ -184,19 +219,6 @@ class FnSceneShape( maya.OpenMaya.MFnDependencyNode ) :
 		if sceneChildren == []:
 			# No children to expand to
 			return []
-			
-		newSceneShapeFns = []
-		
-		if maya.cmds.getAttr( node+".objectOnly"):
-			# Already expanded, return existing scene shapes
-			childTransforms = maya.cmds.listRelatives( transform, f=True, type="transform" ) or []
-			for t in childTransforms:
-				childSceneShape = maya.cmds.listRelatives( t, f=True, type="ieSceneShape" ) or []
-				if childSceneShape:
-					newSceneShapeFns.append( IECoreMaya.FnSceneShape( childSceneShape[0] ) )
-		
-		if len(newSceneShapeFns):
-			return newSceneShapeFns
 
 		sceneFile = maya.cmds.getAttr( node+".file" )
 		sceneRoot = maya.cmds.getAttr( node+".root" )
@@ -209,40 +231,54 @@ class FnSceneShape( maya.OpenMaya.MFnDependencyNode ) :
 		drawGeo = maya.cmds.getAttr( node+".drawGeometry" )
 		drawChildBounds = maya.cmds.getAttr( node+".drawChildBounds" )
 		drawRootBound = maya.cmds.getAttr( node+".drawRootBound" )
+		
+		newSceneShapeFns = []
 
 		for i, child in enumerate( sceneChildren ):
 			
-			maya.cmds.setAttr( node+".queryPaths["+str(i)+"]", "/"+child, type="string" )
-			
-			# Create sceneShape for child
-			fnChild = IECoreMaya.FnSceneShape.create( child )
+			if maya.cmds.objExists( transform+"|"+child ):
+				shape = maya.cmds.listRelatives( transform+"|"+child, f=True, type="ieSceneShape" )
+				if shape:
+					fnChild = IECoreMaya.FnSceneShape( shape[0] )
+				else:
+					fnChild = IECoreMaya.FnSceneShape.createShape( transform+"|"+child )
+			else:
+				fnChild = IECoreMaya.FnSceneShape.create( child )
+
 			childNode = fnChild.fullPathName()
 			childTransform = maya.cmds.listRelatives( childNode, parent=True, f=True )[0]
 			maya.cmds.setAttr( childNode+".file", sceneFile, type="string" )
 			sceneRootName = "/"+child if sceneRoot == "/" else sceneRoot+"/"+child
 			maya.cmds.setAttr( childNode+".root", sceneRootName, type="string" )
 			
-			maya.cmds.connectAttr( node+".outTransform["+str(i)+"].outTranslate", childTransform+".translate" )
-			maya.cmds.connectAttr( node+".outTransform["+str(i)+"].outRotate", childTransform+".rotate" )
-			maya.cmds.connectAttr( node+".outTransform["+str(i)+"].outScale", childTransform+".scale" )
+			index = self.__queryIndexForPath( "/"+child )
+			outTransform = node+".outTransform["+str(index)+"]"
+			if not maya.cmds.isConnected( outTransform+".outTranslate", childTransform+".translate" ):
+				maya.cmds.connectAttr( outTransform+".outTranslate", childTransform+".translate", f=True )
+			if not maya.cmds.isConnected( outTransform+".outRotate", childTransform+".rotate" ):
+				maya.cmds.connectAttr( outTransform+".outRotate", childTransform+".rotate", f=True )
+			if not maya.cmds.isConnected( outTransform+".outScale", childTransform+".scale" ):
+				maya.cmds.connectAttr( outTransform+".outScale", childTransform+".scale", f=True )
 
 			maya.cmds.setAttr( childNode+".drawGeometry", drawGeo )
 			maya.cmds.setAttr( childNode+".drawChildBounds", drawChildBounds )
 			maya.cmds.setAttr( childNode+".drawRootBound", drawRootBound )
-
-			maya.cmds.parent( childTransform, transform, relative=True )
+			
+			if maya.cmds.listRelatives( childTransform, parent = True, f=True ) != [ transform ]:
+				maya.cmds.parent( childTransform, transform, relative=True )
 			
 			newSceneShapeFns.append( fnChild )
 			
 		return newSceneShapeFns
 	
+	## Recursively expands all levels starting from the scene shape.
+	# Returns a list of function sets for all the child scene shapes.
+	def expandAll( self ):
 
-	def expandAllChildren( self ):
-		
 		newFn = []
 		def recursiveExpand( fnSceneShape ):
 			
-			new = fnSceneShape.expandScene()
+			new = fnSceneShape.expandOnce()
 			newFn.extend( new )
 			for n in new:
 				recursiveExpand( n )
@@ -251,9 +287,9 @@ class FnSceneShape( maya.OpenMaya.MFnDependencyNode ) :
 		
 		return newFn
 	
-	
-	def collapseScene( self ) :
-		
+	## Collapses all children up to this scene shape.
+	def collapse( self ) :
+
 		node = self.fullPathName()
 		transform = maya.cmds.listRelatives( node, parent=True, f=True )[0]
 		allTransformChildren = maya.cmds.listRelatives( transform, f=True, type = "transform" ) or []
@@ -267,70 +303,88 @@ class FnSceneShape( maya.OpenMaya.MFnDependencyNode ) :
 		maya.cmds.setAttr( node+".objectOnly", l=True )
 		maya.cmds.setAttr( node+".intermediateObject", 0 )
 	
-	def convertToGeometry( self ) :
+	## Returns tuple of maya type and input plug name that match the object in the scene interface, by checking the objectType tags.
+	# Returns (None, None) if no object in the scene interface or the object isn't compatible with maya geometry we can create.
+	def __mayaCompatibleShapeAndPlug( self ) :
+
+		result = (None, None)
+		if self.sceneInterface().hasObject():
+			tags = self.sceneInterface().readTags( includeChildren=False )
+			if "ObjectType:MeshPrimitive" in tags:
+				result = ( "mesh", "inMesh" )
+			elif "ObjectType:CurvesPrimitive" in tags:
+				result = ( "nurbsCurve", "create" )
+			elif "ObjectType:CoordinateSystem" in tags:
+				result = ( "locator", "localPosition" )
+
+		return result
+	
+	## Recursively converts all objects in the scene interface to compatible maya geometry
+	# All scene shape nodes in the hierarchy are turned into an intermediate object.
+	def convertAllToGeometry( self ) :
 
 		# Expand scene first, then for each scene shape we turn them into an intermediate object and connect a mesh
-		self.expandAllChildren()
+		self.expandAll()
 		transform = maya.cmds.listRelatives( self.fullPathName(), parent=True, f=True )[0]
 		
 		allSceneShapes = maya.cmds.listRelatives( transform, ad=True, f=True, type="ieSceneShape" )
-
-		def getObjectShapeName( parentNode ):
-			
-			parentShort = parentNode.rpartition( "|" )[-1]
-			numbersMatch = re.search( "[0-9]+$", parentShort )
-			if numbersMatch is not None :
-				numbers = numbersMatch.group()
-				shapeName = parentShort[:-len(numbers)] + "Shape" + numbers
-			else :
-				shapeName = parentShort + "Shape"
-			
-			return shapeName
 
 		for sceneShape in allSceneShapes:
 			maya.cmds.setAttr( sceneShape+".querySpace", 1 )
 			
 			fn = FnSceneShape( sceneShape )
 			if fn.sceneInterface() and fn.sceneInterface().hasObject():
-
-				parent = maya.cmds.listRelatives( sceneShape, parent=True, f=True )[0]
-				object = fn.sceneInterface().readObject( 0.0 )
-				
-				# TODO: use the name of a regular maya shape, once the sceneShape uses a correct naming
-				if isinstance( object, IECore.MeshPrimitive ) or isinstance( object, IECore.SpherePrimitive ) or isinstance( object, IECore.CurvesPrimitive ):
-					shapeName = getObjectShapeName( parent )
-				else:
-					# Not compatible with what can be in the outputObjects sceneShape plug
-					continue
-				if maya.cmds.objExists( parent+"|"+shapeName ):
-					# Already there
-					continue
-				
-				index = None
-				validIndices = maya.cmds.getAttr( sceneShape+".queryPaths", mi=True )
-				
-				if validIndices == [] or validIndices is None:
-					index = 0
-				else:
-					for i in validIndices:
-						if maya.cmds.getAttr( sceneShape+".queryPaths["+str(i)+"]") == "/":
-							index = i
-					if index is None:
-						# Didn't find "/", get the next available index
-						index = max( i for i in validIndices ) +1
-				
-				maya.cmds.setAttr( sceneShape+".queryPaths["+str(index)+"]", "/", type="string" )
-				
-				if isinstance( object, IECore.MeshPrimitive ) or isinstance( object, IECore.SpherePrimitive ):
-					mesh = maya.cmds.createNode( "mesh", parent = parent, name = shapeName )
-					maya.cmds.connectAttr( sceneShape+'.outObjects['+str(index)+']', mesh+".inMesh" )
-					maya.cmds.sets( mesh, add="initialShadingGroup" )
-				elif isinstance( object, IECore.CurvesPrimitive ):
-					curve = maya.cmds.createNode( "nurbsCurve", parent = parent, name = shapeName )
-					maya.cmds.connectAttr( sceneShape+'.outObjects['+str(index)+']', mesh+".create" )
+				fn.convertObjectToGeometry()
 
 			# turn the scene node an intermediateObject so it can't be seen by MayaScene
 			maya.cmds.setAttr( sceneShape+".intermediateObject", 1 )
+	
+	## Converts the object (if any) in the scene interface into maya geometry.
+	# If a shape with the expected name but incompatible type is found under the transform, we rename it and create a new proper shape.
+	# The shape is connected to the scene shape object output only if it isn't already connected or locked.
+	# transformNode parameter can be used to specify the parent of the geometry. If None, uses the transform of the scene shape.
+	def convertObjectToGeometry( self, transformNode = None ):
+		
+		if not self.sceneInterface().hasObject():
+			return
+
+		node = self.fullPathName()
+		if not transformNode:
+			# No transform provided, use the transform of the reader
+			transformNode = maya.cmds.listRelatives( node, f=True, p=True )[0]
+
+		type, plug = self.__mayaCompatibleShapeAndPlug()
+		if not (type and plug):
+			raise Exception, "Scene interface at %s cannot be converted to Maya geometry." % self.sceneInterface().pathAsString()
+		
+		shapeName = IECoreMaya.FnDagNode.defaultShapeName( transformNode )
+		shape = transformNode + "|" + shapeName
+		create = False
+		if not maya.cmds.objExists( shape ):
+			create = True				
+		elif maya.cmds.nodeType( shape ) != type:
+			# Rename existing shape
+			newName = shapeName + "_orig"
+			maya.cmds.rename( shape, newName )
+			IECore.msg( IECore.Msg.Level.Warning, "FnSceneShape.convertObjectToGeometry", "Renaming incompatible shape %s to %s." % shape, newName )
+			create = True
+
+		if create:
+			maya.cmds.createNode( type, parent = transformNode, name = shapeName )
+			if type == "mesh":
+				maya.cmds.sets(shape, add="initialShadingGroup" )
+
+		index = self.__queryIndexForPath( "/" )
+		if not maya.cmds.listConnections( shape+"."+plug, source = True, destination = False ) and not maya.cmds.getAttr( shape+"."+plug, l=True ):
+			maya.cmds.connectAttr( node+'.outObjects['+str(index)+']', shape+"."+plug, f=True )
+			if type == "mesh":
+				object = self.sceneInterface().readObject(0.0)
+				interpolation = object.interpolation
+				try:
+					IECoreMaya.ToMayaMeshConverter.setMeshInterpolationAttribute( shape, interpolation )
+				except:
+					IECore.msg( IECore.Msg.Level.Warning, "FnSceneShape.convertObjectToGeometry", "Failed to set interpolation on %s." % shape )
+
 
 	## Returns the maya node type that this function set operates on
 	@classmethod
