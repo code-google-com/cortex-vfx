@@ -48,8 +48,8 @@
 #include "IECoreGL/Group.h"
 #include "IECoreGL/Primitive.h"
 
+#include "IECoreMaya/ParameterHandler.h"
 #include "IECoreMaya/ProceduralHolder.h"
-#include "IECoreMaya/ProceduralHolderComponentBoundIterator.h"
 #include "IECoreMaya/Convert.h"
 #include "IECoreMaya/MayaTypeIds.h"
 
@@ -63,6 +63,8 @@
 #include "IECore/AngleConversion.h"
 
 #include "maya/MFnNumericAttribute.h"
+#include "maya/MFnDependencyNode.h"
+#include "maya/MFnEnumAttribute.h"
 #include "maya/MFnTypedAttribute.h"
 #include "maya/MFnCompoundAttribute.h"
 #include "maya/MFnSingleIndexedComponent.h"
@@ -73,7 +75,6 @@
 #include "maya/MDagPath.h"
 #include "maya/MFnStringData.h"
 #include "maya/MPlugArray.h"
-#include "maya/MObjectArray.h"
 
 using namespace Imath;
 using namespace IECore;
@@ -82,6 +83,7 @@ using namespace boost;
 
 MTypeId ProceduralHolder::id = ProceduralHolderId;
 MObject ProceduralHolder::aGLPreview;
+MObject ProceduralHolder::aCulling;
 MObject ProceduralHolder::aTransparent;
 MObject ProceduralHolder::aDrawBound;
 MObject ProceduralHolder::aDrawCoordinateSystems;
@@ -116,7 +118,7 @@ MObject ProceduralHolder::aComponentBoundCenterZ;
 
 
 ProceduralHolder::ProceduralHolder()
-	:	m_boundDirty( true ), m_sceneDirty( true ), m_lastRenderer( 0 )
+	:	m_boundDirty( true ), m_sceneDirty( true ), m_lastRenderer( 0 ), m_sceneUpdateCount( 0 )
 {
 }
 
@@ -143,6 +145,7 @@ MStatus ProceduralHolder::initialize()
 	MFnNumericAttribute nAttr;
 	MFnTypedAttribute tAttr;
 	MFnCompoundAttribute cAttr;
+	MFnEnumAttribute eAttr;
 
 	// drawing attributes
 
@@ -188,6 +191,21 @@ MStatus ProceduralHolder::initialize()
 	nAttr.setHidden( false );
 
 	s = addAttribute( aDrawCoordinateSystems );
+	assert( s );
+	
+	aCulling = eAttr.create( "culling", "clg", 0, &s );
+	assert( s );
+	eAttr.setReadable( true );
+	eAttr.setWritable( true );
+	eAttr.setStorable( true );
+	eAttr.setConnectable( true );
+	eAttr.setHidden( false );
+	
+	eAttr.addField( "None", 0 );
+	eAttr.addField( "Back Face", 1 );
+	eAttr.addField( "Front Face", 2 );
+	
+	s = addAttribute( aCulling );
 	assert( s );
 
 	// component attributes
@@ -426,20 +444,6 @@ MBoundingBox ProceduralHolder::boundingBox() const
 	return m_bound;
 }
 
-/// This method is overridden to supply a geometry iterator, which maya uses to work out
-/// the bounding boxes of the components you've selected in the viewport
-MPxGeometryIterator* ProceduralHolder::geometryIteratorSetup( MObjectArray& componentList, MObject& components, bool forReadOnly )
-{
-	if ( components.isNull() )
-	{
-		return new ProceduralHolderComponentBoundIterator( this, componentList );
-	}
-	else
-	{
-		return new ProceduralHolderComponentBoundIterator( this, components );
-	}
-}
-
 MStatus ProceduralHolder::setDependentsDirty( const MPlug &plug, MPlugArray &plugArray )
 {
 	if(
@@ -449,7 +453,6 @@ MStatus ProceduralHolder::setDependentsDirty( const MPlug &plug, MPlugArray &plu
 	{
 		// it's an input to the procedural
 		m_boundDirty = m_sceneDirty = true;
-		m_componentToBoundMap.clear();
 		childChanged( kBoundingBoxChanged ); // this is necessary to cause maya to redraw
 		
 		MPlug pComponentTransform( thisMObject(), aComponentTransform );
@@ -480,47 +483,6 @@ MStatus ProceduralHolder::setDependentsDirty( const MPlug &plug, MPlugArray &plu
 	}
 
 	return ParameterisedHolderComponentShape::setDependentsDirty( plug, plugArray );
-}
-
-
-Imath::Box3f ProceduralHolder::componentBound( int idx ) const
-{
-	ComponentToBoundMap::const_iterator boundIt = m_componentToBoundMap.find( idx );
-	if( boundIt != m_componentToBoundMap.end() )
-	{
-		return boundIt->second;
-	}
-	
-	Imath::Box3f componentBound;
-	
-	ComponentToGroupMap::const_iterator it = m_componentToGroupMap.find( idx );
-	
-	if( it == m_componentToGroupMap.end() )
-	{
-		return componentBound;
-	}
-	
-	const std::set< std::pair< std::string, IECoreGL::GroupPtr > >& groups = it->second;
-	std::set< std::pair< std::string, IECoreGL::GroupPtr > >::const_iterator groupIt = groups.begin();
-	for( ; groupIt != groups.end(); ++groupIt )
-	{
-		IECoreGL::ConstGroupPtr group = groupIt->second;
-		Imath::Box3f bound;
-		for( IECoreGL::Group::ChildContainer::const_iterator it=group->children().begin(); it!=group->children().end(); it++ )
-		{
-			bound.extendBy( (*it)->bound() );
-		}
-
-		ComponentTransformsMap::const_iterator tIt = m_componentTransforms.find( groupIt->first );
-
-		bound = Imath::transform( bound, tIt->second );
-
-		componentBound.extendBy( bound );
-	}
-	
-	m_componentToBoundMap[ idx ] = componentBound;
-	
-	return componentBound;
 }
 
 MStatus ProceduralHolder::compute( const MPlug &plug, MDataBlock &dataBlock )
@@ -604,15 +566,142 @@ MStatus ProceduralHolder::compute( const MPlug &plug, MDataBlock &dataBlock )
 	return ParameterisedHolderComponentShape::compute( plug, dataBlock );
 }
 
+MStatus ProceduralHolder::createDisplaylistAttribute()
+{
+	MStatus st;
+
+	MFnDependencyNode fnNode( thisMObject() );
+	
+	MObject attribute = fnNode.attribute( "useDisplayLists", &st );
+	
+	if( st )
+	{
+		fnNode.removeAttribute( attribute );
+	}
+	
+	ParameterisedInterface *parameterisedInterface = dynamic_cast<ParameterisedInterface *>( m_parameterised.get() );
+	if( !parameterisedInterface )
+	{
+		return MS::kSuccess;
+	}
+	
+	IECore::CompoundParameterPtr parameters = parameterisedInterface->parameters();
+
+	if( !parameters )
+	{
+		return MS::kSuccess;
+	}
+
+	IECore::ConstCompoundObjectPtr userData = parameters->userData();
+	
+	if( !userData )
+	{
+		return MS::kSuccess;
+	}
+
+	if( userData->members().empty() )
+	{
+		return MS::kSuccess;
+	}
+	
+	IECore::ConstCompoundObjectPtr mayaUserData = userData->member<IECore::CompoundObject>( "maya" );
+	if( !mayaUserData )
+	{
+		return MS::kSuccess;
+	}
+	
+	IECore::ConstBoolDataPtr displayListOptionPtr = mayaUserData->member<const IECore::BoolData>( "displayListOption" );
+	if( !displayListOptionPtr )
+	{
+		return MS::kSuccess;
+	}
+	
+	if( displayListOptionPtr->readable() )
+	{
+		MFnNumericAttribute fnNAttr;
+		MObject attribute = fnNAttr.create( "useDisplayLists", "udl", MFnNumericData::kBoolean, true );
+		fnNode.addAttribute( attribute );
+	}
+	
+	return MS::kSuccess;
+}
+
+bool ProceduralHolder::useDisplayLists()
+{
+	MStatus st;
+	
+	MFnDependencyNode fnNode( thisMObject(), &st );
+	if( !st )
+	{
+		return false;
+	}
+	
+	
+	MPlug useDisplayListsPlug = fnNode.findPlug( "useDisplayLists", true, &st );
+	if( !st )
+	{
+		return false;
+	}
+	
+	return useDisplayListsPlug.asBool();
+	
+}
+
 MStatus ProceduralHolder::setProcedural( const std::string &className, int classVersion )
 {
-	return setParameterised( className, classVersion, "IECORE_PROCEDURAL_PATHS" );
+	return ParameterisedHolderComponentShape::setParameterised( className, classVersion, "IECORE_PROCEDURAL_PATHS" );
 }
 
 IECore::ParameterisedProceduralPtr ProceduralHolder::getProcedural( std::string *className, int *classVersion )
 {
 	return runTimeCast<IECore::ParameterisedProcedural>( getParameterised( className, classVersion ) );
 }
+
+MStatus ProceduralHolder::setParameterised( IECore::RunTimeTypedPtr p )
+{
+	MStatus st = ParameterisedHolderComponentShape::setParameterised( p );
+	
+	if( !st )
+	{
+		return st;
+	}
+	
+	return createDisplaylistAttribute();
+}
+
+MStatus ProceduralHolder::updateParameterised()
+{
+	createDisplaylistAttribute();
+	return ParameterisedHolderComponentShape::updateParameterised();
+}
+
+IECore::RunTimeTypedPtr ProceduralHolder::getParameterised( std::string *classNameOut, int *classVersionOut, std::string *searchPathEnvVarOut )
+{
+	MPlug pClassName( thisMObject(), aParameterisedClassName );
+	
+	MString className;
+	MStatus s = pClassName.getValue( className );
+	
+	bool doAttributes( false );
+	if( !m_parameterised && !m_failedToLoad )
+	{
+		if( className!="" )
+		{
+			doAttributes = true;
+		}
+	}
+	
+	m_parameterised = ParameterisedHolderComponentShape::getParameterised( classNameOut, classVersionOut, searchPathEnvVarOut );
+	
+	if( doAttributes )
+	{
+		createDisplaylistAttribute();
+	}
+
+	return m_parameterised;
+}
+
+
 
 IECoreGL::ConstScenePtr ProceduralHolder::scene()
 {
@@ -700,8 +789,9 @@ IECoreGL::ConstScenePtr ProceduralHolder::scene()
 		{
 			msg( Msg::Error, "ProceduralHolder::scene", "Caught unknown exception" );
 		}
+		++m_sceneUpdateCount;
 	}
-
+	
 	m_sceneDirty = false;
 	return m_scene;
 }
@@ -830,10 +920,9 @@ void ProceduralHolder::buildComponents( IECoreGL::ConstNameStateComponentPtr nam
 	}
 }
 
-/// Blank implementation of this method. This is to avoid a crash when you try and use the rotation manipulator maya gives
-/// you when you've selected procedural components in rotation mode (maya 2013)
-void ProceduralHolder::transformUsing( const MMatrix &mat, const MObjectArray &componentList, MPxSurfaceShape::MVertexCachingMode cachingMode, MPointArray *pointCache )
+int ProceduralHolder::getSceneUpdateCount()
 {
+	return m_sceneUpdateCount;
 }
 
 void ProceduralHolder::buildComponents()

@@ -56,7 +56,7 @@ class LensDistortOpTest(unittest.TestCase):
 		# Create the Op and set it's parameters.
 		op = LensDistortOp()
 		op["input"] = img
-		op["mode"] = LensModel.Undistort
+		op["mode"] = 1
 		op['lensModel'].setValue(o)
 		
 		# Run the Op.

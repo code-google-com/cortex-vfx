@@ -46,8 +46,6 @@
 #include "maya/MIntArray.h"
 #include "maya/MItMeshPolygon.h"
 #include "maya/MGlobal.h"
-#include "maya/MPlug.h"
-#include "maya/MFnEnumAttribute.h"
 
 #include "IECore/MeshPrimitive.h"
 #include "IECore/PrimitiveVariable.h"
@@ -55,7 +53,6 @@
 
 #include "IECoreMaya/Convert.h"
 #include "IECoreMaya/ToMayaMeshConverter.h"
-#include "IECoreMaya/FromMayaMeshConverter.h"
 
 using namespace IECoreMaya;
 
@@ -255,7 +252,7 @@ void ToMayaMeshConverter::addUVSet( MFnMesh &fnMesh, const MIntArray &polygonCou
 bool ToMayaMeshConverter::doConversion( IECore::ConstObjectPtr from, MObject &to, IECore::ConstCompoundObjectPtr operands ) const
 {
 	MStatus s;
-
+	
 	IECore::ConstMeshPrimitivePtr mesh = IECore::runTimeCast<const IECore::MeshPrimitive>( from );
 	assert( mesh );
 
@@ -470,92 +467,14 @@ bool ToMayaMeshConverter::doConversion( IECore::ConstObjectPtr from, MObject &to
 	}
 
 	/// If we're making a mesh node (rather than a mesh data) then make sure it belongs
-	/// to the default shading group and add the ieMeshInterpolation attribute.
+	/// to the default shading group.
 	MObject oMesh = fnMesh.object();
 	if( oMesh.apiType()==MFn::kMesh )
 	{
 		assignDefaultShadingGroup( oMesh );
-		setMeshInterpolationAttribute( oMesh, mesh->interpolation() );
 	}
 
 	/// \todo Other primvars, e.g. vertex color ("Cs")
-
-	return true;
-}
-
-bool ToMayaMeshConverter::setMeshInterpolationAttribute( MObject &object, std::string interpolation )
-{
-	MStatus st;
-	MFnMesh fnMesh(object, &st);
-	if ( !st )
-	{
-		return false;
-	}
-
-	int interpolationValue = 0;
-
-	FromMayaMeshConverter fromMaya(object);
-	const IECore::Parameter::PresetsContainer &presets = fromMaya.interpolationParameter()->presets();
-	IECore::Parameter::PresetsContainer::const_iterator it;
-
-	if ( interpolation != "default" )
-	{
-		int index = 0;
-
-		for ( it = presets.begin(); it != presets.end(); it++, index++ )
-		{
-			if ( interpolation == it->first || interpolation == IECore::staticPointerCast< IECore::StringData >(it->second)->readable() )
-			{
-				interpolationValue = index;
-				break;
-			}
-		}
-		if ( it == presets.end() )
-		{
-			return false;
-		}
-	}
-
-	MPlug interpPlug = fnMesh.findPlug( "ieMeshInterpolation", &st );
-	
-	if ( !st )
-	{
-		MFnEnumAttribute fnAttrib;
-		MObject newAttr = fnAttrib.create( "ieMeshInterpolation", "interp", 0, &st );
-		if ( !st )
-		{
-			return false;
-		}
-
-		int index = 0;
-		for ( it = presets.begin(); it != presets.end(); it++ )
-		{
-			if ( it->first == "default" )
-			{
-				continue;
-			}
-			fnAttrib.addField( it->first.c_str(), index );
-			index++;
-		}
-
-		// looks like the attribute does not exist yet..
-		st = fnMesh.addAttribute( newAttr );
-		if ( !st )
-		{
-			return false;
-		}
-		interpPlug = fnMesh.findPlug( "ieMeshInterpolation", &st );
-		if ( !st )
-		{
-			return false;
-		}
-	}
-
-	st = interpPlug.setValue( interpolationValue );
-	if ( !st )
-	{
-		return false;
-	}
 
 	return true;
 }

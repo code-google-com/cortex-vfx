@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -49,9 +49,6 @@ using namespace Imath;
 // Primitive
 /////////////////////////////////////////////////////////////////////////////////////
 
-static IndexedIO::EntryID g_variablesEntry("variables");
-static IndexedIO::EntryID g_interpolationEntry("interpolation");
-static IndexedIO::EntryID g_dataEntry("data");
 const unsigned int Primitive::m_ioVersion = 1;
 IE_CORE_DEFINEABSTRACTOBJECTTYPEDESCRIPTION( Primitive );
 
@@ -96,21 +93,25 @@ void Primitive::copyFrom( const Object *other, IECore::Object::CopyContext *cont
 void Primitive::save( IECore::Object::SaveContext *context ) const
 {
 	VisibleRenderable::save( context );
-	IndexedIOPtr container = context->container( staticTypeName(), m_ioVersion );
-	IndexedIOPtr ioVariables = container->subdirectory( g_variablesEntry, IndexedIO::CreateIfMissing );
-	for( PrimitiveVariableMap::const_iterator it=variables.begin(); it!=variables.end(); it++ )
-	{
-		IndexedIOPtr ioPrimVar = ioVariables->subdirectory( it->first, IndexedIO::CreateIfMissing );
-		const int i = it->second.interpolation;
-		ioPrimVar->write( g_interpolationEntry, i );
-		context->save( it->second.data, ioPrimVar, g_dataEntry );
-	}
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), m_ioVersion );
+	container->mkdir( "variables" );
+	container->chdir( "variables" );
+		for( PrimitiveVariableMap::const_iterator it=variables.begin(); it!=variables.end(); it++ )
+		{
+			container->mkdir( it->first );
+			container->chdir( it->first );
+				const int i = it->second.interpolation;
+				container->write( "interpolation", i );
+				context->save( it->second.data, container, "data" );
+			container->chdir( ".." );
+		}
+	container->chdir( ".." );
 }
 
 void Primitive::load( IECore::Object::LoadContextPtr context )
 {
 	unsigned int v = m_ioVersion;
-	ConstIndexedIOPtr container = context->container( staticTypeName(), v );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 
 	// we changed the inheritance hierarchy at io version 1
 	if( v==0 )
@@ -122,54 +123,18 @@ void Primitive::load( IECore::Object::LoadContextPtr context )
 		VisibleRenderable::load( context );
 	}
 
-	ConstIndexedIOPtr ioVariables = container->subdirectory( g_variablesEntry );
-
-	variables.clear();
-	IndexedIO::EntryIDList names;
-	ioVariables->entryIds( names, IndexedIO::Directory );
-	IndexedIO::EntryIDList::const_iterator it;
-	for( it=names.begin(); it!=names.end(); it++ )
-	{
-		ConstIndexedIOPtr ioPrimVar = ioVariables->subdirectory( *it );
-		int i; 
-		ioPrimVar->read( g_interpolationEntry, i );
-		variables.insert( 
-			PrimitiveVariableMap::value_type( *it, PrimitiveVariable( (PrimitiveVariable::Interpolation)i, context->load<Data>( ioPrimVar, g_dataEntry ) ) ) 
-		);
-	}
-}
-
-#include "IECore/SceneInterface.h"
-
-PrimitiveVariableMap Primitive::loadPrimitiveVariables( const IndexedIO *ioInterface, const IndexedIO::EntryID &name, const IndexedIO::EntryIDList &primVarNames )
-{
-	IECore::Object::LoadContextPtr context = new Object::LoadContext( ioInterface->subdirectory( name )->subdirectory( g_dataEntry ) );
-
-	unsigned int v = m_ioVersion;
-	ConstIndexedIOPtr container = context->container( Primitive::staticTypeName(), v );
-	if ( !container )
-	{
-		throw Exception( "Could not find Primitive entry in the file!" );
-	}
-	ConstIndexedIOPtr ioVariables = container->subdirectory( g_variablesEntry );
-
-	PrimitiveVariableMap variables;
-	IndexedIO::EntryIDList::const_iterator it;
-	for( it=primVarNames.begin(); it!=primVarNames.end(); it++ )
-	{
-		ConstIndexedIOPtr ioPrimVar = ioVariables->subdirectory( *it, IndexedIO::NullIfMissing );
-		if ( !ioPrimVar )
+	container->chdir( "variables" );
+		variables.clear();
+		IndexedIO::EntryList names = container->ls();
+		IndexedIO::EntryList::const_iterator it;
+		for( it=names.begin(); it!=names.end(); it++ )
 		{
-			continue;
+			container->chdir( it->id() );
+				int i; container->read( "interpolation", i );
+				variables.insert( PrimitiveVariableMap::value_type( it->id(), PrimitiveVariable( (PrimitiveVariable::Interpolation)i, context->load<Data>( container, "data" ) ) ) );
+			container->chdir( ".." );
 		}
-		int i; 
-		ioPrimVar->read( g_interpolationEntry, i );
-		variables.insert( 
-			PrimitiveVariableMap::value_type( *it, PrimitiveVariable( (PrimitiveVariable::Interpolation)i, context->load<Data>( ioPrimVar, g_dataEntry ) ) ) 
-		);
-	}
-
-	return variables;
+	container->chdir( ".." );
 }
 
 bool Primitive::isEqualTo( const Object *other ) const
@@ -204,8 +169,6 @@ void Primitive::hash( MurmurHash &h ) const
 		h.append( it->second.interpolation );
 		it->second.data->hash( h );
 	}
-	
-	topologyHash( h );
 }
 
 struct ValidateArraySize

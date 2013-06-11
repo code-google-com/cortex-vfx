@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -54,17 +54,17 @@ class TypedParameterWrap : public IECore::TypedParameter<T>, public Wrapper< IEC
 
 	protected:
 
-		static typename IECore::TypedParameter<T>::ObjectType::Ptr makeDefault( boost::python::object defaultValue )
+		static typename IECore::TypedData<T>::Ptr makeDefault( boost::python::object defaultValue )
 		{
-			typename IECore::TypedParameter<T>::ObjectType::Ptr defaultData;
+			typename IECore::TypedData<T>::Ptr defaultData;
 			boost::python::extract<T> de( defaultValue );
 			if( de.check() )
 			{
-				defaultData = new typename IECore::TypedParameter<T>::ObjectType( de() );
+				defaultData = new IECore::TypedData<T>( de() );
 			}
 			else
 			{
-				defaultData = boost::python::extract<typename IECore::TypedParameter<T>::ObjectType *>( defaultValue )();
+				defaultData = boost::python::extract<IECore::TypedData<T> *>( defaultValue )();
 			}
 			return defaultData;
 		}

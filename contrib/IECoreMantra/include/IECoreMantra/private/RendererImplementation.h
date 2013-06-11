@@ -1,7 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
 //  Copyright 2012 Electric Theatre Collective Limited. All rights reserved.
-//  Copyright (c) 2013, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -36,7 +35,6 @@
 #ifndef IECOREMANTRA_RENDERERIMPLEMENTATION_H
 #define IECOREMANTRA_RENDERERIMPLEMENTATION_H
 
-#include <list>
 #include <stack>
 
 #include "IECore/Camera.h"
@@ -172,9 +170,6 @@ class RendererImplementation : public IECore::Renderer
 
 		virtual IECore::DataPtr command( const std::string &name, const IECore::CompoundDataMap &parameters );
 	
-		virtual void editBegin( const std::string &editType, const IECore::CompoundDataMap &parameters );
-		virtual void editEnd();
-		
 	private:
 		
 		enum Mode

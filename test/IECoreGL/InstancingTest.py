@@ -80,12 +80,7 @@ class InstancingTest( unittest.TestCase ) :
 				
 					mesh = self.__meshes[ int( self.__name.split( "/" )[-1] ) - 1 ]
 					mesh.render( renderer )
-		
-		def hash( self ):
-			
-			h = IECore.MurmurHash()
-			return h
-
+	
 	def __collectMeshes( self, group, result ) :
 	
 		name = group.getState().get( IECoreGL.NameStateComponent.staticTypeId() )

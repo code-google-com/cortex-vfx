@@ -212,27 +212,12 @@ class FileSequenceVectorParameterWrap : public FileSequenceVectorParameter, publ
 			setFileSequenceValues( seqs );
 		}
 
-		list getFileSequenceValuesInternalDataWrap() const
+		list getFileSequenceValuesWrap() const
 		{
 			list r;
 
 			std::vector< FileSequencePtr > sequences;
 			getFileSequenceValues( sequences );
-
-			for ( std::vector< FileSequencePtr >::const_iterator it = sequences.begin(); it != sequences.end(); ++it )
-			{
-				r.append( *it );
-			}
-
-			return r;
-		}
-		
-		list getFileSequenceValuesDataWrap( const StringVectorData *value ) const
-		{
-			list r;
-
-			std::vector< FileSequencePtr > sequences;
-			getFileSequenceValues( value, sequences );
 
 			for ( std::vector< FileSequencePtr >::const_iterator it = sequences.begin(); it != sequences.end(); ++it )
 			{
@@ -265,8 +250,7 @@ void bindFileSequenceVectorParameter()
 				)
 			)
 		)
-		.def( "getFileSequenceValues", &FileSequenceVectorParameterWrap::getFileSequenceValuesInternalDataWrap )
-		.def( "getFileSequenceValues", &FileSequenceVectorParameterWrap::getFileSequenceValuesDataWrap )
+		.def( "getFileSequenceValues", &FileSequenceVectorParameterWrap::getFileSequenceValuesWrap )
 		.def( "setFileSequenceValues", &FileSequenceVectorParameterWrap::setFileSequenceValuesWrap )
 		.add_property( "extensions",&FileSequenceVectorParameterWrap::getExtensionsWrap, &FileSequenceVectorParameterWrap::setExtensionsWrap )
 		.IECOREPYTHON_DEFPARAMETERWRAPPERFNS( FileSequenceVectorParameter )

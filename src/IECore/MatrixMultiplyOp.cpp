@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -98,7 +98,23 @@ MatrixMultiplyOp::MatrixMultiplyOp()
 		&matrixTypes[0]
 	);
 
+	IntParameter::PresetsContainer modePresets;
+	modePresets.push_back( IntParameter::Preset( "point", Point ) );
+	modePresets.push_back( IntParameter::Preset( "vector", Vector ) );
+	modePresets.push_back( IntParameter::Preset( "normal", Normal ) );
+
+	m_modeParameter = new IntParameter(
+		"mode",
+		"The interpretation of the vectors, which modifies the way "
+		"in which they are transformed.",
+		Point,
+		Point,
+		Normal,
+		modePresets,
+		true
+	);
 	parameters()->addParameter( m_matrixParameter );
+	parameters()->addParameter( m_modeParameter );
 }
 
 MatrixMultiplyOp::~MatrixMultiplyOp()
@@ -116,30 +132,41 @@ const ObjectParameter * MatrixMultiplyOp::matrixParameter() const
 	return m_matrixParameter;
 }
 
+IntParameter * MatrixMultiplyOp::modeParameter()
+{
+	return m_modeParameter;
+}
+
+const IntParameter * MatrixMultiplyOp::modeParameter() const
+{
+	return m_modeParameter;
+}
+
 struct MultiplyFunctor
 {
 	typedef void ReturnType;
 
 	DataPtr data;
 	ConstObjectPtr matrix;
+	MatrixMultiplyOp::Mode mode;
 
 	template< typename T, typename U >
-	void multiply33( U * data, const T &matrix )
+	void multiply33( U * data, const T &matrix, MatrixMultiplyOp::Mode mode )
 	{
 		assert( data );
-		
-		GeometricData::Interpretation mode = data->getInterpretation();
+
 		typename U::ValueType::iterator beginIt = data->writable().begin();
 		typename U::ValueType::iterator endIt = data->writable().end();
-		if ( mode==GeometricData::Point || mode==GeometricData::Vector )
+		if( mode==MatrixMultiplyOp::Point || mode==MatrixMultiplyOp::Vector )
 		{
 			for ( typename U::ValueType::iterator it = beginIt; it != endIt; it++ )
 			{
 				*it *= matrix;
 			}
 		}
-		else if ( mode == GeometricData::Normal )
+		else
 		{
+			// normal
 			T m = matrix.inverse();
 			m.transpose();
 			for ( typename U::ValueType::iterator it = beginIt; it != endIt; it++ )
@@ -150,29 +177,29 @@ struct MultiplyFunctor
 	}
 
 	template< typename T, typename U >
-	void multiply( U * data, const T &matrix )
+	void multiply( U * data, const T &matrix, MatrixMultiplyOp::Mode mode )
 	{
 		assert( data );
-		
-		GeometricData::Interpretation mode = data->getInterpretation();
+
 		typename U::ValueType::iterator beginIt = data->writable().begin();
 		typename U::ValueType::iterator endIt = data->writable().end();
-		if ( mode == GeometricData::Point )
+		if( mode==MatrixMultiplyOp::Point )
 		{
 			for ( typename U::ValueType::iterator it = beginIt; it != endIt; it++ )
 			{
 				*it *= matrix;
 			}
 		}
-		else if ( mode == GeometricData::Vector )
+		else if( mode==MatrixMultiplyOp::Vector )
 		{
 			for ( typename U::ValueType::iterator it = beginIt; it != endIt; it++ )
 			{
 				matrix.multDirMatrix( *it, *it );
 			}
 		}
-		else if ( mode == GeometricData::Normal )
+		else
 		{
+			// normal
 			T m = matrix.inverse();
 			m.transpose();
 			for ( typename U::ValueType::iterator it = beginIt; it != endIt; it++ )
@@ -190,22 +217,22 @@ struct MultiplyFunctor
 		switch ( matrix->typeId() )
 		{
 		case M33fDataTypeId:
-			multiply33<M33f, U>( data, staticPointerCast< const M33fData >( matrix )->readable() );
+			multiply33<M33f, U>( data, staticPointerCast< const M33fData >( matrix )->readable(), mode );
 			break;
 		case M33dDataTypeId:
-			multiply33<M33d, U>( data, staticPointerCast< const M33dData >( matrix )->readable() );
+			multiply33<M33d, U>( data, staticPointerCast< const M33dData >( matrix )->readable(), mode );
 			break;
 		case M44fDataTypeId:
-			multiply<M44f, U>( data, staticPointerCast< const M44fData >( matrix )->readable() );
+			multiply<M44f, U>( data, staticPointerCast< const M44fData >( matrix )->readable(), mode );
 			break;
 		case M44dDataTypeId:
-			multiply<M44d, U>( data, staticPointerCast< const M44dData >( matrix )->readable() );
+			multiply<M44d, U>( data, staticPointerCast< const M44dData >( matrix )->readable(), mode );
 			break;
 		case TransformationMatrixfDataTypeId:
-			multiply<M44f, U>( data, staticPointerCast< const TransformationMatrixfData >( matrix )->readable().transform() );
+			multiply<M44f, U>( data, staticPointerCast< const TransformationMatrixfData >( matrix )->readable().transform(), mode );
 			break;
 		case TransformationMatrixdDataTypeId:
-			multiply<M44d, U>( data, staticPointerCast< const TransformationMatrixdData >( matrix )->readable().transform() );
+			multiply<M44d, U>( data, staticPointerCast< const TransformationMatrixdData >( matrix )->readable().transform(), mode );
 			break;
 		default:
 			throw InvalidArgumentException( "Data supplied is not a known matrix type." );
@@ -217,6 +244,6 @@ struct MultiplyFunctor
 void MatrixMultiplyOp::modify( Object * toModify, const CompoundObject * operands )
 {
 	Data *data = static_cast< Data * >( toModify );
-	MultiplyFunctor func = { data, m_matrixParameter->getValue() };
+	MultiplyFunctor func = { data, m_matrixParameter->getValue(), (Mode)m_modeParameter->getNumericValue() };
 	despatchTypedData< MultiplyFunctor, TypeTraits::IsFloatVec3VectorTypedData >( data, func );
 }

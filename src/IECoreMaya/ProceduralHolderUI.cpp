@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -35,7 +35,21 @@
 #include <cassert>
 #include <limits>
 
-#include "IECoreGL/GL.h" // must come first so glew.h is included before gl.h
+#include "IECoreGL/Scene.h"
+#include "IECoreGL/State.h"
+#include "IECoreGL/StateComponent.h"
+#include "IECoreGL/TypedStateComponent.h"
+#include "IECoreGL/NameStateComponent.h"
+#include "IECoreGL/BoxPrimitive.h"
+#include "IECoreGL/Exception.h"
+#include "IECoreGL/Group.h"
+
+#include "IECoreMaya/ProceduralHolderUI.h"
+#include "IECoreMaya/ProceduralHolder.h"
+#include "IECoreMaya/Convert.h"
+
+#include "IECore/MessageHandler.h"
+#include "IECore/SimpleTypedData.h"
 
 #include "maya/MGlobal.h"
 #include "maya/MDrawData.h"
@@ -50,25 +64,10 @@
 #include "maya/MDoubleArray.h"
 #include "maya/MFnCamera.h"
 
-#include "IECore/MessageHandler.h"
-
-#include "IECoreGL/Scene.h"
-#include "IECoreGL/State.h"
-#include "IECoreGL/StateComponent.h"
-#include "IECoreGL/TypedStateComponent.h"
-#include "IECoreGL/NameStateComponent.h"
-#include "IECoreGL/BoxPrimitive.h"
-#include "IECoreGL/Exception.h"
-#include "IECoreGL/Group.h"
-
-#include "IECoreMaya/ProceduralHolderUI.h"
-#include "IECoreMaya/ProceduralHolder.h"
-#include "IECoreMaya/Convert.h"
-
 using namespace IECoreMaya;
 using namespace std;
 
-ProceduralHolderUI::ProceduralHolderUI()
+ProceduralHolderUI::ProceduralHolderUI() : m_prevSceneUpdate( -1 )
 {
 	IECoreGL::init( true );
 }
@@ -112,7 +111,7 @@ void ProceduralHolderUI::getDrawRequests( const MDrawInfo &info, bool objectAndA
 		setWireFrameColors( request, info.displayStatus() );
 		requests.add( request );
 	}
-
+	
 	// requests for the scene if necessary
 	MPlug pGLPreview( proceduralHolder->thisMObject(), ProceduralHolder::aGLPreview );
 	bool glPreview = false;
@@ -266,18 +265,33 @@ void ProceduralHolderUI::draw( const MDrawRequest &request, M3dView &view ) cons
 			resetHilites();
 
 			IECoreGL::ConstScenePtr scene = proceduralHolder->scene();
+			int sceneUpdate = proceduralHolder->getSceneUpdateCount();
+			M3dView::DisplayStyle mayaDisplayStyle = (M3dView::DisplayStyle)request.displayStyle();
+			
+			MObject selection = request.component();
+			
 			if( scene )
 			{
-				IECoreGL::State *displayState = m_displayStyle.baseState( (M3dView::DisplayStyle)request.displayStyle() );
-
-				if ( request.component() != MObject::kNullObj )
+				
+				// we don't want to call scene->render() more than we have to, because it's a bit slow, so
+				// we kind of cache the gl calls it generates in display lists, comme ca:
+				
+				IECoreGL::StatePtr displayState = new IECoreGL::State( *m_displayStyle.baseState( (M3dView::DisplayStyle)request.displayStyle() ) );
+				
+				std::string componentSelection;
+				if( request.displayStatus() == M3dView::kLead )
+				{
+					componentSelection = "lead";
+				}
+				
+				if ( selection != MObject::kNullObj )
 				{
 					MDoubleArray col;
 					s = MGlobal::executeCommand( "colorIndex -q 21", col );
 					assert( s );
 					IECoreGL::WireframeColorStateComponentPtr hilite = new IECoreGL::WireframeColorStateComponent( Imath::Color4f( col[0], col[1], col[2], 1.0f ) );
 
-					MFnSingleIndexedComponent fnComp( request.component(), &s );
+					MFnSingleIndexedComponent fnComp( selection, &s );
 					assert( s );
 
 					int len = fnComp.elementCount( &s );
@@ -285,18 +299,105 @@ void ProceduralHolderUI::draw( const MDrawRequest &request, M3dView &view ) cons
 					for ( int j = 0; j < len; j++ )
 					{
 						int compId = fnComp.element(j);
+						componentSelection += str( boost::format( "%i " ) % compId );
 
 						assert( proceduralHolder->m_componentToGroupMap.find( compId ) != proceduralHolder->m_componentToGroupMap.end() );
 
 						hiliteGroups(
 							proceduralHolder->m_componentToGroupMap[compId],
 							hilite,
-							const_cast<IECoreGL::WireframeColorStateComponent *>( displayState->get< IECoreGL::WireframeColorStateComponent >() )
+							IECore::constPointerCast<IECoreGL::WireframeColorStateComponent>( displayState->get< IECoreGL::WireframeColorStateComponent >() )
 						);
 					}
 				}
-				scene->render( displayState );
+				
+				if( m_prevSceneUpdate != sceneUpdate || m_prevDisplayStatus != request.displayStatus() )
+				{
+					for( DisplayListMap::iterator it = m_displayListIds.begin(); it != m_displayListIds.end(); ++it )
+					{
+						glDeleteLists( it->second, 1 );
+					}
+					
+					m_displayListIds.clear();
+				}
+				m_prevSceneUpdate = sceneUpdate;
+				m_prevDisplayStatus = request.displayStatus();
+				
+				MPlug pCulling( proceduralHolder->thisMObject(), ProceduralHolder::aCulling );
+				int culling = 0;
+				pCulling.getValue( culling );
+				
+				switch( culling )
+				{
+					case 1:
+					{
+						displayState->add( new IECoreGL::DoubleSidedStateComponent( false ) );
+						break;
+					}
+					case 2:
+					{
+						displayState->add( new IECoreGL::DoubleSidedStateComponent( false ) );
+						displayState->add( new IECoreGL::RightHandedOrientationStateComponent( false ) );
+						break;
+					}
+					default: break;
+				}
+				
+				DisplayInfo key( request.displayStatus(), mayaDisplayStyle, culling );
+				
+				if(
+					( mayaDisplayStyle == M3dView::kWireFrame || mayaDisplayStyle == M3dView::kBoundingBox || mayaDisplayStyle == M3dView::kPoints) &&
+					( request.displayStatus() == M3dView::kHilite )
+				)
+				{
+					if( m_prevComponentSelection != componentSelection )
+					{
+						DisplayListMap::iterator it = m_displayListIds.find( key );
+						if( it != m_displayListIds.end() )
+						{
+							glDeleteLists( it->second, 1 );
+							m_displayListIds.erase( it );
+						}
+					}
+					m_prevComponentSelection = componentSelection;
+				}
+				
+				
+				if( proceduralHolder->useDisplayLists() )
+				{
+					DisplayListMap::iterator it = m_displayListIds.find( key );
+
+					if( it == m_displayListIds.end() )
+					{
+						GLuint displayListId = glGenLists(1);
+
+						m_displayListIds[ key ] = displayListId;
+
+						glNewList( displayListId, GL_COMPILE_AND_EXECUTE );
+
+						try
+						{
+							scene->render( displayState );
+						}
+						catch( const IECoreGL::Exception &e )
+						{
+							IECore::msg( IECore::Msg::Error, "ProceduralHolderUI::draw", boost::format( "IECoreGL Exception : %s" ) % e.what() );
+						}
+
+						glEndList();
+					}
+					else
+					{
+						glCallList( m_displayListIds[ key ] );
+					}
+				}
+				else
+				{
+					scene->render( displayState );
+				}
+				
 			}
+			
 		}
 	}
 	catch( const IECoreGL::Exception &e )
@@ -336,36 +437,15 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 	{
 		return false;
 	}
-	
-	// we want to perform the selection using an IECoreGL::Selector, so we
-	// can avoid the performance penalty associated with using GL_SELECT mode.
-	// that means we don't really want to call view.beginSelect(), but we have to
-	// call it just to get the projection matrix for our own selection, because as far
-	// as i can tell, there is no other way of getting it reliably.
-	
+		
+	// draw the scene in select mode, and early out if we have no hits
+	static const GLsizei selectBufferSize = 20000; // enough to select 5000 distinct objects
+	static GLuint selectBuffer[selectBufferSize];
+
 	M3dView view = selectInfo.view();
-	view.beginSelect();
-	Imath::M44d projectionMatrix;
-	glGetDoublev( GL_PROJECTION_MATRIX, projectionMatrix.getValue() );
-	view.endSelect();
-	
-	view.beginGL();
-	
-		glMatrixMode( GL_PROJECTION );
-		glLoadMatrixd( projectionMatrix.getValue() );
-		
-		IECoreGL::Selector::Mode selectionMode = IECoreGL::Selector::IDRender;
-		if( selectInfo.displayStatus() == M3dView::kHilite && !selectInfo.singleSelection() )
-		{
-			selectionMode = IECoreGL::Selector::OcclusionQuery;
-		}
-		
-		IECoreGL::Selector selector;
-		selector.begin( Imath::Box2f( Imath::V2f( 0 ), Imath::V2f( 1 ) ), selectionMode );
-				
-			IECoreGL::State::bindBaseState();
-			selector.baseState()->bind();
-			scene->render( selector.baseState() );
+	view.beginSelect( &selectBuffer[0], selectBufferSize );	
+		glInitNames();
+		glPushName( 0 );
 		
 			if( selectInfo.displayStatus() != M3dView::kHilite )
 			{
@@ -379,13 +459,12 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 					IECoreGL::BoxPrimitive::renderWireframe( IECore::convert<Imath::Box3f>( proceduralHolder->boundingBox() ) );
 				}
 			}
-			
-		std::vector<IECoreGL::HitRecord> hits;
-		selector.end( hits );
 				
-	view.endGL();
-	
-	if( !hits.size() )
+			scene->render( m_displayStyle.baseState( selectInfo.displayStyle() ) );
+		
+	int numHits = view.endSelect();
+
+	if( !numHits )
 	{
 		return false;
 	}
@@ -395,17 +474,23 @@ bool ProceduralHolderUI::select( MSelectInfo &selectInfo, MSelectionList &select
 	MIntArray componentIndices;
 	float depthMin = std::numeric_limits<float>::max();
 	int depthMinIndex = -1;
-	for( int i=0, e = hits.size(); i < e; i++ )
-	{		
-		if( hits[i].depthMin < depthMin )
+	
+	GLuint *hitRecords = selectBuffer;
+	for( int i=0; i<numHits; i++ )
+	{
+		IECoreGL::HitRecord hitRecord( hitRecords );
+		
+		if( hitRecord.depthMin < depthMin )
 		{
-			depthMin = hits[i].depthMin;
+			depthMin = hitRecord.depthMin;
 			depthMinIndex = componentIndices.length();
 		}
 		
-		ProceduralHolder::ComponentsMap::const_iterator compIt = proceduralHolder->m_componentsMap.find( hits[i].name.value() );
+		ProceduralHolder::ComponentsMap::const_iterator compIt = proceduralHolder->m_componentsMap.find( hitRecord.name.value() );
 		assert( compIt != proceduralHolder->m_componentsMap.end() );
 		componentIndices.append( compIt->second.first );		
+
+		hitRecords += hitRecord.offsetToNext();
 	}
 	
 	assert( depthMinIndex >= 0 );

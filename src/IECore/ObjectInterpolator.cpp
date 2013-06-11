@@ -50,21 +50,20 @@ struct LinearInterpolator< Object >::Adaptor
 {
 	typedef ObjectPtr ReturnType;
 
-	const Data *m_y0;
-	const Data *m_y1;
+	DataPtr m_y0, m_y1;
 	double m_x;
 
-	Adaptor( const Object *y0, const Object *y1, double x ) : m_x( x )
+	Adaptor( ObjectPtr y0, ObjectPtr y1, double x ) : m_x( x )
 	{
-		m_y0 = assertedStaticCast< const Data >( y0 );
-		m_y1 = assertedStaticCast< const Data >( y1 );
+		m_y0 = assertedStaticCast< Data >( y0 );
+		m_y1 = assertedStaticCast< Data >( y1 );
 	}
 
 	template<typename T>
 	ReturnType operator()( typename T::Ptr result )
 	{
-		const T *y0 = assertedStaticCast< const T>( m_y0 );
-		const T *y1 = assertedStaticCast< const T>( m_y1 );
+		typename T::Ptr y0 = assertedStaticCast<T>( m_y0 );
+		typename T::Ptr y1 = assertedStaticCast<T>( m_y1 );
 
 		LinearInterpolator<T>()( y0, y1, m_x, result );
 
@@ -72,7 +71,7 @@ struct LinearInterpolator< Object >::Adaptor
 	};
 };
 
-void LinearInterpolator< Object >::operator()( const Object *y0, const Object *y1, double x, ObjectPtr &result ) const
+void LinearInterpolator< Object >::operator()( const ObjectPtr &y0, const ObjectPtr &y1, double x, ObjectPtr &result ) const
 {
 	if ( y0->typeId() != y1->typeId() || y0->typeId() != result->typeId() )
 	{
@@ -81,8 +80,8 @@ void LinearInterpolator< Object >::operator()( const Object *y0, const Object *y
 
 	if ( y0->isInstanceOf( CompoundDataTypeId ) )
 	{
-		const CompoundData *x0 = assertedStaticCast<const CompoundData>( y0 );
-		const CompoundData *x1 = assertedStaticCast<const CompoundData>( y1 );
+		CompoundDataPtr x0 = assertedStaticCast<CompoundData>( y0 );
+		CompoundDataPtr x1 = assertedStaticCast<CompoundData>( y1 );
 		CompoundDataPtr xRes = assertedStaticCast<CompoundData>( result );
 		for ( CompoundDataMap::const_iterator it0 = x0->readable().begin(); it0 != x0->readable().end(); it0++ )
 		{
@@ -106,8 +105,8 @@ void LinearInterpolator< Object >::operator()( const Object *y0, const Object *y
 	}
 	else if ( y0->isInstanceOf( CompoundObjectTypeId ) )
 	{
-		const CompoundObject *x0 = assertedStaticCast<const CompoundObject>( y0 );
-		const CompoundObject *x1 = assertedStaticCast<const CompoundObject>( y1 );
+		CompoundObjectPtr x0 = assertedStaticCast<CompoundObject>( y0 );
+		CompoundObjectPtr x1 = assertedStaticCast<CompoundObject>( y1 );
 		CompoundObjectPtr xRes = assertedStaticCast<CompoundObject>( result );
 		for ( CompoundObject::ObjectMap::const_iterator it0 = x0->members().begin(); it0 != x0->members().end(); it0++ )
 		{
@@ -130,8 +129,8 @@ void LinearInterpolator< Object >::operator()( const Object *y0, const Object *y
 	}
 	else if ( y0->isInstanceOf( PrimitiveTypeId ) )
 	{
-		const Primitive *x0 = assertedStaticCast<const Primitive>( y0 );
-		const Primitive *x1 = assertedStaticCast<const Primitive>( y1 );
+		PrimitivePtr x0 = assertedStaticCast<Primitive>( y0 );
+		PrimitivePtr x1 = assertedStaticCast<Primitive>( y1 );
 		
 		if( x0->variableSize( PrimitiveVariable::Uniform ) == x1->variableSize( PrimitiveVariable::Uniform ) &&
 			x0->variableSize( PrimitiveVariable::Varying ) == x1->variableSize( PrimitiveVariable::Varying ) &&
@@ -140,10 +139,10 @@ void LinearInterpolator< Object >::operator()( const Object *y0, const Object *y
 		)
 		{
 			PrimitivePtr xRes = assertedStaticCast<Primitive>( result );
-			xRes->Object::copyFrom( (const Object *)x0 ); // to get topology and suchlike copied over
+			xRes->Object::copyFrom( (Object *)x0.get() ); // to get topology and suchlike copied over
 			// interpolate blindData
-			const Object *bd0 = x0->blindData();
-			const Object *bd1 = x1->blindData();
+			ObjectPtr bd0 = x0->blindData();
+			ObjectPtr bd1 = x1->blindData();
 			ObjectPtr bdr = xRes->blindData();
 			LinearInterpolator<Object>()( bd0, bd1, x, bdr );			
 			// interpolate primitive variables
@@ -191,27 +190,24 @@ struct CubicInterpolator< Object >::Adaptor
 {
 	typedef ObjectPtr ReturnType;
 
-	const Data *m_y0;
-	const Data *m_y1;
-	const Data *m_y2;
-	const Data *m_y3;
+	DataPtr m_y0, m_y1, m_y2, m_y3;
 	double m_x;
 
-	Adaptor( const Object *y0, const Object *y1, const Object *y2, const Object *y3, double x ) : m_x( x )
+	Adaptor( ObjectPtr y0, ObjectPtr y1, ObjectPtr y2, ObjectPtr y3, double x ) : m_x( x )
 	{
-		m_y0 = assertedStaticCast< const Data >( y0 );
-		m_y1 = assertedStaticCast< const Data >( y1 );
-		m_y2 = assertedStaticCast< const Data >( y2 );
-		m_y3 = assertedStaticCast< const Data >( y3 );
+		m_y0 = assertedStaticCast< Data >( y0 );
+		m_y1 = assertedStaticCast< Data >( y1 );
+		m_y2 = assertedStaticCast< Data >( y2 );
+		m_y3 = assertedStaticCast< Data >( y3 );
 	}
 
 	template<typename T>
 	ReturnType operator()( typename T::Ptr result )
 	{
-		const T *y0 = assertedStaticCast< const T >( m_y0 );
-		const T *y1 = assertedStaticCast< const T >( m_y1 );
-		const T *y2 = assertedStaticCast< const T >( m_y2 );
-		const T *y3 = assertedStaticCast< const T >( m_y3 );
+		typename T::Ptr y0 = assertedStaticCast<T>( m_y0 );
+		typename T::Ptr y1 = assertedStaticCast<T>( m_y1 );
+		typename T::Ptr y2 = assertedStaticCast<T>( m_y2 );
+		typename T::Ptr y3 = assertedStaticCast<T>( m_y3 );
 
 		CubicInterpolator<T>()( y0, y1, y2, y3, m_x, result );
 
@@ -220,7 +216,7 @@ struct CubicInterpolator< Object >::Adaptor
 };
 
 
-void CubicInterpolator<Object>::operator()( const Object *y0, const Object *y1, const Object *y2, const Object *y3, double x, ObjectPtr &result ) const
+void CubicInterpolator<Object>::operator()( const ObjectPtr &y0, const ObjectPtr &y1, const ObjectPtr &y2, const ObjectPtr &y3, double x, ObjectPtr &result ) const
 {
 	if ( y0->typeId() != y1->typeId() || y0->typeId() != y2->typeId() || y0->typeId() != y3->typeId() || y0->typeId() != result->typeId() )
 	{
@@ -229,10 +225,10 @@ void CubicInterpolator<Object>::operator()( const Object *y0, const Object *y1, 
 
 	if ( y0->isInstanceOf( CompoundDataTypeId ) )
 	{
-		const CompoundData *x0 = assertedStaticCast<const CompoundData>( y0 );
-		const CompoundData *x1 = assertedStaticCast<const CompoundData>( y1 );
-		const CompoundData *x2 = assertedStaticCast<const CompoundData>( y2 );
-		const CompoundData *x3 = assertedStaticCast<const CompoundData>( y3 );
+		CompoundDataPtr x0 = assertedStaticCast<CompoundData>( y0 );
+		CompoundDataPtr x1 = assertedStaticCast<CompoundData>( y1 );
+		CompoundDataPtr x2 = assertedStaticCast<CompoundData>( y2 );
+		CompoundDataPtr x3 = assertedStaticCast<CompoundData>( y3 );
 		CompoundDataPtr xRes = assertedStaticCast<CompoundData>( result );
 		for ( CompoundDataMap::const_iterator it1 = x1->readable().begin(); it1 != x1->readable().end(); it1++ )
 		{
@@ -274,10 +270,10 @@ void CubicInterpolator<Object>::operator()( const Object *y0, const Object *y1, 
 	}
 	else if ( y0->isInstanceOf( CompoundObjectTypeId ) )
 	{
-		const CompoundObject *x0 = assertedStaticCast<const CompoundObject>( y0 );
-		const CompoundObject *x1 = assertedStaticCast<const CompoundObject>( y1 );
-		const CompoundObject *x2 = assertedStaticCast<const CompoundObject>( y2 );
-		const CompoundObject *x3 = assertedStaticCast<const CompoundObject>( y3 );
+		CompoundObjectPtr x0 = assertedStaticCast<CompoundObject>( y0 );
+		CompoundObjectPtr x1 = assertedStaticCast<CompoundObject>( y1 );
+		CompoundObjectPtr x2 = assertedStaticCast<CompoundObject>( y2 );
+		CompoundObjectPtr x3 = assertedStaticCast<CompoundObject>( y3 );
 		CompoundObjectPtr xRes = assertedStaticCast<CompoundObject>( result );
 		for ( CompoundObject::ObjectMap::const_iterator it1 = x1->members().begin(); it1 != x1->members().end(); it1++ )
 		{
@@ -335,14 +331,14 @@ void CubicInterpolator<Object>::operator()( const Object *y0, const Object *y1, 
 	}
 }
 
-ObjectPtr linearObjectInterpolation( const Object *y0, const Object *y1, double x )
+ObjectPtr linearObjectInterpolation( const ObjectPtr &y0, const ObjectPtr &y1, double x )
 {
 	ObjectPtr result = Object::create( y0->typeId() );
 	LinearInterpolator<Object>()( y0, y1, x, result );
 	return result;
 }
 
-ObjectPtr cubicObjectInterpolation( const Object *y0, const Object *y1, const Object *y2, const Object *y3, double x )
+ObjectPtr cubicObjectInterpolation( const ObjectPtr &y0, const ObjectPtr &y1, const ObjectPtr &y2, const ObjectPtr &y3, double x )
 {
 	ObjectPtr result = Object::create( y0->typeId() );
 	CubicInterpolator<Object>()( y0, y1, y2, y3, x, result );

@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 #  Copyright (c) 2011, John Haddon. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -234,17 +234,49 @@ class TestRenderer( unittest.TestCase ) :
 		immediate = Renderer()
 		immediate.setOption( "gl:mode", StringData( "immediate" ) )
 
-		with CapturingMessageHandler() as handler :
+		handler = CapturingMessageHandler()
+		Msg.pushHandler( handler )
 
-			for r in [ deferred, immediate ] :
+		for r in [ deferred, immediate ] :
 
-				r.worldBegin()
+			r.worldBegin()
 
-				r.setAttribute( "ri:visibility:diffuse", IntData( 0 ) )
+			r.setAttribute( "ri:visibility:diffuse", IntData( 0 ) )
 
-				r.worldEnd()
+			r.worldEnd()
+
+		Msg.popHandler()
 
 		self.assertEqual( len( handler.messages ), 0 )
+
+	## \todo Make this test assert something
+	def testStacks( self ) :
+
+		r = Renderer()
+		r.setOption( "gl:mode", StringData( "deferred" ) )
+		r.setOption( "gl:searchPath:shader", StringData( os.path.dirname( __file__ ) + "/shaders" ) )
+		r.worldBegin()
+
+		# we have to make this here so that the shaders that get made are made in the
+		# correct GL context. My understanding is that all shaders should work in all
+		# GL contexts in the address space, but that doesn't seem to be the case.
+		#w = SceneViewer( "scene", r.scene() )
+
+		r.concatTransform( M44f.createTranslated( V3f( 0, 0, -5 ) ) )
+		r.shader( "surface", "color", { "colorValue" : Color3fData( Color3f( 1, 0, 0 ) ) } )
+		r.geometry( "sphere", {}, {} )
+
+		r.concatTransform( M44f.createTranslated( V3f( -1, 0, 0 ) ) )
+		r.shader( "surface", "color", { "colorValue" : Color3fData( Color3f( 0, 1, 0 ) ) } )
+		r.geometry( "sphere", {}, {} )
+
+		r.concatTransform( M44f.createTranslated( V3f( 2, 0, 0 ) ) )
+		r.shader( "surface", "color", { "colorValue" : Color3fData( Color3f( 0, 0, 1 ) ) } )
+		r.geometry( "sphere", {}, {} )
+
+		r.worldEnd()
+
+		#w.start()
 
 	def testStackBug( self ) :
 
@@ -358,39 +390,25 @@ class TestRenderer( unittest.TestCase ) :
 		self.assertEqual( result.floatPrimVar( g ), 0 )
 		self.assertEqual( result.floatPrimVar( b ), 1 )
 
+	## \todo Make this assert something
 	def testImagePrimitive( self ) :
 
 		r = Renderer()
 		r.setOption( "gl:mode", StringData( "immediate" ) )
 		r.setOption( "gl:searchPath:shader", StringData( os.path.dirname( __file__ ) + "/shaders" ) )
-		r.display( os.path.dirname( __file__ ) + "/output/testImage.exr", "exr", "rgba", {} )
+		r.display( os.path.dirname( __file__ ) + "/output/testImage.tif", "tiff", "rgba", {} )
 
-		r.camera(
-			"main",
-			{
-				"projection" : IECore.StringData( "orthographic" ),
-				"resolution" : IECore.V2iData( IECore.V2i( 1024 ) ),
-				"clippingPlanes" : IECore.V2fData( IECore.V2f( 1, 1000 ) ),
-				"screenWindow" : IECore.Box2fData( IECore.Box2f( IECore.V2f( -1 ), IECore.V2f( 1 ) ) )
-			}
-		)
-			
+		r.worldBegin()
+
+		r.shader( "surface", "color", { "colorValue" : Color3fData( Color3f( 1, 0, 0 ) ) } )
+
+		r.concatTransform( M44f.createTranslated( V3f( 0, 0, -5 ) ) )
+		r.concatTransform( M44f.createScaled( V3f( 0.005 ) ) )
+
 		i = Reader.create( os.path.dirname( __file__ ) + "/images/numbers.exr" ).read()
-		
-		with IECore.WorldBlock( r ) :
+		i.render( r )
 
-			# the shader should be ignored.
-			r.shader( "surface", "color", { "colorValue" : Color3fData( Color3f( 1, 0, 0 ) ) } )
-			
-			r.concatTransform( M44f.createTranslated( V3f( 0, 0, -5 ) ) )
-			r.concatTransform( M44f.createScaled( V3f( 2. / i.bound().size().x ) ) )
-
-			i.render( r )
-
-		i2 = Reader.create( os.path.dirname( __file__ ) + "/output/testImage.exr" ).read()
-		
-		self.assertEqual( ImageDiffOp()( imageA = i, imageB = i2, maxError = 0.05 ).value, False )
-		
+		r.worldEnd()
 
 	## \todo Make this assert something
 	def testAlphaBlending( self ) :
@@ -400,6 +418,7 @@ class TestRenderer( unittest.TestCase ) :
 		r.setOption( "gl:searchPath:shader", StringData( os.path.dirname( __file__ ) + "/shaders" ) )
 
 		r.worldBegin()
+		#w = SceneViewer( "scene", r.scene() )
 
 		r.setAttribute( "gl:blend:srcFactor", StringData( "one" ) )
 		r.setAttribute( "gl:blend:dstFactor", StringData( "one" ) )
@@ -416,6 +435,8 @@ class TestRenderer( unittest.TestCase ) :
 		i.render( r )
 
 		r.worldEnd()
+
+		#w.start()
 
 	def testProcedural( self ) :
 
@@ -477,22 +498,26 @@ class TestRenderer( unittest.TestCase ) :
 		r.worldBegin()
 		r.worldEnd()
 		
-		with CapturingMessageHandler() as handler :
+		handler = CapturingMessageHandler()
+		Msg.pushHandler( handler )
 		
-			r.attributeBegin()
-			r.setAttribute( "gl:color", Color4fData( Color4f( 1, 2, 3, 4 ) ) )
-			r.attributeEnd()
+		r.attributeBegin()
+		r.setAttribute( "gl:color", Color4fData( Color4f( 1, 2, 3, 4 ) ) )
+		r.attributeEnd()
 		
+		Msg.popHandler()
 		self.assertEqual( len( handler.messages ), 3 )
 		
-		with CapturingMessageHandler() as handler :
+		handler = CapturingMessageHandler()
+		Msg.pushHandler( handler )
 		
-			r.command( "editBegin", {} )
-			r.attributeBegin()
-			r.setAttribute( "gl:color", Color4fData( Color4f( 1, 2, 3, 4 ) ) )
-			r.attributeEnd()
-			r.command( "editEnd", {} )
+		r.command( "editBegin", {} )
+		r.attributeBegin()
+		r.setAttribute( "gl:color", Color4fData( Color4f( 1, 2, 3, 4 ) ) )
+		r.attributeEnd()
+		r.command( "editEnd", {} )
 		
+		Msg.popHandler()
 		self.assertEqual( len( handler.messages ), 0 )
 			
 	def testRemoveObject( self ) :
@@ -592,10 +617,6 @@ class TestRenderer( unittest.TestCase ) :
 				commandResult = renderer.command( "removeObject", { "name" : StringData( "sphereOne" ) } )
 				self.assertEqual( commandResult, BoolData( True ) )
 
-			def hash( self ):
-				h = IECore.MurmurHash()
-				return h
-
 		r.command( "editBegin", {} )
 		r.procedural( RemovalProcedural() )
 		r.command( "editEnd", {} )
@@ -649,12 +670,7 @@ class TestRenderer( unittest.TestCase ) :
 
 				commandResult = renderer.command( "removeObject", { "name" : StringData( "sphereOne" ) } )
 				self.assertEqual( commandResult, BoolData( True ) )
-			
-			def hash( self ):
-			
-				h = IECore.MurmurHash()
-				return h
-		
+
 		r.command( "editBegin", {} )
 		
 		# typically you wouldn't call a renderer method on a separate thread like this. we're just
@@ -737,12 +753,7 @@ class TestRenderer( unittest.TestCase ) :
 					renderer.transformEnd()
 				renderer.transformEnd()
 			renderer.attributeEnd()
-		
-		def hash( self ):
-		
-			h = IECore.MurmurHash()
-			return h
-		
+
 	class RecursiveParameterisedProcedural( ParameterisedProcedural ):
 
 		maxLevel = 5
@@ -1001,11 +1012,7 @@ class TestRenderer( unittest.TestCase ) :
 					g.addChild( myMesh )
 					g.addState( IECore.AttributeState( { "name" : StringData( str(self.__level) ) } ) )
 					g.render( renderer )
-			
-			def hash( self ):
-				h = IECore.MurmurHash()
-				return h
-			
+
 		r = Renderer()
 		r.setOption( "gl:mode", StringData( "deferred" ) )
 		r.worldBegin()
@@ -1061,7 +1068,6 @@ class TestRenderer( unittest.TestCase ) :
 	
 			r = Renderer()
 			r.setOption( "gl:mode", IECore.StringData( mode ) )
-			r.setOption( "gl:searchPath:shaderInclude", IECore.StringData( "./glsl" ) )
 		
 			r.camera( "main", {
 					"projection" : IECore.StringData( "perspective" ),
@@ -1153,7 +1159,7 @@ class TestRenderer( unittest.TestCase ) :
 
 		files = [
 			os.path.dirname( __file__ ) + "/output/testPrimVars.tif",
-			os.path.dirname( __file__ ) + "/output/testImage.exr",
+			os.path.dirname( __file__ ) + "/output/testImage.tif",
 			os.path.dirname( __file__ ) + "/output/testStackBug.tif",
 			os.path.dirname( __file__ ) + "/output/proceduralTest.tif",
 			os.path.dirname( __file__ ) + "/output/depthTest.tif",

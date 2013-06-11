@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -37,8 +37,6 @@
 
 namespace IECore {
 
-static IndexedIO::EntryID g_valueEntry("value");
-
 #define TRANSFORMATIONMATRIX_SIZE	(8 * 3) + 4 + 1		// 8 3D vectors, 1 quaternion and one rotation order.
 
 // define save/load methods backward compatible with the old structure that represented rotate as Quat<T> instead of Euler<T>
@@ -59,26 +57,27 @@ static IndexedIO::EntryID g_valueEntry("value");
 			base.translate.x, base.translate.y, base.translate.z 																	\
 		};																							\
 		Data::save( context );																		\
-		IndexedIO *container = context->rawContainer();												\
-		container->write( g_valueEntry, values, TRANSFORMATIONMATRIX_SIZE );						\
+		IndexedIOInterfacePtr container = context->rawContainer();									\
+		container->write( "value", values, TRANSFORMATIONMATRIX_SIZE );								\
 	}																								\
 																									\
 	template<>																						\
 	void TNAME::load( LoadContextPtr context )														\
 	{																								\
 		Data::load( context );																		\
+		IndexedIOInterfacePtr container;															\
 		TNAME::BaseType values[ TRANSFORMATIONMATRIX_SIZE ];										\
 		TNAME::BaseType *p = &values[0];															\
 		try																							\
 		{																							\
-			const IndexedIO *container = context->rawContainer();									\
-			container->read( g_valueEntry, p, TRANSFORMATIONMATRIX_SIZE );							\
+			container = context->rawContainer();													\
+			container->read( "value", p, TRANSFORMATIONMATRIX_SIZE );								\
 		}																							\
 		catch( ... )																				\
 		{																							\
 			unsigned int v = 0;																		\
-			ConstIndexedIOPtr container = context->container( staticTypeName(), v );				\
-			container->read( g_valueEntry, p, TRANSFORMATIONMATRIX_SIZE );							\
+			container = context->container( staticTypeName(), v );									\
+			container->read( "value", p, TRANSFORMATIONMATRIX_SIZE );								\
 		}																							\
 		TNAME::ValueType &base = TNAME::writable();													\
 		base.scalePivot.x = *p++;																	\

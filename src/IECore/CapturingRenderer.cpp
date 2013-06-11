@@ -55,7 +55,6 @@
 #include "IECore/AttributeState.h"
 #include "IECore/Shader.h"
 #include "IECore/MatrixTransform.h"
-#include "IECore/Light.h"
 
 using namespace std;
 using namespace tbb;
@@ -258,22 +257,6 @@ class CapturingRenderer::Implementation
 			return stack.back().group->getAttribute( name );
 		}
 		
-		void light( const std::string &name, const std::string &handle, const CompoundDataMap &parameters )
-		{
-			ContextPtr context = currentContext();
-			if( !context )
-			{
-				return;
-			}
-			
-			Context::State &state = context->stack.back();
-			state.lights.push_back( new Light( name, handle, parameters ) );
-			if( state.group->children().size() )
-			{
-				state.canCollapseGroups = false;
-			}
-		}
-		
 		void shader( const std::string &type, const std::string &name, const CompoundDataMap &parameters )
 		{
 			ContextPtr context = currentContext();
@@ -379,7 +362,6 @@ class CapturingRenderer::Implementation
 				GroupPtr group;
 				CompoundDataMap attributes;
 				std::vector< ShaderPtr > shaders;
-				std::vector<LightPtr> lights;
 				M44f localTransform;
 				M44f worldTransform;
 				bool canCollapseGroups;
@@ -627,12 +609,6 @@ class CapturingRenderer::Implementation
 					wrapper->addState( (*it)->copy() );
 				}
 			}
-			
-			for( std::vector<LightPtr>::const_iterator it = state.lights.begin(); it!=state.lights.end(); it++ )
-			{
-				wrapper->addState( (*it)->copy() );
-			}
-			
 			if( state.localTransform != M44f() )
 			{
 				wrapper->setTransform( new MatrixTransform( state.localTransform ) );
@@ -664,12 +640,8 @@ class CapturingRenderer::Implementation
 					state.group->addState( (*it)->copy() );
 				}
 			}
+
 			
-			for( std::vector<LightPtr>::const_iterator it = state.lights.begin(); it!=state.lights.end(); it++ )
-			{
-				state.group->addState( (*it)->copy() );
-			}
-				
 			if( state.localTransform != M44f() )
 			{
 				state.group->setTransform( new MatrixTransform( state.localTransform ) );
@@ -805,7 +777,7 @@ void CapturingRenderer::shader( const std::string &type, const std::string &name
 
 void CapturingRenderer::light( const std::string &name, const std::string &handle, const CompoundDataMap &parameters )
 {
-	m_implementation->light( name, handle, parameters );
+	msg( Msg::Warning, "CapturingRenderer::light", "Not implemented" );
 }
 
 void CapturingRenderer::illuminate( const std::string &lightHandle, bool on )
@@ -899,16 +871,6 @@ DataPtr CapturingRenderer::command( const std::string &name, const CompoundDataM
 	return 0;
 }
 
-void CapturingRenderer::editBegin( const std::string &editType, const CompoundDataMap &parameters )
-{
-	msg( Msg::Warning, "CapturingRenderer::editBegin", "Not implemented" );
-}
-
-void CapturingRenderer::editEnd()
-{
-	msg( Msg::Warning, "CapturingRenderer::editEnd", "Not implemented" );
-}
-		
 ConstGroupPtr CapturingRenderer::world()
 {
 	return m_implementation->world();

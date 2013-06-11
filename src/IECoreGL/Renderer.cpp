@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //  Copyright (c) 2011, John Haddon. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,7 @@
 #include "IECoreGL/private/ImmediateRendererImplementation.h"
 #include "IECoreGL/private/Display.h"
 #include "IECoreGL/TypedStateComponent.h"
-#include "IECoreGL/ShaderLoader.h"
+#include "IECoreGL/ShaderManager.h"
 #include "IECoreGL/Shader.h"
 #include "IECoreGL/ShaderStateComponent.h"
 #include "IECoreGL/TextureLoader.h"
@@ -62,6 +62,9 @@
 #include "IECoreGL/FontLoader.h"
 #include "IECoreGL/TextPrimitive.h"
 #include "IECoreGL/DiskPrimitive.h"
+#include "IECoreGL/ToGLCurvesConverter.h"
+#include "IECoreGL/ToGLTextureConverter.h"
+#include "IECoreGL/ToGLPointsConverter.h"
 #include "IECoreGL/CachedConverter.h"
 
 #include "IECore/MessageHandler.h"
@@ -160,7 +163,7 @@ struct IECoreGL::Renderer::MemberData
 	bool inWorld;
 	bool inEdit;
 	RendererImplementationPtr implementation;
-	ShaderLoaderPtr shaderLoader;
+	ShaderManagerPtr shaderManager;
 	TextureLoaderPtr textureLoader;
 #ifdef IECORE_WITH_FREETYPE
 	FontLoaderPtr fontLoader;
@@ -274,7 +277,7 @@ IECoreGL::Renderer::Renderer()
 	m_data->inEdit = false;
 	m_data->currentInstance = 0;
 	m_data->implementation = 0;
-	m_data->shaderLoader = 0;
+	m_data->shaderManager = 0;
 	
 	m_data->cachedConverter = CachedConverter::defaultCachedConverter();
 }
@@ -576,12 +579,12 @@ void IECoreGL::Renderer::worldBegin()
 	if( m_data->options.shaderSearchPath==m_data->options.shaderSearchPathDefault && m_data->options.shaderIncludePath==m_data->options.shaderIncludePathDefault )
 	{
 		// use the shared default cache if we can
-		m_data->shaderLoader = ShaderLoader::defaultShaderLoader();
+		m_data->shaderManager = ShaderManager::defaultShaderManager();
 	}
 	else
 	{
 		IECore::SearchPath includePaths( m_data->options.shaderIncludePath, ":" );
-		m_data->shaderLoader = new ShaderLoader( IECore::SearchPath( m_data->options.shaderSearchPath, ":" ), &includePaths );
+		m_data->shaderManager = new ShaderManager( IECore::SearchPath( m_data->options.shaderSearchPath, ":" ), &includePaths );
 	}
 
 	if( m_data->options.textureSearchPath==m_data->options.textureSearchPathDefault )
@@ -627,9 +630,6 @@ void IECoreGL::Renderer::worldBegin()
 		m_data->implementation->addDisplay( m_data->options.displays[i] );
 	}
 	m_data->implementation->worldBegin();
-	
-	ShaderStateComponentPtr defaultShaderState = new ShaderStateComponent( m_data->shaderLoader, m_data->textureLoader, "", "", "", new CompoundObject );
-	m_data->implementation->addState( defaultShaderState );
 }
 
 void IECoreGL::Renderer::worldEnd()
@@ -646,7 +646,6 @@ void IECoreGL::Renderer::worldEnd()
 	}
 	m_data->implementation->worldEnd();
 	m_data->inWorld = false;
-	m_data->cachedConverter->clearUnused();
 }
 
 ScenePtr IECoreGL::Renderer::scene()
@@ -1515,25 +1514,28 @@ void IECoreGL::Renderer::shader( const std::string &type, const std::string &nam
 
 	if( type=="surface" || type=="gl:surface" )
 	{
+		if ( !m_data->shaderManager )
+		{
+			msg( Msg::Warning, "Renderer::shader", "Shader specification before world begin ignored. No ShaderManager defined yet." );
+			return;
+		}
 		string vertexSource = parameterValue<string>( "gl:vertexSource", parameters, "" );
-		string geometrySource = parameterValue<string>( "gl:geometrySource", parameters, "" );
 		string fragmentSource = parameterValue<string>( "gl:fragmentSource", parameters, "" );
 
-		if( vertexSource == "" && geometrySource == "" && fragmentSource == "" )
+		if ( vertexSource == "" && fragmentSource == "" )
 		{
-			m_data->shaderLoader->loadSource( name, vertexSource, geometrySource, fragmentSource );
+			m_data->shaderManager->loadShaderCode( name, vertexSource, fragmentSource );
 		}
 
-		CompoundObjectPtr parametersData = new CompoundObject;
+		// validate the parameter types and load any texture parameters.
+		ShaderStateComponentPtr shaderState = new ShaderStateComponent( m_data->shaderManager, m_data->textureLoader, vertexSource, fragmentSource );
 		for( CompoundDataMap::const_iterator it=parameters.begin(); it!=parameters.end(); it++ )
 		{
-			if( it->first!="gl:fragmentSource" && it->first!="gl:geometrySource" && it->first!="gl:vertexSource" )
+			if( it->first!="gl:fragmentSource" && it->first!="gl:vertexSource" )
 			{
-				parametersData->members()[it->first] = it->second;
+				shaderState->addShaderParameterValue( it->first.value(), it->second );
 			}
 		}
-
-		ShaderStateComponentPtr shaderState = new ShaderStateComponent( m_data->shaderLoader, m_data->textureLoader, vertexSource, geometrySource, fragmentSource, parametersData );
 		m_data->implementation->addState( shaderState );
 	}
 	else if( type.find( "gl:" ) == 0 || type.find_first_of( ":" ) == string::npos )
@@ -1658,11 +1660,9 @@ static const std::string &imageFragmentShader()
 	static const std::string shaderCode = 
 		"uniform sampler2D texture;"
 		""
-		"varying vec2 fragmentst;"
-		""
 		"void main()"
 		"{"
-		"	gl_FragColor = texture2D( texture, fragmentst );"
+		"	gl_FragColor = texture2D( texture, gl_TexCoord[0].xy );"
 		"}";
 	return shaderCode;
 }
@@ -1690,7 +1690,7 @@ void IECoreGL::Renderer::image( const Imath::Box2i &dataWindow, const Imath::Box
 	IECore::CompoundObjectPtr params = new IECore::CompoundObject();
 	params->members()[ "texture" ] = image;
 
-	ShaderStateComponentPtr shaderState = new ShaderStateComponent( m_data->shaderLoader, m_data->textureLoader, "", "", imageFragmentShader(), params );
+	ShaderStateComponentPtr shaderState = new ShaderStateComponent( m_data->shaderManager, m_data->textureLoader, "", imageFragmentShader(), params );
 
 	m_data->implementation->transformBegin();
 
@@ -1843,7 +1843,7 @@ typedef std::map<string, Command> CommandMap;
 
 bool removeObjectWalk( IECoreGL::GroupPtr parent, IECoreGL::GroupPtr child, const std::string &objectName, IECoreGL::Renderer::MemberData *memberData )
 {
-	const NameStateComponent *stateName = child->getState()->get<NameStateComponent>();
+	ConstNameStateComponentPtr stateName = child->getState()->get<NameStateComponent>();
 	if( stateName && stateName->name()==objectName )
 	{
 		if( parent )
@@ -2006,19 +2006,9 @@ IECore::DataPtr IECoreGL::Renderer::command( const std::string &name, const IECo
 	return 0;
 }
 
-void IECoreGL::Renderer::editBegin( const std::string &name, const IECore::CompoundDataMap &parameters )
+IECoreGL::ShaderManager *IECoreGL::Renderer::shaderManager()
 {
-	msg( Msg::Warning, "Renderer::editBegin", "Not implemented" );
-}
-
-void IECoreGL::Renderer::editEnd()
-{
-	msg( Msg::Warning, "Renderer::editEnd", "Not implemented" );
-}
-
-IECoreGL::ShaderLoader *IECoreGL::Renderer::shaderLoader()
-{
-	return m_data->shaderLoader;
+	return m_data->shaderManager;
 }
 
 IECoreGL::TextureLoader *IECoreGL::Renderer::textureLoader()

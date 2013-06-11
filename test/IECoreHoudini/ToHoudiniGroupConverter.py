@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2010-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -144,7 +144,7 @@ class TestToHoudiniGroupConverter( IECoreHoudini.TestCase ) :
 		pData = IECore.V3fVectorData( [
 			IECore.V3f( 0, 1, 2 ), IECore.V3f( 1 ), IECore.V3f( 2 ), IECore.V3f( 3 ),
 			IECore.V3f( 4 ), IECore.V3f( 5 ), IECore.V3f( 6 ), IECore.V3f( 7 ),
-		], IECore.GeometricData.Interpretation.Point )
+		] )
 		mesh["P"] = IECore.PrimitiveVariable( pointInterpolation, pData )
 		mesh["floatPoint"] = IECore.PrimitiveVariable( pointInterpolation, floatVectorData[:8] )
 		mesh["v2fPoint"] = IECore.PrimitiveVariable( pointInterpolation, v2fVectorData[:8] )
@@ -250,52 +250,67 @@ class TestToHoudiniGroupConverter( IECoreHoudini.TestCase ) :
 	def testConvertScene( self ) :
 		null = self.emptySop()
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( self.buildScene() ).convert( null ) )
-		geo = null.geometry()
-		nameAttr = geo.findPrimAttrib( "name" )
-		self.assertEqual( sorted(nameAttr.strings()), [ "curveBoxGroup", "meshGroupA", "meshGroupB" ] )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "meshGroupA" ]), 6 )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "meshGroupB" ]), 6 )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "curveBoxGroup" ]), 12 )
+		primGroups = null.geometry().primGroups()
+		primGroupMap = {}
+		for x in primGroups :
+			primGroupMap[x.name()] = x
+		
+		self.assertEqual( len(primGroups), 3 )
+		self.failUnless( "meshGroupA" in primGroupMap )
+		self.assertEqual( len(primGroupMap["meshGroupA"].prims()), 6 )
+		self.failUnless( "meshGroupB" in primGroupMap )
+		self.assertEqual( len(primGroupMap["meshGroupB"].prims()), 6 )
+		self.failUnless( "curveBoxGroup" in primGroupMap )
+		self.assertEqual( len(primGroupMap["curveBoxGroup"].prims()), 12 )
 		
 		result = IECoreHoudini.FromHoudiniGroupConverter( null ).convert()
 		children = result.children()
 		for i in range ( 0, len(children) ) :
 			name = children[i].blindData()['name'].value
-			self.failUnless( name in nameAttr.strings() )
-			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len([ x for x in geo.prims() if x.attribValue( "name" ) == name ] ) )
+			self.failUnless( name in primGroupMap )
+			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len(primGroupMap[name].prims()) )
 		
 	def testAppending( self ) :
 		null = self.emptySop()
 		scene = self.buildScene()
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( scene ).convert( null ) )
-		geo = null.geometry()
-		nameAttr = geo.findPrimAttrib( "name" )
-		self.assertEqual( sorted(nameAttr.strings()), [ "curveBoxGroup", "meshGroupA", "meshGroupB" ] )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "meshGroupA" ]), 6 )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "meshGroupB" ]), 6 )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "curveBoxGroup" ]), 12 )
+		primGroups = null.geometry().primGroups()
+		primGroupMap = {}
+		for x in primGroups :
+			primGroupMap[x.name()] = x
+		
+		self.assertEqual( len(primGroups), 3 )
+		self.failUnless( "meshGroupA" in primGroupMap )
+		self.assertEqual( len(primGroupMap["meshGroupA"].prims()), 6 )
+		self.failUnless( "meshGroupB" in primGroupMap )
+		self.assertEqual( len(primGroupMap["meshGroupB"].prims()), 6 )
+		self.failUnless( "curveBoxGroup" in primGroupMap )
+		self.assertEqual( len(primGroupMap["curveBoxGroup"].prims()), 12 )
 		
 		result = IECoreHoudini.FromHoudiniGroupConverter( null ).convert()
 		children = result.children()
 		for i in range ( 0, len(children) ) :
 			name = children[i].blindData()['name'].value
-			self.failUnless( name in nameAttr.strings() )
-			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len([ x for x in geo.prims() if x.attribValue( "name" ) == name ] ) )
+			self.failUnless( name in primGroupMap )
+			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len(primGroupMap[name].prims()) )
 			
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( scene ).convert( null, append=True ) )
-		geo = null.geometry()
-		nameAttr = geo.findPrimAttrib( "name" )
-		self.assertEqual( sorted(nameAttr.strings()), [ "curveBoxGroup", "meshGroupA", "meshGroupB" ] )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "meshGroupA" ]), 12 )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "meshGroupB" ]), 12 )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "curveBoxGroup" ]), 24 )
+		primGroups = null.geometry().primGroups()
+		
+		self.assertEqual( len(primGroups), 3 )
+		self.failUnless( "meshGroupA" in primGroupMap )
+		self.assertEqual( len(primGroupMap["meshGroupA"].prims()), 12 )
+		self.failUnless( "meshGroupB" in primGroupMap )
+		self.assertEqual( len(primGroupMap["meshGroupB"].prims()), 12 )
+		self.failUnless( "curveBoxGroup" in primGroupMap )
+		self.assertEqual( len(primGroupMap["curveBoxGroup"].prims()), 24 )
 		
 		result = IECoreHoudini.FromHoudiniGroupConverter( null ).convert()
 		children = result.children()
 		for i in range ( 0, len(children) ) :
 			name = children[i].blindData()['name'].value
-			self.failUnless( name in nameAttr.strings() )
-			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len([ x for x in geo.prims() if x.attribValue( "name" ) == name ] ) )
+			self.failUnless( name in primGroupMap )
+			self.assertEqual( children[i].variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), len(primGroupMap[name].prims()) )
 		
 	def testConvertGroupedPoints( self ) :
 		null = self.emptySop()
@@ -311,28 +326,34 @@ class TestToHoudiniGroupConverter( IECoreHoudini.TestCase ) :
 		group = IECore.Group()
 		group.addChild( self.mesh() )
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( group ).convert( null ) )
-		geo = null.geometry()
-		nameAttr = geo.findPrimAttrib( "name" )
-		self.assertEqual( nameAttr.strings(), tuple( [ "meshGroupA" ] ) )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "meshGroupA" ]), 6 )
+		primGroups = null.geometry().primGroups()
+		
+		self.assertEqual( len(primGroups), 1 )
+		self.assertEqual( primGroups[0].name(), "meshGroupA" )
+		self.assertEqual( len(primGroups[0].prims()), 6 )
 	
 	def testConvertGroupedMultiMeshes( self ) :
 		null = self.emptySop()
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( self.twoMeshes() ).convert( null ) )
-		geo = null.geometry()
-		nameAttr = geo.findPrimAttrib( "name" )
-		self.assertEqual( nameAttr.strings(), tuple( [ "meshGroupA", "meshGroupB" ] ) )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "meshGroupA" ]), 6 )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "meshGroupB" ]), 6 )
+		primGroups = null.geometry().primGroups()
+		
+		self.assertEqual( len(primGroups), 2 )
+		self.assertEqual( primGroups[0].name(), "meshGroupA" )
+		self.assertEqual( len(primGroups[0].prims()), 6 )
+		self.assertEqual( primGroups[1].name(), "meshGroupB" )
+		self.assertEqual( len(primGroups[1].prims()), 6 )
 	
 	def testConvertGroupedPointsAndPolygons( self ) :
 		null = self.emptySop()
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( self.pointTwoBox() ).convert( null ) )
-		geo = null.geometry()
-		nameAttr = geo.findPrimAttrib( "name" )
-		self.assertEqual( nameAttr.strings(), tuple( [ "curveBoxGroup" ] ) )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "curveBoxGroup" ]), 12 )
-	
+		primGroups = null.geometry().primGroups()
+		primGroupMap = {}
+		for x in primGroups :
+			primGroupMap[x.name()] = x
+		self.assertEqual( len(primGroups), 1 )
+		self.failUnless( "curveBoxGroup"in primGroupMap )
+		self.assertEqual( len(primGroupMap["curveBoxGroup"].prims()), 12 )
+		
 	def testAdjustedStringVectorIndices( self ) :
 		null = self.emptySop()
 		group = self.twoMeshes()
@@ -342,15 +363,16 @@ class TestToHoudiniGroupConverter( IECoreHoudini.TestCase ) :
 		group.children()[1]["commonString"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Constant, IECore.StringVectorData( [ "second" ] ) )
 		group.children()[1]["commonStringIndices"] = indices
 		self.failUnless( IECoreHoudini.ToHoudiniGroupConverter( group ).convert( null ) )
-		geo = null.geometry()
-		nameAttr = geo.findPrimAttrib( "name" )
-		self.assertEqual( nameAttr.strings(), tuple( [ "meshGroupA", "meshGroupB" ] ) )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "meshGroupA" ]), 6 )
-		self.assertEqual( len([ x for x in geo.prims() if x.attribValue( "name" ) == "meshGroupB" ]), 6 )
-		for prim in geo.prims() :
-			expected = "first" if prim.attribValue( "name" ) == "meshGroupA" else "second"
-			self.assertEqual( prim.stringListAttribValue( "commonString" ), tuple( [ expected ] ) )
-			self.assertEqual( prim.attribValue( "commonString" ), expected )
+		geometry = null.geometry()
+		primGroups = geometry.primGroups()
+		
+		expected = [ "first", "second" ]
+		self.assertEqual( len(primGroups), 2 )
+		for i in range( 0, len(primGroups) ) :
+			self.assertEqual( len(primGroups[i].prims()), 6 )
+			for prim in primGroups[i].prims() :
+				self.assertEqual( prim.stringListAttribValue( "commonString" ), tuple( [ expected[i] ] ) )
+				self.assertEqual( prim.attribValue( "commonString" ), expected[i] )
 	
 	def testTransforms( self ) :
 		
@@ -427,137 +449,6 @@ IECoreHoudini.ToHoudiniGroupConverter( group ).convertToGeo( hou.pwd().geometry(
 		self.assertEqual( len(sop.geometry().prims()), 107 )
 		
 		sop.destroy()
-	
-	def testAttributeFilter( self ) :
-		
-		group = self.buildScene()
-		sop = self.emptySop()
-		
-		converter = IECoreHoudini.ToHoudiniGroupConverter( group )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['P', 'Pw', 'color3fPoint', 'floatPoint', 'intPoint', 'stringPoint', 'v2fPoint', 'v2iPoint', 'v3fPoint', 'v3iPoint'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), ['color3fPrim', 'floatPrim', 'intPrim', 'name', 'stringPrim', 'v2fPrim', 'v2iPrim', 'v3fPrim', 'v3iPrim'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), ['color3fVert', 'floatVert', 'intVert', 'stringVert', 'v2fVert', 'v2iVert', 'v3fVert', 'v3iVert'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), ['color3fDetail', 'floatDetail', 'intDetail', 'stringDetail', 'v2fDetail', 'v2iDetail', 'v3fDetail', 'v3iDetail'] )
-		
-		converter.parameters()["attributeFilter"].setTypedValue( "P *3f*" )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['P', 'Pw', 'color3fPoint', 'v3fPoint'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), ['color3fPrim', 'name', 'v3fPrim'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), ['color3fVert', 'v3fVert'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), ['color3fDetail', 'v3fDetail'] )
-		
-		converter.parameters()["attributeFilter"].setTypedValue( "* ^*Detail ^int*" )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['P', 'Pw', 'color3fPoint', 'floatPoint', 'stringPoint', 'v2fPoint', 'v2iPoint', 'v3fPoint', 'v3iPoint'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), ['color3fPrim', 'floatPrim', 'name', 'stringPrim', 'v2fPrim', 'v2iPrim', 'v3fPrim', 'v3iPrim'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), ['color3fVert', 'floatVert', 'stringVert', 'v2fVert', 'v2iVert', 'v3fVert', 'v3iVert'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), [] )
-		
-		# verify we can filter uvs
-		mesh = IECore.MeshPrimitive.createPlane( IECore.Box2f( IECore.V2f( 0 ), IECore.V2f( 1 ) ) )
-		IECore.TriangulateOp()( input=mesh, copyInput=False )
-		IECore.MeshNormalsOp()( input=mesh, copyInput=False )
-		mesh["Cs"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.FaceVarying, IECore.V3fVectorData( [ IECore.V3f( 1, 0, 0 ) ] * 6, IECore.GeometricData.Interpretation.Color ) )
-		mesh["width"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, IECore.FloatVectorData( [ 1 ] * 4 ) )
-		mesh["Pref"] = mesh["P"]
-		group = IECore.Group()
-		group.addChild( mesh )
-		group.addChild( mesh.copy() )
-		group.addChild( mesh.copy() )
-		
-		converter = IECoreHoudini.ToHoudiniGroupConverter( group )
-		converter.parameters()["attributeFilter"].setTypedValue( "*" )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['N', 'P', 'Pw', 'pscale', 'rest'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), ['Cd', 'uv'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), [] )
-		
-		# have to filter the source attrs s, t and not uv
-		converter.parameters()["attributeFilter"].setTypedValue( "* ^uv ^pscale ^rest" )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['N', 'P', 'Pw', 'pscale', 'rest'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), ['Cd', 'uv'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), [] )
-		
-		converter.parameters()["attributeFilter"].setTypedValue( "* ^s ^t ^width ^Pref" )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['N', 'P', 'Pw'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), ['Cd'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), [] )
-		
-		converter.parameters()["attributeFilter"].setTypedValue( "* ^s ^width ^Cs" )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['N', 'P', 'Pw', 'rest'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), ['t'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), [] )
-	
-	def testStandardAttributeConversion( self ) :
-		
-		sop = self.emptySop()
-		
-		mesh = IECore.MeshPrimitive.createPlane( IECore.Box2f( IECore.V2f( 0 ), IECore.V2f( 1 ) ) )
-		IECore.TriangulateOp()( input=mesh, copyInput=False )
-		IECore.MeshNormalsOp()( input=mesh, copyInput=False )
-		mesh["Cs"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.FaceVarying, IECore.V3fVectorData( [ IECore.V3f( 1, 0, 0 ) ] * 6, IECore.GeometricData.Interpretation.Color ) )
-		mesh["width"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, IECore.FloatVectorData( [ 1 ] * 4 ) )
-		mesh["Pref"] = mesh["P"]
-		
-		self.assertTrue( mesh.arePrimitiveVariablesValid() )
-		
-		group = IECore.Group()
-		group.addChild( mesh )
-		group.addChild( mesh.copy() )
-		group.addChild( mesh.copy() )
-		
-		converter = IECoreHoudini.ToHoudiniGroupConverter( group )
-		self.assertTrue( converter.convert( sop ) )
-		geo = sop.geometry()
-		self.assertEqual( sorted([ x.name() for x in geo.pointAttribs() ]), ['N', 'P', 'Pw', 'pscale', 'rest'] )
-		self.assertEqual( sorted([ x.name() for x in geo.primAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in geo.vertexAttribs() ]), ['Cd', 'uv'] )
-		self.assertEqual( sorted([ x.name() for x in geo.globalAttribs() ]), [] )
-		
-		sData = mesh["s"].data.copy()
-		sData.extend( mesh["s"].data )
-		sData.extend( mesh["s"].data )
-		tData = mesh["t"].data.copy()
-		tData.extend( mesh["t"].data )
-		tData.extend( mesh["t"].data )
-		uvs = geo.findVertexAttrib( "uv" )
-		
-		i = 0
-		for prim in geo.prims() :
-			verts = list(prim.vertices())
-			verts.reverse()
-			for vert in verts :
-				uvValues = vert.attribValue( uvs )
-				self.assertAlmostEqual( uvValues[0], sData[i] )
-				self.assertAlmostEqual( uvValues[1], 1 - tData[i] )
-				i += 1
-		
-		converter["convertStandardAttributes"].setTypedValue( False )
-		self.assertTrue( converter.convert( sop ) )
-		geo = sop.geometry()
-		self.assertEqual( sorted([ x.name() for x in geo.pointAttribs() ]), ['N', 'P', 'Pref', 'Pw', 'width'] )
-		self.assertEqual( sorted([ x.name() for x in geo.primAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in geo.vertexAttribs() ]), ['Cs', 's', 't'] )
-		self.assertEqual( sorted([ x.name() for x in geo.globalAttribs() ]), [] )
-		
-		i = 0
-		s = geo.findVertexAttrib( "s" )
-		t = geo.findVertexAttrib( "t" )
-		for prim in geo.prims() :
-			verts = list(prim.vertices())
-			verts.reverse()
-			for vert in verts :
-				self.assertAlmostEqual( vert.attribValue( s ), sData[i] )
-				self.assertAlmostEqual( vert.attribValue( t ), tData[i] )
-				i += 1
 	
 	def tearDown( self ) :
 		

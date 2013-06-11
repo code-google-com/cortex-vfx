@@ -106,7 +106,6 @@ class GeometryCombinerTest( IECoreMaya.TestCase ) :
 		self.failIf( "ieString" in combined.children()[0].blindData() )
 		
 		maya.cmds.setAttr( combiner + ".convertBlindData", 1 )
-		maya.cmds.setAttr( combiner + ".blindDataAttrPrefix", "ie", type="string" )
 
 		combined = IECoreMaya.FromMayaPlugConverter.create( combiner + ".outputGroup" ).convert()
 		

@@ -35,25 +35,26 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include "IECoreHoudini/SOP_ParameterisedHolder.h"
 #include "IECoreHoudini/FnParameterisedHolder.h"
 
 using namespace IECoreHoudini;
 
-FnParameterisedHolder::FnParameterisedHolder( OP_Node *node ) : m_handle()
+FnParameterisedHolder::FnParameterisedHolder( SOP_Node *sop ) : m_handle()
 {
-	if ( !node )
+	if ( !sop )
 	{
 		return;
 	}
 
-	if ( getHolder( node ) )
+	if ( getHolder( sop ) )
 	{
-		setHolder( node );
+		setHolder( sop );
 	}
 	else
 	{
 		UT_String path;
-		node->getFullPath( path );
+		sop->getFullPath( path );
 		std::cerr << path << " was not a valid ieParameterisedHolder!" << std::endl;
 	}
 }
@@ -66,7 +67,7 @@ bool FnParameterisedHolder::hasParameterised()
 {
 	if ( hasHolder() )
 	{
-		ParameterisedHolderInterface *holder = getHolder( static_cast<OP_Node*>( m_handle.node() ) );
+		SOP_ParameterisedHolder *holder = getHolder( static_cast<SOP_Node*>( m_handle.node() ) );
 		if ( holder )
 		{
 			return holder->hasParameterised();
@@ -83,7 +84,7 @@ void FnParameterisedHolder::setParameterised( IECore::RunTimeTypedPtr p )
 		return;
 	}
 	
-	ParameterisedHolderInterface *holder = getHolder( static_cast<OP_Node*>( m_handle.node() ) );
+	SOP_ParameterisedHolder *holder = getHolder( static_cast<SOP_Node*>( m_handle.node() ) );
 	if ( !holder )
 	{
 		return;
@@ -99,7 +100,7 @@ void FnParameterisedHolder::setParameterised( const std::string &className, int 
 		return;
 	}
 	
-	ParameterisedHolderInterface *holder = getHolder( static_cast<OP_Node*>( m_handle.node() ) );
+	SOP_ParameterisedHolder *holder = getHolder( static_cast<SOP_Node*>( m_handle.node() ) );
 	if ( !holder )
 	{
 		return;
@@ -112,7 +113,7 @@ IECore::RunTimeTypedPtr FnParameterisedHolder::getParameterised()
 {
 	if ( hasHolder() )
 	{
-		ParameterisedHolderInterface *holder = getHolder( static_cast<OP_Node*>( m_handle.node() ) );
+		SOP_ParameterisedHolder *holder = getHolder( static_cast<SOP_Node*>( m_handle.node() ) );
 		if ( holder )
 		{
 			return holder->getParameterised();
@@ -129,7 +130,7 @@ void FnParameterisedHolder::setParameterisedValues( double time )
 		return;
 	}
 	
-	ParameterisedHolderInterface *holder = getHolder( static_cast<OP_Node*>( m_handle.node() ) );
+	SOP_ParameterisedHolder *holder = getHolder( static_cast<SOP_Node*>( m_handle.node() ) );
 	if ( !holder )
 	{
 		return;
@@ -143,16 +144,16 @@ bool FnParameterisedHolder::hasHolder()
 	return m_handle.alive();
 }
 
-void FnParameterisedHolder::setHolder( OP_Node *node )
+void FnParameterisedHolder::setHolder( SOP_Node *sop )
 {
-	m_handle = node;
+	m_handle = sop;
 }
 
-ParameterisedHolderInterface *FnParameterisedHolder::getHolder( OP_Node *node )
+SOP_ParameterisedHolder *FnParameterisedHolder::getHolder( SOP_Node *sop )
 {
-	if ( node )
+	if ( sop )
 	{
-		return dynamic_cast<ParameterisedHolderInterface*>( node );
+		return dynamic_cast<SOP_ParameterisedHolder*>( sop );
 	}
 
 	return 0;

@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -34,9 +34,6 @@
 
 from __future__ import with_statement
 import unittest
-import threading
-import time
-import weakref
 
 from IECore import *
 
@@ -50,22 +47,9 @@ class TestMessageHandler( unittest.TestCase ) :
 	def testStack( self ) :
 
 		for i in range( 1, 10 ) :
-			m = NullMessageHandler()
-			with m :
-				self.assertTrue( m.isSame( MessageHandler.currentHandler() ) )
-
-		m1 = NullMessageHandler()
-		m2 = NullMessageHandler()
-		
-		self.assertTrue( MessageHandler.currentHandler().isSame( MessageHandler.getDefaultHandler() ) )
-		
-		with m1 :
-			self.assertTrue( MessageHandler.currentHandler().isSame( m1 ) )
-			with m2 :
-				self.assertTrue( MessageHandler.currentHandler().isSame( m2 ) )
-			self.assertTrue( MessageHandler.currentHandler().isSame( m1 ) )
-			
-		self.assertTrue( MessageHandler.currentHandler().isSame( MessageHandler.getDefaultHandler() ) )				
+			MessageHandler.pushHandler( NullMessageHandler() )
+		for i in range( 1, 10 ) :
+			MessageHandler.popHandler()
 
 	def testLevelStringConversion( self ) :
 
@@ -84,14 +68,16 @@ class TestMessageHandler( unittest.TestCase ) :
 
 	def testOutput( self ) :
 
-		with NullMessageHandler() :
+		MessageHandler.pushHandler( NullMessageHandler() )
 
-			MessageHandler.output( Msg.Level.Debug, "message handler test", "ignore me" )
-			MessageHandler.output( Msg.Level.Info, "message handler test", "and me" )
-			MessageHandler.output( Msg.Level.Warning, "message handler test", "and me" )
-			MessageHandler.output( Msg.Level.Error, "message handler test", "and me" )
+		MessageHandler.output( Msg.Level.Debug, "message handler test", "ignore me" )
+		MessageHandler.output( Msg.Level.Info, "message handler test", "and me" )
+		MessageHandler.output( Msg.Level.Warning, "message handler test", "and me" )
+		MessageHandler.output( Msg.Level.Error, "message handler test", "and me" )
 
-			msg( Msg.Level.Error, "message handler test", "and me" )
+		msg( Msg.Level.Error, "message handler test", "and me" )
+
+		MessageHandler.popHandler()
 
 	def testOStreamHandler( self ) :
 
@@ -108,12 +94,14 @@ class TestMessageHandler( unittest.TestCase ) :
 
 	def testLevelFilteredMessageHandler( self ):
 
-		with LevelFilteredMessageHandler( NullMessageHandler(), Msg.Level.Info ) :
+		MessageHandler.pushHandler( LevelFilteredMessageHandler(NullMessageHandler(), Msg.Level.Info ) )
 
-			MessageHandler.output( Msg.Level.Debug, "message handler test", "ignore me" )
-			MessageHandler.output( Msg.Level.Info, "message handler test", "and me" )
-			MessageHandler.output( Msg.Level.Warning, "message handler test", "and me" )
-			MessageHandler.output( Msg.Level.Error, "message handler test", "and me" )
+		MessageHandler.output( Msg.Level.Debug, "message handler test", "ignore me" )
+		MessageHandler.output( Msg.Level.Info, "message handler test", "and me" )
+		MessageHandler.output( Msg.Level.Warning, "message handler test", "and me" )
+		MessageHandler.output( Msg.Level.Error, "message handler test", "and me" )
+
+		MessageHandler.popHandler()
 
 	class Derived( MessageHandler ):
 
@@ -131,8 +119,9 @@ class TestMessageHandler( unittest.TestCase ) :
 	def testSubclassing( self ):
 
 		myHandler = self.Derived()
-		with myHandler :
-			MessageHandler.output( Msg.Level.Info, "context", "message" )
+		MessageHandler.pushHandler( myHandler )
+		MessageHandler.output( Msg.Level.Info, "context", "message" )
+		MessageHandler.popHandler()
 
 		self.assertEqual( myHandler.lastLevel.value, Msg.Level.Info )
 		self.assertEqual( myHandler.lastContext.value, "context" )
@@ -177,52 +166,10 @@ class TestMessageHandler( unittest.TestCase ) :
 		setLogLevel( oldLevel )
 
 		self.assertEqual( MessageHandler.currentHandler().getLevel(), oldLevel )
-				
-	def testContextManagerReturnValue( self ) :
-	
-		mh = self.Derived()
-		with mh as mh2 :
-			pass
-			
-		self.failUnless( mh is mh2 )
-	
-	def testThreading( self ) :
-	
-		def f( handler ) :
 		
-			with handler :
-				for i in range( 0, 100 ) :
-					msg( Msg.Level.Info, "test", str( i ) )
-					time.sleep( 0.0001 ) # encourage python to switch threads
-					
-		handlers = []
-		threads = []
-		for i in range( 0, 100 ) :
-			handler = CapturingMessageHandler()
-			thread = threading.Thread( target = f, args = [ handler ] )
-			threads.append( thread )
-			handlers.append( handler )
-			thread.start()
-			
-		for thread in threads :
-			thread.join()
-		
-		for handler in handlers :
-			self.assertEqual( len( handler.messages ), 100 )
-			for i, m in enumerate( handler.messages ) :
-				self.assertEqual( str( i ), m.message )
+	def testTooManyPops( self ) :
 	
-	def testLifetime( self ) :
-	
-		m = NullMessageHandler()
-		w = weakref.ref( m )
-		
-		with m :
-			pass
-			
-		del m
-		
-		self.assertEqual( w(), None )
+		self.assertRaises( RuntimeError, MessageHandler.popHandler )
 		
 if __name__ == "__main__":
     unittest.main()

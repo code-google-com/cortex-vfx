@@ -67,8 +67,6 @@ void bindMayaTypeId()
 		.value( "DummyData", DummyDataId )
 		.value( "DrawableHolder", DrawableHolderId )
 		.value( "GeometryCombiner", GeometryCombinerId )
-		.value( "SceneShapeInterface", SceneShapeInterfaceId )
-		.value( "SceneShape", SceneShapeId )
 	;
 }
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -33,7 +33,6 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "IECoreGL/NameStateComponent.h"
-#include "IECoreGL/Selector.h"
 
 #include "IECore/Exception.h"
 
@@ -68,10 +67,7 @@ GLuint NameStateComponent::glName() const
 
 void NameStateComponent::bind() const
 {
-	if( Selector *s = Selector::currentSelector() )
-	{
-		s->loadName( m_it->second );
-	}
+	glLoadName( m_it->second );
 }
 
 const std::string &NameStateComponent::nameFromGLName( GLuint glName )
@@ -108,7 +104,7 @@ NameStateComponent::ConstNameIterator NameStateComponent::iteratorFromName( cons
 		if( createIfMissing )
 		{
 			lock.upgrade_to_writer();
-			return g_nameMap.insert( NamePair( name, g_nameMap.size() + 1 ) ).first;
+			return g_nameMap.insert( NamePair( name, g_nameMap.size() ) ).first;
 		}
 		else
 		{

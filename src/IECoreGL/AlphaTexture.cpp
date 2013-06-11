@@ -74,7 +74,7 @@ AlphaTexture::~AlphaTexture()
 
 struct AlphaTexture::Constructor
 {
-	typedef bool ReturnType;
+	typedef GLuint ReturnType;
 
 	template<typename T>
 	GLuint operator()( typename T::ConstPtr a )
@@ -101,6 +101,10 @@ struct AlphaTexture::Constructor
 			}
 		}
 
+		GLuint result = 0;
+		glGenTextures( 1, &result );
+		glBindTexture( GL_TEXTURE_2D, result );
+
 		glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
 
 		if( mipMap )
@@ -116,7 +120,7 @@ struct AlphaTexture::Constructor
 
 		IECoreGL::Exception::throwIfError();
 
-		return true;
+		return result;
 	}
 
 	unsigned width;
@@ -126,46 +130,47 @@ struct AlphaTexture::Constructor
 
 void AlphaTexture::construct( unsigned int width, unsigned int height, IECore::ConstDataPtr a, bool mipMap )
 {
-	glGenTextures( 1, &m_texture );
-	ScopedBinding binding( *this );
-
 	Constructor c;
 	c.width = width;
 	c.height = height;
 	c.mipMap = mipMap;
-	IECore::despatchTypedData<Constructor, IECore::TypeTraits::IsNumericVectorTypedData>( constPointerCast<Data>( a ), c );
+	m_texture = IECore::despatchTypedData<Constructor, IECore::TypeTraits::IsNumericVectorTypedData>( constPointerCast<Data>( a ), c );
 }
 
 
 ImagePrimitivePtr AlphaTexture::imagePrimitive() const
 {
-	ScopedBinding binding( *this );
-	
-	GLint width = 0;
-	GLint height = 0;
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width );
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height );
+	glPushAttrib( GL_TEXTURE_BIT );
 
-	vector<float> data( width * height );
+		bind();
 
-	glGetTexImage( GL_TEXTURE_2D, 0, GL_ALPHA, GL_FLOAT, &data[0] );
+		GLint width = 0;
+		GLint height = 0;
+		glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width );
+		glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height );
 
-	FloatVectorDataPtr ad = new FloatVectorData();
-	vector<float> &a = ad->writable(); a.resize( width * height );
+		vector<float> data( width * height );
 
-	unsigned int i = 0;
-	for( int y=height-1; y>=0; y-- )
-	{
-		float *ra = &a[y*width];
-		for( int x=0; x<width; x++ )
+		glGetTexImage( GL_TEXTURE_2D, 0, GL_ALPHA, GL_FLOAT, &data[0] );
+
+		FloatVectorDataPtr ad = new FloatVectorData();
+		vector<float> &a = ad->writable(); a.resize( width * height );
+
+		unsigned int i = 0;
+		for( int y=height-1; y>=0; y-- )
 		{
-			ra[x] = data[i++];
+			float *ra = &a[y*width];
+			for( int x=0; x<width; x++ )
+			{
+				ra[x] = data[i++];
+			}
 		}
-	}
 
-	Box2i imageExtents( V2i( 0, 0 ), V2i( width-1, height-1 ) );
-	ImagePrimitivePtr image = new ImagePrimitive( imageExtents, imageExtents );
-	image->variables["A"] = PrimitiveVariable( PrimitiveVariable::Vertex, ad );
+		Box2i imageExtents( V2i( 0, 0 ), V2i( width-1, height-1 ) );
+		ImagePrimitivePtr image = new ImagePrimitive( imageExtents, imageExtents );
+		image->variables["A"] = PrimitiveVariable( PrimitiveVariable::Vertex, ad );
+
+	glPopAttrib();
 
 	return image;
 }

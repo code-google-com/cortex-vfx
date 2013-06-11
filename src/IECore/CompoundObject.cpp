@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -40,8 +40,6 @@
 using namespace IECore;
 using namespace std;
 
-static IndexedIO::EntryID g_membersEntry("members");
-
 IE_CORE_DEFINEOBJECTTYPEDESCRIPTION( CompoundObject );
 
 const unsigned int CompoundObject::m_ioVersion = 0;
@@ -71,10 +69,6 @@ void CompoundObject::copyFrom( const Object *other, CopyContext *context )
 	m_members.clear();
 	for( ObjectMap::const_iterator it=tOther->m_members.begin(); it!=tOther->m_members.end(); it++ )
 	{
-		if ( !it->second )
-		{
-			throw Exception( "Cannot copy CompoundObject will NULL data pointers!" );
-		}
 		m_members[it->first] = context->copy<Object>( it->second );
 	}
 }
@@ -82,32 +76,31 @@ void CompoundObject::copyFrom( const Object *other, CopyContext *context )
 void CompoundObject::save( SaveContext *context ) const
 {
 	Object::save( context );
-	IndexedIOPtr container = context->container( staticTypeName(), m_ioVersion );
-	container = container->subdirectory( g_membersEntry, IndexedIO::CreateIfMissing );
-	ObjectMap::const_iterator it;
-	for( it=m_members.begin(); it!=m_members.end(); it++ )
-	{
-		context->save( it->second, container, it->first );
-	}
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), m_ioVersion );
+	container->mkdir( "members" );
+	container->chdir( "members" );
+		ObjectMap::const_iterator it;
+		for( it=m_members.begin(); it!=m_members.end(); it++ )
+		{
+			context->save( it->second, container, it->first );
+		}
+	container->chdir( ".." );
 }
 
 void CompoundObject::load( LoadContextPtr context )
 {
 	Object::load( context );
 	unsigned int v = m_ioVersion;
-
-	ConstIndexedIOPtr container = context->container( staticTypeName(), v );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 	m_members.clear();
-	container = container->subdirectory( g_membersEntry );
-
-	IndexedIO::EntryIDList memberNames;
-	container->entryIds( memberNames );
-	IndexedIO::EntryIDList::const_iterator it;
-
-	for( it=memberNames.begin(); it!=memberNames.end(); it++ )
-	{
-		m_members[*it] = context->load<Object>( container, *it );
-	}
+	container->chdir( "members" );
+		IndexedIO::EntryList l = container->ls();
+		IndexedIO::EntryList::const_iterator it;
+		for( it=l.begin(); it!=l.end(); it++ )
+		{
+			m_members[it->id()] = context->load<Object>( container, it->id() );
+		}
+	container->chdir( ".." );
 }
 
 bool CompoundObject::isEqualTo( const Object *other ) const
@@ -129,17 +122,9 @@ bool CompoundObject::isEqualTo( const Object *other ) const
 		{
 			return false;
 		}
-		if ( it1->second != it2->second )
+		if( ! it1->second->isEqualTo( it2->second ) )
 		{
-			if ( !it1->second || !it2->second )
-			{
-				/// either one of the pointers is NULL
-				return false;
-			}
-			if( ! it1->second->isEqualTo( it2->second ) )
-			{
-				return false;
-			}
+			return false;
 		}
 		it1++;
 		it2++;
@@ -153,10 +138,7 @@ void CompoundObject::memoryUsage( Object::MemoryAccumulator &a ) const
 	a.accumulate( m_members.size() * sizeof( ObjectMap::value_type ) );	
 	for( ObjectMap::const_iterator it=m_members.begin(); it!=m_members.end(); it++ )
 	{
-		if ( it->second )
-		{
-			a.accumulate( it->second );
-		}
+		a.accumulate( it->second );
 	}
 }
 
@@ -187,10 +169,6 @@ void CompoundObject::hash( MurmurHash &h ) const
 	std::vector<ObjectMap::const_iterator>::const_iterator it;
 	for( it=iterators.begin(); it!=iterators.end(); it++ )
 	{
-		if ( !((*it)->second) )
-		{
-			throw Exception( "Cannot compute hash from a CompoundObject will NULL data pointers!" );
-		}
 		h.append( (*it)->first.value() );
 		(*it)->second->hash( h );
 	}

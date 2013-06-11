@@ -116,21 +116,7 @@ void FrameListParameter::setFrameListValue( ConstFrameListPtr frameList )
 	setTypedValue( frameList->asString() );
 }
 
-FrameListPtr FrameListParameter::getFrameListValue( const StringData *value ) const
-{
-	FrameListPtr frameList = FrameList::parse( value->readable() );
-	if ( !m_allowEmptyList && frameList->isInstanceOf( EmptyFrameListTypeId ) )
-	{
-		throw Exception( "Empty frame list not allowed!" );
-	}
-
-	return frameList;
-}
-
 FrameListPtr FrameListParameter::getFrameListValue() const
 {
-	const StringData *stringDataValue = assertedStaticCast<const StringData>( getValue() );
-	return getFrameListValue( stringDataValue );
+	return FrameList::parse( getTypedValue() );
 }
-
-

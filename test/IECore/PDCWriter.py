@@ -58,11 +58,11 @@ class TestPDCWriter( unittest.TestCase ) :
 		p = r.read()
 
 		w = IECore.Writer.create( p, "test/particleShape1.250.pdc" )
-		w.parameters()["attributes"].setValue( IECore.StringVectorData( ["P"] ) )
+		w.parameters()["attributes"].setValue( IECore.StringVectorData( ["position"] ) )
 		w.write()
 
 		for k in p.keys() :
-			if k!="P" :
+			if k!="position" :
 				del p[k]
 
 		r = IECore.Reader.create( "test/particleShape1.250.pdc" )

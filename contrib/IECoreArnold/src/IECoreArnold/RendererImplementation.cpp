@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2011-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2011-2012, Image Engine Design Inc. All rights reserved.
 //  Copyright (c) 2012, John Haddon. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -471,18 +471,7 @@ void IECoreArnold::RendererImplementation::shader( const std::string &type, cons
 
 void IECoreArnold::RendererImplementation::light( const std::string &name, const std::string &handle, const IECore::CompoundDataMap &parameters )
 {
-	AtNode *l = AiNode( name.c_str() );
-	if( !l )
-	{
-		msg( Msg::Warning, "IECoreArnold::RendererImplementation::light", boost::format( "Couldn't load light \"%s\"" ) % name );
-		return;
-	}
-	for( CompoundDataMap::const_iterator parmIt=parameters.begin(); parmIt!=parameters.end(); parmIt++ )
-	{
-		ToArnoldConverter::setParameter( l, parmIt->first.value().c_str(), parmIt->second );
-	}
-	applyTransformToNode( l );
-	addNode( l );
+	msg( Msg::Warning, "IECoreArnold::RendererImplementation::light", "Not implemented" );
 }
 
 void IECoreArnold::RendererImplementation::illuminate( const std::string &lightHandle, bool on )
@@ -822,17 +811,3 @@ IECore::DataPtr IECoreArnold::RendererImplementation::command( const std::string
 	msg( Msg::Warning, "IECoreArnold::RendererImplementation::command", "Not implemented" );
 	return 0;
 }
-
-/////////////////////////////////////////////////////////////////////////////////////////
-// rerendering
-/////////////////////////////////////////////////////////////////////////////////////////
-
-void IECoreArnold::RendererImplementation::editBegin( const std::string &editType, const IECore::CompoundDataMap &parameters )
-{
-	msg( Msg::Warning, "IECoreArnold::RendererImplementation::editBegin", "Not implemented" );
-}
-
-void IECoreArnold::RendererImplementation::editEnd()
-{
-	msg( Msg::Warning, "IECoreArnold::RendererImplementation::editEnd", "Not implemented" );
-}		

@@ -1,6 +1,3 @@
-#pragma annotation "author" "JohnJohn"
-#pragma annotation "version" "1.0"
-
 surface types(
 	float f = 1;
 	string s = "s";

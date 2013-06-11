@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2009-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2009-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,7 +41,6 @@ using namespace IECore;
 
 IE_CORE_DEFINEABSTRACTOBJECTTYPEDESCRIPTION( ParameterisedProcedural );
 
-static IndexedIO::EntryID g_parametersEntry("parameters");
 const unsigned int ParameterisedProcedural::m_ioVersion = 0;
 
 ParameterisedProcedural::ParameterisedProcedural( const std::string &description )
@@ -70,16 +69,16 @@ void ParameterisedProcedural::copyFrom( const Object *other, CopyContext *contex
 void ParameterisedProcedural::save( SaveContext *context ) const
 {
 	VisibleRenderable::save( context );
-	IndexedIOPtr container = context->container( staticTypeName(), m_ioVersion );
-	context->save( m_parameters->getValue(), container, g_parametersEntry );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), m_ioVersion );
+	context->save( m_parameters->getValue(), container, "parameters" );
 }
 
 void ParameterisedProcedural::load( LoadContextPtr context )
 {
 	VisibleRenderable::load( context );
 	unsigned int v = m_ioVersion;
-	ConstIndexedIOPtr container = context->container( staticTypeName(), v );
-	m_parameters->setValue( context->load<Object>( container, g_parametersEntry ) );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
+	m_parameters->setValue( context->load<Object>( container, "parameters" ) );
 }
 
 bool ParameterisedProcedural::isEqualTo( const Object *other ) const
@@ -124,15 +123,6 @@ class ParameterisedProcedural::Forwarder : public Renderer::Procedural
 			parameterisedProcedural->doRender( renderer, validatedArgs );
 		}
 
-		/// returns a hash of the parameters, so the renderer can instance procedurals with
-		/// identical parameters
-		virtual MurmurHash hash() const
-		{
-			MurmurHash h;
-			parameterisedProcedural->hash( h );
-			return h;
-		}
-		
 		ConstParameterisedProceduralPtr parameterisedProcedural;
 		ConstCompoundObjectPtr validatedArgs;
 };

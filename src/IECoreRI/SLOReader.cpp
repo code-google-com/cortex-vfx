@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -108,17 +108,6 @@ ObjectPtr SLOReader::doOperation( const CompoundObject * operands )
 
 	CompoundDataPtr typeHints = new CompoundData;
 	result->blindData()->writable().insert( pair<string, DataPtr>( "ri:parameterTypeHints", typeHints ) );
-
-	// we lose the ordering of parameter names when we put them in result->parameters(),
-	// so we stick the correct order in the blind data as a workaround for anyone interested
-	// in the true ordering.
-	StringVectorDataPtr orderedParameterNames = new StringVectorData;
-	result->blindData()->writable().insert( pair<string, DataPtr>( "ri:orderedParameterNames", orderedParameterNames ) );	
-
-	// we don't have a way of communicating which parameters are outputs in the Shader::parametersData(),
-	// so we work around that using the blind data too.
-	StringVectorDataPtr outputParameterNames = new StringVectorData;
-	result->blindData()->writable().insert( pair<string, DataPtr>( "ri:outputParameterNames", outputParameterNames ) );	
 
 	int numArgs = Slo_GetNArgs();
 	for( int i=1; i<=numArgs; i++ )
@@ -311,7 +300,6 @@ ObjectPtr SLOReader::doOperation( const CompoundObject * operands )
 						data = sData;
 						sData->writable().resize( arg->svd_arraylen );
 					}
-					typeHints->writable().insert( pair<string, DataPtr>( arg->svd_name, new StringData( Slo_TypetoStr( arg->svd_type ) ) ) );
 				}
 				break;
 
@@ -322,25 +310,9 @@ ObjectPtr SLOReader::doOperation( const CompoundObject * operands )
 
 		if( data )
 		{
-			orderedParameterNames->writable().push_back( arg->svd_name );
 			result->parameters().insert( CompoundDataMap::value_type( arg->svd_name, data ) );
-			if( arg->svd_storage == SLO_STOR_OUTPUTPARAMETER )
-			{
-				outputParameterNames->writable().push_back( arg->svd_name );
-			}
 		}
 
-	}
-
-	// shader annotations
-	
-	CompoundDataPtr annotations = new CompoundData;
-	result->blindData()->writable().insert( pair<string, DataPtr>( "ri:annotations", annotations ) );
-	
-	for( int i=1, n=Slo_GetNAnnotations(); i <= n; i++ )
-	{
-		const char *key = Slo_GetAnnotationKeyById( i );
-		annotations->writable()[key] = new StringData( Slo_GetAnnotationByKey( key ) );
 	}
 
 	Slo_EndShader();

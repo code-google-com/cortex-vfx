@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 //  Copyright (c) 2012, John Haddon. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@ struct ClientDisplayDriver::PrivateData : public RefCounted
 {
 	public :
 		PrivateData() :
-		m_service(), m_host(""), m_port(""), m_scanLineOrderOnly(false), m_acceptsRepeatedData(false), m_socket( m_service )
+		m_service(), m_host(""), m_port(""), m_scanLineOrderOnly(false), m_socket( m_service )
 		{
 		}
 
@@ -64,7 +64,6 @@ struct ClientDisplayDriver::PrivateData : public RefCounted
 		std::string m_host;
 		std::string m_port;
 		bool m_scanLineOrderOnly;
-		bool m_acceptsRepeatedData;
 		boost::asio::ip::tcp::socket m_socket;
 };
 
@@ -112,7 +111,7 @@ ClientDisplayDriver::ClientDisplayDriver( const Imath::Box2i &displayWindow, con
 	tmpParameters->writable()[ "clientPID" ] = new IntData( getpid() );
 
 	// build the data block
-	io = new MemoryIndexedIO( ConstCharVectorDataPtr(), IndexedIO::rootPath, IndexedIO::Exclusive | IndexedIO::Write );
+	io = new MemoryIndexedIO( ConstCharVectorDataPtr(), "/", IndexedIO::Exclusive | IndexedIO::Write );
 	displayWindowData->Object::save( io, "displayWindow" );
 	dataWindowData->Object::save( io, "dataWindow" );
 	channelNamesData->Object::save( io, "channelNames" );
@@ -130,12 +129,7 @@ ClientDisplayDriver::ClientDisplayDriver( const Imath::Box2i &displayWindow, con
 		throw Exception( "Invalid returned scanLineOrder from display driver server!" );
 	}
 	m_data->m_socket.receive( boost::asio::buffer( &m_data->m_scanLineOrderOnly, sizeof(m_data->m_scanLineOrderOnly) ) );
-	
-	if ( receiveHeader( DisplayDriverServerHeader::imageOpen ) != sizeof(m_data->m_acceptsRepeatedData) )
-	{
-		throw Exception( "Invalid returned acceptsRepeatedData from display driver server!" );
-	}
-	m_data->m_socket.receive( boost::asio::buffer( &m_data->m_acceptsRepeatedData, sizeof(m_data->m_acceptsRepeatedData) ) );
+
 }
 
 ClientDisplayDriver::~ClientDisplayDriver()
@@ -155,11 +149,6 @@ std::string ClientDisplayDriver::port() const
 bool ClientDisplayDriver::scanLineOrderOnly() const
 {
 	return m_data->m_scanLineOrderOnly;
-}
-
-bool ClientDisplayDriver::acceptsRepeatedData() const
-{
-	return m_data->m_acceptsRepeatedData;
 }
 
 void ClientDisplayDriver::sendHeader( int msg, size_t dataSize )
@@ -201,7 +190,7 @@ void ClientDisplayDriver::imageData( const Box2i &box, const float *data, size_t
 	Box2iDataPtr boxData = new Box2iData( box );
 	FloatVectorDataPtr dataData = new FloatVectorData( std::vector<float>( data, data+dataSize ) );
 
-	io = new MemoryIndexedIO( ConstCharVectorDataPtr(), IndexedIO::rootPath, IndexedIO::Exclusive | IndexedIO::Write );
+	io = new MemoryIndexedIO( ConstCharVectorDataPtr(), "/", IndexedIO::Exclusive | IndexedIO::Write );
 	staticPointerCast<Object>(boxData)->save( io, "box" );
 	staticPointerCast<Object>(dataData)->save( io, "data" );
 	buf = io->buffer();

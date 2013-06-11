@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -51,10 +51,10 @@ class TestInterpolatedCache(unittest.TestCase):
 		self.__createCacheFile( 250, 0 )
 		self.__createCacheFile( 333, 1 )
 		self.__createCacheFile( 416, 2 )
-		self.__createCacheFile( 500, 3 )
+		self.__createCacheFile( 499, 3 )
 		self.__createCacheFile( 583, 4 )
 		self.__createCacheFile( 666, 5 )
-		self.__createCacheFile( 750, 6 )
+		self.__createCacheFile( 749, 6 )
 
 	def __createV3f( self, value ):
 		dataWritten = V3fVectorData()
@@ -66,7 +66,7 @@ class TestInterpolatedCache(unittest.TestCase):
 
 		fs = FileSequence( self.pathTemplate, EmptyFrameList() )
 
-		cache = AttributeCache( fs.fileNameForFrame( frame ), IndexedIO.OpenMode.Write)
+		cache = AttributeCache( fs.fileNameForFrame( frame ), IndexedIOOpenMode.Write)
 	
 		dataWritten = self.__createV3f( value )
 		cache.write( "obj1", "v3fVec", dataWritten)

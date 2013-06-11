@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,10 +41,6 @@ using namespace std;
 using namespace IECore;
 using namespace Imath;
 using namespace boost;
-
-static IndexedIO::EntryID g_radiusEntry("radius");
-static IndexedIO::EntryID g_zEntry("z");
-static IndexedIO::EntryID g_thetaMaxEntry("thetaMax");
 
 const unsigned int DiskPrimitive::m_ioVersion = 0;
 IE_CORE_DEFINEOBJECTTYPEDESCRIPTION(DiskPrimitive);
@@ -141,11 +137,11 @@ void DiskPrimitive::copyFrom( const Object *other, IECore::Object::CopyContext *
 void DiskPrimitive::save( IECore::Object::SaveContext *context ) const
 {
 	Primitive::save(context);
-	IndexedIOPtr container = context->container( staticTypeName(), m_ioVersion );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), m_ioVersion );
 
-	container->write( g_radiusEntry, m_radius );
-	container->write( g_zEntry, m_z );
-	container->write( g_thetaMaxEntry, m_thetaMax );
+	container->write( "radius", m_radius );
+	container->write( "z", m_z );
+	container->write( "thetaMax", m_thetaMax );
 }
 
 void DiskPrimitive::load( IECore::Object::LoadContextPtr context )
@@ -153,11 +149,11 @@ void DiskPrimitive::load( IECore::Object::LoadContextPtr context )
 	Primitive::load(context);
 	unsigned int v = m_ioVersion;
 
-	ConstIndexedIOPtr container = context->container( staticTypeName(), v );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 
-	container->read( g_radiusEntry, m_radius );
-	container->read( g_zEntry, m_z );
-	container->read( g_thetaMaxEntry, m_thetaMax );
+	container->read( "radius", m_radius );
+	container->read( "z", m_z );
+	container->read( "thetaMax", m_thetaMax );
 }
 
 bool DiskPrimitive::isEqualTo( const Object *other ) const
@@ -196,10 +192,6 @@ void DiskPrimitive::memoryUsage( Object::MemoryAccumulator &a ) const
 void DiskPrimitive::hash( MurmurHash &h ) const
 {
 	Primitive::hash( h );
-}
-
-void DiskPrimitive::topologyHash( MurmurHash &h ) const
-{
 	h.append( m_radius );
 	h.append( m_z );
 	h.append( m_thetaMax );

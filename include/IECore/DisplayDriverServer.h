@@ -38,7 +38,6 @@
 #ifndef IE_CORE_DISPLAYDRIVERSERVER
 #define IE_CORE_DISPLAYDRIVERSERVER
 
-#include "boost/system/error_code.hpp"
 #include "IECore/RunTimeTyped.h"
 #include "IECore/VectorTypedData.h"
 #include "IECore/DisplayDriver.h"

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,16 +32,14 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <iostream>
-
-#include "tbb/enumerable_thread_specific.h"
-
-#include "boost/algorithm/string/case_conv.hpp"
-
 #include "IECore/MessageHandler.h"
 #include "IECore/OStreamMessageHandler.h"
 #include "IECore/LevelFilteredMessageHandler.h"
 #include "IECore/Exception.h"
+
+#include "boost/algorithm/string/case_conv.hpp"
+
+#include <iostream>
 
 using namespace std;
 using namespace IECore;
@@ -62,62 +60,40 @@ void MessageHandler::output( Level level, const std::string &context, const boos
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
-// default handler
+// handler stack functions
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static MessageHandlerPtr &defaultHandler()
+void MessageHandler::pushHandler( MessageHandlerPtr handler )
 {
-	static MessageHandlerPtr g_defaultHandler = new LevelFilteredMessageHandler( OStreamMessageHandler::cErrHandler(), LevelFilteredMessageHandler::defaultLevel() );
-	return g_defaultHandler;
+	handlerStack()->push( handler );
 }
 
-void MessageHandler::setDefaultHandler( const MessageHandlerPtr &handler )
+MessageHandlerPtr MessageHandler::popHandler()
 {
-	defaultHandler() = handler;
-}
-
-MessageHandler *MessageHandler::getDefaultHandler()
-{
-	return defaultHandler().get();
-}
-
-///////////////////////////////////////////////////////////////////////////////////////
-// Scope class and current handler
-///////////////////////////////////////////////////////////////////////////////////////
-
-typedef std::stack<MessageHandler *> HandlerStack;
-typedef tbb::enumerable_thread_specific<HandlerStack> ThreadSpecificHandlerStack;
-
-ThreadSpecificHandlerStack g_threadHandlers;
-
-MessageHandler::Scope::Scope( MessageHandler *handler )
-{
-	if ( handler )
+	if( handlerStack()->size() <= 1 )
 	{
-		HandlerStack &stack = g_threadHandlers.local();
-		stack.push( handler );
+		throw Exception( "Can not pop the last MessageHandler." );
 	}
-	
-	m_handler = handler;
-}
-
-MessageHandler::Scope::~Scope()
-{
-	if ( m_handler )
-	{
-		HandlerStack &stack = g_threadHandlers.local();
-		stack.pop();
-	}
+	MessageHandlerPtr h = currentHandler();
+	handlerStack()->pop();
+	return h;
 }
 
 MessageHandler *MessageHandler::currentHandler()
 {
-	HandlerStack &stack = g_threadHandlers.local();
-	if( !stack.size() )
+	return handlerStack()->top().get();
+}
+
+std::stack<MessageHandlerPtr> *MessageHandler::handlerStack()
+{
+	static bool initialized = false;
+	static std::stack<MessageHandlerPtr> *s = new std::stack<MessageHandlerPtr>;
+	if( !initialized )
 	{
-		return getDefaultHandler();
+		s->push( new LevelFilteredMessageHandler( OStreamMessageHandler::cErrHandler(), LevelFilteredMessageHandler::defaultLevel() ) );
+		initialized = true;
 	}
-	return stack.top();
+	return s;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

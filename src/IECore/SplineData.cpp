@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,11 +43,6 @@ using namespace IECore;
 namespace IECore
 {
 
-static IndexedIO::EntryID g_basisEntry("basis");
-static IndexedIO::EntryID g_stepEntry("step");
-static IndexedIO::EntryID g_xEntry("x");
-static IndexedIO::EntryID g_yEntry("y");
-
 IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( SplineffData, SplineffDataTypeId )
 IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( SplineddData, SplineddDataTypeId )
 IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( SplinefColor3fData, SplinefColor3fDataTypeId )
@@ -59,11 +54,11 @@ IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( SplinefColor4fData, SplinefCol
 	void TNAME::save( SaveContext *context ) const												\
 	{																							\
 		Data::save( context );																	\
-		IndexedIOPtr container = context->container( staticTypeName(), 0 );						\
+		IndexedIOInterfacePtr container = context->container( staticTypeName(), 0 );			\
 		const ValueType &s = readable();														\
 																								\
-		container->write( g_basisEntry, s.basis.matrix.getValue(), 16 );						\
-		container->write( g_stepEntry, s.basis.step );											\
+		container->write( "basis", s.basis.matrix.getValue(), 16 );								\
+		container->write( "step", s.basis.step );												\
 																								\
 		vector<ValueType::XType> x; 															\
 		vector<ValueType::YType> y; 															\
@@ -73,8 +68,8 @@ IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( SplinefColor4fData, SplinefCol
 			x.push_back( it->first );															\
 			y.push_back( it->second );															\
 		}																						\
-		container->write( g_xEntry, &(x[0]), x.size() );										\
-		container->write( g_yEntry, (const YBASETYPE*)&(y[0]), y.size() * YBASESIZE );			\
+		container->write( "x", &(x[0]), x.size() );												\
+		container->write( "y", (const YBASETYPE*)&(y[0]), y.size() * YBASESIZE );				\
 	}																							\
 																								\
 	template<>																					\
@@ -82,22 +77,22 @@ IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( SplinefColor4fData, SplinefCol
 	{																							\
 		Data::load( context );																	\
 		unsigned int v = 0;																		\
-		ConstIndexedIOPtr container = context->container( staticTypeName(), v );				\
+		IndexedIOInterfacePtr container = context->container( staticTypeName(), v );			\
 		ValueType &s = writable();																\
 																								\
 		ValueType::XType *bp = s.basis.matrix.getValue();										\
-		container->read( g_basisEntry, bp, 16 );												\
-		container->read( g_stepEntry, s.basis.step );											\
+		container->read( "basis", bp, 16 );														\
+		container->read( "step", s.basis.step );												\
 																								\
 		vector<ValueType::XType> x; 															\
 		vector<ValueType::YType> y; 															\
-		IndexedIO::Entry e = container->entry( "x" );											\
+		IndexedIO::Entry e = container->ls( "x" );												\
 		x.resize( e.arrayLength() );															\
 		y.resize( e.arrayLength() );															\
 		ValueType::XType *xp = &(x[0]);															\
-		container->read( g_xEntry, xp, e.arrayLength() );										\
+		container->read( "x", xp, e.arrayLength() );											\
 		YBASETYPE *yp = (YBASETYPE *)&(y[0]);													\
-		container->read( g_yEntry, yp, e.arrayLength() * YBASESIZE );							\
+		container->read( "y", yp, e.arrayLength() * YBASESIZE );								\
 																								\
 		s.points.clear();																		\
 		for( unsigned i=0; i<x.size(); i++ )													\

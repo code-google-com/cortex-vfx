@@ -72,8 +72,9 @@ class TextPrimitive : public Primitive
 		IE_CORE_DECLAREPTR( Type );
 		//@}
 
-		virtual void render( State *currentState ) const;
-		virtual void renderInstances( size_t numInstances ) const;
+	protected :
+
+		virtual void render( const State *state, IECore::TypeId style ) const;
 
 	private :
 
@@ -81,8 +82,11 @@ class TextPrimitive : public Primitive
 		std::string m_text;
 		Imath::Box3f m_bound;
 	
-		void renderMeshes( State *state ) const;
-		void renderSprites( State *state ) const;
+		/// Mesh rendering bits
+		void renderMeshes( const State *state, IECore::TypeId style ) const;
+	
+		/// Sprite rendering bits
+		void renderSprites( const State *state, IECore::TypeId style ) const;
 
 };
 

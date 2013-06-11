@@ -40,6 +40,7 @@
 #include "UT/UT_Interrupt.h"
 
 #include "IECore/Op.h"
+#include "IECore/ScopedMessageHandler.h"
 #include "IECore/VisibleRenderable.h"
 
 #include "IECorePython/ScopedGILLock.h" 
@@ -67,7 +68,7 @@ SOP_OpHolder::~SOP_OpHolder()
 /// Cook the SOP! This method does all the work
 OP_ERROR SOP_OpHolder::cookMySop( OP_Context &context )
 {
-	IECore::MessageHandler::Scope handlerScope( getMessageHandler() );
+	IECore::ScopedMessageHandler handler( messageHandler() );
 	
 	// some defaults and useful variables
 	Imath::Box3f bbox( Imath::V3f(-1,-1,-1), Imath::V3f(1,1,1) );

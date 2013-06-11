@@ -44,7 +44,7 @@
 #include "boost/test/floating_point_comparison.hpp"
 
 #include "IECore/IECore.h"
-#include "IECore/IndexedIO.h"
+#include "IECore/IndexedIOInterface.h"
 
 namespace IECore
 {
@@ -109,12 +109,12 @@ struct IndexedIOTest
 	{
 		for (FilenameList::const_iterator it = m_filenames.begin(); it != m_filenames.end(); ++it)
 		{
-			IndexedIOPtr io = new T(*it, IndexedIO::rootPath, IndexedIO::Read );
+			IndexedIOInterfacePtr io = new T(*it, "/", IndexedIO::Read );
 
 			bool exists = true;
 			try
 			{
-				io->entry( IndexedIOTestDataTraits<D>::name() );
+				io->ls( IndexedIOTestDataTraits<D>::name() );
 			}
 			catch (...)
 			{
@@ -135,12 +135,12 @@ struct IndexedIOTest
 	{
 		for (FilenameList::const_iterator it = m_filenames.begin(); it != m_filenames.end(); ++it)
 		{
-			IndexedIOPtr io = new T(*it, IndexedIO::rootPath, IndexedIO::Read );
+			IndexedIOInterfacePtr io = new T(*it, "/", IndexedIO::Read );
 
 			bool exists = true;
 			try
 			{
-				io->entry( IndexedIOTestDataTraits<D>::name() );
+				io->ls( IndexedIOTestDataTraits<D>::name() );
 			}
 			catch (...)
 			{
@@ -159,26 +159,26 @@ struct IndexedIOTest
 	}
 
 	template<typename D>
-	void write( IndexedIOPtr io)
+	void write( IndexedIOInterfacePtr io)
 	{
 		assert(io);
 
 		io->write( IndexedIOTestDataTraits<D>::name(), IndexedIOTestDataTraits<D>::value() );
-		io->entry( IndexedIOTestDataTraits<D>::name() );
+		io->ls( IndexedIOTestDataTraits<D>::name() );
 	}
 
 	template<typename D>
-	void writeArray( IndexedIOPtr io)
+	void writeArray( IndexedIOInterfacePtr io)
 	{
 		assert(io);
 
 		io->write( IndexedIOTestDataTraits<D*>::name(), IndexedIOTestDataTraits<D*>::value(), 10 );
-		io->entry( IndexedIOTestDataTraits<D*>::name() );
+		io->ls( IndexedIOTestDataTraits<D*>::name() );
 	}
 
 	void write(const std::string &filename)
 	{
-		IndexedIOPtr io = new T(filename, IndexedIO::rootPath, IndexedIO::Write );
+		IndexedIOInterfacePtr io = new T(filename, "/", IndexedIO::Write );
 
 		write<float>(io);
 		write<double>(io);

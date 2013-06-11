@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -41,9 +41,6 @@ using namespace Imath;
 using namespace std;
 using namespace IECore;
 
-static IndexedIO::EntryID g_valueEntry("value");
-static IndexedIO::EntryID g_sizeEntry("size");
-
 LongVectorDataAlias::TypeDescription<IntVectorData> LongVectorDataAlias::m_typeDescription( LongVectorDataTypeId, "LongVectorData" );
 
 #define IE_CORE_DEFINEVECTORTYPEDDATAMEMUSAGESPECIALISATION( TNAME )										\
@@ -69,7 +66,7 @@ LongVectorDataAlias::TypeDescription<IntVectorData> LongVectorDataAlias::m_typeD
 	{																											\
 		if ( !TNAME::hasBase() )																				\
 		{																										\
-			throw Exception( std::string( TNAME::staticTypeName() ) + " has no base type." );					\
+			throw Exception( std::string( TNAME::staticTypeName() ) + " has no base type." );									\
 		}																										\
 		return reinterpret_cast< const TNAME::BaseType * >( &(this->readable()[0]) );							\
 	}																											\
@@ -78,7 +75,7 @@ LongVectorDataAlias::TypeDescription<IntVectorData> LongVectorDataAlias::m_typeD
 	{																											\
 		if ( !TNAME::hasBase() )																				\
 		{																										\
-			throw Exception( std::string( TNAME::staticTypeName() ) + " has no base type." );					\
+			throw Exception( std::string( TNAME::staticTypeName() ) + " has no base type." );									\
 		}																										\
 		return reinterpret_cast< TNAME::BaseType * >( &(this->writable()[0]) );									\
 	}																											\
@@ -88,8 +85,8 @@ LongVectorDataAlias::TypeDescription<IntVectorData> LongVectorDataAlias::m_typeD
 	void TNAME::save( Object::SaveContext *context ) const											\
 	{																								\
 		Data::save( context );																		\
-		IndexedIO *container = context->rawContainer();												\
-		container->write( g_valueEntry, &(readable()[0]), readable().size() );						\
+		IndexedIOInterfacePtr container = context->rawContainer();									\
+		container->write( "value", &(readable()[0]), readable().size() );							\
 	}																								\
 	template<>																						\
 	void TNAME::load( LoadContextPtr context )														\
@@ -97,39 +94,39 @@ LongVectorDataAlias::TypeDescription<IntVectorData> LongVectorDataAlias::m_typeD
 		Data::load( context );																		\
 		try																							\
 		{																							\
-			const IndexedIO *container = context->rawContainer();									\
-			IndexedIO::Entry e = container->entry( g_valueEntry );									\
+			IndexedIOInterfacePtr container = context->rawContainer();								\
+			IndexedIO::Entry e = container->ls( "value" );											\
 			writable().resize( e.arrayLength() );													\
 			if ( e.arrayLength() ) 																	\
 			{ 																						\
 				TNAME::ValueType::value_type *p = &(writable()[0]); 								\
 				assert( p ); 																		\
-				container->read( g_valueEntry, p, e.arrayLength() ); 								\
+				container->read( "value", p, e.arrayLength() ); 									\
 			} 																						\
 		}																							\
 		catch( ... )																				\
 		{																							\
 			unsigned int v = 0;																		\
-			ConstIndexedIOPtr container = context->container( staticTypeName(), v );				\
-			IndexedIO::Entry e = container->entry( g_valueEntry );									\
+			IndexedIOInterfacePtr container = context->container( staticTypeName(), v );			\
+			IndexedIO::Entry e = container->ls( "value" );											\
 			writable().resize( e.arrayLength() );													\
 			if ( e.arrayLength() ) 																	\
 			{ 																						\
 				TNAME::ValueType::value_type *p = &(writable()[0]); 								\
 				assert( p ); 																		\
-				container->read( g_valueEntry, p, e.arrayLength() ); 								\
+				container->read( "value", p, e.arrayLength() ); 									\
 			} 																						\
 		}																							\
 	}																								\
 
-#define IE_CORE_DEFINEBASEVECTORTYPEDDATAIOSPECIALISATION( TNAME, N, FALLBACKNAME )								\
+#define IE_CORE_DEFINEBASEVECTORTYPEDDATAIOSPECIALISATION( TNAME, N )								\
 	template<>																						\
 	void TNAME::save( SaveContext *context ) const													\
 	{																								\
 		Data::save( context );																		\
-		IndexedIO *container = context->rawContainer();												\
+		IndexedIOInterfacePtr container = context->rawContainer();									\
 		assert( ( sizeof( TNAME::ValueType::value_type ) / sizeof( TNAME::BaseType ) ) == N );		\
-		container->write( g_valueEntry, baseReadable(), baseSize() );								\
+		container->write( "value", baseReadable(), baseSize() );									\
 	}																								\
 	template<>																						\
 	void TNAME::load( LoadContextPtr context )														\
@@ -137,27 +134,27 @@ LongVectorDataAlias::TypeDescription<IntVectorData> LongVectorDataAlias::m_typeD
 		Data::load( context );																		\
 		try																							\
 		{																							\
-			const IndexedIO *container = context->rawContainer();									\
-			IndexedIO::Entry e = container->entry( g_valueEntry );									\
+			IndexedIOInterfacePtr container = context->rawContainer();								\
+			IndexedIO::Entry e = container->ls( "value" );											\
 			writable().resize( e.arrayLength() / N );												\
 			if ( e.arrayLength() ) 																	\
 			{ 																						\
 				TNAME::BaseType *p = baseWritable(); 												\
 				assert( p ) ; 																		\
-				container->read( g_valueEntry, p, e.arrayLength() ); 								\
+				container->read( "value", p, e.arrayLength() ); 									\
 			} 																						\
 		}																							\
 		catch( ... )																				\
 		{																							\
 			unsigned int v = 0;																		\
-			ConstIndexedIOPtr container = context->container( FALLBACKNAME::staticTypeName(), v );				\
-			IndexedIO::Entry e = container->entry( g_valueEntry );									\
+			IndexedIOInterfacePtr container = context->container( staticTypeName(), v );			\
+			IndexedIO::Entry e = container->ls( "value" );											\
 			writable().resize( e.arrayLength() / N );												\
 			if ( e.arrayLength() ) 																	\
 			{ 																						\
 				TNAME::BaseType *p = baseWritable(); 												\
 				assert( p ) ; 																		\
-				container->read( g_valueEntry, p, e.arrayLength() ); 								\
+				container->read( "value", p, e.arrayLength() ); 									\
 			} 																						\
 		}																							\
 	}
@@ -166,20 +163,13 @@ LongVectorDataAlias::TypeDescription<IntVectorData> LongVectorDataAlias::m_typeD
 	IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( TNAME, TID )					\
 	IE_CORE_DEFINEVECTORTYPEDDATATRAITSSPECIALIZATION( TNAME )					\
 	IE_CORE_DEFINEVECTORTYPEDDATAMEMUSAGESPECIALISATION( TNAME )				\
-	IE_CORE_DEFINEBASEVECTORTYPEDDATAIOSPECIALISATION( TNAME, 1, TNAME )				\
+	IE_CORE_DEFINEBASEVECTORTYPEDDATAIOSPECIALISATION( TNAME, 1)				\
 
 #define IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( TNAME, TID, N )		\
 	IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( TNAME, TID )					\
 	IE_CORE_DEFINEVECTORTYPEDDATATRAITSSPECIALIZATION( TNAME )					\
 	IE_CORE_DEFINEVECTORTYPEDDATAMEMUSAGESPECIALISATION( TNAME )				\
-	IE_CORE_DEFINEBASEVECTORTYPEDDATAIOSPECIALISATION( TNAME, N, TNAME )				\
-
-#define IE_CORE_DEFINEIMATHGEOMETRICVECTORTYPEDDATASPECIALISATION( TNAME, TID, BTID, N )		\
-	IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( TNAME ## Base, BTID )					\
-	IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( TNAME, TID )						\
-	IE_CORE_DEFINEVECTORTYPEDDATATRAITSSPECIALIZATION( TNAME ## Base )						\
-	IE_CORE_DEFINEVECTORTYPEDDATAMEMUSAGESPECIALISATION( TNAME ## Base )						\
-	IE_CORE_DEFINEBASEVECTORTYPEDDATAIOSPECIALISATION( TNAME ## Base, N, TNAME )				\
+	IE_CORE_DEFINEBASEVECTORTYPEDDATAIOSPECIALISATION( TNAME, N )				\
 
 namespace IECore
 {
@@ -193,15 +183,12 @@ IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( CharVectorData, CharVectorDat
 IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( UCharVectorData, UCharVectorDataTypeId )
 IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( Int64VectorData, Int64VectorDataTypeId )
 IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( UInt64VectorData, UInt64VectorDataTypeId )
-IE_CORE_DEFINESIMPLEVECTORTYPEDDATASPECIALISATION( InternedStringVectorData, InternedStringVectorDataTypeId )
-
-IE_CORE_DEFINEIMATHGEOMETRICVECTORTYPEDDATASPECIALISATION( V2fVectorData, V2fVectorDataTypeId, V2fVectorDataBaseTypeId, 2 )
-IE_CORE_DEFINEIMATHGEOMETRICVECTORTYPEDDATASPECIALISATION( V2dVectorData, V2dVectorDataTypeId, V2dVectorDataBaseTypeId, 2 )
-IE_CORE_DEFINEIMATHGEOMETRICVECTORTYPEDDATASPECIALISATION( V2iVectorData, V2iVectorDataTypeId, V2iVectorDataBaseTypeId, 2 )
-IE_CORE_DEFINEIMATHGEOMETRICVECTORTYPEDDATASPECIALISATION( V3fVectorData, V3fVectorDataTypeId, V3fVectorDataBaseTypeId, 3 )
-IE_CORE_DEFINEIMATHGEOMETRICVECTORTYPEDDATASPECIALISATION( V3dVectorData, V3dVectorDataTypeId, V3dVectorDataBaseTypeId, 3 )
-IE_CORE_DEFINEIMATHGEOMETRICVECTORTYPEDDATASPECIALISATION( V3iVectorData, V3iVectorDataTypeId, V3iVectorDataBaseTypeId, 3 )
-
+IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( V2fVectorData, V2fVectorDataTypeId, 2 )
+IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( V2dVectorData, V2dVectorDataTypeId, 2 )
+IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( V2iVectorData, V2iVectorDataTypeId, 2 )
+IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( V3fVectorData, V3fVectorDataTypeId, 3 )
+IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( V3dVectorData, V3dVectorDataTypeId, 3 )
+IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( V3iVectorData, V3iVectorDataTypeId, 3 )
 IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( Box2iVectorData, Box2iVectorDataTypeId, 4 )
 IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( Box2fVectorData, Box2fVectorDataTypeId, 4 )
 IE_CORE_DEFINEIMATHVECTORTYPEDDATASPECIALISATION( Box2dVectorData, Box2dVectorDataTypeId, 4 )
@@ -282,7 +269,7 @@ template<>
 void BoolVectorData::save( Object::SaveContext *context ) const
 {
 	Data::save( context );
-	IndexedIOPtr container = context->container( staticTypeName(), 0 );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), 0 );
 	// we can't write out the raw data from inside the vector 'cos it's specialised
 	// to optimise for space, and that means the only access to the data is through
 	// a funny proxy class. so we repack the data into something we can deal with
@@ -301,8 +288,8 @@ void BoolVectorData::save( Object::SaveContext *context ) const
 		}
 	}
 
-	container->write( g_sizeEntry, s );
-	container->write( g_valueEntry, &(p[0]), p.size() );
+	container->write( "size", s );
+	container->write( "value", &(p[0]), p.size() );
 }
 
 template<>
@@ -310,14 +297,14 @@ void BoolVectorData::load( LoadContextPtr context )
 {
 	Data::load( context );
 	unsigned int v = 0;
-	ConstIndexedIOPtr container = context->container( staticTypeName(), v );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 
 	unsigned int s = 0;
-	container->read( g_sizeEntry, s );
+	container->read( "size", s );
 	std::vector<unsigned char> p;
 	p.resize( s / 8 + 1 );
 	unsigned char *value = &(p[0]);
-	container->read( g_valueEntry, value, p.size() );
+	container->read( "value", value, p.size() );
 	std::vector<bool> &b = writable();
 	b.resize( s, false );
 	for( unsigned int i=0; i<s; i++ )
@@ -330,8 +317,8 @@ template<>
 void ShortVectorData::save( Object::SaveContext *context ) const
 {
 	Data::save( context );
-	IndexedIOPtr container = context->container( staticTypeName(), 1 );
-	container->write( g_valueEntry, baseReadable(), baseSize() );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), 1 );
+	container->write( "value", baseReadable(), baseSize() );
 }
 
 template<>
@@ -339,7 +326,7 @@ void ShortVectorData::load( LoadContextPtr context )
 {
 	Data::load( context );
 	unsigned int v = 0;
-	ConstIndexedIOPtr container = context->container( staticTypeName(), v );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 
 	std::vector<short> &b = writable();
 
@@ -347,11 +334,11 @@ void ShortVectorData::load( LoadContextPtr context )
 	{
 		/// Version 0 stored the array of shorts as ints
 		unsigned int s = 0;
-		container->read( g_sizeEntry, s );
+		container->read( "size", s );
 		std::vector<int> p;
 		p.resize( s );
 		int *value = &(p[0]);
-		container->read( g_valueEntry, value, p.size() );
+		container->read( "value", value, p.size() );
 		b.resize( s, false );
 		for( unsigned int i=0; i<s; i++ )
 		{
@@ -361,10 +348,10 @@ void ShortVectorData::load( LoadContextPtr context )
 	else
 	{
 		/// Version 1 stores the shorts natively
-		IndexedIO::Entry e = container->entry( g_valueEntry );
-		writable().resize( e.arrayLength() );
-		short *p = baseWritable();
-		container->read( g_valueEntry, p, e.arrayLength() );
+		IndexedIO::Entry e = container->ls( "value" );												\
+		writable().resize( e.arrayLength() );													\
+		short *p = baseWritable();														\
+		container->read( "value", p, e.arrayLength() );
 	}
 }
 
@@ -372,8 +359,8 @@ template<>
 void UShortVectorData::save( Object::SaveContext *context ) const
 {
 	Data::save( context );
-	IndexedIOPtr container = context->container( staticTypeName(), 1 );
-	container->write( g_valueEntry, baseReadable(), baseSize() );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), 1 );
+	container->write( "value", baseReadable(), baseSize() );
 }
 
 template<>
@@ -381,7 +368,7 @@ void UShortVectorData::load( LoadContextPtr context )
 {
 	Data::load( context );
 	unsigned int v = 0;
-	ConstIndexedIOPtr container = context->container( staticTypeName(), v );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 
 	std::vector<unsigned short> &b = writable();
 
@@ -389,11 +376,11 @@ void UShortVectorData::load( LoadContextPtr context )
 	{
 		/// Version 0 stored the array unsigned shorts as unsigned ints
 		unsigned int s = 0;
-		container->read( g_sizeEntry, s );
+		container->read( "size", s );
 		std::vector<unsigned int> p;
 		p.resize( s );
 		unsigned int *value = &(p[0]);
-		container->read( g_valueEntry, value, p.size() );
+		container->read( "value", value, p.size() );
 		b.resize( s, false );
 		for( unsigned int i=0; i<s; i++ )
 		{
@@ -403,10 +390,10 @@ void UShortVectorData::load( LoadContextPtr context )
 	else
 	{
 		/// Version 1 stores the unsigned shorts natively
-		IndexedIO::Entry e = container->entry( g_valueEntry );
-		writable().resize( e.arrayLength() );
-		unsigned short *p = baseWritable();
-		container->read( g_valueEntry, p, e.arrayLength() );
+		IndexedIO::Entry e = container->ls( "value" );												\
+		writable().resize( e.arrayLength() );													\
+		unsigned short *p = baseWritable();														\
+		container->read( "value", p, e.arrayLength() );
 	}
 }
 
@@ -423,21 +410,12 @@ template class TypedData<vector<short> >;
 template class TypedData<vector<unsigned short> >;
 template class TypedData<vector<int64_t> >;
 template class TypedData<vector<uint64_t> >;
-
 template class TypedData<vector<V2f> >;
 template class TypedData<vector<V2d> >;
 template class TypedData<vector<V2i> >;
 template class TypedData<vector<V3f> >;
 template class TypedData<vector<V3d> >;
 template class TypedData<vector<V3i> >;
-
-template class GeometricTypedData<vector<V2f> >;
-template class GeometricTypedData<vector<V2d> >;
-template class GeometricTypedData<vector<V2i> >;
-template class GeometricTypedData<vector<V3f> >;
-template class GeometricTypedData<vector<V3d> >;
-template class GeometricTypedData<vector<V3i> >;
-
 template class TypedData<vector<Color3f> >;
 template class TypedData<vector<Color4f> >;
 template class TypedData<vector<Color3<double> > >;
@@ -455,6 +433,5 @@ template class TypedData<vector<M44d> >;
 template class TypedData<vector<Quatf> >;
 template class TypedData<vector<Quatd> >;
 template class TypedData<vector<string> >;
-template class TypedData<vector<InternedString> >;
 
 } // namespace IECore

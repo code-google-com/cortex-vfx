@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,9 +45,7 @@
 #include "OpenEXR/half.h"
 
 #include "IECore/TypedData.h"
-#include "IECore/GeometricTypedData.h"
 #include "IECore/LineSegment.h"
-#include "IECore/InternedString.h"
 
 namespace IECore
 {
@@ -65,16 +63,13 @@ IECORE_DECLARE_TYPEDDATA( UShortData, unsigned short, unsigned short, SimpleData
 IECORE_DECLARE_TYPEDDATA( Int64Data, int64_t, int64_t, SimpleDataHolder )
 IECORE_DECLARE_TYPEDDATA( UInt64Data, uint64_t, uint64_t, SimpleDataHolder )
 IECORE_DECLARE_TYPEDDATA( StringData, std::string, std::string, SimpleDataHolder )
-IECORE_DECLARE_TYPEDDATA( InternedStringData, InternedString, InternedString, SimpleDataHolder )
 IECORE_DECLARE_TYPEDDATA( HalfData, half, half, SimpleDataHolder )
-
-IECORE_DECLARE_GEOMETRICTYPEDDATA( V2iData, Imath::V2i, int, SimpleDataHolder )
-IECORE_DECLARE_GEOMETRICTYPEDDATA( V3iData, Imath::V3i, int, SimpleDataHolder )
-IECORE_DECLARE_GEOMETRICTYPEDDATA( V2fData, Imath::V2f, float, SimpleDataHolder )
-IECORE_DECLARE_GEOMETRICTYPEDDATA( V3fData, Imath::V3f, float, SimpleDataHolder )
-IECORE_DECLARE_GEOMETRICTYPEDDATA( V2dData, Imath::V2d, double, SimpleDataHolder )
-IECORE_DECLARE_GEOMETRICTYPEDDATA( V3dData, Imath::V3d, double, SimpleDataHolder )
-
+IECORE_DECLARE_TYPEDDATA( V2iData, Imath::V2i, int, SimpleDataHolder )
+IECORE_DECLARE_TYPEDDATA( V3iData, Imath::V3i, int, SimpleDataHolder )
+IECORE_DECLARE_TYPEDDATA( V2fData, Imath::V2f, float, SimpleDataHolder )
+IECORE_DECLARE_TYPEDDATA( V3fData, Imath::V3f, float, SimpleDataHolder )
+IECORE_DECLARE_TYPEDDATA( V2dData, Imath::V2d, double, SimpleDataHolder )
+IECORE_DECLARE_TYPEDDATA( V3dData, Imath::V3d, double, SimpleDataHolder )
 IECORE_DECLARE_TYPEDDATA( Color3fData, Imath::Color3f, float, SimpleDataHolder )
 IECORE_DECLARE_TYPEDDATA( Color4fData, Imath::Color4f, float, SimpleDataHolder )
 IECORE_DECLARE_TYPEDDATA( Color3dData, Imath::Color3<double>, double, SimpleDataHolder )

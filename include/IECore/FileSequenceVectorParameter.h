@@ -79,13 +79,10 @@ class FileSequenceVectorParameter : public PathVectorParameter
 
 		void setFileSequenceValues( const std::vector< FileSequencePtr > &sequences );
 
-		/// Creates a FileSequence from the given StringVectorData using the ls() function.
-		/// Note that this can return 0 if check is DontCare and no matching sequence exists on disk.
-		void getFileSequenceValues( const StringVectorData *value, std::vector< FileSequencePtr > &sequences ) const;
-		
-		/// Gets fileSequence values using the internal StringVectorData value
+		/// Gets the internal StringData value and creates a FileSequence
+		/// from it using the ls() function. Note that this can return 0
+		/// if check is DontCare and no matching sequence exists on disk.
 		void getFileSequenceValues( std::vector< FileSequencePtr > &sequences ) const;
-		
 
 	protected :
 

@@ -219,7 +219,7 @@ MStatus ParameterHandler::finishUpdating( IECore::ConstParameterPtr parameter, M
 		IECore::ConstBoolDataPtr storable = mayaUserData->member<IECore::BoolData>( "storable" );
 		if( storable )
 		{
-			MFnAttribute fnA( plug.attribute() );
+			MFnAttribute fnA = MFnAttribute( plug.attribute() );
 			status = fnA.setStorable( storable->readable() );
 		}
 	}

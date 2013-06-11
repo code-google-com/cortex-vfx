@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,6 @@
 
 using namespace IECore;
 
-static IndexedIO::EntryID g_numPointsEntry("numPoints");
 const unsigned int PointsPrimitive::m_ioVersion = 0;
 IE_CORE_DEFINEOBJECTTYPEDESCRIPTION( PointsPrimitive );
 
@@ -51,7 +50,6 @@ PointsPrimitive::PointsPrimitive( size_t numPoints )
 PointsPrimitive::PointsPrimitive( V3fVectorDataPtr points, FloatVectorDataPtr radii )
 	:	m_numPoints( points->readable().size() )
 {
-	points->setInterpretation( GeometricData::Point );
 	variables.insert( PrimitiveVariableMap::value_type( "P", PrimitiveVariable( PrimitiveVariable::Vertex, points ) ) );
 	if( radii )
 	{
@@ -74,17 +72,17 @@ void PointsPrimitive::copyFrom( const Object *other, IECore::Object::CopyContext
 void PointsPrimitive::save( IECore::Object::SaveContext *context ) const
 {
 	Primitive::save( context );
-	IndexedIOPtr container = context->container( staticTypeName(), m_ioVersion );
-	container->write( g_numPointsEntry, static_cast<unsigned int>(m_numPoints) );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), m_ioVersion );
+	container->write( "numPoints", static_cast<unsigned int>(m_numPoints) );
 }
 
 void PointsPrimitive::load( IECore::Object::LoadContextPtr context )
 {
 	Primitive::load( context );
 	unsigned int v = m_ioVersion;
-	ConstIndexedIOPtr container = context->container( staticTypeName(), v );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 	unsigned int numPoints;
-	container->read( g_numPointsEntry, numPoints );
+	container->read( "numPoints", numPoints );
 	m_numPoints = static_cast<size_t>(numPoints);
 }
 
@@ -111,10 +109,6 @@ void PointsPrimitive::memoryUsage( Object::MemoryAccumulator &a ) const
 void PointsPrimitive::hash( MurmurHash &h ) const
 {
 	Primitive::hash( h );
-}
-
-void PointsPrimitive::topologyHash( MurmurHash &h ) const
-{
 	h.append( (uint64_t)m_numPoints );
 }
 

@@ -66,11 +66,6 @@ class NParticleReader : public ParticleReader
 		/// the frameIndex parameter should be set using an index into this IntVectorData
 		const IntVectorData * frameTimes();
 	
-	protected:
-		
-		// Returns the name of the position primVar
-		virtual std::string positionPrimVarName();
-		
 	private:
 		
 		static const ReaderDescription<NParticleReader> m_readerDescription;

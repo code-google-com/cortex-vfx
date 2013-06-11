@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,9 +39,8 @@
 #include <map>
 #include <string>
 
-#include "boost/shared_ptr.hpp"
 #include "IECore/RunTimeTyped.h"
-#include "IECore/IndexedIO.h"
+#include "IECore/IndexedIOInterface.h"
 
 namespace IECore
 {
@@ -99,7 +98,6 @@ class MurmurHash;
 
 /// A base class defining copying and streaming.
 /// \ingroup coreGroup
-/// \todo rename virtual functions that match non-virtual functions so that pointers to derived classes still provide access the non-virtual ones: example hash(), memoryUsage(), save().
 class Object : public RunTimeTyped
 {
 	public:
@@ -129,7 +127,7 @@ class Object : public RunTimeTyped
 		void copyFrom( const Object *other );
 		/// Saves the object in the current directory of ioInterface, in
 		/// a subdirectory with the specified name.
-		void save( IndexedIOPtr ioInterface, const IndexedIO::EntryID &name ) const;
+		void save( IndexedIOInterfacePtr ioInterface, const IndexedIO::EntryID &name ) const;
 		/// Returns true if this object is equal to the other. Should
 		/// be reimplemented appropriately in derived classes, first calling
 		/// your base class isEqualTo() and returning false straight away
@@ -182,7 +180,7 @@ class Object : public RunTimeTyped
 		static ObjectPtr create( const std::string &typeName );
 		/// Loads an object previously saved with the given name in the current directory
 		/// of ioInterface.
-		static ObjectPtr load( ConstIndexedIOPtr ioInterface, const IndexedIO::EntryID &name );
+		static ObjectPtr load( IndexedIOInterfacePtr ioInterface, const IndexedIO::EntryID &name );
 		//@}
 
 		typedef ObjectPtr (*CreatorFn)( void *data );
@@ -246,7 +244,7 @@ class Object : public RunTimeTyped
 		class SaveContext
 		{
 			public :
-				SaveContext( IndexedIOPtr ioInterface );
+				SaveContext( IndexedIOInterfacePtr ioInterface );
 				/// Returns an interface to a container in which you can save your class data. You should save
 				/// your data directly into the root of this container. The "filesystem" below the
 				/// root is guaranteed to be empty and immune to writes from any badly behaved Object
@@ -256,28 +254,32 @@ class Object : public RunTimeTyped
 				/// each time the format you save in changes, and is the same as the version retrieved
 				/// in the LoadContext::ioInterface() method. It is recommended that you store your
 				/// ioVersion as a private static const member of your class.
-				IndexedIOPtr container( const std::string &typeName, unsigned int ioVersion );
+				IndexedIOInterfacePtr container( const std::string &typeName, unsigned int ioVersion );
 				/// Saves an Object instance, saving only a reference in the case that the object has
 				/// already been saved.
-				void save( const Object *toSave, IndexedIO *o, const IndexedIO::EntryID &name );
+				void save( const Object *toSave, IndexedIOInterfacePtr o, const IndexedIO::EntryID &name );
 				/// Returns an interface to an alternative container in which to save class data. This container
 				/// is provided for optimisation reasons and should be used only in extreme cases. The container
 				/// provides no protection from overwriting of your class data by base or derived classes, and
-				/// provides no versioning. Furthermore you can only use raw IndexedIO methods
+				/// provides no versioning. Furthermore you can only use raw IndexedIOInterface methods
 				/// for saving in it - SaveContext::save() may not be used and therefore child Objects may not
 				/// be saved. This interface is provided primarily for the SimpleTypedData classes, which save
 				/// very small amounts of unstructured data where the metadata associated with the standard
 				/// container becomes relatively expensive in both disk space and time. Think carefully before
 				/// using this container, it provides performance benefits only in extreme cases!
-				IndexedIO *rawContainer();
+				IndexedIOInterfacePtr rawContainer();
 			private :
 
-				typedef std::map<const Object *, IndexedIO::EntryIDList > SavedObjectMap;
+				typedef std::map<const Object *, IndexedIO::EntryID> SavedObjectMap;
+				typedef std::map<IndexedIOInterfacePtr, IndexedIO::EntryID> ContainerRootsMap;
 
-				SaveContext( IndexedIOPtr ioInterface, boost::shared_ptr<SavedObjectMap> savedObjects );
+				SaveContext( IndexedIOInterfacePtr ioInterface, const IndexedIO::EntryID &root,
+					boost::shared_ptr<SavedObjectMap> savedObjects, boost::shared_ptr<ContainerRootsMap> containerRoots );
 
-				IndexedIOPtr m_ioInterface;
+				IndexedIOInterfacePtr m_ioInterface;
+				IndexedIO::EntryID m_root;
 				boost::shared_ptr<SavedObjectMap> m_savedObjects;
+				boost::shared_ptr<ContainerRootsMap> m_containerRoots;
 
 		};
 
@@ -285,32 +287,35 @@ class Object : public RunTimeTyped
 		class LoadContext : public RefCounted
 		{
 			public :
-				LoadContext( ConstIndexedIOPtr ioInterface );
+				LoadContext( IndexedIOInterfacePtr ioInterface );
 				/// Returns an interface to the container created by SaveContext::container().
 				/// @param typeName The typename of your class.
 				/// @param ioVersion On entry this should contain the current file format version
 				/// for your class. On exit it will contain the file format version of the file being
 				/// read. If the latter is greater than the former an exception is thrown (the file is
 				/// newer than the library) - this should not be caught.
-				/// @param throwIfMissing If false will and the container does not carry the entry for the type name, returns a null pointer.
-				ConstIndexedIOPtr container( const std::string &typeName, unsigned int &ioVersion, bool throwIfMissing = true );
+				IndexedIOInterfacePtr container( const std::string &typeName, unsigned int &ioVersion );
 				template<class T>
 				/// Load an Object instance previously saved by SaveContext::save().
-				typename T::Ptr load( const IndexedIO *container, const IndexedIO::EntryID &name );
+				typename T::Ptr load( IndexedIOInterfacePtr container, const IndexedIO::EntryID &name );
 				/// Returns an interface to a raw container created by SaveContext::rawContainer() - please see
 				/// documentation and cautionary notes for that function.
-				const IndexedIO *rawContainer();
+				IndexedIOInterfacePtr rawContainer();
 
 			private :
-				typedef std::map< IndexedIO::EntryIDList, ObjectPtr> LoadedObjectMap;
+				typedef std::map< IndexedIO::EntryID, ObjectPtr> LoadedObjectMap;
+				typedef std::map<IndexedIOInterfacePtr, IndexedIO::EntryID> ContainerRootsMap;
 
-				LoadContext( ConstIndexedIOPtr ioInterface, boost::shared_ptr<LoadedObjectMap> loadedObjects );
+				LoadContext( IndexedIOInterfacePtr ioInterface, const IndexedIO::EntryID &root,
+					boost::shared_ptr<LoadedObjectMap> loadedObjects, boost::shared_ptr<ContainerRootsMap> containerRoots );
 
-				ObjectPtr loadObjectOrReference( const IndexedIO *container, const IndexedIO::EntryID &name );
-				ObjectPtr loadObject( const IndexedIO *container );
+				ObjectPtr loadObjectOrReference( IndexedIOInterfacePtr container, const IndexedIO::EntryID &name );
+				ObjectPtr loadObject( const IndexedIO::EntryID &path );
 
-				ConstIndexedIOPtr m_ioInterface;
+				IndexedIOInterfacePtr m_ioInterface;
+				IndexedIO::EntryID m_root;
 				boost::shared_ptr<LoadedObjectMap> m_loadedObjects;
+				boost::shared_ptr<ContainerRootsMap> m_containerRoots;
 		};
 		IE_CORE_DECLAREPTR( LoadContext );
 

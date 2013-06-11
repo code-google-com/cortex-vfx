@@ -268,8 +268,43 @@ MPlug ClassVectorParameterHandler::doCreate( IECore::ConstParameterPtr parameter
 		return MPlug();
 	}
 	
-	MFnTypedAttribute fnTAttr;
-	MObject attribute = fnTAttr.create( plugName, plugName, MFnData::kStringArray );
+	/// \todo: Remove this userData for Cortex 8. Find all notes labelled "compatibility for the deprecated compound plug behaviour"
+	/// and remove the unnecessary code at that time.
+	bool compact = false;
+	IECore::ConstCompoundObjectPtr mayaUserData = parameter->userData()->member<IECore::CompoundObject>( "maya" );
+	if( mayaUserData )
+	{
+		IECore::ConstBoolDataPtr compactClassPlugs = mayaUserData->member<IECore::BoolData>( "compactClassPlugs" );
+		if ( compactClassPlugs )
+		{
+			compact = compactClassPlugs->readable();
+		}
+	}
+	
+	MObject attribute;
+	
+	if ( compact )
+	{
+		MFnTypedAttribute fnTAttr;
+		attribute = fnTAttr.create( plugName, plugName, MFnData::kStringArray );
+	}
+	else
+	{
+		// compatibility for the deprecated compound plug behaviour
+		MFnCompoundAttribute fnCAttr;
+		attribute = fnCAttr.create( plugName, plugName );
+
+		MFnTypedAttribute fnTAttr;
+		MObject parameterNamesAttr = fnTAttr.create( plugName + "__parameterNames", plugName + "__parameterNames", MFnData::kStringArray );
+		fnCAttr.addChild( parameterNamesAttr );
+
+		MObject classNamesAttr = fnTAttr.create( plugName + "__classNames", plugName + "__classNames", MFnData::kStringArray );
+		fnCAttr.addChild( classNamesAttr );
+
+		MObject classVersionsAttr = fnTAttr.create( plugName + "__classVersions", plugName + "__classVersions", MFnData::kIntArray );
+		fnCAttr.addChild( classVersionsAttr );
+	}
+	
 	MPlug result = finishCreating( parameter, attribute, node );
 	
 	if( !storeClasses( parameter, result ) )
@@ -373,9 +408,7 @@ MStatus ClassVectorParameterHandler::storeClasses( IECore::ConstParameterPtr par
 			}
 			else
 			{
-				// compatibility for the deprecated compound plug behaviour. keeping this code
-				// so we can still read old scenes. creation of these plugs has been removed.
-				/// \todo: find all such notes and remove the unnecessary code for Cortex 9.
+				// compatibility for the deprecated compound plug behaviour
 				MObject parameterNamesObject = MFnStringArrayData().create( parameterNames );
 				plug.child( 0 ).setValue( parameterNamesObject );
 				MObject classNamesObject = MFnStringArrayData().create( classNames );

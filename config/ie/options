@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -63,7 +63,7 @@ targetApp = getOption( "APP", None )
 
 # get cortex config information from the registry. if we have setting specific to this platform then use them, otherwise
 # fall back to the generic settings for this major version.
-cortexReg = IEEnv.registry["libraries"]["cortex"]["8"].get( platform, IEEnv.registry["libraries"]["cortex"]["8"] )
+cortexReg = IEEnv.registry["libraries"]["cortex"]["7"].get( platform, IEEnv.registry["libraries"]["cortex"]["7"] )
 
 tbbVersion = cortexReg["tbbVersion"]
 if targetApp :
@@ -90,11 +90,10 @@ if targetApp :
 	boostVersion = targetAppReg.get( "boostVersion", cortexReg["boostVersion"] )
 	targetAppMajorVersion = targetAppReg.get( "majorVersion", targetAppVersion )
 else :
-	platformReg = IEEnv.registry["platformDefaults"][IEEnv.platform()]
 	if not compiler :
-		compiler = platformReg.get( "toolsCompiler", platformReg["compiler"] )
+		compiler = IEEnv.registry["platformDefaults"][platform]["compiler"]
 	if not compilerVersion :
-		compilerVersion = platformReg.get( "toolsCompilerVersion", platformReg["compilerVersion"] )
+		compilerVersion = IEEnv.registry["platformDefaults"][platform]["compilerVersion"]
 	if not pythonVersion :
 		pythonVersion = cortexReg["preferredPythonVersion"]
 	openEXRVersion = cortexReg["OpenEXRVersion"]
@@ -103,7 +102,7 @@ else :
 	glewVersion = cortexReg["glewVersion"]
 	tbbVersion = cortexReg["tbbVersion"]
 	boostVersion = cortexReg["boostVersion"]
-		
+	
 # get the compiler location using the registry
 compilerReg = IEEnv.registry["compilers"][compiler][compilerVersion][platform]
 
@@ -114,16 +113,11 @@ os.environ["COMPILER_VERSION"] = compilerVersion
 CXX = os.path.join( compilerReg["location"], compilerReg["bin"] )
 
 m = re.compile( "^([0-9]+)\.([0-9]+)\.([0-9]+)$" ).match( compilerVersion )
-if m :
-	compilerMajorVersion, compilerMinorVersion, compilerPatchVersion = m.group( 1, 2, 3 )
-	compilerVersionInt = int(compilerMajorVersion) * 100 + int(compilerMinorVersion) * 10 + int(compilerPatchVersion)
-else :
-	m = re.compile( "^([0-9]+)\.([0-9]+)$" ).match( compilerVersion )
-	compilerMajorVersion, compilerMinorVersion = m.group( 1, 2 )
-	compilerVersionInt = int(compilerMajorVersion) * 100 + int(compilerMinorVersion) * 10 + 9
-
-if not m :
-	raise RuntimeError( "Cannot determine compiler version (%s)" % compilerVersion )
+if not m:
+	raise RuntimeError( "Cannot determine compiler version" )
+	
+compilerMajorVersion, compilerMinorVersion, compilerPatchVersion = m.group( 1, 2, 3 )
+compilerVersionInt = int(compilerMajorVersion) * 100 + int(compilerMinorVersion) * 10 + int(compilerPatchVersion)
 
 # figure out the suffix for boost libraries
 boostVersionSuffix = "-mt-" + boostVersion.replace( ".", "_" )
@@ -131,9 +125,7 @@ while boostVersionSuffix.endswith( "_0" ) :
 	boostVersionSuffix = boostVersionSuffix[:-2]
 
 debug = getOption( "DEBUG", False )
-# adding "-Wno-write-strings" because gcc 4.4 complains about PyDateTime_IMPORT (python2.6) and gcc 4.1.2 doesn't accept pragmas
-## \todo: remove "-Wno-write-strings" if we ever drop support for older gcc versions or python2.6
-CXXFLAGS = [ "-pipe", "-Wall", "-Werror", "-Wno-write-strings" ]
+CXXFLAGS = [ '-pipe', '-Wall' ]
 if not IEEnv.platformOS().startswith( "osx" ) :
 	CXXFLAGS += [ '-pthread' ]
 	
@@ -166,6 +158,11 @@ if not debug :
 
 	CXXFLAGS += [ "-O2" ]
 				
+PYTHONCXXFLAGS = copy.copy( CXXFLAGS )
+	
+## \todo Try to reintroduce -Werror whenever we find a boost version not riddled with warnings, or
+# when we use a compiler which properly supports the #pragma diagnostic to ignore warnings from boost.
+	
 LINKFLAGS = []	
 if compilerVersionInt < 350 :
 	##########################################################################################################
@@ -180,8 +177,7 @@ if compilerVersionInt < 350 :
 TBB_INCLUDE_PATH = "/software/tools/include/" + platform + "/tbb/" + tbbVersion
 BOOST_INCLUDE_PATH = os.path.join( "/software/tools/include", platform, "boost", boostVersion )
 OPENEXR_INCLUDE_PATH = "/software/tools/include/" + platform + "/OpenEXR/" + openEXRVersion
-GLEW_INCLUDE_PATH = "/software/tools/include/" + platform + "/glew/" + glewVersion + "/GL"
-GLEW_LIB_SUFFIX = "-" + glewVersion
+GLEW_INCLUDE_PATH = "/software/tools/include/" + platform + "/glew/" + glewVersion
 
 if platform == "cent6.x86_64" :
 	# use the /usr/lib versions of tiff, png, freetype and jpeg
@@ -191,7 +187,7 @@ else :
 	JPEG_INCLUDE_PATH = "/software/tools/include/jpeg/6b"
 	FREETYPE_INCLUDE_PATH = "/software/tools/include/freetype/2.3.5/freetype2"
 	PNG_INCLUDE_PATH = "/software/tools/include/png/1.5.2"
-	CXXFLAGS += [ "-isystem", "/software/tools/include/freetype/2.3.5" ]
+	CPPPATH = "/software/tools/include/freetype/2.3.5"
 	
 # figure out the boost lib suffix
 compilerVersionSplit = compilerVersion.split( "." )
@@ -243,7 +239,8 @@ arnoldVersion = getOption( "ARNOLD_VERSION", os.environ["ARNOLD_VERSION"] )
 try :
 	arnoldReg = IEEnv.registry["apps"]["arnold"][arnoldVersion][platform]
 	if arnoldReg["compiler"]==compiler and arnoldReg["compilerVersion"]==compilerVersion :
-		ARNOLD_ROOT = arnoldReg["location"]
+		pass
+		#ARNOLD_ROOT = arnoldReg["location"]
 except :
 	pass
 
@@ -316,7 +313,7 @@ if targetApp=="houdini" :
 	PNG_INCLUDE_PATH = OPENEXR_INCLUDE_PATH
 	
 	HOUDINI_ROOT = houdiniReg['location']
-	HOUDINI_CXX_FLAGS = " ".join( CXXFLAGS ) + ' -DVERSION=\"'+houdiniVersion+'\" -DDLLEXPORT=  -D_GNU_SOURCE -DLINUX -DAMD64 -m64 -fPIC -DSIZEOF_VOID_P=8 -DSESI_LITTLE_ENDIAN -DENABLE_THREADS -DUSE_PTHREADS -D_REENTRANT -D_FILE_OFFSET_BITS=64 -DGCC4 -DGCC3 -Wno-deprecated'
+	HOUDINI_CXX_FLAGS = '-DVERSION=\"'+houdiniVersion+'\" -DDLLEXPORT=  -D_GNU_SOURCE -DLINUX -DAMD64 -m64 -fPIC -DSIZEOF_VOID_P=8 -DSESI_LITTLE_ENDIAN -DENABLE_THREADS -DUSE_PTHREADS -D_REENTRANT -D_FILE_OFFSET_BITS=64 -c  -DGCC4 -DGCC3 -Wno-deprecated -Wall -W -Wno-parentheses -Wno-sign-compare -Wno-reorder -Wno-uninitialized -Wunused -Wno-unused-parameter -Wno-strict-aliasing -O2 -DMAKING_DSO -DNDEBUG -DBOOST_DISABLE_ASSERTS'
 	INSTALL_HOUDINILIB_NAME = os.path.join( appPrefix, "lib", "$IECORE_NAME-$IECORE_MAJOR_VERSION" )
 	INSTALL_HOUDINIPLUGIN_NAME = os.path.join( appPrefix, "plugins", "$IECORE_NAME" )
 	INSTALL_HOUDINIOTL_DIR = os.path.join( appPrefix, "otls" )
@@ -377,7 +374,7 @@ if targetApp :
 	# up causing linking conflicts at rendertime. this is because the procedural would be linking to the
 	# boost version an app needs, whereas the other libraries are linking to the correct boost version for
 	# 3delight, so we just install the procedurals into /tmp where they can't do any harm.
-	INSTALL_RMANPROCEDURAL_NAME = "/tmp/unwantedRManProcedurals/$IECORE_NAME"
+	INSTALL_RMANPROCEDURAL_NAME = "/tmp/unwantedRManProcedurals/$IECORE_NAME-$IECORE_MAJOR_VERSION"
 	INSTALL_RMANDISPLAY_NAME = "/tmp/unwantedRManDisplays/$IECORE_NAME-$IECORE_MAJOR_VERSION"
 	INSTALL_ARNOLDPROCEDURAL_NAME = "/tmp/unwantedArnoldProcedurals/$IECORE_NAME-$IECORE_MAJOR_VERSION"
 	INSTALL_ARNOLDOUTPUTDRIVER_NAME = "/tmp/unwantedArnoldDrivers/$IECORE_NAME-$IECORE_MAJOR_VERSION"
@@ -387,7 +384,7 @@ else :
 	INSTALL_PYTHONLIB_NAME = os.path.join( basePrefix, "lib", compiler, compilerVersion, "$IECORE_NAME-$IECORE_MAJOR_VERSION-python$PYTHON_VERSION" )
 	INSTALL_PYTHON_DIR = os.path.join( basePrefix, "python", pythonVersion )
 	INSTALL_RMANLIB_NAME = os.path.join( basePrefix, "lib", compiler, compilerVersion, "$IECORE_NAME-$IECORE_MAJOR_VERSION" )
-	INSTALL_RMANPROCEDURAL_NAME = os.path.join( basePrefix, "3delight", dlVersion, "procedurals", "$IECORE_NAME" )
+	INSTALL_RMANPROCEDURAL_NAME = os.path.join( basePrefix, "3delight", dlVersion, "procedurals", "$IECORE_NAME-$IECORE_MAJOR_VERSION" )
 	INSTALL_RMANDISPLAY_NAME = os.path.join( basePrefix, "3delight", dlVersion, "displayDrivers", "$IECORE_NAME" )
 	INSTALL_ARNOLDLIB_NAME = os.path.join( basePrefix, "lib", compiler, compilerVersion, "$IECORE_NAME-$IECORE_MAJOR_VERSION" )
 	INSTALL_ARNOLDPROCEDURAL_NAME = os.path.join( basePrefix, "arnold", arnoldVersion, "plugins", "$IECORE_NAME" )

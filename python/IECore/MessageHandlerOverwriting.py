@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2010-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -38,13 +38,12 @@ __all__ = []
 
 def __enter( self ) :
 
-	self.__scope = self._Scope( self )
-	
-	return self
+	IECore.MessageHandler.pushHandler( self )
 	
 def __exit( self, type, value, traceBack ) :
 
-	del self.__scope
+	poppedHandler = IECore.MessageHandler.popHandler()
+	assert( poppedHandler.isSame( self ) )
 	
 IECore.MessageHandler.__enter__ = __enter
 IECore.MessageHandler.__exit__ = __exit

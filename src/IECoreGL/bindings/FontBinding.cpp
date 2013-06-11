@@ -43,26 +43,21 @@
 using namespace boost::python;
 using namespace IECoreGL;
 
-static IECore::FontPtr coreFont( IECoreGL::Font &f )
-{
-	return f.coreFont();
-}
-
 static IECoreGL::MeshPrimitivePtr mesh( IECoreGL::Font &f, char c )
 {
-	return const_cast<IECoreGL::MeshPrimitive *>( f.mesh( c ) );
+	return IECore::constPointerCast<IECoreGL::MeshPrimitive>( f.mesh( c ) );
 }
 
 static IECoreGL::AlphaTexturePtr texture( IECoreGL::Font &f )
 {
-	return const_cast<IECoreGL::AlphaTexture *>( f.texture() );
+	return IECore::constPointerCast<IECoreGL::AlphaTexture>( f.texture() );
 }
 
 void IECoreGL::bindFont()
 {
 	IECorePython::RunTimeTypedClass<Font>()
 		.def( init<IECore::FontPtr>() )
-		.def( "coreFont", &coreFont )
+		.def( "coreFont", &Font::coreFont )
 		.def( "mesh", &mesh )
 		.def( "texture", &texture )
 		.def( "renderSprites", &Font::renderSprites )

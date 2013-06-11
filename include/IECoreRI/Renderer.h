@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -79,10 +79,6 @@ class Renderer : public IECore::Renderer
 		///
 		/// \li <b>"ri:pixelSamples" V2iData()</b><br>
 		/// Passed to an RiPixelSamples call.
-		///
-		/// \li <b>"ri:hider" StringData()</b></br>
-		/// \li <b>"ri:hider:*" StringData()</b></br>
-		/// Passed to an RiHider call.
 		///
 		/// \li <b>"ri:*:*"</b><br>
 		/// Passed to an RiOption call.
@@ -289,16 +285,13 @@ class Renderer : public IECore::Renderer
 		/// \deprecated Use the illuminate method instead of the ri:illuminate command.
 		virtual IECore::DataPtr command( const std::string &name, const IECore::CompoundDataMap &parameters );
 
-		virtual void editBegin( const std::string &name, const IECore::CompoundDataMap &parameters );
-		virtual void editEnd();
-
 	private :
 		
-		friend class RendererImplementation;
 		// Constructor used by RendererImplementation when rendering procedurals.
-		Renderer( RendererImplementationPtr implementation );
+		friend class RendererImplementation;
+		Renderer( IECore::RendererPtr implementation );
 
-		RendererImplementationPtr m_implementation;
+		IECore::RendererPtr m_implementation;
 
 };
 

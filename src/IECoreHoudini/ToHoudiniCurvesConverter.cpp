@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -64,16 +64,37 @@ bool ToHoudiniCurvesConverter::doConversion( const VisibleRenderable *renderable
 		return false;
 	}
 	
+	GA_Range newPoints;
 	bool periodic = curves->periodic();
 	bool duplicatedEnds = !periodic && ( curves->basis() == CubicBasisf::bSpline() );
 	
-	size_t numPoints = curves->variableSize( PrimitiveVariable::Vertex );
+	// adjust for duplicated end points
+	std::map<std::string, DataPtr> modifiedData;
 	if ( duplicatedEnds )
 	{
-		numPoints -= 4 * curves->numCurves();
+		RemoveDuplicateEnds func( curves->verticesPerCurve()->readable() );
+		for ( PrimitiveVariableMap::const_iterator it=curves->variables.begin() ; it != curves->variables.end(); it++ )
+		{
+			// only remove duplicates from vertex variables
+			if ( it->second.interpolation == IECore::PrimitiveVariable::Vertex )
+			{
+				modifiedData[it->first] = despatchTypedData<RemoveDuplicateEnds, TypeTraits::IsVectorAttribTypedData, DespatchTypedDataIgnoreError>( it->second.data, func );
+			}
+		}
+		
+		std::map<std::string, DataPtr>::iterator pIt = modifiedData.find( "P" );
+		if ( pIt == modifiedData.end() )
+		{
+			return false;
+		}
+		
+		newPoints = appendPoints( geo, runTimeCast<const V3fVectorData>( pIt->second ) );
+	}
+	else
+	{
+		newPoints = appendPoints( geo, curves->variableData<V3fVectorData>( "P" ) );
 	}
 	
-	GA_Range newPoints = appendPoints( geo, numPoints );
 	if ( !newPoints.isValid() || newPoints.empty() )
 	{
 		return false;
@@ -115,38 +136,28 @@ bool ToHoudiniCurvesConverter::doConversion( const VisibleRenderable *renderable
 	}
 	
 	GA_Range newPrims( geo->getPrimitiveMap(), offsets );
-	transferAttribs( geo, newPoints, newPrims );
+	transferAttribs( curves, geo, newPoints, newPrims, PrimitiveVariable::Vertex );
+	
+	// add the modified vertex variables
+	for ( std::map<std::string, DataPtr>::const_iterator it=modifiedData.begin() ; it != modifiedData.end(); it++ )
+	{
+		// P should already have been added as points
+		if ( it->first == "P" )
+		{
+			continue;
+		}
+		
+		// add point attribs
+		ToHoudiniAttribConverterPtr converter = ToHoudiniAttribConverter::create( it->second );
+ 		if ( !converter )
+ 		{
+ 			continue;
+ 		}
+
+ 		converter->convert( it->first, geo, newPoints );
+	}
 	
 	return true;
-}
-
-PrimitiveVariable ToHoudiniCurvesConverter::processPrimitiveVariable( const IECore::Primitive *primitive, const PrimitiveVariable &primVar ) const
-{
-	const CurvesPrimitive *curves = static_cast<const CurvesPrimitive *>( primitive );
-	if ( !curves )
-	{
-		return primVar;
-	}
-	
-	// adjust for duplicated end points
-	bool duplicatedEnds = !curves->periodic() && ( curves->basis() == CubicBasisf::bSpline() );
-	if ( duplicatedEnds && primVar.interpolation == IECore::PrimitiveVariable::Vertex )
-	{
-		RemoveDuplicateEnds func( curves->verticesPerCurve()->readable() );
-		DataPtr data = despatchTypedData<RemoveDuplicateEnds, TypeTraits::IsVectorAttribTypedData, DespatchTypedDataIgnoreError>( primVar.data, func );
-		return PrimitiveVariable( IECore::PrimitiveVariable::Vertex, data );
-	}
-	
-	return primVar;
-}
-
-void ToHoudiniCurvesConverter::transferAttribs( GU_Detail *geo, const GA_Range &points, const GA_Range &prims ) const
-{
-	const Primitive *primitive = IECore::runTimeCast<const Primitive>( srcParameter()->getValidatedValue() );
-	if ( primitive )
-	{
-		transferAttribValues( primitive, geo, points, prims, PrimitiveVariable::Vertex );
-	}
 }
 
 ToHoudiniCurvesConverter::RemoveDuplicateEnds::RemoveDuplicateEnds( const std::vector<int> &vertsPerCurve ) : m_vertsPerCurve( vertsPerCurve )
@@ -168,9 +179,9 @@ ToHoudiniCurvesConverter::RemoveDuplicateEnds::ReturnType ToHoudiniCurvesConvert
 	size_t index = 0;
 	for ( size_t i=0; i < m_vertsPerCurve.size(); i++ )
 	{
-		for ( size_t j=0; j < (size_t)m_vertsPerCurve[i]; j++, index++ )
+		for ( size_t j=0; j < m_vertsPerCurve[i]; j++, index++ )
 		{
-			if ( j > 1 && j < (size_t)m_vertsPerCurve[i]-2 )
+			if ( j > 1 && j < m_vertsPerCurve[i]-2 )
 			{
 				newValues.push_back( origValues[index] );
 			}

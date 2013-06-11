@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 //  its affiliates and/or its licensors.
@@ -410,31 +410,9 @@ enum TypeId
 	TimeCodeParameterTypeId = 362,
 	OptionsTypeId = 363,
 	MPlayDisplayDriverTypeId = 364,
-	SceneInterfaceTypeId = 365,
-	SampledSceneInterfaceTypeId = 366,
-	SceneCacheTypeId = 367,
-	IndexedIOTypeId = 368,
-	StreamIndexedIOTypeId = 369,
-	FileIndexedIOTypeId = 370,
-	MemoryIndexedIOTypeId = 371,
-	InternedStringVectorDataTypeId = 372,
-	InternedStringDataTypeId = 373,
-	LinkedSceneTypeId = 374,
-	V2fDataBaseTypeId = 375,
-	V2dDataBaseTypeId = 376,
-	V2iDataBaseTypeId = 377,
-	V3fDataBaseTypeId = 378,
-	V3dDataBaseTypeId = 379,
-	V3iDataBaseTypeId = 380,
-	V2fVectorDataBaseTypeId = 381,
-	V2dVectorDataBaseTypeId = 382,
-	V2iVectorDataBaseTypeId = 383,
-	V3fVectorDataBaseTypeId = 384,
-	V3dVectorDataBaseTypeId = 385,
-	V3iVectorDataBaseTypeId = 386,
-	LensModelTypeId = 387,
-	StandardRadialLensModelTypeId = 388,
-	LensDistortOpTypeId = 389,
+	LensModelTypeId = 365,
+	StandardRadialLensModelTypeId = 366,
+	LensDistortOpTypeId = 367,
 	
 	// Remember to update TypeIdBinding.cpp !!!
 

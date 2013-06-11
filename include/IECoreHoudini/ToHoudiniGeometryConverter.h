@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,6 @@
 #include "GU/GU_DetailHandle.h"
 
 #include "IECore/Primitive.h"
-#include "IECore/SimpleTypedParameter.h"
 #include "IECore/VectorTypedData.h"
 #include "IECore/VisibleRenderable.h"
 
@@ -65,11 +64,6 @@ class ToHoudiniGeometryConverter : public ToHoudiniConverter
 		/// GU_DetailHandle, call doConversion(), and finally unlock the GU_Detail.
 		bool convert( GU_DetailHandle handle ) const;
 		
-		/// Transfers the primitive variables from the IECore::Primitive to the GU_Detail. This is
-		/// usually called by convert(), but is also provided here so attribs may be transfered onto
-		/// existing topology.
-		virtual void transferAttribs( GU_Detail *geo, const GA_Range &points, const GA_Range &prims ) const;
-		
 		/// Creates a converter which will convert the given IECore::Primitive to a Houdini GU_Detail.
 		/// Returns 0 if no such converter can be found.
 		static ToHoudiniGeometryConverterPtr create( const IECore::VisibleRenderable *renderable );
@@ -77,12 +71,6 @@ class ToHoudiniGeometryConverter : public ToHoudiniConverter
 		/// Fills the passed vector with all the IECore::TypeIds for which
 		/// a ToHoudiniGeometryConverter is available.
 		static void supportedTypes( std::set<IECore::TypeId> &types );
-		
-		IECore::BoolParameter *convertStandardAttributesParameter();
-		const IECore::BoolParameter *convertStandardAttributesParameter() const;
-		
-		IECore::StringParameter *attributeFilterParameter();
-		const IECore::StringParameter *attributeFilterParameter() const;
 
 	protected :
 
@@ -92,11 +80,7 @@ class ToHoudiniGeometryConverter : public ToHoudiniConverter
 		
 		/// Must be implemented by derived classes to fill the given GU_Detail with data from the IECore::VisibleRenderable
 		virtual bool doConversion( const IECore::VisibleRenderable *renderable, GU_Detail *geo ) const = 0;
-		
-		/// May be implemented by derived classes to pre-process PrimitiveVariables before conversion.
-		/// Default implementation simply returns a shallow copy of the input variable.
-		virtual IECore::PrimitiveVariable processPrimitiveVariable( const IECore::Primitive *primitive, const IECore::PrimitiveVariable &primVar ) const;
-		
+
 		typedef ToHoudiniGeometryConverterPtr (*CreatorFn)( const IECore::VisibleRenderable *renderable );
 
 		static void registerConverter( IECore::TypeId fromType, CreatorFn creator );
@@ -112,13 +96,15 @@ class ToHoudiniGeometryConverter : public ToHoudiniConverter
 				static ToHoudiniGeometryConverterPtr creator( const IECore::VisibleRenderable *renderable );
 		};
 		
-		/// Appends points to the GA_Detail. Returns a GA_Range containing the GA_Offsets for the newly added points.
-		GA_Range appendPoints( GA_Detail *geo, size_t numPoints ) const;
+		/// Appends points to the GU_Detail from the given V3fVectorData.
+		/// Returns a GA_Range containing the GA_Offsets for the newly added points.
+		GA_Range appendPoints( GA_Detail *geo, const IECore::V3fVectorData *positions ) const;
 		
-		/// Transfers the primitive variables from the IECore::Primitive to the GU_Detail. In most cases,
-		/// derived classes will implement transferAttribs to call this method with the appropriate arguments.
-		void transferAttribValues(
-			const IECore::Primitive *primitive, GU_Detail *geo, const GA_Range &points, const GA_Range &prims,
+		/// Extracts primitive variables from the IECore::Primitive provided and appends them to the GU_Detail.
+		/// In most cases, this is the only transfer function that derived classes will need to use
+		void transferAttribs(
+			const IECore::Primitive *primitive, GU_Detail *geo,
+			const GA_Range &newPoints, const GA_Range &newPrims,
 			IECore::PrimitiveVariable::Interpolation vertexInterpolation = IECore::PrimitiveVariable::FaceVarying,
 			IECore::PrimitiveVariable::Interpolation primitiveInterpolation = IECore::PrimitiveVariable::Uniform,
 			IECore::PrimitiveVariable::Interpolation pointInterpolation = IECore::PrimitiveVariable::Vertex,
@@ -126,16 +112,7 @@ class ToHoudiniGeometryConverter : public ToHoudiniConverter
 		) const;
 		
 	private :
-		
-		IECore::BoolParameterPtr m_convertStandardAttributesParameter;
-		IECore::StringParameterPtr m_attributeFilterParameter;
-		
-		// function to handle the special case for P
-		void transferP( const IECore::V3fVectorData *positions, GU_Detail *geo, const GA_Range &points ) const;
-		
-		// function to map standard IECore PrimitiveVariable names to Houdini names
-		const std::string processPrimitiveVariableName( const std::string &name ) const;
-		
+			
 		/// Struct for maintaining the registered derived classes
 		struct Types
 		{

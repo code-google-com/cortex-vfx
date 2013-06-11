@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 //  Copyright (c) 2011, John Haddon. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -36,16 +36,16 @@
 #ifndef IECOREGL_RENDERER_H
 #define IECOREGL_RENDERER_H
 
-#include "IECore/Renderer.h"
-
 #include "IECoreGL/TypeIds.h"
+
+#include "IECore/Renderer.h"
+#include "IECoreGL/TextureLoader.h"
+#include "IECoreGL/ShaderManager.h"
 
 namespace IECoreGL
 {
 
 IE_CORE_FORWARDDECLARE( Scene );
-IE_CORE_FORWARDDECLARE( TextureLoader );
-IE_CORE_FORWARDDECLARE( ShaderLoader );
 
 /// \addtogroup environmentGroup
 ///
@@ -125,7 +125,7 @@ class Renderer : public IECore::Renderer
 		/// procedurals concurrently in separate threads (GL wants only one threading talking to a context). When the scene is rendered for the first
 		/// time it will instantiate various OpenGL resources (textures and shaders and the like) in the current GL context. It is therefore important that
 		/// the scene is destroyed from the same thread that renders it, so that the resources are released in the correct context. As the resources are
-		/// also shared by caches (TextureLoaders and ShaderLoaders) in the Renderer, it is also important that the renderer is destroyed from this same
+		/// also shared by caches (TextureLoaders and ShaderManagers) in the Renderer, it is also important that the renderer is destroyed from this same
 		/// thread.
 		ScenePtr scene();
 
@@ -482,14 +482,10 @@ class Renderer : public IECore::Renderer
 		/// \todo Consider generalising an interface for scene edits and making it a standard part of the documentation
 		/// in IECore. Any such interface should take into account support for PRMan's new rerendering API.
 		virtual IECore::DataPtr command( const std::string &name, const IECore::CompoundDataMap &parameters );
-		
-		/// \todo Implement the existing editing commands in this new form.
-		virtual void editBegin( const std::string &name, const IECore::CompoundDataMap &parameters );
-		virtual void editEnd();
 
-		/// Returns the internal ShaderLoader object used to load the shaders for this renderer.
+		/// Returns the internal ShaderManager object used to manage the shaders from this renderer.
 		/// If called before worldBegin it returns 0.
-		ShaderLoader *shaderLoader();
+		ShaderManager *shaderManager();
 
 		/// Returns the internal TextureLoader object.
 		/// If called before worldBegin it returns 0.

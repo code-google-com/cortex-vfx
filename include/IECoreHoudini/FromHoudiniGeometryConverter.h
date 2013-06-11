@@ -3,7 +3,7 @@
 //  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 //  its affiliates and/or its licensors.
 //
-//  Copyright (c) 2010-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -45,7 +45,6 @@
 
 #include "IECore/Primitive.h"
 #include "IECore/SimpleTypedData.h"
-#include "IECore/SimpleTypedParameter.h"
 #include "IECore/VectorTypedData.h"
 
 #include "IECoreHoudini/TypeIds.h"
@@ -105,7 +104,7 @@ class FromHoudiniGeometryConverter : public FromHoudiniConverter
 		/// need not reimplement this function, but should instead implement doPrimitiveConversion().
 		virtual IECore::ObjectPtr doConversion( IECore::ConstCompoundObjectPtr operands ) const;
 		/// Must be implemented by derived classes to return a IECore::Primitive created to represent the specified GU_Detail.
-		virtual IECore::PrimitivePtr doPrimitiveConversion( const GU_Detail *geo, const IECore::CompoundObject *operands ) const = 0;
+		virtual IECore::PrimitivePtr doPrimitiveConversion( const GU_Detail *geo ) const = 0;
 		
 		typedef FromHoudiniGeometryConverterPtr (*CreatorFn)( const GU_DetailHandle &handle );
 		typedef Convertability (*ConvertabilityFn)( const GU_DetailHandle &handle );
@@ -132,7 +131,7 @@ class FromHoudiniGeometryConverter : public FromHoudiniConverter
 		/// Extracts position and attribs from the GU_Detail and stores them as primitive variables on the IECore::Primitive provided.
 		/// In most cases, this is the only transfer function that derived classes will need to use
 		void transferAttribs(
-			const GU_Detail *geo, IECore::Primitive *result, const IECore::CompoundObject *operands,
+			const GU_Detail *geo, IECore::Primitive *result,
 			IECore::PrimitiveVariable::Interpolation vertexInterpolation = IECore::PrimitiveVariable::FaceVarying,
 			IECore::PrimitiveVariable::Interpolation primitiveInterpolation = IECore::PrimitiveVariable::Uniform,
 			IECore::PrimitiveVariable::Interpolation pointInterpolation = IECore::PrimitiveVariable::Vertex,
@@ -154,13 +153,10 @@ class FromHoudiniGeometryConverter : public FromHoudiniConverter
 		void remapAttributes( const GU_Detail *geo, AttributeMap &pointAttributeMap, AttributeMap &primitiveAttributeMap ) const;
 
 		/// Utility functions for transfering each attrib type from Houdini onto the IECore::Primitive provided
-		void transferDetailAttribs(
-			const GU_Detail *geo, const UT_StringMMPattern &attribFilter,
-			IECore::Primitive *result, IECore::PrimitiveVariable::Interpolation interpolation
-		) const;
+		void transferDetailAttribs( const GU_Detail *geo, IECore::Primitive *result, IECore::PrimitiveVariable::Interpolation interpolation ) const;
 		void transferElementAttribs(
-			const GU_Detail *geo, const GA_Range &range, const GA_AttributeDict &attribs, const UT_StringMMPattern &attribFilter,
-			AttributeMap &attributeMap, IECore::Primitive *result, IECore::PrimitiveVariable::Interpolation interpolation
+			const GU_Detail *geo, const GA_Range &range, const GA_AttributeDict &attribs, AttributeMap &attributeMap,
+			IECore::Primitive *result, IECore::PrimitiveVariable::Interpolation interpolation
 		) const;
 		
 		void transferAttribData(
@@ -171,25 +167,18 @@ class FromHoudiniGeometryConverter : public FromHoudiniConverter
 		/// Utility functions for extracting attrib data from Houdini and storing it as a DataPtr of type T
 		/// @parm index allows a single component to be extracted from a larger container
 		template <typename T>
-		typename T::Ptr extractData( const GA_Attribute *attr, const GA_Range &range, int elementIndex = -1 ) const;
+		IECore::DataPtr extractData( const GA_Attribute *attr, const GA_Range &range, int elementIndex = -1 ) const;
 		
 		template <typename T>
-		typename T::Ptr extractData( const GA_Attribute *attr ) const;
+		IECore::DataPtr extractData( const GA_Attribute *attr ) const;
 		
 		IECore::DataPtr extractStringVectorData( const GA_Attribute *attr, const GA_Range &range, IECore::IntVectorDataPtr &indexData ) const;
 		IECore::DataPtr extractStringData( const GU_Detail *geo, const GA_Attribute *attr ) const;
 
 	private :
 		
-		void constructCommon();
-		
-		// function to map standard Houdini names to IECore PrimitiveVariable names
-		const std::string processPrimitiveVariableName( const std::string &name ) const;
-		
 		// the handle to the GU_Detail
 		GU_DetailHandle m_geoHandle;
-		IECore::BoolParameterPtr m_convertStandardAttributesParameter;
-		IECore::StringParameterPtr m_attributeFilterParameter;
 		
 		struct Types
 		{

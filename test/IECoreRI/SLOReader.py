@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -164,25 +164,6 @@ class TestSLOReader( unittest.TestCase ) :
 		self.assertRaises( RuntimeError, Reader.create, 'test/IECore/data/null' )
 		self.assertRaises( RuntimeError, Reader.create, 'test/IECore/data/null.cin' )
 
-	def testBlindData( self ) :
-	
-		r = SLOReader( os.path.join( self.shaderPath(), "matte.sdl" ) )
-		s = r.read()
-		
-		self.assertEqual( s.blindData()["ri:orderedParameterNames"], StringVectorData( [ "Ka", "Kd" ] ) )
-
-	def testAnnotations( self ) :
-	
-		self.assertEqual( os.system( "shaderdl -o test/IECoreRI/shaders/types.sdl test/IECoreRI/shaders/types.sl" ), 0 )
-
-		r = SLOReader( "test/IECoreRI/shaders/types.sdl" )
-		s = r.read()
-		
-		self.assertTrue( "ri:annotations" in s.blindData() )
-		
-		self.assertEqual( s.blindData()["ri:annotations"]["author"], StringData( "JohnJohn" ) )
-		self.assertEqual( s.blindData()["ri:annotations"]["version"], StringData( "1.0" ) )
-	
 	def tearDown( self ) :
 
 		for f in [ "test/IECoreRI/shaders/types.sdl" ] :

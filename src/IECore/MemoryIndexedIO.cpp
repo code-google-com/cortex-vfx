@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -38,127 +38,68 @@
 
 using namespace IECore;
 
-IE_CORE_DEFINERUNTIMETYPEDDESCRIPTION( MemoryIndexedIO )
-
-///////////////////////////////////////////////
-//
-// FileIndexedIO::StreamFile (begin)
-//
-///////////////////////////////////////////////
-
-class MemoryIndexedIO::StreamFile : public StreamIndexedIO::StreamFile
-{
-	public:
-		StreamFile( const char *buf, size_t size, IndexedIO::OpenMode mode );
-
-		CharVectorDataPtr buffer();
-
-		virtual ~StreamFile();
-
-		void flush( size_t endPosition );
-
-	private:
-
-		size_t m_endPosition;
-};
-
-MemoryIndexedIO::StreamFile::StreamFile( const char *buf, size_t size, IndexedIO::OpenMode mode ) : StreamIndexedIO::StreamFile(mode), m_endPosition(0)
+MemoryIndexedIO::MemoryIndexedIO( ConstCharVectorDataPtr buf, const IndexedIO::EntryID &root, IndexedIO::OpenMode mode)
+: FileIndexedIO()
 {
 	if (mode & IndexedIO::Write)
 	{
 		std::stringstream *f = new std::stringstream( std::ios::trunc | std::ios::binary | std::ios::in | std::ios::out );
-		setStream( f, true );
+
+		open( f, root, mode, true );
 	}
 	else if (mode & IndexedIO::Append)
 	{
-		if ( !buf || !size )
+		if ( !buf || ! buf->readable().size() )
 		{
 			/// Create new file
 			std::stringstream *f = new std::stringstream(  std::ios::trunc | std::ios::binary | std::ios::in | std::ios::out );
-			setStream( f, true );
+
+			open( f, root, mode, true );
 		}
 		else
 		{
-			/// Read existing file
 			assert( buf );
 
 			/// Read existing file
-			std::stringstream *f = new std::stringstream( std::string(buf, size), std::ios::binary | std::ios::in | std::ios::out );
-			setStream( f, false );
+			std::stringstream *f = new std::stringstream( std::string( &buf->readable()[0], buf->readable().size() ), std::ios::binary | std::ios::in | std::ios::out );
+
+			open( f, root, mode );
 		}
 	}
 	else
 	{
 		assert( buf );
 		assert( mode & IndexedIO::Read );
-		std::stringstream *f = new std::stringstream( std::string(buf, size), std::ios::binary | std::ios::in | std::ios::out );
-		setStream( f, false );
+		std::stringstream *f = new std::stringstream( std::string( &buf->readable()[0], buf->readable().size() ), std::ios::binary | std::ios::in | std::ios::out );
+
+		open( f, root, mode );
 	}
-	assert( m_stream );
-	assert( m_stream->is_complete() );
-	assert( m_index );
-}
-
-void MemoryIndexedIO::StreamFile::flush( size_t endPosition )
-{
-	m_endPosition = endPosition;
-}
-
-CharVectorDataPtr MemoryIndexedIO::StreamFile::buffer()
-{
-	std::stringstream *s = static_cast< std::stringstream *>( m_stream );
-	assert( s );
-
-	CharVectorData::ValueType d;
-	const std::string &str = s->str();
-
-	d.assign( str.begin(), str.end() );
-	d.resize( m_endPosition );
-	assert( d.size() ==  m_endPosition );
-	return new CharVectorData( d );
-}
-
-MemoryIndexedIO::StreamFile::~StreamFile()
-{
-}
-
-///////////////////////////////////////////////
-//
-// MemoryIndexedIO::StreamFile (end)
-//
-///////////////////////////////////////////////
-
-
-MemoryIndexedIO::MemoryIndexedIO( ConstCharVectorDataPtr buf, const IndexedIO::EntryIDList &root, IndexedIO::OpenMode mode)
-{
-	const char *bufPtr = 0;
-	size_t size = 0;
-	if ( buf )
-	{
-		bufPtr = &(buf->readable()[0]);
-		size = buf->readable().size();
-	}
-	open( new StreamFile( bufPtr, size, mode ), root );
-}
-
-MemoryIndexedIO::MemoryIndexedIO( StreamIndexedIO::Node &rootNode ) : StreamIndexedIO( rootNode )
-{
 }
 
 MemoryIndexedIO::~MemoryIndexedIO()
 {
 }
 
-CharVectorDataPtr MemoryIndexedIO::buffer()
+ConstCharVectorDataPtr MemoryIndexedIO::buffer()
 {
-	flush();
-	StreamFile &stream = static_cast<StreamFile&>( streamFile() );
-	return stream.buffer();
-}
+	boost::optional<Imf::Int64> indexEnd = flush();
 
-IndexedIO * MemoryIndexedIO::duplicate(Node &rootNode) const
-{
-	// duplicate the IO interface changing the current node
-	MemoryIndexedIO *other = new MemoryIndexedIO( rootNode );
-	return other;
+	std::stringstream *s = dynamic_cast< std::stringstream *>( device() ) ;
+	assert( s );
+
+	CharVectorData::ValueType d;
+	const std::string &str = s->str();
+
+	if ( indexEnd )
+	{
+		d.assign( str.begin(), str.end() );
+		d.resize( *indexEnd );
+		assert( d.size() ==  *indexEnd );
+	}
+	else
+	{
+		d.assign( str.begin(), str.end() );
+	}
+
+	return new CharVectorData( d );
 }

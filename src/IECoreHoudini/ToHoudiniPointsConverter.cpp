@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2010-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -66,22 +66,13 @@ bool ToHoudiniPointsConverter::doConversion( const VisibleRenderable *renderable
 		positions = points->variableData<V3fVectorData>( "position" );
 	}
 	
-	GA_Range newPoints = appendPoints( geo, points->getNumPoints() );
+	GA_Range newPoints = appendPoints( geo, positions );
 	if ( !newPoints.isValid() || newPoints.empty() )
 	{
 		return false;
 	}
 	
-	transferAttribs( geo, newPoints, GA_Range() );
+	transferAttribs( points, geo, newPoints, GA_Range(), PrimitiveVariable::Vertex, PrimitiveVariable::Vertex );
 	
 	return true;
-}
-
-void ToHoudiniPointsConverter::transferAttribs( GU_Detail *geo, const GA_Range &points, const GA_Range &prims ) const
-{
-	const Primitive *primitive = IECore::runTimeCast<const Primitive>( srcParameter()->getValidatedValue() );
-	if ( primitive )
-	{
-		transferAttribValues( primitive, geo, points, prims, PrimitiveVariable::Vertex, PrimitiveVariable::Vertex );
-	}
 }

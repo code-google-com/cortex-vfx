@@ -90,18 +90,11 @@ ParticleReader::ParticleReader( const std::string &description )
 		realTypePresets,
 		true
 	);
-	
-	m_convertPrimVarNamesParameter = new BoolParameter(
-		"convertPrimVarNames",
-		"Convert the position primVar name to P.",
-		true
-	);
 
 	parameters()->addParameter( m_percentageParameter );
 	parameters()->addParameter( m_percentageSeedParameter );
 	parameters()->addParameter( m_attributesParameter );
 	parameters()->addParameter( m_realTypeParameter );
-	parameters()->addParameter( m_convertPrimVarNamesParameter );
 }
 
 FloatParameter * ParticleReader::percentageParameter()
@@ -144,16 +137,6 @@ const IntParameter * ParticleReader::realTypeParameter() const
 	return m_realTypeParameter;
 }
 
-BoolParameter * ParticleReader::convertPrimVarNamesParameter()
-{
-	return m_convertPrimVarNamesParameter;
-}
-
-const BoolParameter * ParticleReader::convertPrimVarNamesParameter() const
-{
-	return m_convertPrimVarNamesParameter;
-}
-
 ObjectPtr ParticleReader::doOperation( const CompoundObject * operands )
 {
 	vector<string> attributes;
@@ -177,13 +160,7 @@ ObjectPtr ParticleReader::doOperation( const CompoundObject * operands )
 			}
 			if( s==result->getNumPoints() )
 			{
-				string primVarName = *it;
-				if( convertPrimVarNames() && primVarName == positionPrimVarName() )
-				{
-					// Current attribute is the position. Use "P" instead.
-					primVarName = "P";
-				}
-				result->variables.insert( PrimitiveVariableMap::value_type( primVarName, PrimitiveVariable( PrimitiveVariable::Vertex, d ) ) );
+				result->variables.insert( PrimitiveVariableMap::value_type( *it, PrimitiveVariable( PrimitiveVariable::Vertex, d ) ) );
 			}
 			else
 			{
@@ -234,9 +211,3 @@ ParticleReader::RealType ParticleReader::realType() const
 {
 	return RealType( m_realTypeParameter->getNumericValue() );
 }
-
-bool ParticleReader::convertPrimVarNames() const
-{
-	return m_convertPrimVarNamesParameter->getTypedValue();
-}
-

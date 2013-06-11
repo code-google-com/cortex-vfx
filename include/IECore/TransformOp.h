@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,10 +44,9 @@ namespace IECore
 
 IE_CORE_FORWARDDECLARE( MatrixMultiplyOp )
 
-/// The TransformOp class applies a matrix transformation to a Primitive,
-/// using the GeometricData::Interpretation of the PrimitiveVariable data
-/// to determine the approriate transformation method. Only the variables
-/// specified by the PrimVars parameter will be modified.
+/// The TransformOp class applies a matrix transformation to
+/// selected PrimitiveVariables on a Primitive. By default it
+/// transforms "P" and "N" data.
 /// \ingroup geometryProcessingGroup
 class TransformOp : public PrimitiveOp
 {
@@ -60,8 +59,14 @@ class TransformOp : public PrimitiveOp
 		ObjectParameter * matrixParameter();
 		const ObjectParameter * matrixParameter() const;
 
-		StringVectorParameter *primVarsParameter();
-		const StringVectorParameter *primVarsParameter() const;
+		StringVectorParameter * pointPrimVarsParameter();
+		const StringVectorParameter * pointPrimVarsParameter() const;
+
+		StringVectorParameter * vectorPrimVarsParameter();
+		const StringVectorParameter * vectorPrimVarsParameter() const;
+
+		StringVectorParameter * normalPrimVarsParameter();
+		const StringVectorParameter * normalPrimVarsParameter() const;
 
 	protected :
 
@@ -70,7 +75,9 @@ class TransformOp : public PrimitiveOp
 	private :
 
 		MatrixMultiplyOpPtr m_multiplyOp;
-		StringVectorParameterPtr m_primVarsParameter;
+		StringVectorParameterPtr m_pointPrimVarsParameter;
+		StringVectorParameterPtr m_vectorPrimVarsParameter;
+		StringVectorParameterPtr m_normalPrimVarsParameter;
 
 };
 

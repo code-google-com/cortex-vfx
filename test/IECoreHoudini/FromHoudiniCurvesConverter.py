@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2010-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -208,7 +208,6 @@ class TestFromHoudiniCurvesConverter( IECoreHoudini.TestCase ) :
 			self.assertEqual( len(verts), result.verticesPerCurve()[i] )
 			sopVerts.extend( verts )
 		
-		self.assertEqual( result["P"].data.getInterpretation(), IECore.GeometricData.Interpretation.Point )
 		self.assertEqual( len(sopVerts), result["P"].data.size() )	
 		for attr in geo.vertexAttribs() :
 			self.assert_( attr.name() in result )
@@ -254,7 +253,6 @@ class TestFromHoudiniCurvesConverter( IECoreHoudini.TestCase ) :
 		
 		self.assertEqual( result.variableSize( IECore.PrimitiveVariable.Interpolation.Vertex ), len(geo.points()) + extraPoints*len(geo.prims()) )
 		self.assertEqual( result.verticesPerCurve().size(), len(geo.prims()) )
-		self.assertEqual( result["P"].data.getInterpretation(), IECore.GeometricData.Interpretation.Point )
 		
 		pIndex = 0
 		for i in range( len( result.verticesPerCurve() ) ) :
@@ -365,42 +363,14 @@ class TestFromHoudiniCurvesConverter( IECoreHoudini.TestCase ) :
 		self.assertNotEqual( result1["P"].data, result2["P"].data )
 		self.assertNotEqual( result1, result2 )
 	
-	def testName( self ) :
+	def testGroupName( self ) :
 		
 		curves = self.createCurves( 4 )
-		name = curves.createOutputNode( "name" )
-		name.parm( "name1" ).set( "testName" )
-		result = IECoreHoudini.FromHoudiniCurvesConverter( name ).convert()
-		self.assertEqual( result.blindData()['name'].value, "testName" )
-		self.assertFalse( "name" in result )
-		self.assertFalse( "nameIndices" in result )
-		
 		group = curves.createOutputNode( "group" )
 		group.parm( "crname" ).set( "testGroup" )
 		result = IECoreHoudini.FromHoudiniCurvesConverter( group ).convert()
 		self.assertEqual( result.blindData()['name'].value, "testGroup" )
 	
-	def testAttributeFilter( self ) :
-		
-		curves = self.createCurves( 4 )
-		uvunwrap = curves.createOutputNode( "uvunwrap" )
-		converter = IECoreHoudini.FromHoudiniCurvesConverter( uvunwrap )
-		self.assertEqual( sorted(converter.convert().keys()), ['P', 'detailAttribute', 'pointAttribute', 'primAttribute', 's', 't', 'varmap', 'vertexAttribute'] )
-		converter.parameters()["attributeFilter"].setTypedValue( "P" )
-		self.assertEqual( sorted(converter.convert().keys()), [ "P" ] )
-		converter.parameters()["attributeFilter"].setTypedValue( "* ^primAttribute ^varmap" )
-		self.assertEqual( sorted(converter.convert().keys()), ['P', 'detailAttribute', 'pointAttribute', 's', 't', 'vertexAttribute'] )
-		# P must be converted
-		converter.parameters()["attributeFilter"].setTypedValue( "* ^P" )
-		self.assertTrue( "P" in converter.convert().keys() )
-		# have to filter the source attr uv and not s, t
-		converter.parameters()["attributeFilter"].setTypedValue( "s t" )
-		self.assertEqual( sorted(converter.convert().keys()), [ "P" ] )
-		converter.parameters()["attributeFilter"].setTypedValue( "s" )
-		self.assertEqual( sorted(converter.convert().keys()), [ "P" ] )
-		converter.parameters()["attributeFilter"].setTypedValue( "uv" )
-		self.assertEqual( sorted(converter.convert().keys()), [ "P", "s", "t" ] )
-		
 	def testErrorStates( self ) :
 		
 		# no prims
@@ -427,56 +397,6 @@ class TestFromHoudiniCurvesConverter( IECoreHoudini.TestCase ) :
 		hou.parm( "/obj/geo4/curve3/close" ).set( True )
 		converter = IECoreHoudini.FromHoudiniCurvesConverter( merge )
 		self.assertRaises( RuntimeError, converter.convert )
-	
-	def testStandardAttributeConversion( self ) :
-		
-		curves = self.createCurves( 4 )
-		color = curves.createOutputNode( "color" )
-		color.parm( "colortype" ).set( 2 )
-		rest = color.createOutputNode( "rest" )
-		scale = rest.createOutputNode( "attribcreate" )
-		scale.parm( "name1" ).set( "pscale" )
-		scale.parm( "value1v1" ).setExpression( "$PT" )
-		uvunwrap = scale.createOutputNode( "uvunwrap" )
-		
-		converter = IECoreHoudini.FromHoudiniCurvesConverter( uvunwrap )
-		result = converter.convert()
-		self.assertEqual( result.keys(), [ "Cs", "P", "Pref", "detailAttribute", "pointAttribute", "primAttribute", "s", "t", "varmap", "vertexAttribute", "width" ] )
-		self.assertTrue( result.arePrimitiveVariablesValid() )
-		self.assertEqual( result["P"].data.getInterpretation(), IECore.GeometricData.Interpretation.Point )
-		self.assertEqual( result["Pref"].data.getInterpretation(), IECore.GeometricData.Interpretation.Point )
-		
-		sData = result["s"].data
-		tData = result["t"].data
-		geo = uvunwrap.geometry()
-		uvs = geo.findVertexAttrib( "uv" )
-		
-		i = 0
-		for prim in geo.prims() :
-			for vert in prim.vertices() :
-				uvValues = vert.attribValue( uvs )
-				self.assertAlmostEqual( sData[i], uvValues[0] )
-				self.assertAlmostEqual( tData[i], 1 - uvValues[1] )
-				i += 1
-		
-		converter["convertStandardAttributes"].setTypedValue( False )
-		result = converter.convert()
-		self.assertEqual( result.keys(), [ "Cd", "P", "detailAttribute", "pointAttribute", "primAttribute", "pscale", "rest", "uv", "varmap", "vertexAttribute" ] )
-		self.assertTrue( result.arePrimitiveVariablesValid() )
-		self.assertEqual( result["P"].data.getInterpretation(), IECore.GeometricData.Interpretation.Point )
-		self.assertEqual( result["rest"].data.getInterpretation(), IECore.GeometricData.Interpretation.Point )
-		
-		uvData = result["uv"].data
-		geo = uvunwrap.geometry()
-		uvs = geo.findVertexAttrib( "uv" )
-		
-		i = 0
-		for prim in geo.prims() :
-			for vert in prim.vertices() :
-				uvValues = vert.attribValue( uvs )
-				self.assertAlmostEqual( uvData[i][0], uvValues[0] )
-				self.assertAlmostEqual( uvData[i][1], uvValues[1] )
-				i += 1
 
 if __name__ == "__main__":
     unittest.main()

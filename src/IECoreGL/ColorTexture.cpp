@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -50,7 +50,7 @@ IE_CORE_DEFINERUNTIMETYPED( ColorTexture );
 ColorTexture::ColorTexture( unsigned int width, unsigned int height )
 {
 	glGenTextures( 1, &m_texture );
-	ScopedBinding binding( *this );
+	glBindTexture( GL_TEXTURE_2D, m_texture );
 
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
@@ -207,8 +207,7 @@ void ColorTexture::templateConstruct( unsigned int width, unsigned int height, I
 	}
 
 	glGenTextures( 1, &m_texture );
-	
-	ScopedBinding binding( *this );
+	glBindTexture( GL_TEXTURE_2D, m_texture );
 
 	glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
 
@@ -217,7 +216,7 @@ void ColorTexture::templateConstruct( unsigned int width, unsigned int height, I
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 
-	glTexImage2D( GL_TEXTURE_2D, 0, ra ? GL_RGBA16 : GL_RGB16, width, height, 0, ra ? GL_RGBA : GL_RGB,
+	glTexImage2D( GL_TEXTURE_2D, 0, ra ? GL_RGBA : GL_RGB, width, height, 0, ra ? GL_RGBA : GL_RGB,
 		NumericTraits<ElementType>::glType(), &interleaved[0] );
 
 	Exception::throwIfError();
@@ -226,69 +225,74 @@ void ColorTexture::templateConstruct( unsigned int width, unsigned int height, I
 
 ImagePrimitivePtr ColorTexture::imagePrimitive() const
 {
-	ScopedBinding binding( *this );
 
-	GLint width = 0;
-	GLint height = 0;
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width );
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height );
+	glPushAttrib( GL_TEXTURE_BIT );
 
-	GLint internalFormat = 0;
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat );
+		bind();
 
-	unsigned int numChannels = 4;
-	vector<float> data( width * height * numChannels );
+		GLint width = 0;
+		GLint height = 0;
+		glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width );
+		glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height );
 
-	glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &data[0] );
+		GLint internalFormat = 0;
+		glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat );
 
-	FloatVectorDataPtr rd = new FloatVectorData();
-	vector<float> &r = rd->writable(); r.resize( width * height );
+		unsigned int numChannels = 4;
+		vector<float> data( width * height * numChannels );
 
-	FloatVectorDataPtr gd = new FloatVectorData();
-	vector<float> &g = gd->writable(); g.resize( width * height );
+		glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &data[0] );
 
-	FloatVectorDataPtr bd = new FloatVectorData();
-	vector<float> &b = bd->writable(); b.resize( width * height );
+		FloatVectorDataPtr rd = new FloatVectorData();
+		vector<float> &r = rd->writable(); r.resize( width * height );
 
-	FloatVectorDataPtr ad = 0;
-	vector<float> *a = 0;
-	// there are potentially loads of different internal formats which denote alpha.
-	// these are the only ones encountered so far, but it's not a great way of testing
-	// and i can't find another way of doing it.
-	if( internalFormat==GL_RGBA || internalFormat==GL_RGBA8_EXT )
-	{
-		ad = new FloatVectorData();
-		a = &ad->writable(); a->resize( width * height );
-	}
+		FloatVectorDataPtr gd = new FloatVectorData();
+		vector<float> &g = gd->writable(); g.resize( width * height );
 
-	unsigned int i = 0;
-	for( int y=height-1; y>=0; y-- )
-	{
-		float *rr = &r[y*width];
-		float *rg = &g[y*width];
-		float *rb = &b[y*width];
-		float *ra = a ? &(*a)[y*width] : 0;
-		for( int x=0; x<width; x++ )
+		FloatVectorDataPtr bd = new FloatVectorData();
+		vector<float> &b = bd->writable(); b.resize( width * height );
+
+		FloatVectorDataPtr ad = 0;
+		vector<float> *a = 0;
+		// there are potentially loads of different internal formats which denote alpha.
+		// these are the only ones encountered so far, but it's not a great way of testing
+		// and i can't find another way of doing it.
+		if( internalFormat==GL_RGBA || internalFormat==GL_RGBA8_EXT )
 		{
-			rr[x] = data[i++];
-			rg[x] = data[i++];
-			rb[x] = data[i++];
-			if( ra )
+			ad = new FloatVectorData();
+			a = &ad->writable(); a->resize( width * height );
+		}
+
+		unsigned int i = 0;
+		for( int y=height-1; y>=0; y-- )
+		{
+			float *rr = &r[y*width];
+			float *rg = &g[y*width];
+			float *rb = &b[y*width];
+			float *ra = a ? &(*a)[y*width] : 0;
+			for( int x=0; x<width; x++ )
 			{
-				ra[x] = data[i++];
+				rr[x] = data[i++];
+				rg[x] = data[i++];
+				rb[x] = data[i++];
+				if( ra )
+				{
+					ra[x] = data[i++];
+				}
 			}
 		}
-	}
 
-	Box2i imageExtents( V2i( 0, 0 ), V2i( width-1, height-1 ) );
-	ImagePrimitivePtr image = new ImagePrimitive( imageExtents, imageExtents );
-	image->variables["R"] = PrimitiveVariable( PrimitiveVariable::Vertex, rd );
-	image->variables["G"] = PrimitiveVariable( PrimitiveVariable::Vertex, gd );
-	image->variables["B"] = PrimitiveVariable( PrimitiveVariable::Vertex, bd );
-	if( a )
-	{
-		image->variables["A"] = PrimitiveVariable( PrimitiveVariable::Vertex, ad );
-	}
+		Box2i imageExtents( V2i( 0, 0 ), V2i( width-1, height-1 ) );
+		ImagePrimitivePtr image = new ImagePrimitive( imageExtents, imageExtents );
+		image->variables["R"] = PrimitiveVariable( PrimitiveVariable::Vertex, rd );
+		image->variables["G"] = PrimitiveVariable( PrimitiveVariable::Vertex, gd );
+		image->variables["B"] = PrimitiveVariable( PrimitiveVariable::Vertex, bd );
+		if( a )
+		{
+			image->variables["A"] = PrimitiveVariable( PrimitiveVariable::Vertex, ad );
+		}
+
+	glPopAttrib();
 
 	Exception::throwIfError();
 	

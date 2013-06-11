@@ -97,7 +97,7 @@ class TestOpHolder( IECoreHoudini.TestCase ):
 		n4 = IECoreHoudini.FnOpHolder.create( "noise", "noiseDeformer", parent=geo, contextArgs=contextArgs )
 		self.assertEqual( n4.path(), "/obj/geo1/noise" )
 		self.assertEqual( len(n4.outputConnectors()[0]), 1 )
-		self.assertEqual( n4.outputConnectors()[0][0].outputNode().type().name(), "ieCortexConverter" )
+		self.assertEqual( n4.outputConnectors()[0][0].outputNode().type().name(), "ieToHoudiniConverter" )
 		
 		# test automatic conversion and output connections
 		mountain = geo.createNode( "mountain" )
@@ -106,7 +106,7 @@ class TestOpHolder( IECoreHoudini.TestCase ):
 		self.assertEqual( n5.path(), "/obj/geo1/noise1" )
 		self.assertEqual( len(n5.outputConnectors()[0]), 1 )
 		converter = n5.outputConnectors()[0][0].outputNode()
-		self.assertEqual( converter.type().name(), "ieCortexConverter" )
+		self.assertEqual( converter.type().name(), "ieToHoudiniConverter" )
 		self.assertEqual( len(converter.outputConnectors()[0]), 1 )
 		outputNode = converter.outputConnectors()[0][0].outputNode()
 		self.assertEqual( outputNode.type().name(), "mountain" )
@@ -463,7 +463,7 @@ class TestOpHolder( IECoreHoudini.TestCase ):
 		
 		merge = holder.createInputNode( 0, "merge" )
 		attrib1 = merge.createInputNode( 0, "attribcreate" )
-		attrib1.parm( "name1" ).set( "name" )
+		attrib1.parm( "name1" ).set( "test" )
 		attrib1.parm( "class1" ).set( 1 ) # Prim
 		attrib1.parm( "type1" ).set( 3 ) # String
 		attrib1.parm( "string1" ).set( "torusGroup" )
@@ -472,7 +472,7 @@ class TestOpHolder( IECoreHoudini.TestCase ):
 		torus = group1.createInputNode( 0, "torus" )
 
 		attrib2 = merge.createInputNode( 1, "attribcreate" )
-		attrib2.parm( "name1" ).set( "name" )
+		attrib2.parm( "name1" ).set( "test" )
 		attrib2.parm( "class1" ).set( 1 ) # Prim
 		attrib2.parm( "type1" ).set( 3 ) # String
 		attrib2.parm( "string1" ).set( "boxGroup" )
@@ -480,7 +480,6 @@ class TestOpHolder( IECoreHoudini.TestCase ):
 		group2.parm( "crname" ).set( "boxGroup" )
 		box = group2.createInputNode( 0, "box" )
 		
-		holder.parm( "parm_input_groupingMode" ).set( IECoreHoudini.FromHoudiniGroupConverter.GroupingMode.PrimitiveGroup )
 		holder.cook()
 		result = fn.getOp().resultParameter().getValue()
 		self.assertEqual( fn.getOp()['input'].getValue().typeId(), IECore.TypeId.Group )
@@ -490,8 +489,6 @@ class TestOpHolder( IECoreHoudini.TestCase ):
 		
 		group1.bypass( True )
 		group2.bypass( True )
-		attrib1.bypass( True )
-		attrib2.bypass( True )
 		holder.cook()
 		result = fn.getOp().resultParameter().getValue()
 		self.assertEqual( fn.getOp()['input'].getValue().typeId(), IECore.TypeId.Group )
@@ -499,16 +496,15 @@ class TestOpHolder( IECoreHoudini.TestCase ):
 		self.assertEqual( result.blindData(), IECore.CompoundData() )
 		self.assertEqual( result.variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), 106 )
 		
-		## \todo: keep the names and convert in PrimitiveGroup mode. see todo in FromHoudiniGroupConverter.cpp
-		
-		attrib1.bypass( False )
-		attrib2.bypass( False )
-		holder.parm( "parm_input_groupingMode" ).set( IECoreHoudini.FromHoudiniGroupConverter.GroupingMode.NameAttribute )
+		holder.parm( "parm_input_groupingMode" ).set( IECoreHoudini.FromHoudiniGroupConverter.GroupingMode.AttributeValue )
+		holder.parm( "parm_input_groupingAttribute" ).set( "test" )
 		holder.cook()
 		result = fn.getOp().resultParameter().getValue()
 		self.assertEqual( fn.getOp()['input'].getValue().typeId(), IECore.TypeId.Group )
 		self.assertEqual( result.typeId(), IECore.TypeId.MeshPrimitive )
-		self.assertEqual( result.blindData()["name"].value, "boxGroup" )
+		self.assertEqual( result.blindData(), IECore.CompoundData() )
+		self.assertEqual( result["test"].data, IECore.StringVectorData( [ "boxGroup" ] ) )
+		self.assertEqual( result["testIndices"].data, IECore.IntVectorData( [ 0 ] * 6 ) )
 		self.assertEqual( result.variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ), 6 )
 	
 	def testInputConnectionsSaveLoad( self ) :

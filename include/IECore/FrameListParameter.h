@@ -58,10 +58,6 @@ class FrameListParameter : public StringParameter
 		virtual bool valueValid( const Object *value, std::string *reason = 0 ) const;
 
 		void setFrameListValue( ConstFrameListPtr frameList );
-		
-		// Returns the FrameList using the given stringData. Throws exception if emptyList and allowEmptyList is false
-		FrameListPtr getFrameListValue( const StringData *value ) const;
-		// Returns the FrameList using the internal stringData. Throws exception if emptyList and allowEmptyList is false
 		FrameListPtr getFrameListValue() const;
 
 	private :

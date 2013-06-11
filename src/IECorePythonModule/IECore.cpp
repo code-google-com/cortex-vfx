@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 //  its affiliates and/or its licensors.
@@ -46,9 +46,8 @@
 #include "IECorePython/ExceptionBinding.h"
 #include "IECorePython/ImathBinding.h"
 #include "IECorePython/KDTreeBinding.h"
-#include "IECorePython/IndexedIOBinding.h"
+#include "IECorePython/IndexedIOInterfaceBinding.h"
 #include "IECorePython/DataBinding.h"
-#include "IECorePython/GeometricTypedDataBinding.h"
 #include "IECorePython/SimpleTypedDataBinding.h"
 #include "IECorePython/VectorTypedDataBinding.h"
 #include "IECorePython/ObjectBinding.h"
@@ -129,6 +128,7 @@
 #include "IECorePython/InterpolatedCacheBinding.h"
 #include "IECorePython/TransformationMatrixBinding.h"
 #include "IECorePython/TransformationMatrixDataBinding.h"
+#include "IECorePython/HierarchicalCacheBinding.h"
 #include "IECorePython/BoundedKDTreeBinding.h"
 #include "IECorePython/VectorDataFilterOpBinding.h"
 #include "IECorePython/TypedObjectParameterBinding.h"
@@ -161,13 +161,14 @@
 #include "IECorePython/MeshPrimitiveImplicitSurfaceFunctionBinding.h"
 #include "IECorePython/MeshPrimitiveImplicitSurfaceOpBinding.h"
 #include "IECorePython/TriangulateOpBinding.h"
-#include "IECorePython/InternedStringBinding.h"
+#include "IECorePython/InternedBinding.h"
 #include "IECorePython/SpherePrimitiveBinding.h"
 #include "IECorePython/SpherePrimitiveEvaluatorBinding.h"
 #include "IECorePython/InverseDistanceWeightedInterpolationBinding.h"
 #include "IECorePython/ImageCropOpBinding.h"
 #include "IECorePython/MeshPrimitiveShrinkWrapOpBinding.h"
 #include "IECorePython/ImagePrimitiveEvaluatorBinding.h"
+#include "IECorePython/ScopedMessageHandlerBinding.h"
 #include "IECorePython/MathBinding.h"
 #include "IECorePython/CameraControllerBinding.h"
 #include "IECorePython/PathVectorParameterBinding.h"
@@ -313,14 +314,10 @@
 #include "IECorePython/OptionsBinding.h"
 #include "IECorePython/MPlayDisplayDriverBinding.h"
 #include "IECorePython/ModelCacheBinding.h"
-#include "IECorePython/SceneInterfaceBinding.h"
-#include "IECorePython/SharedSceneInterfacesBinding.h"
-#include "IECorePython/SampledSceneInterfaceBinding.h"
-#include "IECorePython/SceneCacheBinding.h"
-#include "IECorePython/LinkedSceneBinding.h"
 #include "IECorePython/LensModelBinding.h"
 #include "IECorePython/StandardRadialLensModelBinding.h"
 #include "IECorePython/LensDistortOpBinding.h"
+
 #include "IECore/IECore.h"
 
 using namespace IECorePython;
@@ -339,7 +336,6 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindCompoundObject();
 	bindTypeId();
 	bindData();
-	bindGeometricTypedData();
 	bindAllSimpleTypedData();
 	bindAllVectorTypedData();
 	bindCompoundData();
@@ -427,6 +423,7 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindInterpolatedCache();
 	bindTransformationMatrix();
 	bindTransformationMatrixData();
+	bindHierarchicalCache();
 	bindBoundedKDTree();
 	bindVectorDataFilterOp();
 	bindTypedObjectParameter();
@@ -459,13 +456,14 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindMeshPrimitiveImplicitSurfaceFunction();
 	bindMeshPrimitiveImplicitSurfaceOp();
 	bindTriangulateOp();
-	bindInternedString();
+	bindInterned();
 	bindSpherePrimitive();
 	bindSpherePrimitiveEvaluator();
 	bindInverseDistanceWeightedInterpolation();
 	bindImageCropOp();
 	bindMeshPrimitiveShrinkWrapOp();
 	bindImagePrimitiveEvaluator();
+	bindScopedMessageHandler();
 	bindMath();
 	bindCameraController();
 	bindPathVectorParameter();
@@ -636,11 +634,6 @@ BOOST_PYTHON_MODULE(_IECore)
 	bindOptions();
 	bindMPlayDisplayDriver();
 	bindModelCache();
-	bindSceneInterface();
-	bindSharedSceneInterfaces();
-	bindSampledSceneInterface();
-	bindSceneCache();
-	bindLinkedScene();
 	bindLensModel();
 	bindStandardRadialLensModel();
 	bindLensDistortOp();

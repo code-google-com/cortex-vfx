@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 #  Copyright (c) 2012, John Haddon. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -257,19 +257,12 @@ def __parseBool( args, parameter ) :
 		"off" : False,
 	}
 
-	if not len( args ) or args[0] not in validValues :
-		if parameter.defaultValue.value :
-			if not len( args ) :
-				raise SyntaxError( "Expected a boolean value." )
-			else :
-				raise SyntaxError( "Expected one of %s" % ", ".join( validValues.keys() ) )
-		else :
-			# if the default value of a parameter is False,
-			# and no value has been provided after the "-parameterName"
-			# flag, then we turn it on.
-			parameter.setValidatedValue( IECore.BoolData( True ) )
-			return
-			
+	if not len( args ) :
+		raise SyntaxError( "Expected a boolean value." )
+
+	if not args[0] in validValues :
+		raise SyntaxError( "Expected one of %s" % ", ".join( validValues.keys() ) )
+
 	parameter.setValidatedValue( IECore.BoolData( validValues[args[0]] ) )
 	del args[0]
 
@@ -480,7 +473,7 @@ def __parseObject( args, parameter ) :
 
 	v = args[0]
 	v = IECore.hexToDecCharVector( v )
-	mio = IECore.MemoryIndexedIO( v, IECore.IndexedIO.OpenMode.Read )
+	mio = IECore.MemoryIndexedIO( v, "/", IECore.IndexedIOOpenMode.Read )
 	v = IECore.Object.load( mio, "v" )
 	parameter.setValidatedValue( v )
 	del args[0]
@@ -523,7 +516,7 @@ def __serialiseTransformationMatrix( parameter, value ) :
 
 def __serialiseObject( parameter, value ) :
 
-	mio = IECore.MemoryIndexedIO( IECore.CharVectorData(), IECore.IndexedIO.OpenMode.Write )
+	mio = IECore.MemoryIndexedIO( IECore.CharVectorData(), "/", IECore.IndexedIOOpenMode.Write )
 	value.save( mio, "v" )
 	buf = mio.buffer()
 	return [ IECore.decToHexCharVector( buf ) ]

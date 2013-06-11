@@ -35,7 +35,6 @@
 #ifndef IECORE_TRIANGULATOR_H
 #define IECORE_TRIANGULATOR_H
 
-#include <list>
 #include "IECore/VectorTypedData.h"
 #include "IECore/MeshPrimitiveBuilder.h"
 #include "IECore/VectorTraits.h"

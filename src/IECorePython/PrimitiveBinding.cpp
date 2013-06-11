@@ -101,13 +101,6 @@ static void delItem( Primitive &p, const std::string &n )
 	p.variables.erase( it );
 }
 
-static MurmurHash topologyHash( Primitive &p )
-{
-	MurmurHash h;
-	p.topologyHash( h );
-	return h;
-}
-
 void bindPrimitive()
 {
 	RunTimeTypedClass<Primitive>()
@@ -123,8 +116,6 @@ void bindPrimitive()
 		.def( "arePrimitiveVariablesValid", &Primitive::arePrimitiveVariablesValid)
 		.def( "inferInterpolation", (PrimitiveVariable::Interpolation (Primitive::*)( const Data * ) const)&Primitive::inferInterpolation )
 		.def( "inferInterpolation", (PrimitiveVariable::Interpolation (Primitive::*)( size_t ) const)&Primitive::inferInterpolation )
-		.def( "topologyHash", &topologyHash )
-		.def( "topologyHash", (void (Primitive::*)( MurmurHash & ) const)&Primitive::topologyHash )
 	;
 }
 

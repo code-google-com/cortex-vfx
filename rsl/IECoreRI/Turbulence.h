@@ -47,7 +47,7 @@ float ieTurbulence( point x; uniform float octaves; uniform float lacunarity; un
 	uniform float aSum = 0;
 	for( i=0; i<octaves; i+=1 )
 	{
-		sum += a * ieFilteredAbs( ieFilteredSNoise( xx, fw ), fw );
+		sum += a * abs( ieFilteredSNoise( xx, fw ) );
 		aSum += a;
 		a *= gain;
 		xx *= lacunarity;

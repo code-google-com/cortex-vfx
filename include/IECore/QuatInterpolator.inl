@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2009, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -31,12 +31,6 @@
 //  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 //////////////////////////////////////////////////////////////////////////
-
-#include "OpenEXR/ImathQuat.h"
-#include "IECore/QuatAlgo.h"
-
-namespace IECore
-{
 
 // Partially specialize for Imath::Quat. Interpolates through the shortest path.
 template<typename T>
@@ -97,5 +91,3 @@ struct CubicInterpolator< Imath::Quat< T > >
 		result = Imath::spline< T >( y0Tmp, y1Tmp, y2Tmp, y3Tmp, static_cast< T >(x) );
 	}
 };
-
-} // namespace IECore

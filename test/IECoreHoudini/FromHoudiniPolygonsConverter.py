@@ -3,7 +3,7 @@
 #  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 #  its affiliates and/or its licensors.
 #
-#  Copyright (c) 2010-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -265,12 +265,10 @@ class TestFromHoudiniPolygonsConverter( IECoreHoudini.TestCase ) :
 		self.assertEqual( result['P'].data.typeId(), IECore.TypeId.V3fVectorData )
 		self.assertEqual( result['P'].interpolation, IECore.PrimitiveVariable.Interpolation.Vertex )
 		self.assertEqual( result['P'].data.size(), result.variableSize( IECore.PrimitiveVariable.Interpolation.Vertex ) )
-		self.assertEqual( result["P"].data.getInterpretation(), IECore.GeometricData.Interpretation.Point )
 		self.assert_( "N" in result )
 		self.assertEqual( result['N'].data.typeId(), IECore.TypeId.V3fVectorData )
 		self.assertEqual( result['N'].interpolation, IECore.PrimitiveVariable.Interpolation.Vertex )
 		self.assertEqual( result['N'].data.size(), result.variableSize( IECore.PrimitiveVariable.Interpolation.Vertex ) )
-		self.assertEqual( result["N"].data.getInterpretation(), IECore.GeometricData.Interpretation.Normal )
 
 		# test detail attributes
 		self.assert_( "detail_i3" in result )
@@ -281,15 +279,15 @@ class TestFromHoudiniPolygonsConverter( IECoreHoudini.TestCase ) :
 		self.assertEqual( result['detail_i3'].data.value.z, 789 )
 
 		# test primitive attributes
-		self.assert_( "Cs" in result )
-		self.assertEqual( result["Cs"].data.typeId(), IECore.TypeId.Color3fVectorData )
-		self.assertEqual( result["Cs"].interpolation, IECore.PrimitiveVariable.Interpolation.Uniform )
-		self.assertEqual( result["Cs"].data.size(), result.variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ) )
+		self.assert_( "Cd" in result )
+		self.assertEqual( result["Cd"].data.typeId(), IECore.TypeId.Color3fVectorData )
+		self.assertEqual( result["Cd"].interpolation, IECore.PrimitiveVariable.Interpolation.Uniform )
+		self.assertEqual( result["Cd"].data.size(), result.variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ) )
 		
 		for i in range( 0, result.variableSize( IECore.PrimitiveVariable.Interpolation.Uniform ) ) :
 			for j in range( 0, 3 ) :
-				self.assert_( result["Cs"].data[i][j] >= 0.0 )
-				self.assert_( result["Cs"].data[i][j] <= 1.0 )
+				self.assert_( result["Cd"].data[i][j] >= 0.0 )
+				self.assert_( result["Cd"].data[i][j] <= 1.0 )
 
 		# test vertex attributes
 		attrs = [ "vert_f1", "vert_f2", "vert_f3", "vert_i1", "vert_i2", "vert_i3", "vert_v3f", "vertStringIndices" ]
@@ -630,117 +628,13 @@ class TestFromHoudiniPolygonsConverter( IECoreHoudini.TestCase ) :
 		
 		self.assert_( result.arePrimitiveVariablesValid() )
 	
-	def testName( self ) :
+	def testGroupName( self ) :
 		
 		torus = self.createTorus()
-		name = torus.createOutputNode( "name" )
-		name.parm( "name1" ).set( "testName" )
-		result = IECoreHoudini.FromHoudiniPolygonsConverter( name ).convert()
-		self.assertEqual( result.blindData()['name'].value, "testName" )
-		self.assertFalse( "name" in result )
-		self.assertFalse( "nameIndices" in result )
-		
 		group = torus.createOutputNode( "group" )
 		group.parm( "crname" ).set( "testGroup" )
 		result = IECoreHoudini.FromHoudiniPolygonsConverter( group ).convert()
 		self.assertEqual( result.blindData()['name'].value, "testGroup" )
-	
-	def testAttributeFilter( self ) :
-		
-		torus = self.createTorus()
-		
-		# add vertex normals
-		facet = torus.createOutputNode( "facet", node_name = "add_point_normals" )
-		facet.parm("postnml").set(True)
-		
-		# add a primitive colour attributes
-		primcol = facet.createOutputNode( "primitive", node_name = "prim_colour" )
-		primcol.parm("doclr").set(1)
-		primcol.parm("diffr").setExpression("rand($PR)")
-		primcol.parm("diffg").setExpression("rand($PR+1)")
-		primcol.parm("diffb").setExpression("rand($PR+2)")
-		
-		detail = primcol.createOutputNode( "attribcreate", node_name = "detail", exact_type_name=True )
-		detail.parm("name").set("detailAttr")
-		detail.parm("class").set(0)
-		detail.parm("type").set(1)
-		detail.parm("size").set(3)
-		detail.parm("value1").set(123)
-		detail.parm("value2").set(456.789) # can we catch it out with a float?
-		detail.parm("value3").set(789)
-		
-		uvunwrap = detail.createOutputNode( "uvunwrap" )
-		
-		converter = IECoreHoudini.FromHoudiniPolygonsConverter( uvunwrap )
-		self.assertEqual( sorted(converter.convert().keys()), [ "Cs", "N", "P", "detailAttr", "s", "t", "varmap" ] )
-		converter.parameters()["attributeFilter"].setTypedValue( "P" )
-		self.assertEqual( sorted(converter.convert().keys()), [ "P" ] )
-		converter.parameters()["attributeFilter"].setTypedValue( "* ^N ^varmap" )
-		self.assertEqual( sorted(converter.convert().keys()), [ "Cs", "P", "detailAttr", "s", "t" ] )
-		# P must be converted
-		converter.parameters()["attributeFilter"].setTypedValue( "* ^P" )
-		self.assertTrue( "P" in converter.convert().keys() )
-		# have to filter the source attr uv and not s, t
-		converter.parameters()["attributeFilter"].setTypedValue( "s t Cs" )
-		self.assertEqual( sorted(converter.convert().keys()), [ "P" ] )
-		converter.parameters()["attributeFilter"].setTypedValue( "s Cd" )
-		self.assertEqual( sorted(converter.convert().keys()), [ "Cs", "P" ] )
-		converter.parameters()["attributeFilter"].setTypedValue( "uv Cd" )
-		self.assertEqual( sorted(converter.convert().keys()), [ "Cs", "P", "s", "t" ] )
-	
-	def testStandardAttributeConversion( self ) :
-		
-		torus = self.createTorus()
-		color = torus.createOutputNode( "color" )
-		color.parm( "colortype" ).set( 2 )
-		rest = color.createOutputNode( "rest" )
-		scale = rest.createOutputNode( "attribcreate" )
-		scale.parm( "name1" ).set( "pscale" )
-		scale.parm( "value1v1" ).setExpression( "$PT" )
-		uvunwrap = scale.createOutputNode( "uvunwrap" )
-		
-		converter = IECoreHoudini.FromHoudiniPolygonsConverter( uvunwrap )
-		result = converter.convert()
-		self.assertEqual( result.keys(), [ "Cs", "P", "Pref", "s", "t", "varmap", "width" ] )
-		self.assertTrue( result.arePrimitiveVariablesValid() )
-		self.assertEqual( result["P"].data.getInterpretation(), IECore.GeometricData.Interpretation.Point )
-		self.assertEqual( result["Pref"].data.getInterpretation(), IECore.GeometricData.Interpretation.Point )
-		
-		sData = result["s"].data
-		tData = result["t"].data
-		geo = uvunwrap.geometry()
-		uvs = geo.findVertexAttrib( "uv" )
-		
-		i = 0
-		for prim in geo.prims() :
-			verts = list(prim.vertices())
-			verts.reverse()
-			for vert in verts :
-				uvValues = vert.attribValue( uvs )
-				self.assertAlmostEqual( sData[i], uvValues[0] )
-				self.assertAlmostEqual( tData[i], 1 - uvValues[1] )
-				i += 1
-		
-		converter["convertStandardAttributes"].setTypedValue( False )
-		result = converter.convert()
-		self.assertEqual( result.keys(), [ "Cd", "P", "pscale", "rest", "uv", "varmap" ] )
-		self.assertTrue( result.arePrimitiveVariablesValid() )
-		self.assertEqual( result["P"].data.getInterpretation(), IECore.GeometricData.Interpretation.Point )
-		self.assertEqual( result["rest"].data.getInterpretation(), IECore.GeometricData.Interpretation.Point )
-		
-		uvData = result["uv"].data
-		geo = uvunwrap.geometry()
-		uvs = geo.findVertexAttrib( "uv" )
-		
-		i = 0
-		for prim in geo.prims() :
-			verts = list(prim.vertices())
-			verts.reverse()
-			for vert in verts :
-				uvValues = vert.attribValue( uvs )
-				self.assertAlmostEqual( uvData[i][0], uvValues[0] )
-				self.assertAlmostEqual( uvData[i][1], uvValues[1] )
-				i += 1
 
 if __name__ == "__main__":
     unittest.main()

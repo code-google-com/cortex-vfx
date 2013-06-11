@@ -59,7 +59,6 @@ class GeometryCombiner : public MPxNode
 
 		static MObject aConvertPrimVars;
 		static MObject aConvertBlindData;
-		static MObject aBlindDataAttrPrefix;
 		static MObject aConversionSpace;
 		static MObject aInputGeometry;
 		static MObject aOutputGroup;

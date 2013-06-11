@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -39,7 +39,6 @@
 using namespace IECore;
 using namespace boost;
 
-static IndexedIO::EntryID g_matrixEntry("matrix");
 const unsigned int MatrixTransform::m_ioVersion = 0;
 IE_CORE_DEFINEOBJECTTYPEDESCRIPTION(MatrixTransform);
 
@@ -72,17 +71,17 @@ void MatrixTransform::copyFrom( const Object *other, CopyContext *context )
 void MatrixTransform::save( SaveContext *context ) const
 {
 	Transform::save( context );
-	IndexedIOPtr container = context->container( staticTypeName(), m_ioVersion );
-	container->write( g_matrixEntry, matrix.getValue(), 16 );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), m_ioVersion );
+	container->write( "matrix", matrix.getValue(), 16 );
 }
 
 void MatrixTransform::load( LoadContextPtr context )
 {
 	Transform::load( context );
 	unsigned int v = m_ioVersion;
-	ConstIndexedIOPtr container = context->container( staticTypeName(), v );
+	IndexedIOInterfacePtr container = context->container( staticTypeName(), v );
 	float *f = matrix.getValue();
-	container->read( g_matrixEntry, f, 16 );
+	container->read( "matrix", f, 16 );
 }
 
 bool MatrixTransform::isEqualTo( const Object *other ) const

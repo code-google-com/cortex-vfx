@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2011-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -80,7 +80,6 @@ void bindMurmurHash()
 		.def( "append", (MurmurHash &(MurmurHash::*)( double ))&MurmurHash::append, return_self<>() )
 		.def( "append", &appendInt, return_self<>() )
 		.def( "append", (MurmurHash &(MurmurHash::*)( const std::string & ))&MurmurHash::append, return_self<>() )
-		.def( "append", (MurmurHash &(MurmurHash::*)( const InternedString & ))&MurmurHash::append, return_self<>() )
 		.def( "append", (MurmurHash &(MurmurHash::*)( const Imath::V2i & ))&MurmurHash::append, return_self<>() )
 		.def( "append", (MurmurHash &(MurmurHash::*)( const Imath::V2f & ))&MurmurHash::append, return_self<>() )
 		.def( "append", (MurmurHash &(MurmurHash::*)( const Imath::V2d & ))&MurmurHash::append, return_self<>() )
@@ -103,7 +102,6 @@ void bindMurmurHash()
 		.def( "append", (MurmurHash &(MurmurHash::*)( const Imath::Box3d & ))&MurmurHash::append, return_self<>() )
 		.def( "append", (MurmurHash &(MurmurHash::*)( const Imath::Quatf & ))&MurmurHash::append, return_self<>() )
 		.def( "append", (MurmurHash &(MurmurHash::*)( const Imath::Quatd & ))&MurmurHash::append, return_self<>() )
-		.def( "append", (MurmurHash &(MurmurHash::*)( const MurmurHash & ))&MurmurHash::append, return_self<>() )
 		// array append functions
 		.def( "append", &appendArray<char>, return_self<>() )
 		.def( "append", &appendArray<unsigned char>, return_self<>() )
@@ -117,7 +115,6 @@ void bindMurmurHash()
 		.def( "append", &appendArray<float>, return_self<>() )
 		.def( "append", &appendArray<double>, return_self<>() )
 		.def( "append", &appendArray<std::string>, return_self<>() )
-		.def( "append", &appendArray<InternedString>, return_self<>() )
 		.def( "append", &appendArray<Imath::V2i>, return_self<>() )
 		.def( "append", &appendArray<Imath::V2f>, return_self<>() )
 		.def( "append", &appendArray<Imath::V2d>, return_self<>() )

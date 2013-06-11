@@ -181,9 +181,9 @@ void FileSequenceParameter::setFileSequenceValue( ConstFileSequencePtr fileSeque
 	setTypedValue( fileSequence->asString() );
 }
 
-FileSequencePtr FileSequenceParameter::getFileSequenceValue( const StringData *value ) const
+FileSequencePtr FileSequenceParameter::getFileSequenceValue() const
 {
-	std::string fileSequenceStr = value->readable();
+	const std::string &fileSequenceStr = getTypedValue();
 	
 	if ( fileSequenceStr.find_first_of( ' ' ) == std::string::npos )
 	{
@@ -200,11 +200,3 @@ FileSequencePtr FileSequenceParameter::getFileSequenceValue( const StringData *v
 	}
 	return new FileSequence( fileSequenceStr );
 }
-
-FileSequencePtr FileSequenceParameter::getFileSequenceValue() const
-{
-	const StringData *stringDataValue = assertedStaticCast<const StringData>( getValue() );
-	return getFileSequenceValue( stringDataValue );
-}
-
-

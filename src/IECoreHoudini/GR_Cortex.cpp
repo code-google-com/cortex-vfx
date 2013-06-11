@@ -3,7 +3,7 @@
 //  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 //  its affiliates and/or its licensors.
 //
-//  Copyright (c) 2011-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2011-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -44,7 +44,6 @@
 
 #include "IECore/Op.h"
 #include "IECore/SimpleTypedData.h"
-#include "IECore/VisibleRenderable.h"
 
 #include "IECoreGL/BoxPrimitive.h"
 #include "IECoreGL/Camera.h"
@@ -136,8 +135,15 @@ IECoreGL::ConstStatePtr GR_Cortex::getDisplayState( const GR_DisplayOption *dopt
 	return state;
 }
 
-// Renders an object directly (normally from an opHolder)
-void GR_Cortex::renderObject( const IECore::Object *object, const IECoreGL::State *displayState )
+// Renders an OpenGL scene (normally from a parameterisedprocedural)
+void GR_Cortex::renderScene( IECoreGL::ConstScenePtr scene, IECoreGL::ConstStatePtr displayState )
+{
+	// render our scene
+	scene->render( displayState );
+}
+
+// Renders an object directly (nbrmally from an opHolder)
+void GR_Cortex::renderObject( const IECore::Object *object, IECoreGL::ConstStatePtr displayState )
 {
 	// try and cast this to a visible renderable
 	IECore::ConstVisibleRenderablePtr renderable = IECore::runTimeCast<const IECore::VisibleRenderable>( object );
@@ -156,12 +162,12 @@ void GR_Cortex::renderObject( const IECore::Object *object, const IECoreGL::Stat
 	scene->setCamera( 0 ); // houdini will be providing the camera
 	
 	// now render
-	scene->render( const_cast<IECoreGL::State *>( displayState ) );
+	scene->render( displayState );
 }
 
 // general cortex render function, takes a gu_detail and uses the NodePassData attribute
 // to call the required render method
-void GR_Cortex::render( GU_Detail *gdp, const IECoreGL::State *displayState )
+void GR_Cortex::render( GU_Detail *gdp, IECoreGL::ConstStatePtr displayState )
 {
 	// gl scene from a parameterised procedural
 	const GA_ROAttributeRef attrRef = gdp->findAttribute( GA_ATTRIB_DETAIL, GA_SCOPE_PRIVATE, "IECoreHoudiniNodePassData" );
@@ -209,7 +215,7 @@ void GR_Cortex::render( GU_Detail *gdp, const IECoreGL::State *displayState )
 				return;
 			}
 
-			scene->render( const_cast<IECoreGL::State *>( displayState ) );
+			renderScene( scene, displayState );
 			break;
 		}
 		default :

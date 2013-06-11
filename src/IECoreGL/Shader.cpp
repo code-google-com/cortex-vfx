@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2010, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -32,869 +32,1446 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <vector>
-#include <iostream>
-
-#include "boost/format.hpp"
+#include "IECoreGL/Shader.h"
+#include "IECoreGL/Exception.h"
+#include "IECoreGL/Texture.h"
+#include "IECoreGL/UniformFunctions.h"
 
 #include "IECore/SimpleTypedData.h"
 #include "IECore/MessageHandler.h"
 #include "IECore/DespatchTypedData.h"
 #include "IECore/TypeTraits.h"
 
-#include "IECoreGL/Shader.h"
-#include "IECoreGL/Exception.h"
-#include "IECoreGL/Texture.h"
-#include "IECoreGL/UniformFunctions.h"
-#include "IECoreGL/Buffer.h"
-#include "IECoreGL/NumericTraits.h"
-#include "IECoreGL/CachedConverter.h"
-#include "IECoreGL/TextureUnits.h"
+#include "boost/format.hpp"
 
-using namespace std;
-using namespace boost;
-using namespace IECore;
+#include <vector>
+#include <iostream>
+
+#define GL_POINTS_PARAMETER		-10
+#define GL_COLOR_PARAMETER		-11
+#define GL_NORMALS_PARAMETER	-12
+#define GL_TEXCOORDS_PARAMETER	-13
+
 using namespace IECoreGL;
-
-//////////////////////////////////////////////////////////////////////////
-// Shader::Implementation
-//////////////////////////////////////////////////////////////////////////
-
-class Shader::Implementation : public IECore::RefCounted
-{
-
-	public :
-
-		Implementation( const std::string &vertexSource, const std::string &geometrySource, const std::string &fragmentSource )
-			:	m_vertexSource( vertexSource ), m_geometrySource( geometrySource ), m_fragmentSource( fragmentSource ),
-				m_vertexShader( 0 ), m_geometryShader( 0 ), m_fragmentShader( 0 ), m_program( 0 )
-		{		
-			string actualVertexSource = vertexSource;
-			string actualFragmentSource = fragmentSource;
-			if( vertexSource == "" )
-			{
-				actualVertexSource = defaultVertexSource();
-			}
-			if( fragmentSource == "" )
-			{
-				actualFragmentSource = defaultFragmentSource();
-			}
-
-			compile( actualVertexSource, GL_VERTEX_SHADER, m_vertexShader );
-			compile( geometrySource, GL_GEOMETRY_SHADER, m_geometryShader );
-			compile( actualFragmentSource, GL_FRAGMENT_SHADER, m_fragmentShader );
-
-			m_program = glCreateProgram();
-			glAttachShader( m_program, m_vertexShader );
-			if( m_geometryShader )
-			{
-				glAttachShader( m_program, m_geometryShader );
-			}
-			glAttachShader( m_program, m_fragmentShader );
-
-			glLinkProgram( m_program );
-			GLint linkStatus = 0;
-			glGetProgramiv( m_program, GL_LINK_STATUS, &linkStatus );
-			GLint logLength = 0;
-			glGetProgramiv( m_program, GL_INFO_LOG_LENGTH, &logLength );
-			if( !linkStatus )
-			{
-				std::string message = "Unknown linking error.";
-				if( logLength )
-				{
-					vector<char> log( logLength );
-					glGetProgramInfoLog( m_program, logLength, 0, &log[0] );
-					message = &log[0];
-				}
-				release();
-				throw Exception( message );
-			}
-			else if ( logLength > 1 )
-			{
-				std::string message;
-				vector<char> log( logLength, ' ' );
-				glGetProgramInfoLog( m_program, logLength, 0, &log[0] );
-				message = &log[0];
-				IECore::msg( IECore::Msg::Warning, "IECoreGL::Shader", message );
-			}
-			{
-				// build the uniform parameter description map
-				GLint numUniforms = 0;
-				glGetProgramiv( m_program, GL_ACTIVE_UNIFORMS, &numUniforms );
-				GLint maxUniformNameLength = 0;
-				glGetProgramiv( m_program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxUniformNameLength );
-				vector<char> nameChars( maxUniformNameLength );
-				GLuint textureUnit = 0;
-				for( int i=0; i<numUniforms; i++ )
-				{
-					Parameter p;
-					glGetActiveUniform( m_program, i, maxUniformNameLength, 0, &p.size, &p.type, &nameChars[0] );
-					p.location = glGetUniformLocation( m_program, &nameChars[0] );
-					
-					std::string name = &nameChars[0];
-
-					// ignore native parameters
-					if( 0 == name.compare( 0, 3, "gl_" ) )
-					{
-						continue;
-					}
-
-					if( p.size > 1 )
-					{
-						// remove the "[0]" from the end of the string
-						size_t bracketPos = name.rfind( "[" );
-						if( bracketPos != std::string::npos )
-						{
-							name = name.substr( 0, bracketPos );
-						}
-					}
-
-					if( p.type == GL_SAMPLER_2D )
-					{
-						// we assign a specific texture unit to each individual
-						// sampler parameter - this makes it much easier to save
-						// and restore state when applying nested Setups.
-						p.textureUnit = textureUnit++;
-					}
-					else
-					{
-						p.textureUnit = 0;
-					}
-
-					m_uniformParameters[name] = p;
-				}
-			}
-
-			{
-				// build the vertex parameter description map
-				GLint numVertexs = 0;
-				glGetProgramiv( m_program, GL_ACTIVE_ATTRIBUTES, &numVertexs );
-				GLint maxVertexNameLength = 0;
-				glGetProgramiv( m_program, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxVertexNameLength );
-
-				// some versions of the nvidia drivers are returning maxVertexNameLength==0 when
-				// no attributes other than built in gl_* ones are defined by the shader. we don't
-				// bother retrieving anything in this case, as we skip built in parameters anyway.
-				if( numVertexs && maxVertexNameLength )
-				{
-					vector<char> nameChars( maxVertexNameLength );
-					for( int i=0; i<numVertexs; i++ )
-					{
-						Parameter p;
-						glGetActiveAttrib( m_program, i, maxVertexNameLength, 0, &p.size, &p.type, &nameChars[0] );
-						p.location = glGetAttribLocation( m_program, &nameChars[0] );
-						
-						std::string name = &nameChars[0];
-
-						// ignore native parameters
-						if( 0 == name.compare( 0, 3, "gl_" ) )
-						{
-							continue;
-						}
-
-						/// \todo implement arrays
-						if( p.size != 1 )
-						{
-							continue;
-						}
-						
-						m_vertexAttributes[name] = p;
-					}
-				}
-			}
-		}
-		
-		virtual ~Implementation()
-		{
-			release();
-		}
-		
-		GLuint program() const
-		{
-			return m_program;
-		}
-		
-		const std::string &vertexSource() const
-		{
-			return m_vertexSource;
-		}
-		
-		const std::string &geometrySource() const
-		{
-			return m_geometrySource;
-		}
-		
-		const std::string &fragmentSource() const
-		{
-			return m_fragmentSource;
-		}
-		
-		void uniformParameterNames( std::vector<std::string> &names ) const
-		{
-			for( ParameterMap::const_iterator it = m_uniformParameters.begin(); it != m_uniformParameters.end(); it++ )
-			{
-				names.push_back( it->first );
-			}
-		}
-		
-		const Shader::Parameter *uniformParameter( const std::string &name ) const
-		{
-			ParameterMap::const_iterator it = m_uniformParameters.find( name );
-			if( it != m_uniformParameters.end() )
-			{
-				return &(it->second);
-			}
-			return 0;
-		}
-
-		void vertexAttributeNames( std::vector<std::string> &names ) const
-		{	
-			for( ParameterMap::const_iterator it = m_vertexAttributes.begin(); it != m_vertexAttributes.end(); it++ )
-			{
-				names.push_back( it->first );
-			}
-		}
-		
-		const Shader::Parameter *vertexAttribute( const std::string &name ) const
-		{
-			ParameterMap::const_iterator it = m_vertexAttributes.find( name );
-			if( it != m_vertexAttributes.end() )
-			{
-				return &(it->second);
-			}
-			return 0;
-		}
-	
-	private :
-	
-		friend class Shader::Setup;
-		
-		std::string m_vertexSource;
-		std::string m_geometrySource;
-		std::string m_fragmentSource;
-
-		GLuint m_vertexShader;
-		GLuint m_geometryShader;
-		GLuint m_fragmentShader;
-		GLuint m_program;
-
-		/// Maps from the uniform location to the parameter details.
-		typedef std::map<std::string, Shader::Parameter> ParameterMap;
-		ParameterMap m_uniformParameters;
-		ParameterMap m_vertexAttributes;
-		
-		void compile( const std::string &source, GLenum type, GLuint &shader )
-		{
-			if( source == "" )
-			{
-				return;
-			}
-			
-			const char *s = source.c_str();
-			shader = glCreateShader( type );
-			glShaderSource( shader, 1, &s, 0 );
-			glCompileShader( shader );
-			GLint compileStatus = 0;
-			glGetShaderiv( shader, GL_COMPILE_STATUS, &compileStatus );
-			GLint logLength = 0;
-			glGetShaderiv( shader, GL_INFO_LOG_LENGTH, &logLength );
-			if( !compileStatus )
-			{			
-				std::string message = "Unknown compilation error.";
-				if( logLength )
-				{
-					vector<char> log( logLength, ' ' );
-					GLsizei l;
-					glGetShaderInfoLog( shader, logLength, &l, &log[0] );
-					message = &log[0];
-				}
-				release();
-				throw Exception( message );
-			}
-			else if ( logLength > 1 )
-			{
-				std::string message;
-				vector<char> log( logLength, ' ' );
-				GLsizei l;
-				glGetShaderInfoLog( shader, logLength, &l, &log[0] );
-				message = &log[0];
-				IECore::msg( IECore::Msg::Warning, "IECoreGL::Shader", message );
-			}				
-
-		}
-
-		void release()
-		{
-			glDeleteShader( m_vertexShader );
-			glDeleteShader( m_geometryShader );
-			glDeleteShader( m_fragmentShader );
-			glDeleteProgram( m_program );
-		}
-
-};
-	
-//////////////////////////////////////////////////////////////////////////
-// Shader
-//////////////////////////////////////////////////////////////////////////
+using namespace std;
 
 IE_CORE_DEFINERUNTIMETYPED( Shader );
 
-Shader::Shader( const std::string &vertexSource, const std::string &fragmentSource )
-	:	m_implementation( new Implementation( vertexSource, "", fragmentSource ) )
+Shader::Shader()
+	:	m_vertexShader( 0 ), m_fragmentShader( 0 ), m_program( 0 )
 {
+	// hard-code the usual old OpenGL parameters available when no shader is defined.
+	ParameterDescription d;
+	d.name = "gl_Color";
+	d.type = GL_FLOAT_VEC4;
+	d.size = 1;
+	m_uniformParameters[ GL_COLOR_PARAMETER ] = d;
+	m_vertexParameters[ GL_COLOR_PARAMETER ] = d;
+	d.name = "gl_Points";
+	d.type = GL_FLOAT_VEC3;
+	m_vertexParameters[ GL_POINTS_PARAMETER ] = d;
+	d.name = "gl_Normals";
+	m_vertexParameters[ GL_NORMALS_PARAMETER ] = d;
+	d.name = "gl_TexCoords0";
+	d.type = GL_FLOAT_VEC2;
+	m_vertexParameters[ GL_TEXCOORDS_PARAMETER ] = d;
 }
 
-Shader::Shader( const std::string &vertexSource, const std::string &geometrySource, const std::string &fragmentSource )
-	:	m_implementation( new Implementation( vertexSource, geometrySource, fragmentSource ) )
+Shader::Shader( const std::string &vertexSource, const std::string &fragmentSource )
+	:	m_vertexShader( 0 ), m_fragmentShader( 0 ), m_program( 0 )
 {
+	if( !GLEW_VERSION_2_0 )
+	{
+		throw Exception( "OpenGL version < 2" );
+	}
+
+	compile( vertexSource, GL_VERTEX_SHADER, m_vertexShader );
+	compile( fragmentSource, GL_FRAGMENT_SHADER, m_fragmentShader );
+
+	m_program = glCreateProgram();
+	if( m_vertexShader )
+	{
+		glAttachShader( m_program, m_vertexShader );
+	}
+	if( m_fragmentShader )
+	{
+		glAttachShader( m_program, m_fragmentShader );
+	}
+
+	glLinkProgram( m_program );
+	GLint linkStatus = 0;
+	glGetProgramiv( m_program, GL_LINK_STATUS, &linkStatus );
+	GLint logLength = 0;
+	glGetProgramiv( m_program, GL_INFO_LOG_LENGTH, &logLength );
+	if( !linkStatus )
+	{
+		std::string message = "Unknown linking error.";
+		if( logLength )
+		{
+			vector<char> log( logLength );
+			glGetProgramInfoLog( m_program, logLength, 0, &log[0] );
+			message = &log[0];
+		}
+		release();
+		throw Exception( message );
+	}
+	else if ( logLength > 1 )
+	{
+		std::string message;
+		vector<char> log( logLength, ' ' );
+		glGetProgramInfoLog( m_program, logLength, 0, &log[0] );
+		message = &log[0];
+		IECore::msg( IECore::Msg::Warning, "IECoreGL::Shader", message );
+	}
+	{
+		// build the uniform parameter description map
+		GLint numUniforms = 0;
+		glGetProgramiv( m_program, GL_ACTIVE_UNIFORMS, &numUniforms );
+		GLint maxUniformNameLength = 0;
+		glGetProgramiv( m_program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxUniformNameLength );
+		vector<char> name( maxUniformNameLength );
+		for( int i=0; i<numUniforms; i++ )
+		{
+			ParameterDescription d;
+			glGetActiveUniform( m_program, i, maxUniformNameLength, 0, &d.size, &d.type, &name[0] );
+			d.name = &name[0];
+			GLint location = glGetUniformLocation( m_program, &name[0] );
+
+			// ignore native parameters
+			if( 0 == d.name.compare( 0, 3, "gl_" ) )
+			{
+				continue;
+			}
+			
+			if( d.size > 1 )
+			{
+				// remove the "[0]" from the end of the string
+				size_t bracketPos = d.name.rfind( "[" );
+				if( bracketPos != std::string::npos )
+				{
+					d.name = d.name.substr( 0, bracketPos );
+				}
+			}
+			
+			m_uniformParameters[location] = d;
+		}
+	}
+
+	{
+		// build the vertex parameter description map
+		GLint numVertexs = 0;
+		glGetProgramiv( m_program, GL_ACTIVE_ATTRIBUTES, &numVertexs );
+		GLint maxVertexNameLength = 0;
+		glGetProgramiv( m_program, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxVertexNameLength );
+		
+		// some versions of the nvidia drivers are returning maxVertexNameLength==0 when
+		// no attributes other than built in gl_* ones are defined by the shader. we don't
+		// bother retrieving anything in this case, as we skip built in parameters anyway.
+		if( numVertexs && maxVertexNameLength )
+		{
+			vector<char> name( maxVertexNameLength );
+			for( int i=0; i<numVertexs; i++ )
+			{
+				ParameterDescription d;
+				glGetActiveAttrib( m_program, i, maxVertexNameLength, 0, &d.size, &d.type, &name[0] );
+				d.name = &name[0];
+				GLint location = glGetAttribLocation( m_program, &name[0] );
+
+				// ignore native parameters
+				if( 0 == d.name.compare( 0, 3, "gl_" ) )
+				{
+					continue;
+				}
+
+				// \todo: implement arrays
+				if ( d.size != 1 )
+					continue;
+
+				m_vertexParameters[location] = d;
+			}
+		}
+	}
 }
 
 Shader::~Shader()
 {
+	release();
 }
 
-GLuint Shader::program() const
+bool Shader::operator==( const Shader &other ) const
 {
-	return m_implementation->program();
+	return m_program == other.m_program;
 }
 
-const std::string &Shader::vertexSource() const
+void Shader::bind() const
 {
-	return m_implementation->vertexSource();
+	glUseProgram( m_program );
 }
 
-const std::string &Shader::geometrySource() const
+void Shader::compile( const std::string &source, GLenum type, GLuint &shader )
 {
-	return m_implementation->geometrySource();
+
+	if( source!="" )
+	{
+		const char *s = source.c_str();
+		shader = glCreateShader( type );
+		glShaderSource( shader, 1, &s, 0 );
+		glCompileShader( shader );
+		GLint compileStatus = 0;
+		glGetShaderiv( shader, GL_COMPILE_STATUS, &compileStatus );
+		GLint logLength = 0;
+		glGetShaderiv( shader, GL_INFO_LOG_LENGTH, &logLength );
+		if( !compileStatus )
+		{			
+			std::string message = "Unknown compilation error.";
+			if( logLength )
+			{
+				vector<char> log( logLength, ' ' );
+				GLsizei l;
+				glGetShaderInfoLog( shader, logLength, &l, &log[0] );
+				message = &log[0];
+			}
+			release();
+			throw Exception( message );
+		}
+		else if ( logLength > 1 )
+		{
+			std::string message;
+			vector<char> log( logLength, ' ' );
+			GLsizei l;
+			glGetShaderInfoLog( shader, logLength, &l, &log[0] );
+			message = &log[0];
+			IECore::msg( IECore::Msg::Warning, "IECoreGL::Shader", message );
+		}				
+	}
+
 }
 
-const std::string &Shader::fragmentSource() const
+void Shader::release()
 {
-	return m_implementation->fragmentSource();
+	if ( m_program )
+	{
+		glDeleteShader( m_vertexShader );
+		glDeleteShader( m_fragmentShader );
+		glDeleteProgram( m_program );
+	}
 }
-		
+
+///////////////////////////////////////////////////////////////////////////////
+// functions for uniform parameters
+///////////////////////////////////////////////////////////////////////////////
+
+
 void Shader::uniformParameterNames( std::vector<std::string> &names ) const
 {
-	m_implementation->uniformParameterNames( names );
+	for( ParameterMap::const_iterator it = m_uniformParameters.begin(); it != m_uniformParameters.end(); it++ )
+	{
+		names.push_back( it->second.name );
+	}
 }
 
-void Shader::vertexAttributeNames( std::vector<std::string> &names ) const
+GLint Shader::uniformParameterIndex( const std::string &parameterName ) const
 {
-	m_implementation->vertexAttributeNames( names );
+	for( ParameterMap::const_iterator it = m_uniformParameters.begin(); it != m_uniformParameters.end(); it++ )
+	{
+		if( !strcmp( parameterName.c_str(), it->second.name.c_str() ) )
+		{
+			return it->first;
+		}
+	}
+	// accept old-fashined gl_Color
+	if ( parameterName == "Cs" )
+		return GL_COLOR_PARAMETER;
+
+	throw( Exception( boost::str( boost::format( "No uniform parameter named \"%s\"." ) % parameterName ) ) );
 }
 
-const Shader::Parameter *Shader::uniformParameter( const std::string &name ) const
+bool Shader::hasUniformParameter( const std::string &parameterName ) const
 {
-	return m_implementation->uniformParameter( name );
+	for( ParameterMap::const_iterator it = m_uniformParameters.begin(); it != m_uniformParameters.end(); it++ )
+	{
+		if( !strcmp( parameterName.c_str(), it->second.name.c_str() ) )
+		{
+			return true;
+		}
+	}
+
+	// accept old-fashined gl_Color
+	if ( parameterName == "Cs" )
+		return true;
+
+	return false;
 }
 
-const Shader::Parameter *Shader::vertexAttribute( const std::string &name ) const
+IECore::TypeId Shader::uniformParameterType( GLint parameterIndex ) const
 {
-	return m_implementation->vertexAttribute( name );
+	const ParameterDescription &p = uniformParameterDescription( parameterIndex );
+	if( p.size==1 )
+	{
+		switch( p.type )
+		{
+			case GL_BOOL :
+				return IECore::BoolDataTypeId;
+
+			case GL_INT :
+				return IECore::IntDataTypeId;
+
+			case GL_FLOAT :
+				return IECore::FloatDataTypeId;
+
+			case GL_BOOL_VEC2 :
+				return IECore::V2iDataTypeId;
+
+			case GL_INT_VEC2 :
+				return IECore::V2iDataTypeId;
+
+			case GL_FLOAT_VEC2 :
+				return IECore::V2fDataTypeId;
+
+			case GL_BOOL_VEC3 :
+				return IECore::V3iDataTypeId;
+
+			case GL_INT_VEC3 :
+				return IECore::V3iDataTypeId;
+
+			case GL_FLOAT_VEC3 :
+				return IECore::V3fDataTypeId;
+
+			case GL_FLOAT_VEC4 :
+				return IECore::Color4fDataTypeId;
+
+			case GL_SAMPLER_2D :
+				return Texture::staticTypeId();
+
+			case GL_FLOAT_MAT3 :
+				return IECore::M33fDataTypeId;
+
+			case GL_FLOAT_MAT4 :
+				return IECore::M44fDataTypeId;
+
+			default :
+				throw Exception( "Unsupported uniform parameter type." );
+		}
+	}
+	else
+	{
+		switch( p.type )
+		{
+			// TODO: handle GL_BOOL, GL_BOOL_VEC2, GL_BOOL_VEC3
+			case GL_INT :
+				return IECore::IntVectorDataTypeId;
+
+			case GL_FLOAT :
+				return IECore::FloatVectorDataTypeId;
+
+			case GL_INT_VEC2 :
+				return IECore::V2iVectorDataTypeId;
+
+			case GL_FLOAT_VEC2 :
+				return IECore::V2fVectorDataTypeId;
+
+			case GL_INT_VEC3 :
+				return IECore::V3iVectorDataTypeId;
+
+			case GL_FLOAT_VEC3 :
+				return IECore::V3fVectorDataTypeId;
+
+			case GL_FLOAT_VEC4 :
+				return IECore::Color4fVectorDataTypeId;
+
+			case GL_FLOAT_MAT3 :
+				return IECore::M33fVectorDataTypeId;
+
+			case GL_FLOAT_MAT4 :
+				return IECore::M44fVectorDataTypeId;
+
+			default :
+				throw Exception( "Unsupported uniform parameter type." );
+		}
+	}
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Setup implementation
-///////////////////////////////////////////////////////////////////////////////
-
-struct Shader::Setup::MemberData : public IECore::RefCounted
+IECore::TypeId Shader::uniformParameterType( const std::string &parameterName ) const
 {
-	
-	ConstShaderPtr shader;
-	
-	// base class for objects which can bind a value of some sort
-	// to a shader, and later unbind it.
-	struct Value : public IECore::RefCounted
-	{
-		virtual void bind() = 0;
-		virtual void unbind() = 0;
-	};
-	IE_CORE_DECLAREPTR( Value );
-	
-	// value class for specifying vertex attributes
-	struct VertexValue : public Value
-	{
-	
-		VertexValue( GLuint attributeIndex, GLenum type, GLint size, ConstBufferPtr buffer, GLuint divisor )
-			:	m_attributeIndex( attributeIndex ), m_type( type ), m_size( size ), m_buffer( buffer ), m_divisor( divisor )
-		{
-		}
-		
-		virtual void bind()
-		{
-			Buffer::ScopedBinding binding( *m_buffer );
-			glEnableVertexAttribArray( m_attributeIndex );
-			glVertexAttribPointer( m_attributeIndex, m_size, m_type, false, 0, 0 );
-			glVertexAttribDivisor( m_attributeIndex, m_divisor );
-		}
-		
-		virtual void unbind()
-		{
-			glVertexAttribDivisor( m_attributeIndex, 0 );
-			glDisableVertexAttribArray( m_attributeIndex );
-		}
-		
-		private :
-		
-			GLuint m_attributeIndex;
-			GLenum m_type;
-			GLint m_size;
-			ConstBufferPtr m_buffer;
-			GLuint m_divisor;
-			
-	};
-	
-	// value class for specifying textures
-	struct TextureValue : public Value
-	{
-	
-		TextureValue( GLuint uniformIndex, GLuint textureUnit, ConstTexturePtr texture )
-			:	m_uniformIndex( uniformIndex ), m_textureUnit( textureUnit ), m_texture( texture )
-		{
-		}
-		
-		virtual void bind()
-		{
-			glActiveTexture( textureUnits()[m_textureUnit] );
-			glGetIntegerv( GL_TEXTURE_BINDING_2D, &m_previousTexture );
-			if( m_texture )
-			{
-				m_texture->bind();
-			}
-			else
-			{
-				glBindTexture( GL_TEXTURE_2D, 0 );
-			}
-			glUniform1i( m_uniformIndex, m_textureUnit );
-		}
-		
-		virtual void unbind()
-		{
-			glActiveTexture( textureUnits()[m_textureUnit] );
-			glBindTexture( GL_TEXTURE_2D, m_previousTexture );
-		}
-		
-		private :
-		
-			GLuint m_uniformIndex;
-			GLuint m_textureUnit;
-			ConstTexturePtr m_texture;
-			GLint m_previousTexture;
-	
-	};
-	
-	// value class for specifying uniform values
-	struct UniformFloatValue : public Value
-	{
-	
-		UniformFloatValue( GLuint program, GLuint uniformIndex, unsigned char dimensions, std::vector<GLfloat> &values )
-			:	m_program( program ), m_uniformIndex( uniformIndex ), m_dimensions( dimensions ), m_values( values )
-		{
-			m_previousValues.resize( m_values.size() );
-		}
-	
-		virtual void bind()
-		{
-			glGetUniformfv( m_program, m_uniformIndex, &(m_previousValues[0]) );
-			uniformFloatFunctions()[m_dimensions]( m_uniformIndex, 1, &(m_values[0]) );
-		}
-		
-		virtual void unbind()
-		{
-			uniformFloatFunctions()[m_dimensions]( m_uniformIndex, 1, &(m_previousValues[0]) );
-		}
-	
-		private :
-		
-			GLuint m_program;
-			GLuint m_uniformIndex;
-			unsigned char m_dimensions;
-			std::vector<GLfloat> m_values;
-			std::vector<GLfloat> m_previousValues;
-			
-	};
-	
-	// value class for specifying uniform values
-	struct UniformIntegerValue : public Value
-	{
-	
-		UniformIntegerValue( GLuint program, GLuint uniformIndex, unsigned char dimensions, std::vector<GLint> &values )
-			:	m_program( program ), m_uniformIndex( uniformIndex ), m_dimensions( dimensions ), m_values( values )
-		{
-			m_previousValues.resize( m_values.size() );
-		}
-	
-		virtual void bind()
-		{
-			glGetUniformiv( m_program, m_uniformIndex, &(m_previousValues[0]) );
-			uniformIntFunctions()[m_dimensions]( m_uniformIndex, 1, &(m_values[0]) );
-		}
-		
-		virtual void unbind()
-		{
-			uniformIntFunctions()[m_dimensions]( m_uniformIndex, 1, &(m_previousValues[0]) );
-		}
-	
-		private :
-		
-			GLuint m_program;
-			GLuint m_uniformIndex;
-			unsigned char m_dimensions;
-			std::vector<GLint> m_values;
-			std::vector<GLint> m_previousValues;
-			
-	};
-	
-	struct UniformMatrixValue : public Value
-	{
-		UniformMatrixValue( GLuint program, GLuint uniformIndex, unsigned char dimensions0, unsigned char dimensions1, std::vector<GLfloat> &values )
-			:	m_program( program ), m_uniformIndex( uniformIndex ), m_dimensions0( dimensions0 ), m_dimensions1( dimensions1 ), m_values( values )
-		{
-			m_previousValues.resize( m_values.size(), 0 );
-		}
-		
-		virtual void bind()
-		{
-			glGetUniformfv( m_program, m_uniformIndex, &(m_previousValues[0]) );
-			uniformMatrixFunctions()[m_dimensions0][m_dimensions1]( m_uniformIndex, 1, GL_FALSE, &(m_values[0]) );
-		}
-		
-		virtual void unbind()
-		{
-			uniformMatrixFunctions()[m_dimensions0][m_dimensions1]( m_uniformIndex, 1, GL_FALSE, &(m_previousValues[0]) );
-		}
-		
-		private :
-		
-			GLuint m_program;
-			GLuint m_uniformIndex;
-			unsigned char m_dimensions0;
-			unsigned char m_dimensions1;
-			std::vector<GLfloat> m_values;
-			std::vector<GLfloat> m_previousValues;
-				
-	};
-	
-	vector<ValuePtr> values;
-	
-};
-
-Shader::Setup::Setup( ConstShaderPtr shader )
-	:	m_memberData( new MemberData )
-{
-	m_memberData->shader = shader;
+	return uniformParameterType( uniformParameterIndex( parameterName ) );
 }
 
-const Shader *Shader::Setup::shader() const
+IECore::DataPtr Shader::getUniformParameterDefault( const std::string &parameterName ) const
 {
-	return m_memberData->shader.get();
+	return getUniformParameterDefault( uniformParameterIndex( parameterName ) );
 }
 
-void Shader::Setup::addUniformParameter( const std::string &name, ConstTexturePtr value )
+IECore::DataPtr Shader::getUniformParameterDefault( GLint parameterIndex ) const
 {
-	const Parameter *p = m_memberData->shader->uniformParameter( name );
-	if( !p || p->type != GL_SAMPLER_2D )
+	const ParameterDescription &p = uniformParameterDescription( parameterIndex );
+	if( p.size==1 )
 	{
+		switch( p.type )
+		{
+			case GL_BOOL :
+				{
+					return new IECore::BoolData( 0 );
+				}
+			case GL_INT :
+				{
+					return new IECore::IntData( 0 );
+				}
+			case GL_FLOAT :
+				{
+					return new IECore::FloatData( 0 );
+				}
+			case GL_BOOL_VEC2 :
+				{
+					return new IECore::V2iData( Imath::V2i( 0 ) );
+				}
+			case GL_INT_VEC2 :
+				{
+					return new IECore::V2iData( Imath::V2i( 0 ) );
+				}
+			case GL_FLOAT_VEC2 :
+				{
+					return new IECore::V2fData( Imath::V2f( 0.0f ) );
+				}
+			case GL_BOOL_VEC3 :
+				{
+					return new IECore::V3iData( Imath::V3i( 0 ) );
+				}
+			case GL_INT_VEC3 :
+				{
+					return new IECore::V3iData( Imath::V3i( 0 ) );
+				}
+			case GL_FLOAT_VEC3 :
+				{
+					return new IECore::V3fData( Imath::V3f( 0.0f ) );
+				}
+			case GL_FLOAT_VEC4 :
+				{
+					return new IECore::Color4fData( Imath::Color4f( 0.0f ) );
+				}
+			case GL_FLOAT_MAT3 :
+				{
+					return new IECore::M33fData( Imath::M33f( 0.0f ) );
+				}
+			case GL_FLOAT_MAT4 :
+				{
+					return new IECore::M44fData( Imath::M44f( 0.0f ) );
+				}
+			default :
+				throw Exception( "Unsupported uniform parameter type." );
+		}
+	}
+	else
+	{
+		switch( p.type )
+		{
+			// TODO: GL_BOOL, GL_BOOL_VEC2, GL_BOOL_VEC3
+			case GL_INT :
+				{
+					IECore::IntVectorDataPtr data = new IECore::IntVectorData();
+					data->writable().resize( p.size, 0 );
+					return data;
+				}
+			case GL_FLOAT :
+				{
+					IECore::FloatVectorDataPtr data = new IECore::FloatVectorData();
+					data->writable().resize( p.size, 0.0f );
+					return data;
+				}
+			case GL_INT_VEC2 :
+				{
+					IECore::V2iVectorDataPtr data = new IECore::V2iVectorData();
+					data->writable().resize( p.size, Imath::V2i( 0 ) );
+					return data;
+				}
+			case GL_FLOAT_VEC2 :
+				{
+					IECore::V2fVectorDataPtr data = new IECore::V2fVectorData();
+					data->writable().resize( p.size, Imath::V2f( 0.0f ) );
+					return data;
+				}
+			case GL_INT_VEC3 :
+				{
+					IECore::V3iVectorDataPtr data = new IECore::V3iVectorData();
+					data->writable().resize( p.size, Imath::V3i( 0 ) );
+					return data;
+				}
+			case GL_FLOAT_VEC3 :
+				{
+					IECore::V3fVectorDataPtr data = new IECore::V3fVectorData();
+					data->writable().resize( p.size, Imath::V3f( 0 ) );
+					return data;
+				}
+			case GL_FLOAT_VEC4 :
+				{
+					IECore::Color4fVectorDataPtr data = new IECore::Color4fVectorData();
+					data->writable().resize( p.size, Imath::Color4f( 0.0 ) );
+					return data;
+				}
+			case GL_FLOAT_MAT3 :
+				{
+					IECore::M33fVectorDataPtr data = new IECore::M33fVectorData();
+					data->writable().resize( p.size, Imath::M33f( 0.0 ) );
+					return data;
+				}
+			case GL_FLOAT_MAT4 :
+				{
+					IECore::M44fVectorDataPtr data = new IECore::M44fVectorData();
+					data->writable().resize( p.size, Imath::M44f( 0.0 ) );
+					return data;
+				}
+			default :
+				throw Exception( "Unsupported uniform parameter type." );
+		}
+	}
+}
+
+IECore::DataPtr Shader::getUniformParameter( GLint parameterIndex ) const
+{
+	const ParameterDescription &p = uniformParameterDescription( parameterIndex );
+	
+	if( p.size==1 )
+	{
+		switch( p.type )
+		{
+			case GL_BOOL :
+				{
+					GLint v = 0;
+					glGetUniformiv( m_program, parameterIndex, &v );
+					return new IECore::BoolData( v );
+				}
+			case GL_INT :
+				{
+					GLint v = 0;
+					glGetUniformiv( m_program, parameterIndex, &v );
+					return new IECore::IntData( v );
+				}
+			case GL_FLOAT :
+				{
+					IECore::FloatDataPtr result = new IECore::FloatData;
+					glGetUniformfv( m_program, parameterIndex, &result->writable() );
+					return result;
+				}
+			case GL_BOOL_VEC2 :
+				{
+					GLint v[2];
+					glGetUniformiv( m_program, parameterIndex, v );
+					return new IECore::V2iData( Imath::V2i( v[0], v[1] ) );
+				}
+			case GL_INT_VEC2 :
+				{
+					GLint v[2];
+					glGetUniformiv( m_program, parameterIndex, v );
+					return new IECore::V2iData( Imath::V2i( v[0], v[1] ) );
+				}
+			case GL_FLOAT_VEC2 :
+				{
+					IECore::V2fDataPtr result = new IECore::V2fData;
+					glGetUniformfv( m_program, parameterIndex, result->writable().getValue() );
+					return result;
+				}
+			case GL_BOOL_VEC3 :
+				{
+					GLint v[3];
+					glGetUniformiv( m_program, parameterIndex, v );
+					return new IECore::V3iData( Imath::V3i( v[0], v[1], v[2] ) );
+				}
+			case GL_INT_VEC3 :
+				{
+					GLint v[3];
+					glGetUniformiv( m_program, parameterIndex, v );
+					return new IECore::V3iData( Imath::V3i( v[0], v[1], v[2] ) );
+				}
+			case GL_FLOAT_VEC3 :
+				{
+					IECore::V3fDataPtr result = new IECore::V3fData;
+					glGetUniformfv( m_program, parameterIndex, result->writable().getValue() );
+					return result;
+				}
+			case GL_FLOAT_VEC4 :
+				{
+					IECore::Color4fDataPtr result = new IECore::Color4fData;
+					glGetUniformfv( m_program, parameterIndex, result->writable().getValue() );
+					return result;
+				}
+			case GL_FLOAT_MAT3 :
+				{
+					IECore::M33fDataPtr result = new IECore::M33fData;
+					glGetUniformfv( m_program, parameterIndex, result->writable().getValue() );
+					return result;
+				}
+			case GL_FLOAT_MAT4 :
+				{
+					IECore::M44fDataPtr result = new IECore::M44fData;
+					glGetUniformfv( m_program, parameterIndex, result->writable().getValue() );
+					return result;
+				}
+			default :
+				throw Exception( "Unsupported uniform parameter type." );
+		}
+	}
+	else
+	{
+		switch( p.type )
+		{
+			// TODO: Handle the case for GL_BOOL, GL_BOOL_VEC2, GL_BOOL_VEC3
+			case GL_INT :
+				{
+					IECore::IntVectorDataPtr result = new IECore::IntVectorData;
+					std::vector<int>& values = result->writable();
+					values.resize( p.size );
+					for( int i=0; i < p.size; ++i )
+					{
+						GLint v = 0;
+						glGetUniformiv( m_program, parameterIndex + i, &v );
+						values[i] = v;
+					}
+					
+					return result;
+				}
+			case GL_FLOAT :
+				{
+					IECore::FloatVectorDataPtr result = new IECore::FloatVectorData;
+					std::vector<float>& values = result->writable();
+					values.resize( p.size );
+					for( int i=0; i < p.size; ++i )
+					{
+						GLfloat v = 0;
+						glGetUniformfv( m_program, parameterIndex + i, &v );
+						values[i] = v;
+					}
+					
+					return result;
+				}
+			case GL_INT_VEC2 :
+				{
+					IECore::V2iVectorDataPtr result = new IECore::V2iVectorData;
+					std::vector<Imath::V2i>& values = result->writable();
+					values.resize( p.size );
+					for( int i=0; i < p.size; ++i )
+					{
+						GLint v[2];
+						glGetUniformiv( m_program, parameterIndex + i, v );
+						values[i].x = v[0];
+						values[i].y = v[1];
+					}
+					
+					return result;
+				}
+			case GL_FLOAT_VEC2 :
+				{
+					IECore::V2fVectorDataPtr result = new IECore::V2fVectorData;
+					std::vector<Imath::V2f>& values = result->writable();
+					values.resize( p.size );
+					for( int i=0; i < p.size; ++i )
+					{
+						GLfloat v[2];
+						glGetUniformfv( m_program, parameterIndex + i, v );
+						values[i].x = v[0];
+						values[i].y = v[1];
+					}
+					
+					return result;
+				}
+			case GL_INT_VEC3 :
+				{
+					IECore::V3iVectorDataPtr result = new IECore::V3iVectorData;
+					std::vector<Imath::V3i>& values = result->writable();
+					values.resize( p.size );
+					for( int i=0; i < p.size; ++i )
+					{
+						GLint v[3];
+						glGetUniformiv( m_program, parameterIndex + i, v );
+						values[i].x = v[0];
+						values[i].y = v[1];
+						values[i].z = v[2];
+					}
+					
+					return result;
+				}
+			case GL_FLOAT_VEC3 :
+				{
+					IECore::V3fVectorDataPtr result = new IECore::V3fVectorData;
+					std::vector<Imath::V3f>& values = result->writable();
+					values.resize( p.size );
+					for( int i=0; i < p.size; ++i )
+					{
+						GLfloat v[3];
+						glGetUniformfv( m_program, parameterIndex + i, v );
+						values[i].x = v[0];
+						values[i].y = v[1];
+						values[i].z = v[2];
+					}
+					
+					return result;
+				}
+			case GL_FLOAT_VEC4 :
+				{
+					IECore::Color4fVectorDataPtr result = new IECore::Color4fVectorData;
+					std::vector<Imath::Color4f>& values = result->writable();
+					values.resize( p.size );
+					for( int i=0; i < p.size; ++i )
+					{
+						GLfloat v[4];
+						glGetUniformfv( m_program, parameterIndex + i, v );
+						values[i].r = v[0];
+						values[i].g = v[1];
+						values[i].b = v[2];
+						values[i].a = v[3];
+					}
+					
+					return result;
+				}
+			case GL_FLOAT_MAT3 :
+				{
+					IECore::M33fVectorDataPtr result = new IECore::M33fVectorData;
+					std::vector<Imath::M33f>& values = result->writable();
+					values.resize( p.size );
+					for( int i=0; i < p.size; ++i )
+					{
+						GLfloat v[9];
+						glGetUniformfv( m_program, parameterIndex + i, v );
+						values[i][0][0] = v[0];
+						values[i][0][1] = v[1];
+						values[i][0][2] = v[2];
+						values[i][1][0] = v[3];
+						values[i][1][1] = v[4];
+						values[i][1][2] = v[5];
+						values[i][2][0] = v[6];
+						values[i][2][1] = v[7];
+						values[i][2][2] = v[8];
+					}
+					
+					return result;
+				}
+			case GL_FLOAT_MAT4 :
+				{
+					IECore::M44fVectorDataPtr result = new IECore::M44fVectorData;
+					std::vector<Imath::M44f>& values = result->writable();
+					values.resize( p.size );
+					for( int i=0; i < p.size; ++i )
+					{
+						GLfloat v[16];
+						glGetUniformfv( m_program, parameterIndex + i, v );
+						values[i][0][0] = v[0];
+						values[i][0][1] = v[1];
+						values[i][0][2] = v[2];
+						values[i][0][3] = v[3];
+						
+						values[i][1][0] = v[4];
+						values[i][1][1] = v[5];
+						values[i][1][2] = v[6];
+						values[i][1][3] = v[7];
+						
+						values[i][2][0] = v[8];
+						values[i][2][1] = v[9];
+						values[i][2][2] = v[10];
+						values[i][2][3] = v[11];
+						
+						values[i][3][0] = v[12];
+						values[i][3][1] = v[13];
+						values[i][3][2] = v[14];
+						values[i][3][3] = v[15];
+					}
+					
+					return result;
+				}
+			default :
+				throw Exception( "Unsupported uniform parameter type." );
+		}
+	}
+}
+
+IECore::DataPtr Shader::getUniformParameter( const std::string &parameterName ) const
+{
+	return getUniformParameter( uniformParameterIndex( parameterName ) );
+}
+
+bool Shader::uniformValueValid( GLint parameterIndex, IECore::TypeId type ) const
+{
+	// accept old-fashioned color parameters.
+	if ( parameterIndex == GL_COLOR_PARAMETER )
+	{
+		return ( type == IECore::V3fDataTypeId || type == IECore::Color3fDataTypeId || type == IECore::Color4fDataTypeId );
+	}
+
+	IECore::TypeId pt = uniformParameterType( parameterIndex );
+
+	if( pt==Texture::staticTypeId() )
+	{
+		return false;
+	}
+	if( type==IECore::IntDataTypeId && pt == IECore::BoolDataTypeId )
+	{
+		type = IECore::BoolDataTypeId;
+	}
+	if( type==IECore::BoolDataTypeId && pt!=IECore::BoolDataTypeId )
+	{
+		type = IECore::IntDataTypeId;
+	}
+	else if( type==IECore::Color3fDataTypeId )
+	{
+		type = IECore::V3fDataTypeId;
+	}
+	else if( type==IECore::Color3fVectorDataTypeId )
+	{
+		type = IECore::V3fVectorDataTypeId;
+	}
+	return type==pt;
+}
+
+bool Shader::uniformValueValid( GLint parameterIndex, const IECore::Data *value ) const
+{
+	return uniformValueValid( parameterIndex, value->typeId() );
+}
+
+bool Shader::uniformValueValid( const std::string &parameterName, const IECore::Data *value ) const
+{
+	return uniformValueValid( uniformParameterIndex( parameterName ), value );
+}
+
+size_t Shader::getDataSize( const IECore::Data* data )
+{
+	switch( data->typeId() )
+	{
+		case IECore::IntVectorDataTypeId :
+			return IECore::runTimeCast< const IECore::IntVectorData >( data )->readable().size();
+		case IECore::FloatVectorDataTypeId :
+			return IECore::runTimeCast< const IECore::FloatVectorData >( data )->readable().size();
+		case IECore::V2fVectorDataTypeId :
+			return IECore::runTimeCast< const IECore::V2fVectorData >( data )->readable().size();
+		case IECore::V2iVectorDataTypeId :
+			return IECore::runTimeCast< const IECore::V2iVectorData >( data )->readable().size();
+		case IECore::V3fVectorDataTypeId :
+			return IECore::runTimeCast< const IECore::V3fVectorData >( data )->readable().size();
+		case IECore::V3iVectorDataTypeId :
+			return IECore::runTimeCast< const IECore::V3iVectorData >( data )->readable().size();
+		case IECore::Color3fVectorDataTypeId :
+			return IECore::runTimeCast< const IECore::Color3fVectorData >( data )->readable().size();
+		case IECore::Color4fVectorDataTypeId :
+			return IECore::runTimeCast< const IECore::Color4fVectorData >( data )->readable().size();
+		case IECore::M33fVectorDataTypeId :
+			return IECore::runTimeCast< const IECore::M33fVectorData >( data )->readable().size();
+		case IECore::M44fVectorDataTypeId :
+			return IECore::runTimeCast< const IECore::M44fVectorData >( data )->readable().size();
+		default :
+			return 1;
+	}
+
+}
+
+void Shader::setUniformParameter( GLint parameterIndex, const IECore::Data *value )
+{
+	if ( !uniformValueValid( parameterIndex, value ) )
+	{
+		throw Exception( "Can't set uniform parameter value. Type mismatch." );
+	}
+	
+	if( parameterIndex != GL_COLOR_PARAMETER )
+	{
+		int n = 1;
+		try
+		{
+			n = getDataSize( value );
+		}
+		catch(...)
+		{
+		}
+		
+		const ParameterDescription& pd = uniformParameterDescription( parameterIndex );
+		
+		if( n != pd.size )
+		{
+			throw Exception( str( boost::format( "Uniform parameter array %s wrong size. Expecting %d, got %d" ) % pd.name % pd.size % n ) );
+		}
+	}
+	
+	IECore::TypedDataAddress a;
+	setUniformParameter( 
+		parameterIndex, 
+		value->typeId(), 
+		IECore::despatchTypedData< IECore::TypedDataAddress, IECore::TypeTraits::IsTypedData >( const_cast<IECore::Data *>( value ), a )
+	);
+}
+
+void Shader::setUniformParameter( GLint parameterIndex, IECore::TypeId type, const void *p )
+{
+	// Special treatment for old-fashined gl_Color parameter.
+	if ( parameterIndex == GL_COLOR_PARAMETER )
+	{
+		switch ( type )
+		{
+			case IECore::V3fDataTypeId:
+			case IECore::Color3fDataTypeId:
+				glColor3fv( static_cast<const float*>(p) );
+				break;
+			case IECore::Color4fDataTypeId:
+				glColor4fv( static_cast<const float*>(p) );
+				break;
+			default :
+				throw Exception( boost::str( boost::format( "Unsupported uniform color parameter type \"%s\"." ) % IECore::RunTimeTyped::typeNameFromTypeId( type ) ) );
+		}
 		return;
 	}
 	
-	m_memberData->values.push_back( new MemberData::TextureValue( p->location, p->textureUnit, value ) );
+	const ParameterDescription& pd = uniformParameterDescription( parameterIndex );
+	
+	switch( type )
+	{
+		case IECore::BoolDataTypeId :
+			glUniform1i( parameterIndex, *static_cast<const bool*>(p) );
+			break;
+		case IECore::IntDataTypeId :
+			glUniform1i( parameterIndex, *static_cast<const int*>(p) );
+			break;
+		case IECore::FloatDataTypeId :
+			glUniform1f( parameterIndex, *static_cast<const float*>(p) );
+			break;
+		case IECore::V2fDataTypeId :
+			glUniform2fv( parameterIndex, 1, static_cast<const float *>(p) );
+			break;
+		case IECore::V2iDataTypeId :
+			{
+				const int *vv = static_cast<const int *>(p);
+				GLint v[2]; v[0] = vv[0]; v[1] = vv[1];
+				glUniform2iv( parameterIndex, 1, v );
+			}
+			break;
+		case IECore::V3fDataTypeId :
+			glUniform3fv( parameterIndex, 1, static_cast<const float *>(p) );
+			break;
+		case IECore::V3iDataTypeId :
+			{
+				const int *vv = static_cast<const int *>(p);
+				GLint v[3]; v[0] = vv[0]; v[1] = vv[1]; v[2] = vv[2];
+				glUniform3iv( parameterIndex, 1, v );
+			}
+			break;
+		case IECore::Color3fDataTypeId :
+			glUniform3fv( parameterIndex, 1, static_cast<const float *>(p) );
+			break;
+		case IECore::Color4fDataTypeId :
+			glUniform4fv( parameterIndex, 1, static_cast<const float *>(p) );
+			break;
+		case IECore::M33fDataTypeId :
+			glUniformMatrix3fv( parameterIndex, 1, GL_FALSE, static_cast<const float *>(p) );
+			break;
+		case IECore::M44fDataTypeId :
+			glUniformMatrix4fv( parameterIndex, 1, GL_FALSE, static_cast<const float *>(p) );
+			break;
+			
+		// TODO: Handle the case for BoolVectorDataTypeId
+		
+		case IECore::IntVectorDataTypeId :
+			glUniform1iv( parameterIndex, pd.size, static_cast<const GLint *>(p) );
+			break;
+		case IECore::FloatVectorDataTypeId :
+			glUniform1fv( parameterIndex, pd.size, static_cast<const GLfloat *>(p) );
+			break;
+		case IECore::V2fVectorDataTypeId :
+			glUniform2fv( parameterIndex, pd.size, static_cast<const GLfloat *>(p) );
+			break;
+		case IECore::V2iVectorDataTypeId :
+			{
+				const Imath::V2i* incomingData = static_cast<const Imath::V2i *>(p);
+				std::vector<GLint> rawData( 2 * pd.size );
+				for( int i=0; i < pd.size; ++i )
+				{
+					rawData[2 * i]     = incomingData[i].x;
+					rawData[2 * i + 1] = incomingData[i].y;
+				}
+				
+				glUniform2iv( parameterIndex, pd.size, &rawData.front() );
+			}
+			break;
+		case IECore::V3fVectorDataTypeId :
+			glUniform3fv( parameterIndex, pd.size, static_cast<const float *>(p) );
+			break;
+		case IECore::V3iVectorDataTypeId :
+			{
+				const Imath::V3i* incomingData = static_cast<const Imath::V3i *>(p);
+				std::vector<GLint> rawData( 3 * pd.size );
+				for( int i=0; i < pd.size; ++i )
+				{
+					rawData[3 * i]     = incomingData[i].x;
+					rawData[3 * i + 1] = incomingData[i].y;
+					rawData[3 * i + 2] = incomingData[i].z;
+				}
+				
+				glUniform3iv( parameterIndex, pd.size, &rawData.front() );
+			}
+			break;
+		case IECore::Color3fVectorDataTypeId :
+			glUniform3fv( parameterIndex, pd.size, static_cast<const float *>(p) );
+			break;
+		case IECore::Color4fVectorDataTypeId :
+			glUniform4fv( parameterIndex, pd.size, static_cast<const float *>(p) );
+			break;
+		case IECore::M33fVectorDataTypeId :
+			glUniformMatrix3fv( parameterIndex, pd.size, GL_FALSE, static_cast<const float *>(p) );
+			break;
+		case IECore::M44fVectorDataTypeId :
+			glUniformMatrix4fv( parameterIndex, pd.size, GL_FALSE, static_cast<const float *>(p) );
+			break;
+		default :
+			throw Exception( boost::str( boost::format( "Unsupported uniform parameter type \"%s\"." ) % IECore::RunTimeTyped::typeNameFromTypeId( type ) ) );
+	}
+	/// \todo Might it be quicker to check the gl type ourselves beforehand rather than checking
+	/// for errors here?
+	Exception::throwIfError();
 }
 
-template<typename Container>
-struct UniformDataConverter
+void Shader::setUniformParameter( const std::string &parameterName, const IECore::Data *value )
 {
-	typedef bool ReturnType;
-	
-	UniformDataConverter( Container &container )
-		:	m_container( container )
+	setUniformParameter( uniformParameterIndex( parameterName ), value );
+}
+
+void Shader::setUniformParameter( GLint parameterIndex, unsigned int textureUnit )
+{
+	glUniform1i( parameterIndex, textureUnit );
+	/// \todo Might it be quicker to check the gl type ourselves beforehand rather than checking
+	/// for errors here?
+	Exception::throwIfError();
+}
+
+void Shader::setUniformParameter( const std::string &parameterName, unsigned int textureUnit )
+{
+	setUniformParameter( uniformParameterIndex( parameterName ), textureUnit );
+}
+
+void Shader::setUniformParameter( GLint parameterIndex, int value )
+{
+	glUniform1i( parameterIndex, value );
+	Exception::throwIfError();
+}
+
+void Shader::setUniformParameter( const std::string &parameterName, int value )
+{
+	setUniformParameter( uniformParameterIndex( parameterName ), value );
+}
+
+struct Shader::VectorValueValid
+{
+	template< typename T > 
+	struct IsIndexableVectorTypedData : boost::mpl::and_< IECore::TypeTraits::IsVectorTypedData<T>, boost::mpl::not_< boost::is_same< typename IECore::TypeTraits::VectorValueType<T>::type, bool > > > {};
+
+	typedef const bool ReturnType;
+
+	const Shader *m_shader;
+	GLint m_paramIndex;
+
+	VectorValueValid( const Shader *s, GLint paramIndex ) : m_shader(s), m_paramIndex( paramIndex )
 	{
 	}
 
 	template<typename T>
-	ReturnType operator()( typename T::ConstPtr data ) const
+	ReturnType operator() ( typename T::Ptr data )
 	{
-		const typename T::BaseType *begin = data->baseReadable();
-		const typename T::BaseType *end = begin + data->baseSize();
-		for( ; begin != end; begin++ )
+		if ( !data->readable().size() )
 		{
-			m_container.push_back( (typename Container::value_type)*begin );
+			return false;
 		}
-		return true;
+		return m_shader->uniformValueValid( m_paramIndex, IECore::TypedData< typename T::ValueType::value_type >::staticTypeId() );
 	}
-
-	private :
-		
-		Container &m_container;
-
 };
 
-void Shader::Setup::addUniformParameter( const std::string &name, IECore::ConstDataPtr value )
+bool Shader::uniformVectorValueValid( GLint parameterIndex, const IECore::Data *value ) const
 {
-	const Parameter *p = m_memberData->shader->uniformParameter( name );
-	if( !p )
+	VectorValueValid valueValid( this, parameterIndex );
+	return IECore::despatchTypedData< VectorValueValid, VectorValueValid::IsIndexableVectorTypedData >( const_cast<IECore::Data *>( value ), valueValid ); 
+}
+
+bool Shader::uniformVectorValueValid( const std::string &parameterName, const IECore::Data *value ) const
+{
+	return uniformVectorValueValid( uniformParameterIndex(parameterName), value );
+}
+
+struct Shader::VectorSetValue
+{
+
+	typedef const void ReturnType;
+
+	Shader *m_shader;
+	GLint m_paramIndex;
+	unsigned m_vectorItem;
+
+	VectorSetValue( Shader *s, GLint paramIndex, unsigned vectorItem ) : m_shader(s), m_paramIndex( paramIndex ), m_vectorItem( vectorItem )
 	{
+	}
+
+	template<typename T>
+	ReturnType operator() ( typename T::Ptr data )
+	{
+		m_shader->setUniformParameter( m_paramIndex, IECore::TypedData< typename T::ValueType::value_type >::staticTypeId(), &(data->readable()[ m_vectorItem ]) );
+	}
+};
+
+void Shader::setUniformParameterFromVector( GLint parameterIndex, const IECore::Data *vector, unsigned int item )
+{
+	if ( !uniformVectorValueValid( parameterIndex, vector ) )
+	{
+		throw Exception( "Can't set uniform parameter value from vector. Type mismatch." );
+	}
+	VectorSetValue setValue( this, parameterIndex, item );
+	IECore::despatchTypedData< VectorSetValue, VectorValueValid::IsIndexableVectorTypedData >( const_cast<IECore::Data *>( vector ), setValue );
+}
+
+void Shader::setUniformParameterFromVector( const std::string &parameterName, const IECore::Data *vector, unsigned int item )
+{
+	setUniformParameterFromVector( uniformParameterIndex( parameterName ), vector, item );
+}
+
+struct Shader::VectorSetup
+{
+	typedef VertexToUniform ReturnType;
+
+	GLint m_paramIndex;
+
+	VectorSetup( GLint paramIndex ) : m_paramIndex( paramIndex )
+	{
+		if ( paramIndex < 0 && paramIndex != GL_COLOR_PARAMETER )
+		{
+			throw Exception( "Can't assign uniform data to the given custom shader parameter." );
+		}
+	}
+
+	template<typename T>
+	ReturnType operator() ( typename T::Ptr data )
+	{
+		bool isInteger;
+		if ( boost::is_same< float, typename T::BaseType >::value )
+		{
+			isInteger = false;
+		}
+		else if ( boost::is_same< int, typename T::BaseType >::value || 
+					boost::is_same< unsigned int, typename T::BaseType >::value )
+		{
+			isInteger = true;
+		}
+		else
+		{
+			throw Exception( "Invalid vertex data type. Only float or int vectors accepted." );
+		}
+		return ReturnType( m_paramIndex,
+							data->baseSize() / data->readable().size(),
+							isInteger,
+							data->baseReadable() );
+	}
+};
+
+Shader::VertexToUniform Shader::uniformParameterFromVectorSetup( GLint parameterIndex, const IECore::Data *vector ) const
+{
+	VectorSetup setup( parameterIndex );
+	return IECore::despatchTypedData< VectorSetup, IECore::TypeTraits::IsVectorTypedData >( const_cast<IECore::Data *>( vector ), setup );
+}
+
+Shader::VertexToUniform::VertexToUniform( ) :
+	m_paramId(0), m_dimensions(0), m_isInteger(0), m_array(0)
+{
+}
+
+Shader::VertexToUniform::VertexToUniform( GLint p, unsigned char d, bool i, const void *a ) :
+	m_paramId(p), m_dimensions(d), m_isInteger(i), m_array(a)
+{
+}
+
+void Shader::VertexToUniform::operator() ( int index ) const
+{
+	if ( m_paramId == GL_COLOR_PARAMETER )
+	{
+		if ( m_isInteger )
+			return;
+
+		if ( m_dimensions == 3 )
+		{
+			glColor3fv( static_cast<const float*>(m_array) + index * 3 );
+		}
+		else if ( m_dimensions == 4 )
+		{
+			glColor4fv( static_cast<const float*>(m_array) + index * 4 );
+		}
 		return;
 	}
-	
-	if( p->size > 1 )
+	if ( m_isInteger )
 	{
-		IECore::msg( IECore::Msg::Warning, "Shader::Setup::addUniformParameter", format( "Array parameter \"%s\" is currently unsupported." ) % name );
-		return;
-	}
-	
-	if( p->type == GL_BOOL || p->type == GL_INT || p->type == GL_INT_VEC2 || p->type == GL_INT_VEC3 )
-	{
-		// integer value
-		
-		vector<GLint> integers;
-		if( value->isInstanceOf( IECore::BoolDataTypeId ) )
-		{
-			integers.push_back( static_cast<const IECore::BoolData *>( value.get() )->readable() );
-		}
-		else
-		{
-			UniformDataConverter<vector<GLint> > converter( integers );
-			IECore::despatchTypedData< UniformDataConverter<vector<GLint> >, IECore::TypeTraits::IsNumericBasedTypedData, DespatchTypedDataIgnoreError>( IECore::constPointerCast<IECore::Data>( value ), converter );
-		}
-		if( !integers.size() )
-		{
-			IECore::msg( IECore::Msg::Warning, "Shader::Setup::addUniformParameter", format( "Uniform parameter \"%s\" has unsuitable data type \%s\"" ) % name % value->typeName() );
-		}
-		else
-		{
-			unsigned char dimensions = 0;
-			switch( p->type )
-			{
-				case GL_BOOL :
-				case GL_INT :
-					dimensions = 1;
-					break;
-				case GL_INT_VEC2 :
-					dimensions = 2;
-					break;
-				case GL_INT_VEC3 :
-					dimensions = 3;	
-			}
-			m_memberData->values.push_back( new MemberData::UniformIntegerValue( m_memberData->shader->program(), p->location, dimensions, integers ) );
-		}
-	}
-	else if( p->type == GL_FLOAT || p->type == GL_FLOAT_VEC2 || p->type == GL_FLOAT_VEC3 || p->type == GL_FLOAT_VEC4 )
-	{
-		// float value
-		
-		vector<GLfloat> floats;
-		UniformDataConverter<vector<GLfloat> > converter( floats );
-		IECore::despatchTypedData< UniformDataConverter<vector<GLfloat> >, IECore::TypeTraits::IsNumericBasedTypedData, DespatchTypedDataIgnoreError>( IECore::constPointerCast<IECore::Data>( value ), converter );	
-		if( !floats.size() )
-		{
-			IECore::msg( IECore::Msg::Warning, "Shader::Setup::addUniformParameter", format( "Uniform parameter \"%s\" has unsuitable data type \%s\"" ) % name % value->typeName() );
-			return;
-		}
-		else
-		{
-			unsigned char dimensions = 0;
-			switch( p->type )
-			{
-				case GL_FLOAT :
-					dimensions = 1;
-					break;
-				case GL_FLOAT_VEC2 :
-					dimensions = 2;
-					break;
-				case GL_FLOAT_VEC3 :
-					dimensions = 3;
-					break;
-				case GL_FLOAT_VEC4 :
-					dimensions = 4;
-					break;
-			}
-			m_memberData->values.push_back( new MemberData::UniformFloatValue( m_memberData->shader->program(), p->location, dimensions, floats ) );
-		}
-	}
-	else if( p->type == GL_FLOAT_MAT3 || p->type == GL_FLOAT_MAT4 )
-	{
-		// matrix value
-		unsigned char dimensions0 = 0;
-		unsigned char dimensions1 = 0;
-		switch( p->type )
-		{
-			case GL_FLOAT_MAT3 :
-				dimensions0 = dimensions1 = 3;
-				break;
-			case GL_FLOAT_MAT4 :
-				dimensions0 = dimensions1 = 4;
-				break;
-		};
-				
-		vector<GLfloat> floats;
-		UniformDataConverter<vector<GLfloat> > converter( floats );
-		IECore::despatchTypedData< UniformDataConverter<vector<GLfloat> >, IECore::TypeTraits::IsNumericBasedTypedData, DespatchTypedDataIgnoreError>( IECore::constPointerCast<IECore::Data>( value ), converter );	
-		if( floats.size() != dimensions0 * dimensions1 )
-		{
-			IECore::msg( IECore::Msg::Warning, "Shader::Setup::addUniformParameter", format( "Matrix parameter \"%s\" requires %d values but value of type \%s\" provided %d" ) % name % (dimensions0 * dimensions1) % value->typeName() % floats.size() );
-			return;
-		}
-		
-		m_memberData->values.push_back( new MemberData::UniformMatrixValue( m_memberData->shader->program(), p->location, dimensions0, dimensions1, floats ) );
+		uniformIntFunctions()[m_dimensions]( m_paramId, 1, ((const GLint *)m_array) + index * (int)m_dimensions );
 	}
 	else
 	{
-		IECore::msg( IECore::Msg::Warning, "Shader::Setup::addUniformParameter", format( "Uniform parameter \"%s\" has unsupported OpenGL type \%d\"" ) % name % p->type );
+		uniformFloatFunctions()[m_dimensions]( m_paramId, 1, ((const float *)m_array) + index * (int)m_dimensions );
 	}
 }
-				
-void Shader::Setup::addVertexAttribute( const std::string &name, IECore::ConstDataPtr value, GLuint divisor )
+
+const Shader::ParameterDescription &Shader::uniformParameterDescription( GLint parameterIndex ) const
+{
+	ParameterMap::const_iterator it = m_uniformParameters.find( parameterIndex );
+	if( it==m_uniformParameters.end() )
+	{
+		throw Exception( "Uniform parameter doesn't exist." );
+	}
+	return it->second;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// functions for vertex parameters
+///////////////////////////////////////////////////////////////////////////////
+
+void Shader::vertexParameterNames( std::vector<std::string> &names ) const
+{
+	for( ParameterMap::const_iterator it = m_vertexParameters.begin(); it != m_vertexParameters.end(); it++ )
+	{
+		names.push_back( it->second.name );
+	}
+}
+
+GLint Shader::vertexParameterIndex( const std::string &parameterName ) const
+{
+	for( ParameterMap::const_iterator it = m_vertexParameters.begin(); it != m_vertexParameters.end(); it++ )
+	{
+		if( !strcmp( parameterName.c_str(), it->second.name.c_str() ) )
+		{
+			return it->first;
+		}
+	}
+
+	// accept old-fashined gl_Vertex,gl_Normal,gl_Color and gl_MultiTexCoord0
+	if ( parameterName == "P" )
+		return GL_POINTS_PARAMETER;
+	else if ( parameterName == "N" )
+		return GL_NORMALS_PARAMETER;
+	else if ( parameterName == "Cs" )
+		return GL_COLOR_PARAMETER;
+	else if ( parameterName == "st" )
+		return GL_TEXCOORDS_PARAMETER;
+
+	throw( Exception( boost::str( boost::format( "No vertex parameter named \"%s\"." ) % parameterName ) ) );
+}
+
+bool Shader::hasVertexParameter( const std::string &parameterName ) const
+{
+	for( ParameterMap::const_iterator it = m_vertexParameters.begin(); it != m_vertexParameters.end(); it++ )
+	{
+		if( !strcmp( parameterName.c_str(), it->second.name.c_str() ) )
+		{
+			return true;
+		}
+	}
+
+	// accept old-fashined gl_Vertex,gl_Normal,gl_Color and gl_MultiTexCoord0
+	if ( parameterName == "P" || parameterName == "N" || parameterName == "Cs" || parameterName == "st" )
+		return true;
+
+	return false;
+}
+
+bool Shader::vertexValueValid( GLint parameterIndex, const IECore::Data *value ) const
 {	
-	const Parameter *p = m_memberData->shader->vertexAttribute( name );
-	if( !p )
+	IECore::TypeId t = value->typeId();
+
+	// accept old-fashined OpenGL parameters.
+	switch( parameterIndex )
 	{
-		return;
+		case GL_POINTS_PARAMETER:
+			return ( t == IECore::V3fVectorDataTypeId );
+		case GL_NORMALS_PARAMETER:
+			return ( t == IECore::V3fVectorDataTypeId );
+		case GL_COLOR_PARAMETER:
+			return ( t == IECore::V3fVectorDataTypeId || t == IECore::Color3fVectorDataTypeId );
+		case GL_TEXCOORDS_PARAMETER:
+			return ( t == IECore::V2fVectorDataTypeId );
 	}
 
-	if( p->size > 1 )
+	const ParameterDescription &p = vertexParameterDescription( parameterIndex );
+	if( p.size==1 )
 	{
-		IECore::msg( IECore::Msg::Warning, "Shader::Setup::addVertexAttribute", format( "Array attribute \"%s\" is currently unsupported." ) % name );
+		switch( p.type )
+		{
+			case GL_FLOAT :
+
+				if ( t == IECore::FloatVectorDataTypeId || t == IECore::DoubleVectorDataTypeId  || 
+						t == IECore::UCharVectorDataTypeId || t == IECore::UCharVectorDataTypeId )
+					return true;
+
+				if ( (t == IECore::IntVectorDataTypeId || t == IECore::UIntVectorDataTypeId ) && sizeof(int) == sizeof(GLint) )
+					return true;
+
+				if ( (t == IECore::ShortVectorDataTypeId || t == IECore::UShortVectorDataTypeId) && sizeof(short) == sizeof(GLshort) )
+					return true;
+
+				return false;
+
+			case GL_FLOAT_VEC2 :
+
+				if ( t == IECore::V2fVectorDataTypeId || t == IECore::V2dVectorDataTypeId )
+					return true;
+
+				if ( t == IECore::V2iVectorDataTypeId && sizeof(int) == sizeof(GLint) )
+					return true;
+					
+				return false;
+
+			case GL_FLOAT_VEC3 :
+
+				if ( t == IECore::V3fVectorDataTypeId || t == IECore::V3dVectorDataTypeId || t == IECore::Color3fVectorDataTypeId || t == IECore::Color3dVectorDataTypeId )
+					return true;
+
+				if ( t == IECore::V3iVectorDataTypeId && sizeof(int) == sizeof(GLint) )
+					return true;
+
+				// \todo: apparently shader mat3 attributes are returned as vec3. So we should accept M33f here too...
+
+				return false;
+
+			case GL_FLOAT_VEC4 :
+
+				if ( t == IECore::Color4fVectorDataTypeId || t == IECore::Color4dVectorDataTypeId )
+					return true;
+
+				// \todo: apparently shader mat4 attributes are returned as vec4. So we should accept M44f here too...
+				
+				return false;
+
+			default :
+				// \todo: implement	other types like GL_FLOAT_MAT3 and GL_FLOAT_MAT4. Although I'm not sure they would be returned. Apparently mat3 and mat4 returns vec3 and vec4...
+
+				return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool Shader::vertexValueValid( const std::string &parameterName, const IECore::Data *value ) const
+{
+	return vertexValueValid( vertexParameterIndex( parameterName ), value );
+}
+
+void Shader::setVertexParameter( GLint parameterIndex, const IECore::Data *value, bool normalize )
+{
+	if ( !vertexValueValid( parameterIndex, value ) )
+	{
+		throw Exception( "Can't set vertex parameter value. Type mismatch." );
 	}
 
-	GLenum dataGLType = glType( value );
-	if( !dataGLType )
+	// accept old-fashined OpenGL parameters.
+	switch( parameterIndex )
 	{
-		IECore::msg( IECore::Msg::Warning, "Shader::Setup::addVertexAttribute", format( "Vertex attribute \"%s\" has unsuitable data type \%s\"" ) % name % value->typeName() );
-	}
-
-	GLint size = 0;
-	switch( p->type )
-	{
-		case GL_INT :
-		case GL_FLOAT :
-			size = 1;
-			break;
-		case GL_INT_VEC2 :
-		case GL_FLOAT_VEC2 :
-			size = 2;
-			break;
-		case GL_INT_VEC3 :
-		case GL_FLOAT_VEC3 :
-			size = 3;
-			break;
-		case GL_FLOAT_VEC4 :
-			size = 4;
-			break;
-		default :
-			IECore::msg( IECore::Msg::Warning, "Shader::Setup::addVertexAttribute", format( "Vertex attribute \"%s\" has unsupported OpenGL type \%d\"" ) % name % p->type );
+		case GL_POINTS_PARAMETER:
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glVertexPointer( 3, GL_FLOAT, 0, ((const IECore::V3fVectorData *)value)->baseReadable() );
+			return;
+		case GL_NORMALS_PARAMETER:
+			glEnableClientState(GL_NORMAL_ARRAY);
+			glNormalPointer( GL_FLOAT, 0, ((const IECore::V3fVectorData *)value)->baseReadable() );
+			return;
+		case GL_COLOR_PARAMETER:
+			glEnableClientState(GL_COLOR_ARRAY);
+			if ( value->typeId() == IECore::V3fVectorDataTypeId )
+				glColorPointer(3, GL_FLOAT, 0, ((const IECore::V3fVectorData *)value)->baseReadable() );
+			else
+				glColorPointer(3, GL_FLOAT, 0, ((const IECore::Color3fVectorData *)value)->baseReadable() );
+			return;
+		case GL_TEXCOORDS_PARAMETER:
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			glTexCoordPointer(2, GL_FLOAT, 0, ((const IECore::V2fVectorData *)value)->baseReadable() );
 			return;
 	}
 
-	CachedConverterPtr converter = CachedConverter::defaultCachedConverter();
-	ConstBufferPtr buffer = IECore::runTimeCast<const Buffer>( converter->convert( value  ) );
-	
-	m_memberData->values.push_back( new MemberData::VertexValue( p->location, dataGLType, size, buffer, divisor ) );
-}
-
-Shader::Setup::ScopedBinding::ScopedBinding( const Setup &setup )
-	:	m_previousProgram( 0 ), m_setup( setup )
-{
-	glGetIntegerv( GL_CURRENT_PROGRAM, &m_previousProgram );
-	glUseProgram( m_setup.shader()->m_implementation->m_program );
-
-	const vector<MemberData::ValuePtr> &values = m_setup.m_memberData->values;
-	for( vector<MemberData::ValuePtr>::const_iterator it = values.begin(), eIt = values.end(); it != eIt; it++ )
+	switch( value->typeId() )
 	{
-		(*it)->bind();
+		case IECore::FloatVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 1, GL_FLOAT, false, 0, ((const IECore::FloatVectorData *)value)->baseReadable() );
+			break;
+		case IECore::DoubleVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 1, GL_DOUBLE, false, 0, ((const IECore::DoubleVectorData *)value)->baseReadable() );
+			break;
+		case IECore::CharVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 1, GL_BYTE, false, normalize, ((const IECore::CharVectorData *)value)->baseReadable() );
+			break;
+		case IECore::UCharVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 1, GL_UNSIGNED_BYTE, false, normalize, ((const IECore::UCharVectorData *)value)->baseReadable() );
+			break;
+		case IECore::IntVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 1, GL_INT, false, normalize, ((const IECore::IntVectorData *)value)->baseReadable() );
+			break;
+		case IECore::UIntVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 1, GL_UNSIGNED_INT, false, normalize, ((const IECore::UIntVectorData *)value)->baseReadable() );
+			break;
+		case IECore::ShortVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 1, GL_SHORT, false, normalize, ((const IECore::ShortVectorData *)value)->baseReadable() );
+			break;
+		case IECore::UShortVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 1, GL_UNSIGNED_SHORT, false, normalize, ((const IECore::UShortVectorData *)value)->baseReadable() );
+			break;
+		case IECore::V2fVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 2, GL_FLOAT, false, 0, ((const IECore::V2fVectorData *)value)->baseReadable() );
+			break;
+		case IECore::V2dVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 2, GL_DOUBLE, false, 0, ((const IECore::V2dVectorData *)value)->baseReadable() );
+			break;
+		case IECore::V2iVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 2, GL_INT, false, normalize, ((const IECore::V2iVectorData *)value)->baseReadable() );
+			break;
+		case IECore::V3fVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 3, GL_FLOAT, false, 0, ((const IECore::V3fVectorData *)value)->baseReadable() );
+			break;
+		case IECore::V3dVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 3, GL_DOUBLE, false, 0, ((const IECore::V3dVectorData *)value)->baseReadable() );
+			break;
+		case IECore::V3iVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 3, GL_INT, false, normalize, ((const IECore::V3iVectorData *)value)->baseReadable() );
+			break;
+		case IECore::Color3fVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 3, GL_FLOAT, false, 0, ((const IECore::Color3fVectorData *)value)->baseReadable() );
+			break;
+		case IECore::Color3dVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 3, GL_DOUBLE, false, 0, ((const IECore::Color3dVectorData *)value)->baseReadable() );
+			break;
+		case IECore::Color4fVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 4, GL_FLOAT, false, 0, ((const IECore::Color4fVectorData *)value)->baseReadable() );
+			break;
+		case IECore::Color4dVectorDataTypeId :
+			glVertexAttribPointer( parameterIndex, 4, GL_DOUBLE, false, 0, ((const IECore::Color4dVectorData *)value)->baseReadable() );
+			break;
+		default :
+			throw Exception( boost::str( boost::format( "Unsupported vertex parameter type \"%s\"." ) % value->typeName() ) );
 	}
+	/// \todo Might it be quicker to check the gl type ourselves beforehand rather than checking
+	/// for errors here?
+	Exception::throwIfError();
+
+	glEnableVertexAttribArray( parameterIndex );
 }
 
-Shader::Setup::ScopedBinding::~ScopedBinding()
+void Shader::setVertexParameter( const std::string &parameterName, const IECore::Data *value, bool normalize )
 {
-	const vector<MemberData::ValuePtr> &values = m_setup.m_memberData->values;
-	for( vector<MemberData::ValuePtr>::const_iterator it = values.begin(), eIt = values.end(); it != eIt; it++ )
+	setVertexParameter( vertexParameterIndex( parameterName ), value, normalize );
+}
+
+void Shader::unsetVertexParameters( )
+{
+	// \todo: according to some doc on the web, mat3 and mat4 attributes are identified as vec3 and vec4 and they reserve 4 parameter indices.
+	for ( ParameterMap::const_iterator it = m_vertexParameters.begin(); it != m_vertexParameters.end(); it++ )
 	{
-		(*it)->unbind();
+		glDisableVertexAttribArray( it->first );
 	}
-	
-	glUseProgram( m_previousProgram );
+
+	// disables standard (old-fashined) arrays. To be deprecated...
+	glDisableClientState( GL_VERTEX_ARRAY );
+	glDisableClientState( GL_COLOR_ARRAY );
+	glDisableClientState( GL_NORMAL_ARRAY );
+	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// default shader source
-///////////////////////////////////////////////////////////////////////////////
-
-const std::string &Shader::defaultVertexSource()
+const Shader::ParameterDescription &Shader::vertexParameterDescription( GLint parameterIndex ) const
 {
-	static string s =
-		
-		"#version 150 compatibility\n"
-		""
-		"uniform vec3 Cs = vec3( 1, 1, 1 );"
-		"uniform bool vertexCsActive = false;"
-		""
-		"in vec3 vertexP;"
-		"in vec3 vertexN;"
-		"in vec2 vertexst;"
-		"in vec3 vertexCs;"
-		""
-		"out vec3 geometryI;"
-		"out vec3 geometryN;"
-		"out vec2 geometryst;"
-		"out vec3 geometryCs;"
-		""
-		"out vec3 fragmentI;"
-		"out vec3 fragmentN;"
-		"out vec2 fragmentst;"
-		"out vec3 fragmentCs;"
-		""
-		"void main()"
-		"{"
-		"	vec4 pCam = gl_ModelViewMatrix * vec4( vertexP, 1 );"
-		"	gl_Position = gl_ProjectionMatrix * pCam;"
-		"	geometryN = normalize( gl_NormalMatrix * vertexN );"
-		"	if( gl_ProjectionMatrix[2][3] != 0.0 )"
-		"	{"
-		"		geometryI = normalize( -pCam.xyz );"
-		"	}"
-		"	else"
-		"	{"
-		"		geometryI = vec3( 0, 0, -1 );"
-		"	}"
-		""
-		"	geometryst = vertexst;"
-		"	if( vertexCsActive )"
-		"	{"
-		"		geometryCs = Cs * vertexCs;"
-		"	}"
-		"	else"
-		"	{"
-		"		geometryCs = Cs;"
-		"	}"
-		""
-		"	fragmentI = geometryI;"
-		"	fragmentN = geometryN;"
-		"	fragmentst = geometryst;"
-		"	fragmentCs = geometryCs;"
-		"}";
-		
-	return s;
-}
-
-const std::string &Shader::defaultFragmentSource()
-{
-	static string s = 
-	
-		"#version 150 compatibility\n"
-		""
-		"in vec3 fragmentI;"
-		"in vec3 fragmentN;"
-		"in vec3 fragmentCs;"
-		""
-		"void main()"
-		"{"
-		"	vec3 Nf = faceforward( fragmentN, -fragmentI, fragmentN );"
-		"	float f = dot( normalize( fragmentI ), normalize(Nf) );"
-		"	gl_FragColor = vec4( f * fragmentCs, 1 );"
-		"}";
-		
-	return s;
+	ParameterMap::const_iterator it = m_vertexParameters.find( parameterIndex );
+	if( it==m_vertexParameters.end() )
+	{
+		throw Exception( "Vertex parameter doesn't exist." );
+	}
+	return it->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -903,26 +1480,36 @@ const std::string &Shader::defaultFragmentSource()
 
 ShaderPtr Shader::constant()
 {
-	static const char *fragmentSource =
-	
-		"in vec3 fragmentCs;"
-		""
-		"void main()"
-		"{"
-		"	gl_FragColor = vec4( fragmentCs, 1 );"
-		"}";
-
-	static ShaderPtr s = new Shader( "", fragmentSource );
+	static ShaderPtr s = new Shader();
 	return s;
 }
 
 ShaderPtr Shader::facingRatio()
 {
-	// the empty strings will be replaced with defaultVertexSource() and
-	// defaultFragmentSource() in the constructor. it's important that we
-	// pass the empty string here, so that Shader::vertexSource() will return
-	// the empty string too, signifying to the funkier primitives (PointsPrimitive
-	// being a good example) that it's ok to replace the vertex shader.
-	static ShaderPtr s = new Shader( "", "" );
+	static const char *vertexSource =
+	"varying vec3 I;"
+	"varying vec3 N;"
+	""
+	"void main()"
+	"{"
+	"	vec4 pCam = gl_ModelViewMatrix * gl_Vertex;"
+	"	gl_Position = gl_ProjectionMatrix * pCam;"
+	"	N = normalize( gl_NormalMatrix * gl_Normal );"
+	"	I = normalize( -pCam.xyz );"
+	"}";
+
+	static const char *fragmentSource =
+	"varying vec3 I;"
+	"varying vec3 N;"
+	""
+	"void main()"
+	"{"
+	"	vec3 Nf = faceforward( N, -I, N );"
+	"	float f = dot( normalize(I), normalize(Nf) );"
+	"	gl_FragColor = vec4( f, f, f, 1 );"
+	"}";
+
+
+	static ShaderPtr s = new Shader( vertexSource, fragmentSource );
 	return s;
 }

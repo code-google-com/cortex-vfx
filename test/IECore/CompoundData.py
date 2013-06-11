@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2007-2011, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -83,7 +83,6 @@ class CompoundDataTest(unittest.TestCase):
 		self.assertEqual(v1["1"], v2["1"])
 		self.assertEqual(v1["0"], v4["0"])
 		self.assertEqual(v1["1"], v4["1"])
-		self.assertRaises( TypeError, v1.__setitem__, "2", None )	# should prevent setting None as value.
 
 	def testCopyOnWrite(self):
 		"""Test copy-on-write behavior"""
@@ -213,7 +212,7 @@ class CompoundDataTest(unittest.TestCase):
 	def testLoadSave(self):
 		"""Test load/save"""
 
-		iface = IECore.IndexedIO.create( "test/CompoundData.fio", IECore.IndexedIO.OpenMode.Write )
+		iface = IECore.IndexedIOInterface.create( "test/CompoundData.fio", "/", IECore.IndexedIOOpenMode.Write )
 
 		v1 = IECore.CompoundData()
 		v1["0"] = IECore.FloatData(1.2)

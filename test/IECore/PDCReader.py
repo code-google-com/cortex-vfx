@@ -47,79 +47,10 @@ class TestPDCReader( unittest.TestCase ) :
 		self.assertEqual( type( r ), IECore.PDCParticleReader )
 		self.assertEqual( r["fileName"].getValue().value, "test/IECore/data/pdcFiles/particleShape1.250.pdc" )
 
-	def testReadWithPrimVarConversion( self ) :
+	def testRead( self ) :
 
 		r = IECore.Reader.create( "test/IECore/data/pdcFiles/particleShape1.250.pdc" )
 		self.assertEqual( type( r ), IECore.PDCParticleReader )
-		self.assertTrue( r.parameters()["convertPrimVarNames"].getTypedValue() )
-		
-		self.assertEqual( r.numParticles(), 25 )
-		attrNames = r.attributeNames()
-		expectedAttrNamesAndTypes = {
-			"particleId" : IECore.DoubleVectorData,
-			"mass" : IECore.DoubleVectorData,
-			"lastWorldVelocity" : IECore.V3dVectorData,
-			"worldVelocityInObjectSpace" : IECore.V3dVectorData,
-			"worldVelocity" : IECore.V3dVectorData,
-			"lastWorldPosition" : IECore.V3dVectorData,
-			"worldPosition" : IECore.V3dVectorData,
-			"acceleration" : IECore.V3dVectorData,
-			"lastVelocity" : IECore.V3dVectorData,
-			"velocity" : IECore.V3dVectorData,
-			"lastPosition" : IECore.V3dVectorData,
-			"position" : IECore.V3dVectorData,
-			"lifespanPP" : IECore.DoubleVectorData,
-			"finalLifespanPP" : IECore.DoubleVectorData,
-			"emitterId" : IECore.DoubleVectorData,
-			"birthTime" : IECore.DoubleVectorData,
-			"age" : IECore.DoubleVectorData,
-		}
-		self.assertEqual( len( attrNames ), len( expectedAttrNamesAndTypes ) )
-		for i in expectedAttrNamesAndTypes.keys() :
-			self.assert_( i in attrNames )
-		
-		expectedConvertedAttrNamesAndTypes = {
-			"particleId" : IECore.DoubleVectorData,
-			"mass" : IECore.DoubleVectorData,
-			"lastWorldVelocity" : IECore.V3dVectorData,
-			"worldVelocityInObjectSpace" : IECore.V3dVectorData,
-			"worldVelocity" : IECore.V3dVectorData,
-			"lastWorldPosition" : IECore.V3dVectorData,
-			"worldPosition" : IECore.V3dVectorData,
-			"acceleration" : IECore.V3dVectorData,
-			"lastVelocity" : IECore.V3dVectorData,
-			"velocity" : IECore.V3dVectorData,
-			"lastPosition" : IECore.V3dVectorData,
-			"P" : IECore.V3dVectorData,
-			"lifespanPP" : IECore.DoubleVectorData,
-			"finalLifespanPP" : IECore.DoubleVectorData,
-			"emitterId" : IECore.DoubleVectorData,
-			"birthTime" : IECore.DoubleVectorData,
-			"age" : IECore.DoubleVectorData,
-		}
-
-		c = r.read()
-		self.assertEqual( type( c ), IECore.PointsPrimitive )
-		self.assertEqual( len( c ), len( expectedConvertedAttrNamesAndTypes ) )
-		for i in expectedConvertedAttrNamesAndTypes.keys() :
-			self.assert_( i in c )
-			self.assertEqual( type(c[i].data), expectedConvertedAttrNamesAndTypes[i] )
-			self.assertEqual( len(c[i].data), r.numParticles() )
-
-		for p in c["P"].data :
-			self.assertEqual( p.y, 0 )
-			self.assert_( abs( p.x ) < 1.1 )
-			self.assert_( abs( p.z ) < 1.1 )
-
-		self.assertEqual( c["particleId"].data, IECore.DoubleVectorData( range( 0, 25 ) ) )
-		
-	def testReadNoPrimVarConversion( self ) :
-
-		r = IECore.Reader.create( "test/IECore/data/pdcFiles/particleShape1.250.pdc" )
-		self.assertEqual( type( r ), IECore.PDCParticleReader )
-		
-		r["convertPrimVarNames"].setValue( IECore.BoolData( False ) )
-		self.assertFalse( r.parameters()["convertPrimVarNames"].getTypedValue() )
 
 		self.assertEqual( r.numParticles(), 25 )
 		attrNames = r.attributeNames()
@@ -160,7 +91,7 @@ class TestPDCReader( unittest.TestCase ) :
 			self.assert_( abs( p.z ) < 1.1 )
 
 		self.assertEqual( c["particleId"].data, IECore.DoubleVectorData( range( 0, 25 ) ) )
-		
+
 	def testFiltering( self ) :
 
 		r = IECore.Reader.create( "test/IECore/data/pdcFiles/particleShape1.250.pdc" )
@@ -179,8 +110,7 @@ class TestPDCReader( unittest.TestCase ) :
 		p = r.read()
 		self.assert_( p.numPoints < 13 )
 		self.assert_( p.numPoints > 7 )
-		convertedAttributesToLoad = [ "P", "age" ]
-		for attr in convertedAttributesToLoad :
+		for attr in attributesToLoad :
 			self.assertEqual( p.numPoints, p[attr].data.size() )
 
 		# compare filtering with int ids		
@@ -215,6 +145,7 @@ class TestPDCReader( unittest.TestCase ) :
 
 		r.parameters()["realType"].setValue( "float" )
 
+		attrNames = r.attributeNames()
 		expectedAttrNamesAndTypes = {
 			"particleId" : IECore.FloatVectorData,
 			"mass" : IECore.FloatVectorData,
@@ -227,7 +158,7 @@ class TestPDCReader( unittest.TestCase ) :
 			"lastVelocity" : IECore.V3fVectorData,
 			"velocity" : IECore.V3fVectorData,
 			"lastPosition" : IECore.V3fVectorData,
-			"P" : IECore.V3fVectorData,
+			"position" : IECore.V3fVectorData,
 			"lifespanPP" : IECore.FloatVectorData,
 			"finalLifespanPP" : IECore.FloatVectorData,
 			"emitterId" : IECore.FloatVectorData,
@@ -243,7 +174,7 @@ class TestPDCReader( unittest.TestCase ) :
 			self.assertEqual( type(c[i].data), expectedAttrNamesAndTypes[i] )
 			self.assertEqual( len(c[i].data), r.numParticles() )
 
-		for p in c["P"].data :
+		for p in c["position"].data :
 			self.assertEqual( p.y, 0 )
 			self.assert_( abs( p.x ) < 1.1 )
 			self.assert_( abs( p.z ) < 1.1 )
@@ -258,6 +189,7 @@ class TestPDCReader( unittest.TestCase ) :
 
 		r.parameters()["realType"].setValue( "float" )
 
+		attrNames = r.attributeNames()
 		expectedAttrNamesAndTypes = {
 			"particleId" : IECore.FloatVectorData,
 			"mass" : IECore.FloatVectorData,
@@ -270,7 +202,7 @@ class TestPDCReader( unittest.TestCase ) :
 			"lastVelocity" : IECore.V3fVectorData,
 			"velocity" : IECore.V3fVectorData,
 			"lastPosition" : IECore.V3fVectorData,
-			"P" : IECore.V3fVectorData,
+			"position" : IECore.V3fVectorData,
 			"lifespanPP" : IECore.FloatVectorData,
 			"finalLifespanPP" : IECore.FloatVectorData,
 			"emitterId" : IECore.FloatVectorData,
@@ -286,7 +218,7 @@ class TestPDCReader( unittest.TestCase ) :
 			self.assertEqual( type(c[i].data), expectedAttrNamesAndTypes[i] )
 			self.assertEqual( len(c[i].data), r.numParticles() )
 
-		for p in c["P"].data :
+		for p in c["position"].data :
 			self.assertEqual( p.y, 0 )
 			self.assert_( abs( p.x ) < 1.1 )
 			self.assert_( abs( p.z ) < 1.1 )
@@ -302,7 +234,7 @@ class TestPDCReader( unittest.TestCase ) :
 			self.assertEqual( type(c[i].data), expectedAttrNamesAndTypes[i] )
 			self.assertEqual( len(c[i].data), 10 )
 
-		for p in c["P"].data :
+		for p in c["position"].data :
 			self.assertEqual( p.y, 0 )
 			self.assert_( abs( p.x ) < 1.1 )
 			self.assert_( abs( p.z ) < 1.1 )

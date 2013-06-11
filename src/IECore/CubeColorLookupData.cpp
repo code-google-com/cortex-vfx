@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2008-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2008-2011, Image Engine Design Inc. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are
@@ -43,13 +43,6 @@ using namespace IECore;
 namespace IECore
 {
 
-static IndexedIO::EntryID g_interpolationEntry("interpolation");
-static IndexedIO::EntryID g_dimensionEntry("dimension");
-static IndexedIO::EntryID g_domainMinEntry("domainMin");
-static IndexedIO::EntryID g_domainMaxEntry("domainMax");
-static IndexedIO::EntryID g_dataSizeEntry("dataSize");
-static IndexedIO::EntryID g_dataEntry("data");
-
 IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CubeColorLookupfData, CubeColorLookupfDataTypeId )
 IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CubeColorLookupdData, CubeColorLookupdDataTypeId )
 
@@ -59,19 +52,19 @@ IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CubeColorLookupdData, CubeColo
 	void TNAME::save( SaveContext *context ) const\
 	{\
 		Data::save( context );\
-		IndexedIOPtr container = context->container( staticTypeName(), 0 );\
+		IndexedIOInterfacePtr container = context->container( staticTypeName(), 0 );\
 		const ValueType &s = readable();\
 \
-		container->write( g_interpolationEntry, (short)s.m_interpolation ); \
-		container->write( g_dimensionEntry, s.m_dimension.getValue(), 3 ); \
-		container->write( g_domainMinEntry, s.m_domain.min.getValue(), 3 ); \
-		container->write( g_domainMaxEntry, s.m_domain.max.getValue(), 3 ); \
+		container->write( "interpolation", (short)s.m_interpolation ); \
+		container->write( "dimension", s.m_dimension.getValue(), 3 ); \
+		container->write( "domainMin", s.m_domain.min.getValue(), 3 ); \
+		container->write( "domainMax", s.m_domain.max.getValue(), 3 ); \
 		int dataSize = s.data().size() ; \
-		container->write( g_dataSizeEntry, dataSize ); \
+		container->write( "dataSize", dataSize ); \
 		if ( s.data().size() ) \
 		{ \
 			ValueType::ColorType::BaseType *c = ( ValueType::ColorType::BaseType * )( s.data()[0].getValue() ); \
-			container->write( g_dataEntry, c, dataSize * 3 ); \
+			container->write( "data", c, dataSize * 3 ); \
 		} \
 	}\
 \
@@ -80,28 +73,28 @@ IECORE_RUNTIMETYPED_DEFINETEMPLATESPECIALISATION( CubeColorLookupdData, CubeColo
 	{\
 		Data::load( context );\
 		unsigned int v = 0;\
-		ConstIndexedIOPtr container = context->container( staticTypeName(), v );\
+		IndexedIOInterfacePtr container = context->container( staticTypeName(), v );\
 		ValueType &s = writable();\
 		\
 		short interp; \
-		container->read( g_interpolationEntry, interp ); \
+		container->read( "interpolation", interp ); \
 		s.m_interpolation = ( ValueType::Interpolation ) interp; \
 		Imath::V3i dimension; \
 		int *dim = dimension.getValue(); \
-		container->read( g_dimensionEntry, dim, 3 ); \
+		container->read( "dimension", dim, 3 ); \
 		ValueType::BoxType domain; \
 		ValueType::VecType::BaseType *f = domain.min.getValue(); \
-		container->read( g_domainMinEntry, f, 3 ); \
+		container->read( "domainMin", f, 3 ); \
 		f = domain.max.getValue();\
-		container->read( g_domainMaxEntry, f, 3 ); \
+		container->read( "domainMax", f, 3 ); \
 		int dataSize; \
-		container->read( g_dataSizeEntry, dataSize ); \
+		container->read( "dataSize", dataSize ); \
 		ValueType::DataType data; \
 		data.resize( dataSize ); \
 		if ( dataSize > 0 ) \
 		{ \
 			ValueType::ColorType::BaseType *c = ( ValueType::ColorType::BaseType * )( data[0].getValue() ); \
-			container->read( g_dataEntry, c, dataSize * 3 ); \
+			container->read( "data", c, dataSize * 3 ); \
 		} \
 		s.setCube( dimension, data, domain ); \
 	}\

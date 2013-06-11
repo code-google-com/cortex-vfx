@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (c) 2007-2013, Image Engine Design Inc. All rights reserved.
+//  Copyright (c) 2007-2012, Image Engine Design Inc. All rights reserved.
 //
 //  Copyright 2010 Dr D Studios Pty Limited (ACN 127 184 954) (Dr. D Studios),
 //  its affiliates and/or its licensors.
@@ -413,28 +413,6 @@ void bindTypeId()
 		.value( "TimeCodeParameter", TimeCodeParameterTypeId )
 		.value( "Options", OptionsTypeId )
 		.value( "MPlayDisplayDriver", MPlayDisplayDriverTypeId )
-		.value( "SceneInterface", SceneInterfaceTypeId )
-		.value( "SampledSceneInterface", SampledSceneInterfaceTypeId )
-		.value( "SceneCache", SceneCacheTypeId )
-		.value( "IndexedIO", IndexedIOTypeId )
-		.value( "StreamIndexedIO", StreamIndexedIOTypeId )
-		.value( "FileIndexedIO", FileIndexedIOTypeId )
-		.value( "MemoryIndexedIO", MemoryIndexedIOTypeId )
-		.value( "InternedStringVectorData", InternedStringVectorDataTypeId )
-		.value( "InternedStringData", InternedStringDataTypeId )
-		.value( "LinkedScene", LinkedSceneTypeId )
-		.value( "V2fDataBase", V2fDataBaseTypeId )
-		.value( "V2dDataBase", V2dDataBaseTypeId )
-		.value( "V2iDataBase", V2iDataBaseTypeId )
-		.value( "V3fDataBase", V3fDataBaseTypeId )
-		.value( "V3dDataBase", V3dDataBaseTypeId )
-		.value( "V3iDataBase", V3iDataBaseTypeId )
-		.value( "V2fVectorDataBase", V2fVectorDataBaseTypeId )
-		.value( "V2dVectorDataBase", V2dVectorDataBaseTypeId )
-		.value( "V2iVectorDataBase", V2iVectorDataBaseTypeId )
-		.value( "V3fVectorDataBase", V3fVectorDataBaseTypeId )
-		.value( "V3dVectorDataBase", V3dVectorDataBaseTypeId )
-		.value( "V3iVectorDataBase", V3iVectorDataBaseTypeId )
 		.value( "LensModel", LensModelTypeId )
 		.value( "StandardRadialLensModel", StandardRadialLensModelTypeId )
 		.value( "LensDistortOp", LensDistortOpTypeId )

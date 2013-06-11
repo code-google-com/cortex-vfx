@@ -1,6 +1,6 @@
 ##########################################################################
 #
-#  Copyright (c) 2010-2013, Image Engine Design Inc. All rights reserved.
+#  Copyright (c) 2010-2012, Image Engine Design Inc. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
@@ -502,56 +502,19 @@ class TestToHoudiniPointsConverter( IECoreHoudini.TestCase ) :
 		del points["floatVert"]
 		
 		self.comparePrimAndSop( points, sop )
+
+	def testGroupName( self ) :
 		
-	def testAttributeFilter( self ) :
-		
+		sop = self.emptySop()
 		points = self.points()
-		sop = self.emptySop()
-		
-		converter = IECoreHoudini.ToHoudiniPointsConverter( points )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['P', 'Pw', 'color3fPoint', 'floatPoint', 'intPoint', 'stringPoint', 'v2fPoint', 'v2iPoint', 'v3fPoint', 'v3iPoint'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), ['color3fDetail', 'floatDetail', 'intDetail', 'stringDetail', 'v2fDetail', 'v2iDetail', 'v3fDetail', 'v3iDetail'] )
-		
-		converter.parameters()["attributeFilter"].setTypedValue( "P *3f*" )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['P', 'Pw', 'color3fPoint', 'v3fPoint'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), ['color3fDetail', 'v3fDetail'] )
-		
-		converter.parameters()["attributeFilter"].setTypedValue( "* ^*Detail ^int*" )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['P', 'Pw', 'color3fPoint', 'floatPoint', 'stringPoint', 'v2fPoint', 'v2iPoint', 'v3fPoint', 'v3iPoint'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), [] )
-	
-	def testStandardAttributeConversion( self ) :
-		
-		sop = self.emptySop()
-		points = IECore.PointsPrimitive( IECore.V3fVectorData( [ IECore.V3f( 1 ) ] * 10 ) )
-		points["Cs"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, IECore.V3fVectorData( [ IECore.V3f( 1, 0, 0 ) ] * 10, IECore.GeometricData.Interpretation.Color ) )
-		points["width"] = IECore.PrimitiveVariable( IECore.PrimitiveVariable.Interpolation.Vertex, IECore.FloatVectorData( [ 1 ] * 10 ) )
-		points["Pref"] = points["P"]
-		
-		self.assertTrue( points.arePrimitiveVariablesValid() )
-		
-		converter = IECoreHoudini.ToHoudiniPointsConverter( points )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['Cd', 'P', 'Pw', 'pscale', 'rest'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), [] )
-		
-		converter["convertStandardAttributes"].setTypedValue( False )
-		self.assertTrue( converter.convert( sop ) )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().pointAttribs() ]), ['Cs', 'P', 'Pref', 'Pw', 'width'] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().primAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().vertexAttribs() ]), [] )
-		self.assertEqual( sorted([ x.name() for x in sop.geometry().globalAttribs() ]), [] )
+		points.blindData()["name"] = IECore.StringData( "testGroup" )
+		self.assert_( IECoreHoudini.ToHoudiniPointsConverter( points ).convert( sop ) )
+		geometry = sop.geometry()
+		self.assertEqual( len(geometry.primGroups()), 0 )
+		pointGroups = geometry.pointGroups()
+		self.assertEqual( len(pointGroups), 1 )
+		self.assertEqual( pointGroups[0].name(), "testGroup" )
+		self.assertEqual( len(pointGroups[0].points()), points.variableSize( IECore.PrimitiveVariable.Interpolation.Vertex ) )
 	
 	def tearDown( self ) :
 		
