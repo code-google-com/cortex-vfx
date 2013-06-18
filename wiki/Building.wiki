@@ -1,6 +1,8 @@
 #summary Build instructions
 #labels Featured
 
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
+
 = Overview =
 
 Cortex is built using the SCons build tool. We've intentionally not used the common autotools standard as in our experience it doesn't work well for building software in a vfx facility, where software must often be installed centrally and with specific naming conventions. We aim to make the build process work out of the box for local installs on machines with locally installed dependencies, but flexible enough to work successfully for any facility.
