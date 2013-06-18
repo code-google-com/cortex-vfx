@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
  * [#Introduction Introduction]
  * [#Building/Installation Building/Installation]
    * [#Dependencies Dependencies]

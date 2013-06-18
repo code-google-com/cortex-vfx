@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 #summary Surfacing particles using marching cubes and an implicit surface function
 
 This example fills a mesh primitive with particles, then creates a new mesh primitive by surfacing those particles using marching cubes and an implicit surface function.

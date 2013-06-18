@@ -1,7 +1,7 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 #summary Build instructions
 #labels Featured
 
-The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 
 = Overview =
 

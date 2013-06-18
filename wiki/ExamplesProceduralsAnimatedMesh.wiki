@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 #summary Rendering animated meshes using a procedural
 #sidebar ExamplesTOC
 

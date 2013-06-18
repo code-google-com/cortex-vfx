@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 = C++ Coding Conventions =
 
 This simple class demonstrates the C++ coding conventions for Cortex. If this class were part of a Cortex library, it would be stored in files called "Logging.h" and "Logging.cpp" to match the name of the class that it defines. If this class defined any templated methods, the body of those methods would be stored in a separate "Logging.inl" file, which should be stored with the other include files for the library.

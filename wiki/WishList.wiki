@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 #summary Things we might want to aim for in future versions
 
 == !SeExpr support ==

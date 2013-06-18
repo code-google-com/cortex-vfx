@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 #summary Demonstrates a simple addition to the 'right click' parameter menu to allow export of values to disk.
 #sidebar ExamplesTOC
 

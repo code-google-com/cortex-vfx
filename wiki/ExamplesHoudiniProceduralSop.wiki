@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 #summary creating a Cortex ProceduralSop
 #sidebar ExamplesTOC
 

@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 #summary Exporting meshes from maya
 
 Exporting meshes from maya into the custom cortex format is pretty straightforward.

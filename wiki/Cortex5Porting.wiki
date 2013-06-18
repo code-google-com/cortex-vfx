@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 #summary Porting code from Cortex 4 to 5
 
 == Introduction ==

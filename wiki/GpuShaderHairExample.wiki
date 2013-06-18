@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 #summary An example procedural showing a simple hair system with GPU based Marschner shading.
 
 http://opensource.image-engine.com/images/examples/shadedHairExample.jpg

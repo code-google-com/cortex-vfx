@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 = Python Coding Conventions =
 
 This simple class demonstrates the python coding conventions for Cortex. If this class were part of a Cortex python module, it would be stored in a file called "Logging.py" to match the name of the class that it defines.

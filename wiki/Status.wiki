@@ -1,3 +1,4 @@
+The cortex wiki is now hosted at https://github.com/ImageEngine/cortex/wiki
 #labels Featured
   * The IECore, IECoreRI, IECoreGL, and IECoreMaya libraries are now in the repository. All internal Image Engine development will be committed to the trunk.
 
